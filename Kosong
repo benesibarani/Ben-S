@@ -1,0 +1,724 @@
+        "nama" => "simpang GAHARU - BAMBU II",
+        "area" => "GAHARU - BAMBU II",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang SUTOMO - BAMBU II",
+        "area" => "SUTOMO - BAMBU II",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang KRAKATAU - PASAR III",
+        "area" => "KRAKATAU - PASAR III",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang KRAKATAU - BILAL",
+        "area" => "KRAKATAU - BILAL",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang KRAKATU - SIDORUKUN",
+        "area" => "KRAKATU - SIDORUKUN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang ABDULAH LUBIS - WAHID HASYIM",
+        "area" => "ABDULAH LUBIS - WAHID HASYIM",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang KRAKATAU - CEMARA",
+        "area" => "KRAKATAU - CEMARA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang SEKIP - P TENUN",
+        "area" => "SEKIP - PABRIK TENUN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang ADB LBS - SEI BLUTU",
+        "area" => "ABDULLAH LUBIS - SEI BLUTU",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang GAJAH MADA - DARUSSALAM",
+        "area" => "GAJAH MADA - DARUSSALAM",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang MANGONSIDI - DR.CIPTO",
+        "area" => "MANGONSIDI - DR.CIPTO",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang HM.YAMIN - PERINTIS",
+        "area" => "HM.YAMIN - PERINTIS",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang GATOT SUBROTO - ASRAMA",
+        "area" => "GATOT SUBROTO - ASRAMA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang HM.YAMIN - WILIAM ISKANDAR",
+        "area" => "HM.YAMIN - WILIAM ISKANDAR",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang KAMPUNG LALANG",
+        "area" => "GATOT SUBROTO - PINANG BARIS",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang GAPERTA - ASRAMA",
+        "area" => "SUMARSONO - ASRAMA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang LETDA SUJONO - MANDALA",
+        "area" => "LETDA SUJONO - MANDALA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang ADAM MALIK",
+        "area" => "JAMIN GINTING - RS.ADAM MALIK",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang SELAYANG",
+        "area" => "JAMIN GINTING - SELAYANG",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang PEMDA",
+        "area" => "SETIA BUDI - FLAMBOYAN RAYA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang SIMALINGKAR",
+        "area" => "JAMIN GINTING - SIMALINGKAR",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang AKSRA - SEJATI",
+        "area" => "AR.HAKIM - SEJATI",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang AR HAKIM - WAHIDIN",
+        "area" => "AR.HAKIM - WAHIDIN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang AR HAKIM - DENAI",
+        "area" => "AR.HAKIM - DENAI",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "simpang LAPANGAN BENTENG II",
+        "area" => "PENGADILAN - KEJAKSAAN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "Simpang SETIA BUDI DR MANSYUR",
+        "area" => "SETIA BUDI - DR.MANSYUR",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.DEPAN RS.BUNDA THAMRIN",
+        "area" => "SEI BATANGHARI (DEPAN RS.BUNDA THAMRIN)",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.SEI BATANGHARI - JALAN SEI ULAR",
+        "area" => "SEI BATANGHARI - JALAN SEI ULAR",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.SETIA BUDI - TITI BOBROK",
+        "area" => "SETIA BUDI - TITI BOBROK",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.DR.MANSYUR PINTU 4 USU",
+        "area" => "DR.MANSYUR - PINTU 4 USU",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.DR.MANSYUR - PINTU 2 USU",
+        "area" => "DR.MANSYUR - PINTU 2 USU",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.SM.RAJA - SAUDARA",
+        "area" => "SM.RAJA - SAUDARA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.VETERAN - TIMOR",
+        "area" => "JAWA - VETERAN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.veteran - Jl. Timor",
+        "area" => "VETERAN - TIMOR",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.MH.THAMRIN - DEPAN YP.SUTOMO",
+        "area" => "MH.THAMRIN - DEPAN YP.SUTOMO",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.KEJAKSAAN - DEPAN KANTOR KPU MEDAN",
+        "area" => "KEJAKSAAN - DEPAN KANTOR KPU MEDAN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.PUTRI HIJAU H.M YAMIN ( DPN BRI )",
+        "area" => "PUTRI HIJAU - HM.YAMIN ( DPN BRI )",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.KL. Yos Sudarso depan YP. Dharma Wangsa",
+        "area" => "YOSUDARSO - DEPAN UNIVERSITAS DARMAWANGSA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.SUTOMO - DEPAN TUGU KB",
+        "area" => "SUTOMO - DEPAN TAMAN TUGU KB",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS Jl.PUTRI HIJAU - MERAK JINGGA",
+        "area" => "PERINTIS KEMERDEKAAN - TIMOR",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.JAWA (DEPAN CENTRE POINT)",
+        "area" => "JAWA (DEPAN CENTRE POINT)",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.SUTOMO - VETERAN (TUGU APOLO)",
+        "area" => "SUTOMO - VETERAN (TUGU APOLO)",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.GATOT SUBROTO - NIBUNG",
+        "area" => "GATOT SUBROTO - NIBUNG",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.RADEN SALEH ( DEPAN KANTOR WALIKOTA )",
+        "area" => "RADEN SALEH ( DEPAN KANTOR WALIKOTA )",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.ZAINUL ARIFIN ( SUN PLAZA )",
+        "area" => "ZAINUL ARIFIN ( SUN PLAZA )",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.IMAM BONJOL",
+        "area" => "IMAM BONJOL - DEPAN SUPERMARKET BERASTAGI",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.DIPONEGORO ( DEPAN MESJID AGUNG )",
+        "area" => "DIPONEGORO( DEPAN MESJID AGUNG )",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.MT HARYONO - JL.BINTANG",
+        "area" => "MT.HARYONO - BINTANG",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS SIMPANG LIMUN - SM.RAJA",
+        "area" => "SIMPANG LIMUN - SM.RAJA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS DEPAN TERMINAL AMPLAS",
+        "area" => "AMPLAS (DEPAN TERMINAL AMPLAS)",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS DEPAN KOKI SUNDA",
+        "area" => "S.PARMAN - HASANUDDIN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS DEPAN HOTEL CAMRIDE",
+        "area" => "S.PARMAN - GAJAH MADA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS TUGU GURU PATIMPUS",
+        "area" => "GURU PATIMPUS - KAPTEN MAULANA LUBIS",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS Simpang MERAK JINGGA - HM.YAMIN",
+        "area" => "MERAK JINGGA - HM.YAMIN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS Simpang MERAK JINGGA - PERINTIS",
+        "area" => "MERAK JINGGA - PERINTIS KEMERDEKAAN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL. HM.SAID - PERINTIS",
+        "area" => "JL.HM.SAID - PERINTIS KEMERDEKAAN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL. THAMRIN - PERINTIS",
+        "area" => "MH.THMARIN - PERINTIS KEMERDEKAAN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS Simpang Celinicing",
+        "area" => "YOSUDARSO - CELINCING",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS Simp.Karya - Amir Hamzah",
+        "area" => "KARYA - AMIR HAMZAH",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS Tugu Guru Adipura",
+        "area" => "ADAM MALIK - AMIR HAMZAH",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS Pajak Hindu",
+        "area" => "PERDANA - PAJAK HINDU",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS BUDARAN POLONIA",
+        "area" => "BUNDARAN POLONIA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS BUNDARAN HOTEL PARDEDE",
+        "area" => "BUNDARAN HOTEL PARDEDE",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.SM.RAJA (Depan Ramayana)",
+        "area" => "SM.RAJA - DEPAN RAMAYANA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.JUANDA - SAMANHUDI",
+        "area" => "JUANDA - SAMANHUDI",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.KAPTEN MUSLIM (DEPAN MILENIUM)",
+        "area" => "KAPTEN MUSLIM - DEPAN PLAZA MILENIUM",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.GAJAH MADA - TAMAN GAJAH MADA",
+        "area" => "GAJAH MADA -DI.PENJAITAN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.STADION TELADAN - POLSEK MEDAN KOTA",
+        "area" => "STADION TELADAN - POLSEK MEDAN KOTA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.SUDIRMAN - JEMBATAN SUDRIAMAN",
+        "area" => "SUDIRMAN - JEMBATAN SUDRIAMAN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.IMAM BONJOL - CUT MUTIA",
+        "area" => "IMAM BONJOL - CUT MUTIA",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.IMAM BONJOL - CUT MUTIA",
+        "area" => "GATOT SUBROTO - JEMBATAN SEI ULAR",
+        "koordinat" => "",
+        ],
+        [
+        "nama" => "RUAS JL.GATOT SUBRORTO - DEPAN PRSU",
+        "area" => "GATOT SUBROTO - DEPAN PRSU",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.AHMAD YANI - DEPAN TIP TOP",
+        "area" => "AHMAD YANI - DEPAN TIP TOP",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.MONGONSIDI - PERHUBUNGUN (Depan KFC)",
+        "area" => "MONGONSIDI - PERHUBUNGUN",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.SUTOMO - ANI IDRUS (Perlintasan KA)",
+        "area" => "SUTOMO - ANI IDRUS",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.PALANG MERAH - MASJID",
+        "area" => "PALANG MERAH - MASJID",
+        "koordinat" => "",
+        "link_stream" => ""
+        ],
+        [
+        "nama" => "RUAS JL.PALANG MERAH - LISTRIK",
+        "area" => "PALANG MERAH - LISTRIK",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL.SEKIP - MERANTI",
+        "area" => "SEKIP - MERANTI",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL.DR.CIPTO - MASDULHAK",
+        "area" => "DR.CIPTO - MASDULHAK",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS DEPAN TAMAN AHMAD YANI",
+        "area" => "SUDIRMAN - DEPAN TAMAN AHMAD YANI",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL.GURU PATIMPUS - SEI DELI",
+        "area" => "GURU PATIMPUS - SEI DELI",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL.HM.JONI - GEDUNG ARCA",
+        "area" => "HM.JONI - GEDUNG ARCA",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL.PUTRI HIJAU - MERAK JINGGA",
+        "area" => "PUTRI HIJAU - MERAK JINGGA",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. YOS SUDARSO - ABD WAHAB ROKAN",
+        "area" => "YOSSUDARSO - ABD WAHAB ROKAN",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. STASIUN - BUKIT BARISAN (HALTE 1)",
+        "area" => "STASIUN - BUKIT BARISAN (HALTE 1)",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. STASIUN - BUKIT BARISAN (HALTE 2)",
+        "area" => "STASIUN - BUKIT BARISAN (HALTE 2)",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. STASIUN - PALANG MERAH",
+        "area" => "STASIUN - PALANG MERAH",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. RAMADSYAH - SUTOMO",
+        "area" => "RAHMADSYAH - SUTOMO",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. JAMIN GINTING - PASAR INDUK",
+        "area" => "JAMIN GINTING - PASAR INDUK",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. GATOT SUBROTO(Tugu Batas Kota) - PINANG BARIS",
+        "area" => "GATOT SUBROTO - BATAS KOTA",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. GATOT SUBROTO - PATRIOT",
+        "area" => "GATOT SUBROTO - PATRIOT",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. KAKATAU - BUKIT BARISAN 1",
+        "area" => "KAKATAU - BUKIT BARISAN 1",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. HM.YAMIN - T.IBRAHIM UMAR",
+        "area" => "HM.YAMIN - T.IBRAHIM UMAR",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. KEPRIBADIAN - SIMP MAYOR",
+        "area" => "KEPRIBADIAN - SIMP MAYOR",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "RUAS JL. BAMBU 1",
+        "area" => "BAMBU - SUTOMO",
+        "koordinat" => "",
+        "link_stream" => ""
+		],
+		[
+        "nama" => "SIMPANG AR HAKIM - HALAT",
+        "area" => "AR.HAKIM - HALAT",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "SIMPANG HM JHONI - GEDUNG ARCA",
+        "area" => "HM.JHONI - GEDUNG ARCA",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "SIMPANG HM.JONI - PASAR MERAH",
+        "area" => "HM.JONI - BAHAGIA",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "SIMPANG SETIA BUDI - SEISERAYU",
+        "area" => "SETIA BUDI - SEISERAYU",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "SIMPANG SETIA BUDI - SEI BLUTU",
+        "area" => "SETIA BUDI - SEI BLUTU",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "SIMPANG YOSUDARSO - PERTEMPURAN 2",
+        "area" => "YOSUDARSO - PERTEMPURAN 2",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "SIMPANG SETIA BUDI - KOMPLEK TASBIH",
+        "area" => "SETIA BUDI - KOMPLEK TASBIH",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "GENANGAN AIR GATOT SUBROTO - DEPAN PLAZA FAIR",
+        "area" => "GATOT SUBROTO - DEPAN PLAZA FAIR",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "PEMANTAU SUNGAI BABURA KPT.MAULANA LUBIS",
+        "area" => "SUNGAI BABURA KPT.MAULANA LUBIS",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "JEMBATAN KPT.MAULANA LUBIS",
+        "area" => "JEMBATAN KPT.MAULANA LUBIS",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "PEMANTAU SUNGAI DELI SUPRAPTO",
+        "area" => "SUNGAI DELI SUPRAPTO",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "JEMBATAN SUPRAPTO",
+        "area" => "JEMBATAN SUPRAPTO",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "DPN KANTOR FASSI",
+        "area" => "RUAS LETDA SUJONO",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "DPN PT. BRENGGA RUA INDONESIA",
+        "area" => "RUAS LETDA SUJONO",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "DPN STIKES SEHAT MEDAN",
+        "area" => "RUAS LETDA SUJONO",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "DPN MR DIY",
+        "area" => "RUAS LETDA SUJONO",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "DPN SMK PRAYATNA",
+        "area" => "RUAS LETDA SUJONO",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "DPN SPBU",
+        "area" => "RUAS LETDA SUJONO",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "RUAS JL. HM YAMIN - JL. TIMUR",
+        "area" => "JL. HM YAMIN - JL. TIMUR",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "RUAS JL. GINTING DEPAN PAJUS",
+        "area" => "RUAS JAMIN GINTING",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "RUAS JL. ISKANDAR MUDA DEPAN RS VINA ESTETICA",
+        "area" => "RUAS ISKANDAR MUDA",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "RUAS JL. ISKANDAR MUDA - SP PRINGGAN",
+        "area" => "RUAS ISKANDAR MUDA",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "SIMPANG MUKHTAR BASRI - KARANTINA",
+        "area" => "MUKHTAR BASRI - KARANTINA",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "SIMPANG GATSU - ASRAMA 2",
+        "area" => "GATSU - ASRAMA 2",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "SIMPANG AH NASUTION - KARYA JAYA",
+        "area" => "AH NASUTION - KARYA JAYA",
+        "koordinat" => "",
+        "link_stream" => ""
+    ],
+    [
+        "nama" => "SIMPANG SUNGGAL - SEI BATANG HARI",
+        "area" => "SUNGGAL -SEI BATANG HARI",
+        "koordinat" => "",
+        "link_stream" => ""
+    ]
