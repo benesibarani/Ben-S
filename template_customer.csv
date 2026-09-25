@@ -1,0 +1,2 @@
+id_customer,nama_toko,tipe_customer,salesman,alamat,kunjungan,hari,sales_district,longitude,latitude,status_aktif
+3000000001,CONTOH TOKO,REGULER,NAMA SALESMAN,JALAN CONTOH,Weekly,Senin,MEDAN KOTA,98.6722,3.5952,Aktif
