@@ -3,7 +3,9 @@
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
-require_once 'config.php'; 
+require_once 'config.php';
+require_once 'auth.php';
+rts_require_login();
 require_once 'header.php'; 
 
 // --- 1. LOGIC AUTO CLEANUP ---
@@ -21,13 +23,77 @@ if ($res_gsp) {
 $conn->query("DELETE FROM pengajuan_gsp WHERE status_approval != 'Pending' AND tanggal_request < '$cleanup_date'");
 
 // --- 2. LOGIC FILTER & ROLE ---
-$is_admin = ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'super_admin');
-$my_email = $_SESSION['email'];
-$my_name  = $_SESSION['nama'];
+$role_login = strtoupper((string)($_SESSION['role'] ?? ''));
+$can_approve = in_array($role_login, ['ADMIN', 'ASS'], true);
+$can_view_all = in_array($role_login, ['ADMIN', 'ASS', 'WSS', 'SMST'], true);
+$my_email = $_SESSION['email'] ?? '';
+$my_name  = $_SESSION['nama'] ?? '';
 
 $where_toko = []; $where_gsp = [];
 
-if (!$is_admin) {
+// Terapkan pengajuan customer ke Master Customer setelah disetujui.
+function apply_gsp_request(mysqli $conn, int $id): bool {
+    $stmt = $conn->prepare('SELECT * FROM pengajuan_gsp WHERE id=? AND status_approval="Pending" LIMIT 1');
+    $stmt->bind_param('i', $id); $stmt->execute();
+    $request = $stmt->get_result()->fetch_assoc();
+    if (!$request) return false;
+    $jenis = strtoupper(trim($request['jenis_request'] ?? 'PENAMBAHAN'));
+    $customer_id = ($jenis === 'PENGHAPUSAN') ? $request['toko_lama_id'] : $request['toko_baru_id'];
+    if (trim($customer_id) === '') return false;
+    $tipe = ($jenis === 'PENGHAPUSAN') ? 'REGULER' : 'GSP';
+    $update = $conn->prepare('UPDATE master_toko SET tipe_customer=? WHERE id_customer=?');
+    $update->bind_param('ss', $tipe, $customer_id);
+    return $update->execute() && $update->affected_rows >= 0;
+}
+
+function apply_customer_request(mysqli $conn, int $id): bool {
+    $stmt = $conn->prepare('SELECT * FROM pengajuan_sales WHERE id=? AND status_approval="Pending" LIMIT 1');
+    $stmt->bind_param('i', $id); $stmt->execute();
+    $request = $stmt->get_result()->fetch_assoc();
+    if (!$request) return false;
+
+    $jenis = strtolower(trim($request['jenis_request'] ?? ''));
+    $tipe = strtoupper(trim($request['tipe_baru'] ?? 'REGULER'));
+    if (!in_array($tipe, ['REGULER', 'GSP'], true)) $tipe = 'REGULER';
+
+    if (in_array($jenis, ['tambah baru', 'tambah outlet', 'penambahan outlet'], true)) {
+        $insert = $conn->prepare('INSERT INTO master_toko (nama_toko, id_customer, tipe_customer, salesman, alamat, kunjungan, hari, sales_district, longitude, latitude, status_aktif) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "Aktif")');
+        $longitude = ''; $latitude = '';
+        $insert->bind_param('ssssssssss', $request['nama_toko_baru'], $request['id_customer'], $tipe, $request['salesman'], $request['alamat_baru'], $request['rute_kunjungan'], $request['visit_day_baru'], $request['sales_distric'], $longitude, $latitude);
+        return $insert->execute();
+    }
+
+    if (in_array($jenis, ['hapus toko', 'penghapusan outlet'], true)) {
+        $conn->begin_transaction();
+        try {
+            $find = $conn->prepare('SELECT * FROM master_toko WHERE id_customer=? LIMIT 1');
+            $find->bind_param('s', $request['id_customer']);
+            $find->execute();
+            $customer = $find->get_result()->fetch_assoc();
+            if (!$customer) throw new RuntimeException('Customer tidak ditemukan.');
+
+            $archive = $conn->prepare('INSERT INTO master_toko_deleted (original_id, id_customer, nama_toko, tipe_customer, salesman, alamat, kunjungan, hari, sales_district, longitude, latitude, status_aktif, alasan_penghapusan, dihapus_oleh) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            $deleted_by = $_SESSION['nama'] ?? 'SYSTEM';
+            $archive->bind_param('isssssssssssss', $customer['id'], $customer['id_customer'], $customer['nama_toko'], $customer['tipe_customer'], $customer['salesman'], $customer['alamat'], $customer['kunjungan'], $customer['hari'], $customer['sales_district'], $customer['longitude'], $customer['latitude'], $customer['status_aktif'], $request['alasan'], $deleted_by);
+            if (!$archive->execute()) throw new RuntimeException('Arsip customer gagal dibuat.');
+
+            $delete = $conn->prepare('DELETE FROM master_toko WHERE id_customer=?');
+            $delete->bind_param('s', $request['id_customer']);
+            if (!$delete->execute()) throw new RuntimeException('Customer gagal dihapus.');
+            $conn->commit();
+            return true;
+        } catch (Throwable $error) {
+            $conn->rollback();
+            return false;
+        }
+    }
+
+    $update = $conn->prepare('UPDATE master_toko SET nama_toko=?, alamat=?, tipe_customer=?, hari=?, sales_district=? WHERE id_customer=?');
+    $update->bind_param('ssssss', $request['nama_toko_baru'], $request['alamat_baru'], $tipe, $request['visit_day_baru'], $request['sales_distric'], $request['id_customer']);
+    return $update->execute();
+}
+
+if (!$can_view_all) {
     $where_toko[] = "sales_email = '$my_email'";
     $where_gsp[] = "sales_email = '$my_email'";
 }
@@ -51,20 +117,18 @@ $sql_gsp  = "SELECT *, 'GSP' as tipe_data FROM pengajuan_gsp " . (count($where_g
 // --- 3. EXPORT EXCEL ---
 if (isset($_GET['export_excel'])) {
     if (ob_get_length()) ob_end_clean();
-    $filename = "Laporan_Gabungan_" . date('Ymd_Hi') . ".xlsx";
-    $header = ['Tipe Data', 'Tanggal Request', 'Nama Salesman', 'Distrik', 'Jenis Request / GSP Lama', 'Detail / GSP Baru', 'ID Customer', 'Alamat', 'Status Approval'];
-    $data = [$header];
-
+    $filename = "Laporan_Gabungan_" . date('Ymd_Hi') . ".csv";
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    $out = fopen('php://output', 'w');
+    // BOM agar karakter Indonesia terbaca baik di Microsoft Excel.
+    fprintf($out, "\xEF\xBB\xBF");
+    fputcsv($out, ['Tipe Data', 'Tanggal Request', 'Nama Salesman', 'District', 'Jenis Request / GSP Lama', 'Detail / GSP Baru', 'ID Customer', 'Alamat', 'Status Approval', 'Diproses Oleh', 'Waktu Proses', 'Catatan']);
     $q1 = $conn->query($sql_toko);
-    while($r = $q1->fetch_assoc()) {
-        $data[] = ['Toko Reguler', $r['tanggal_request'], $r['salesman'], $r['sales_distric'], $r['jenis_request'], ($r['nama_toko_baru'] ?: $r['nama_toko_lama']), ($r['id_customer'] ?: '-'), ($r['alamat_baru'] ?: $r['alamat_lama']), $r['status_approval']];
-    }
+    while ($r = $q1->fetch_assoc()) fputcsv($out, ['Toko Reguler', $r['tanggal_request'], $r['salesman'], $r['sales_distric'], $r['jenis_request'], ($r['nama_toko_baru'] ?: $r['nama_toko_lama']), ($r['id_customer'] ?: '-'), ($r['alamat_baru'] ?: $r['alamat_lama']), $r['status_approval'], $r['processed_by'] ?? '', $r['processed_at'] ?? '', $r['approval_note'] ?? '']);
     $q2 = $conn->query($sql_gsp);
-    while($r = $q2->fetch_assoc()) {
-        $data[] = ['GSP', $r['tanggal_request'], $r['salesman'], $r['sales_district'], "Lama: " . $r['toko_lama_nama'], "Baru: " . $r['toko_baru_nama'], "Lama: " . $r['toko_lama_id'] . " / Baru: " . $r['toko_baru_id'], $r['alamat_lengkap'], $r['status_approval']];
-    }
-    $xlsx = SimpleXLSXGen::fromArray($data);
-    $xlsx->downloadAs($filename);
+    while ($r = $q2->fetch_assoc()) fputcsv($out, ['GSP', $r['tanggal_request'], $r['salesman'], $r['sales_district'], ($r['jenis_request'] ?? 'GSP'), ($r['toko_baru_nama'] ?: $r['toko_lama_nama']), ($r['toko_baru_id'] ?: $r['toko_lama_id']), $r['alamat_lengkap'], $r['status_approval'], $r['processed_by'] ?? '', $r['processed_at'] ?? '', $r['approval_note'] ?? '']);
+    fclose($out);
     exit();
 }
 
@@ -75,15 +139,31 @@ if (isset($_POST['action_type'])) {
     $act = $_POST['action_type']; 
     
     if ($act == 'delete') {
-        if (!$is_admin) {
+        if (!$can_view_all) {
             $check = $conn->query("SELECT id FROM $table WHERE id=$id AND sales_email='$my_email' AND status_approval='Pending'");
             if ($check->num_rows == 0) die("Akses Ditolak");
         }
         $conn->query("DELETE FROM $table WHERE id=$id");
         echo "<script>alert('Data Berhasil Dihapus'); window.location='inbox.php';</script>";
-    } elseif ($is_admin) {
+    } elseif ($can_approve) {
         $status = ($act == 'approve') ? 'Disetujui' : 'Ditolak';
-        $conn->query("UPDATE $table SET status_approval='$status' WHERE id=$id");
+        if ($status === 'Disetujui' && $table === 'pengajuan_sales' && !apply_customer_request($conn, $id)) {
+            die('Pengajuan tidak dapat diterapkan ke Master Customer. Periksa data pengajuan.');
+        }
+        if ($status === 'Disetujui' && $table === 'pengajuan_gsp' && !apply_gsp_request($conn, $id)) {
+            die('Pengajuan GSP tidak dapat diterapkan ke Master Customer. Periksa ID customer.');
+        }
+        $processed_by = $_SESSION['nama'] ?? ($_SESSION['username'] ?? 'SYSTEM');
+        $approval_note = trim($_POST['approval_note'] ?? '');
+        $audit = $conn->prepare("UPDATE $table SET status_approval=?, processed_by=?, processed_at=CURRENT_TIMESTAMP, approval_note=? WHERE id=?");
+        $audit->bind_param('sssi', $status, $processed_by, $approval_note, $id);
+        $audit->execute();
+        $owner_stmt = $conn->prepare("SELECT sales_email FROM $table WHERE id=? LIMIT 1");
+        $owner_stmt->bind_param('i', $id); $owner_stmt->execute();
+        $owner = $owner_stmt->get_result()->fetch_assoc();
+        if (!empty($owner['sales_email'])) {
+            rts_notify_email($conn, $owner['sales_email'], 'Status Pengajuan ' . $status, 'Pengajuan Anda diproses oleh ' . $processed_by . '. Catatan: ' . ($approval_note ?: '-'), $status === 'Disetujui' ? 'SUCCESS' : 'DANGER', $table, $id);
+        }
         
         $admin = $_SESSION['nama'];
         $detail = "Mengubah status ID $id ($table) menjadi $status";
@@ -93,7 +173,7 @@ if (isset($_POST['action_type'])) {
     }
 }
 // Logic Bulk
-if ($is_admin && isset($_POST['bulk_action']) && isset($_POST['req_ids'])) {
+if ($can_approve && isset($_POST['bulk_action']) && isset($_POST['req_ids'])) {
     $act = $_POST['bulk_action']; 
     $status = ($act == 'approve_all') ? 'Disetujui' : 'Ditolak';
     $count = 0;
@@ -101,7 +181,17 @@ if ($is_admin && isset($_POST['bulk_action']) && isset($_POST['req_ids'])) {
         list($id, $type) = explode(':', $val);
         $id = (int)$id;
         $table = ($type == 'GSP') ? 'pengajuan_gsp' : 'pengajuan_sales';
-        if($conn->query("UPDATE $table SET status_approval='$status' WHERE id=$id")) {
+        $applied = true;
+        if ($status === 'Disetujui' && $table === 'pengajuan_sales') {
+            $applied = apply_customer_request($conn, $id);
+        } elseif ($status === 'Disetujui' && $table === 'pengajuan_gsp') {
+            $applied = apply_gsp_request($conn, $id);
+        }
+        $processed_by = $_SESSION['nama'] ?? ($_SESSION['username'] ?? 'SYSTEM');
+        $approval_note = trim($_POST['approval_note'] ?? '');
+        $audit = $conn->prepare("UPDATE $table SET status_approval=?, processed_by=?, processed_at=CURRENT_TIMESTAMP, approval_note=? WHERE id=?");
+        $audit->bind_param('sssi', $status, $processed_by, $approval_note, $id);
+        if ($applied && $audit->execute()) {
             $count++;
             $detail = "Bulk $status ID $id ($type)";
             $conn->query("INSERT INTO riwayat_aksi (admin_name, action_type, request_detail) VALUES ('$my_name', '$status', '$detail')");
@@ -116,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_request'])) {
         $id = (int)$_POST['edit_id'];
         // Cek Security
-        if (!$is_admin) {
+        if (!$can_view_all) {
             $check = $conn->query("SELECT id FROM pengajuan_sales WHERE id=$id AND sales_email='$my_email' AND status_approval='Pending'");
             if ($check->num_rows == 0) { echo "<script>alert('Akses Ditolak'); window.location='inbox.php';</script>"; exit(); }
         }
@@ -126,7 +216,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (isset($_POST['update_gsp'])) {
         $id = (int)$_POST['edit_gsp_id'];
-        if (!$is_admin) {
+        if (!$can_view_all) {
             $check = $conn->query("SELECT id FROM pengajuan_gsp WHERE id=$id AND sales_email='$my_email' AND status_approval='Pending'");
             if ($check->num_rows == 0) { echo "<script>alert('Akses Ditolak'); window.location='inbox.php';</script>"; exit(); }
         }
@@ -143,6 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!-- MODAL DETAIL GSP (DENGAN LATITUDE/LONGITUDE) -->
 <div class="modal fade" id="gspDetailModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header bg-light"><h5 class="modal-title fw-bold">Detail Pengajuan GSP</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="row"><div class="col-md-6 mb-3"><label class="small text-muted fw-bold">SALESMAN</label><div id="d_salesman" class="fw-bold text-primary"></div></div><div class="col-md-6 mb-3"><label class="small text-muted fw-bold">DISTRICT</label><div id="d_district"></div></div><div class="col-md-6"><div class="p-2 border rounded bg-light mb-2"><small class="text-danger fw-bold d-block">GSP LAMA</small><div id="d_toko_lama"></div><small id="d_id_lama" class="text-muted"></small></div></div><div class="col-md-6"><div class="p-2 border rounded bg-light mb-2"><small class="text-success fw-bold d-block">GSP BARU</small><div id="d_toko_baru"></div><small id="d_id_baru" class="text-muted"></small></div></div><div class="col-12 mt-2"><table class="table table-sm table-borderless"><tr><td width="30%" class="text-muted">Alamat</td><td id="d_alamat"></td></tr><tr><td class="text-muted">PIC</td><td id="d_pic"></td></tr><tr><td class="text-muted">No HP</td><td id="d_hp"></td></tr><tr><td class="text-muted">Koordinat</td><td><a href="#" id="d_maps" target="_blank" class="text-decoration-none"><i class="fas fa-map-marker-alt"></i> Buka Maps</a></td></tr>
+<tr><td class="text-muted">Status Approval</td><td id="d_status"></td></tr><tr><td class="text-muted">Diproses Oleh</td><td id="d_processed"></td></tr><tr><td class="text-muted">Catatan</td><td id="d_note"></td></tr>
 <!-- TAMBAHAN BARU: LATITUDE & LONGITUDE -->
 <tr><td class="text-muted">Latitude</td><td id="d_lat" class="fw-bold text-dark"></td></tr>
 <tr><td class="text-muted">Longitude</td><td id="d_long" class="fw-bold text-dark"></td></tr>
@@ -162,8 +253,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-inbox me-2"></i> Inbox Semua Pengajuan</h5>
-            <?php if($is_admin): ?>
-            <a href="?export_excel=true&<?php echo http_build_query($_GET); ?>" class="btn btn-success btn-sm"><i class="fas fa-file-excel me-1"></i> Export Excel (.xlsx)</a>
+            <?php if($can_approve): ?>
+            <a href="?export_excel=true&<?php echo http_build_query($_GET); ?>" class="btn btn-success btn-sm"><i class="fas fa-file-excel me-1"></i> Export Excel (.csv)</a>
             <?php endif; ?>
         </div>
         <div class="card-body bg-light">
@@ -182,7 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="POST" id="bulkForm">
         <div class="card-body p-0 table-responsive">
             
-            <?php if($is_admin): ?>
+            <?php if($can_approve): ?>
             <div class="p-2 bg-light border-bottom d-flex gap-2">
                 <small class="text-muted align-self-center me-2"><i class="fas fa-level-up-alt fa-rotate-90"></i> Yang ditandai:</small>
                 <button type="submit" name="bulk_action" value="approve_all" class="btn btn-sm btn-success" onclick="return confirm('Setujui semua?')">Setujui</button>
@@ -193,8 +284,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <table class="table table-hover align-middle mb-0 text-nowrap small">
                 <thead class="table-light">
                     <tr>
-                        <?php if($is_admin): ?><th width="1"><input type="checkbox" id="checkAll"></th><?php endif; ?>
-                        <th>Tanggal</th><th>Tipe</th><th>Salesman</th><th>Detail Pengajuan</th><th>Status</th><th class="text-end">Aksi</th>
+                        <?php if($can_approve): ?><th width="1"><input type="checkbox" id="checkAll"></th><?php endif; ?>
+                        <th>Tanggal</th><th>Tipe</th><th>Salesman</th><th>Detail Pengajuan</th><th>Status</th><th>Diproses</th><th class="text-end">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -223,7 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (count($data_gabungan) > 0): foreach ($data_gabungan as $row):
                     ?>
                     <tr>
-                        <?php if($is_admin): ?>
+                        <?php if($can_approve): ?>
                         <td><?php if($row['status_approval'] == 'Pending'): ?><input type="checkbox" name="req_ids[]" value="<?= $row['id'] ?>:<?= $row['data_type'] ?>" class="row-check"><?php endif; ?></td>
                         <?php endif; ?>
                         
@@ -232,13 +323,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <td><div class="fw-bold"><?= $row['salesman'] ?></div><div class="text-muted"><?= $row['sales_district'] ?? $row['sales_distric'] ?></div></td>
                         <td><div class="fw-bold text-primary"><?= $row['judul'] ?></div><div><?= $row['detail'] ?></div></td>
                         <td><span class="badge bg-<?= $row['status_approval']=='Disetujui'?'success':($row['status_approval']=='Ditolak'?'danger':'warning') ?>"><?= $row['status_approval'] ?></span></td>
+                        <td><?php if (!empty($row['processed_by'])): ?><span class="fw-semibold"><?= htmlspecialchars($row['processed_by']) ?></span><br><small class="text-muted"><?= !empty($row['processed_at']) ? date('d/m/y H:i', strtotime($row['processed_at'])) : '' ?></small><?php if (!empty($row['approval_note'])): ?><br><small title="<?= htmlspecialchars($row['approval_note']) ?>" class="text-muted"><i class="fas fa-comment"></i> <?= htmlspecialchars(mb_strimwidth($row['approval_note'], 0, 35, '...')) ?></small><?php endif; ?><?php else: ?><span class="text-muted">Belum diproses</span><?php endif; ?></td>
                         <td class="text-end">
                             <?php if($row['data_type'] == 'GSP'): ?>
                                 <button type="button" onclick='viewGSP(<?= json_encode($row, JSON_HEX_APOS|JSON_HEX_QUOT) ?>)' class="btn btn-xs btn-outline-info" title="Detail"><i class="fas fa-eye"></i></button>
                             <?php endif; ?>
 
                             <!-- TOMBOL EDIT -->
-                            <?php if($is_admin || $row['status_approval'] == 'Pending'): ?>
+                            <?php if($can_approve || $row['status_approval'] == 'Pending'): ?>
                                 <?php if($row['data_type'] == 'GSP'): ?>
                                     <button type="button" onclick='editGSPData(<?= json_encode($row, JSON_HEX_APOS|JSON_HEX_QUOT) ?>)' class="btn btn-xs btn-warning text-dark"><i class="fas fa-pencil-alt"></i></button>
                                 <?php else: ?>
@@ -247,10 +339,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <?php endif; ?>
 
                             <!-- ACTION ADMIN -->
-                            <?php if($is_admin): ?>
+                            <?php if($can_approve): ?>
                                 <?php if($row['status_approval'] == 'Pending'): ?>
-                                <button type="submit" form="singleAct<?= $row['data_type'].$row['id'] ?>" name="action_type" value="approve" class="btn btn-xs btn-success" title="Setujui">✔</button>
-                                <button type="submit" form="singleAct<?= $row['data_type'].$row['id'] ?>" name="action_type" value="reject" class="btn btn-xs btn-danger" title="Tolak">✖</button>
+                                <button type="submit" form="singleAct<?= $row['data_type'].$row['id'] ?>" name="action_type" value="approve" class="btn btn-xs btn-success" title="Setujui" onclick="return askApprovalNote(this.form, 'Setujui')">✔</button>
+                                <button type="submit" form="singleAct<?= $row['data_type'].$row['id'] ?>" name="action_type" value="reject" class="btn btn-xs btn-danger" title="Tolak" onclick="return askApprovalNote(this.form, 'Ditolak')">✖</button>
                                 <?php endif; ?>
                                 <button type="submit" form="singleAct<?= $row['data_type'].$row['id'] ?>" name="action_type" value="delete" class="btn btn-xs btn-dark" title="Hapus" onclick="return confirm('Hapus Permanen?')"><i class="fas fa-trash"></i></button>
                             
@@ -275,6 +367,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
+function askApprovalNote(form, action) {
+    const note = prompt('Catatan ' + action + ' (opsional):', '');
+    if (note === null) return false;
+    let input = form.querySelector('input[name="approval_note"]');
+    if (!input) { input = document.createElement('input'); input.type = 'hidden'; input.name = 'approval_note'; form.appendChild(input); }
+    input.value = note;
+    return true;
+}
+
 document.getElementById('checkAll')?.addEventListener('change', function() {
     var checkboxes = document.querySelectorAll('.row-check');
     for (var checkbox of checkboxes) { checkbox.checked = this.checked; }
@@ -288,6 +389,9 @@ function viewGSP(data) {
     document.getElementById('d_alamat').innerText = data.alamat_lengkap;
     document.getElementById('d_pic').innerText = data.pic_nama;
     document.getElementById('d_hp').innerText = data.nomor_hp;
+    document.getElementById('d_status').innerText = data.status_approval || 'Pending';
+    document.getElementById('d_processed').innerText = data.processed_by ? (data.processed_by + ' - ' + (data.processed_at || '')) : 'Belum diproses';
+    document.getElementById('d_note').innerText = data.approval_note || '-';
     document.getElementById('d_maps').href = "https://www.google.com/maps/search/?api=1&query=" + data.koordinat;
     
     // --- FITUR BARU: AUTO SPLIT KOORDINAT ---
