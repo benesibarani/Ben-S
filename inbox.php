@@ -2,6 +2,7 @@
 // 1. Matikan Error Display agar tidak merusak file download
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
+ob_start();
 
 require_once 'config.php';
 require_once 'auth.php';
@@ -117,19 +118,20 @@ $sql_gsp  = "SELECT *, 'GSP' as tipe_data FROM pengajuan_gsp " . (count($where_g
 // --- 3. EXPORT EXCEL ---
 if (isset($_GET['export_excel'])) {
     if (ob_get_length()) ob_end_clean();
-    $filename = "Laporan_Gabungan_" . date('Ymd_Hi') . ".csv";
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    $out = fopen('php://output', 'w');
-    // BOM agar karakter Indonesia terbaca baik di Microsoft Excel.
-    fprintf($out, "\xEF\xBB\xBF");
-    fputcsv($out, ['Tipe Data', 'Tanggal Request', 'Nama Salesman', 'District', 'Jenis Request / GSP Lama', 'Detail / GSP Baru', 'ID Customer', 'Alamat', 'Status Approval', 'Diproses Oleh', 'Waktu Proses', 'Catatan']);
-    $q1 = $conn->query($sql_toko);
-    while ($r = $q1->fetch_assoc()) fputcsv($out, ['Toko Reguler', $r['tanggal_request'], $r['salesman'], $r['sales_distric'], $r['jenis_request'], ($r['nama_toko_baru'] ?: $r['nama_toko_lama']), ($r['id_customer'] ?: '-'), ($r['alamat_baru'] ?: $r['alamat_lama']), $r['status_approval'], $r['processed_by'] ?? '', $r['processed_at'] ?? '', $r['approval_note'] ?? '']);
-    $q2 = $conn->query($sql_gsp);
-    while ($r = $q2->fetch_assoc()) fputcsv($out, ['GSP', $r['tanggal_request'], $r['salesman'], $r['sales_district'], ($r['jenis_request'] ?? 'GSP'), ($r['toko_baru_nama'] ?: $r['toko_lama_nama']), ($r['toko_baru_id'] ?: $r['toko_lama_id']), $r['alamat_lengkap'], $r['status_approval'], $r['processed_by'] ?? '', $r['processed_at'] ?? '', $r['approval_note'] ?? '']);
-    fclose($out);
-    exit();
+    $rows = [['Tipe Data','Tanggal Request','Nama Salesman','District','Jenis Request / GSP Lama','Detail / GSP Baru','ID Customer','Alamat','Status Approval','Diproses Oleh','Waktu Proses','Catatan']];
+    $q1=$conn->query($sql_toko); while($r=$q1->fetch_assoc()) $rows[]=['Toko Reguler',$r['tanggal_request'],$r['salesman'],$r['sales_distric'],$r['jenis_request'],($r['nama_toko_baru']?:$r['nama_toko_lama']),($r['id_customer']?:'-'),($r['alamat_baru']?:$r['alamat_lama']),$r['status_approval'],$r['processed_by']??'',$r['processed_at']??'',$r['approval_note']??''];
+    $q2=$conn->query($sql_gsp); while($r=$q2->fetch_assoc()) $rows[]=['GSP',$r['tanggal_request'],$r['salesman'],$r['sales_district'],($r['jenis_request']??'GSP'),($r['toko_baru_nama']?:$r['toko_lama_nama']),($r['toko_baru_id']?:$r['toko_lama_id']),$r['alamat_lengkap'],$r['status_approval'],$r['processed_by']??'',$r['processed_at']??'',$r['approval_note']??''];
+    if (!class_exists('ZipArchive')) { http_response_code(500); exit('Fitur XLSX membutuhkan ekstensi PHP ZipArchive pada hosting.'); }
+    $tmp=sys_get_temp_dir().'/rts_xlsx_'.bin2hex(random_bytes(4)); mkdir($tmp.'/xl/worksheets',0755,true); mkdir($tmp.'/_rels',0755,true);
+    $esc=fn($v)=>htmlspecialchars((string)$v,ENT_XML1|ENT_QUOTES,'UTF-8'); $sheet='';
+    foreach($rows as $ri=>$row){$sheet.='<row r="'.($ri+1).'">';foreach($row as $ci=>$val){$col='';$n=$ci+1;while($n){$n--; $col=chr(65+$n%26).$col;$n=intdiv($n,26);} $sheet.='<c r="'.$col.($ri+1).'" t="inlineStr"><is><t>'.$esc($val).'</t></is></c>';} $sheet.='</row>';}
+    file_put_contents($tmp.'/xl/worksheets/sheet1.xml','<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'.$sheet.'</sheetData></worksheet>');
+    file_put_contents($tmp.'/xl/workbook.xml','<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Pengajuan" sheetId="1" r:id="rId1"/></sheets></workbook>');
+    file_put_contents($tmp.'/xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>');
+    file_put_contents($tmp.'/_rels/.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+    file_put_contents($tmp.'/ [Content_Types].xml','');
+    file_put_contents($tmp.'/[Content_Types].xml','<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>');
+    $zip=new ZipArchive();$file=$tmp.'.xlsx';$zip->open($file,ZipArchive::CREATE);foreach([$tmp.'/xl/worksheets/sheet1.xml',''.$tmp.'/xl/workbook.xml',$tmp.'/xl/_rels/workbook.xml.rels',$tmp.'/_rels/.rels',$tmp.'/[Content_Types].xml'] as $f)$zip->addFile($f,str_replace($tmp.'/','',$f));$zip->close();header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');header('Content-Disposition: attachment; filename="Laporan_Pengajuan_'.date('Ymd_His').'.xlsx"');readfile($file);exit;
 }
 
 // --- 4. LOGIC ACTIONS ---
