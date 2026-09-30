@@ -12,11 +12,13 @@ UPDATE_DI_DALAM_APLIKASI.txt - notifikasi UPDATE -> unduh di dalam aplikasi ->
 
   1. MainActivity.kt  (BARU) - unduh + buka layar Pasang dari dalam aplikasi
      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/android_MainActivity.kt
-  2. file_paths.xml   (BARU) - daftar folder untuk aplikasi pemasang Android
+  2. RtsPenerimaPembaruan.kt (BARU) - membuka aplikasi sesudah pembaruan
+     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/android_RtsPenerimaPembaruan.kt
+  3. file_paths.xml   (BARU) - daftar folder untuk aplikasi pemasang Android
      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/android_file_paths.xml
-  3. android_manifest_tambahan.xml - + izin pemasangan + <provider>
+  4. android_manifest_tambahan.xml - + izin pemasangan + <provider> + <receiver>
      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/android_manifest_tambahan.xml
-  4. main.dart (penanda RTS-2026-10-01-9)
+  5. main.dart (penanda RTS-2026-10-01-9)
      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
 
   Paling mudah: jalankan LANGKAH1_PASANG_SEMUA.ps1 dari RTS_PANEL_PUTARAN_7.zip

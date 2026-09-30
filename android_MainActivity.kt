@@ -23,9 +23,16 @@ package com.example.rts_panel_app
  *                  tidak terputus walau layar HP dimatikan, dan TIDAK
  *                  memerlukan izin penyimpanan (berkas disimpan pada folder
  *                  khusus aplikasi).
- *     2. KEMAJUAN- aplikasi (bagian Dart) menampilkan persen unduhan.
+ *     2. KEMAJUAN- aplikasi menampilkan persen unduhan, dan pemberitahuan
+ *                  Android juga memuat bilah kemajuan.
  *     3. PASANG  - begitu unduhan selesai, layar "Pasang" Android dibuka
- *                  sendiri oleh aplikasi. Petugas cukup menekan Pasang.
+ *                  SENDIRI oleh aplikasi - walaupun kotak kemajuan sudah
+ *                  ditutup petugas, sebab pemeriksa kemajuan dijalankan dari
+ *                  bagian Android ini. Petugas cukup menekan PASANG sekali.
+ *     4. TERBUKA - sesudah pemasangan selesai, aplikasi berusaha membuka
+ *                  dirinya sendiri lewat RtsPenerimaPembaruan.kt. Bila Android
+ *                  menolak (aturan keamanan Android 10 ke atas), petugas cukup
+ *                  menekan tombol BUKA pada layar pemasangan.
  *
  *  IZIN YANG DIPERLUKAN (sekali saja untuk seterusnya)
  *  ---------------------------------------------------
@@ -39,6 +46,13 @@ package com.example.rts_panel_app
  *  Bila berkas ini TIDAK dipasang (proyek masih memakai MainActivity lama),
  *  aplikasi tetap berjalan seperti biasa: tombol UPDATE memakai cara lama,
  *  yaitu membuka peramban (Chrome). Jadi tidak ada yang rusak.
+ *
+ *  BERKAS YANG BERKAITAN
+ *  --------------------
+ *    RtsPenerimaPembaruan.kt  - membuka aplikasi sesudah pembaruan terpasang
+ *    file_paths.xml           - daftar folder untuk aplikasi pemasang Android
+ *    AndroidManifest.xml      - izin REQUEST_INSTALL_PACKAGES + <provider>
+ *                               + <receiver> untuk pembaruan
  * ============================================================================
  */
 
@@ -48,6 +62,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
@@ -72,6 +88,30 @@ class MainActivity : FlutterActivity() {
 
     /** Bernilai true bila layar Pasang sudah pernah dibuka untuk unduhan ini. */
     private var sudahMemasang = false
+
+    /** Pengatur waktu untuk memeriksa kemajuan unduhan secara berkala. */
+    private val penjadwal = Handler(Looper.getMainLooper())
+
+    /**
+     * Pemeriksa kemajuan unduhan.
+     *
+     * Berjalan sendiri selama aplikasi hidup, sehingga layar "Pasang" tetap
+     * terbuka OTOMATIS begitu unduhan selesai - walau petugas menekan
+     * SEMBUNYIKAN pada kotak kemajuan, atau berpindah ke menu lain.
+     */
+    private val pemantau = object : Runnable {
+        override fun run() {
+            if (idUnduhan <= 0L) return
+
+            val keadaan = keadaanUnduhan()
+            val status = keadaan["status"]?.toString() ?: ""
+
+            if (status == "DIMULAI" || status == "MENGUNDUH") {
+                penjadwal.postDelayed(this, 700L)
+            }
+            // SELESAI / GAGAL / IZIN_DIPERLUKAN / TIDAK ADA: pemeriksaan berhenti.
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -169,7 +209,33 @@ class MainActivity : FlutterActivity() {
             return petaGagal("Unduhan tidak dapat dimulai.")
         }
 
+        // Pemeriksa kemajuan dijalankan sendiri oleh bagian Android. Dengan
+        // begitu layar Pasang dapat terbuka otomatis walaupun kotak kemajuan
+        // pada aplikasi sudah ditutup oleh petugas.
+        penjadwal.removeCallbacks(pemantau)
+        penjadwal.postDelayed(pemantau, 700L)
+
         return peta("status" to "DIMULAI", "pesan" to "Unduhan dimulai.")
+    }
+
+    /**
+     * Sesudah petugas menghidupkan izin pemasangan pada Pengaturan Android dan
+     * kembali ke aplikasi, pemeriksaan dilanjutkan supaya layar Pasang langsung
+     * terbuka tanpa menekan PERBARUI SEKARANG lagi.
+     */
+    override fun onResume() {
+        super.onResume()
+
+        if (idUnduhan > 0L && !sudahMemasang) {
+            penjadwal.removeCallbacks(pemantau)
+            penjadwal.postDelayed(pemantau, 400L)
+        }
+    }
+
+    override fun onDestroy() {
+        penjadwal.removeCallbacks(pemantau)
+
+        super.onDestroy()
     }
 
     /* ---------------------------------------------------------------------- */

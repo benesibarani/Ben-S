@@ -114,6 +114,7 @@ $berkasPubspec = Join-Path $folderAplikasi 'pubspec.yaml'
 $berkasManifestPanduan = Join-Path $folderAplikasi 'android_manifest_tambahan.xml'
 $berkasMainActivity = Join-Path $folderAplikasi 'MainActivity.kt'
 $berkasFilePaths = Join-Path $folderAplikasi 'file_paths.xml'
+$berkasPenerima = Join-Path $folderAplikasi 'RtsPenerimaPembaruan.kt'
 
 Baik 'Berkas aplikasi dari paket ditemukan.'
 
@@ -320,6 +321,17 @@ if (-not (Test-Path $berkasMainActivity) -or -not (Test-Path $berkasFilePaths)) 
     Simpan-TanpaBom (Join-Path $folderTujuanMain 'MainActivity.kt') $isiMain
     Baik 'MainActivity.kt dipasang - pembaruan dapat diunduh & dipasang dari aplikasi.'
 
+    # --- 1b) RtsPenerimaPembaruan.kt (membuka aplikasi sesudah pembaruan) ----
+    if (Test-Path $berkasPenerima) {
+        $isiPenerima = Get-Content $berkasPenerima -Raw
+        $isiPenerima = [regex]::Replace($isiPenerima, '(?m)^package\s+[A-Za-z0-9_.]+', ('package ' + $pakej), 1)
+        Simpan-TanpaBom (Join-Path $folderTujuanMain 'RtsPenerimaPembaruan.kt') $isiPenerima
+        Baik 'RtsPenerimaPembaruan.kt dipasang - aplikasi berusaha terbuka sendiri sesudah pembaruan.'
+    } else {
+        Awas 'RtsPenerimaPembaruan.kt tidak ditemukan di folder paket.'
+        Info 'Pembaruan tetap bekerja; hanya pembukaan otomatis yang tidak ada.'
+    }
+
     # --- 2) file_paths.xml ---------------------------------------------------
     $folderXml = Join-Path $folderProyek 'android\app\src\main\res\xml'
 
@@ -349,6 +361,24 @@ if (-not (Test-Path $berkasMainActivity) -or -not (Test-Path $berkasFilePaths)) 
             Info 'Izin REQUEST_INSTALL_PACKAGES ditambahkan.'
         }
 
+        if ($isiMan -match 'RtsPenerimaPembaruan') {
+            Baik 'Bagian <receiver> pembaruan sudah ada.'
+        } elseif ($isiMan -match '</application>') {
+            $penerima = @'
+        <receiver
+            android:name=".RtsPenerimaPembaruan"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+'@
+            $isiMan = [regex]::Replace($isiMan, '(</application>)', ($penerima + '$1'), 1)
+            Info 'Bagian <receiver> pembaruan ditambahkan.'
+        }
+
         if ($isiMan -match 'rtsberkas') {
             Baik 'Bagian <provider> FileProvider sudah ada.'
         } elseif ($isiMan -match '<application[^>]*>') {
@@ -372,7 +402,14 @@ if (-not (Test-Path $berkasMainActivity) -or -not (Test-Path $berkasFilePaths)) 
 
         $cekBeres = Get-Content $jalurManifest -Raw
 
-        if (($cekBeres -match 'REQUEST_INSTALL_PACKAGES') -and ($cekBeres -match 'rtsberkas')) {
+        if ($cekBeres -match 'RtsPenerimaPembaruan') {
+            Baik 'Pembuka aplikasi sesudah pembaruan sudah terpasang pada AndroidManifest.xml.'
+        } else {
+            Awas 'Bagian <receiver> belum ada pada AndroidManifest.xml.'
+            Info 'Tambahkan manual dari android_manifest_tambahan.xml bagian 3.'
+        }
+
+        if (($cekBeres -match 'REQUEST_INSTALL_PACKAGES') -and ($cekBeres -match 'rtsberkas') -and ($cekBeres -match 'RtsPenerimaPembaruan')) {
             Baik 'AndroidManifest.xml siap untuk pembaruan di dalam aplikasi.'
         } else {
             Awas 'Sebagian penambahan pada AndroidManifest.xml belum berhasil.'

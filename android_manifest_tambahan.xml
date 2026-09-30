@@ -128,6 +128,33 @@ sebelumnya), TIDAK perlu ditambahkan lagi.
 
 Berkas yang berpasangan dengan bagian ini: android_file_paths.xml, yang harus
 disalin ke android\app\src\main\res\xml\file_paths.xml
+
+
+-------------------------------------------------------------------------------
+BAGIAN 3 - PEMBUKA APLIKASI SESUDAH PEMBARUAN (letaknya juga DI DALAM <application>)
+-------------------------------------------------------------------------------
+
+Kegunaannya: sesudah Android selesai memasang pembaruan, aplikasi berusaha
+membuka dirinya sendiri supaya petugas tidak perlu mencari ikonnya. Bila
+Android menolak (aturan Android 10 ke atas), petugas menerima pemberitahuan
+"Pembaruan RTS Panel Selesai" yang dapat ditekan untuk membuka aplikasi.
+
+Salinan baris siap tempel:
+
+    <receiver
+        android:name=".RtsPenerimaPembaruan"
+        android:exported="true"
+        android:enabled="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        </intent-filter>
+    </receiver>
+
+Baris itu diletakkan DI DALAM <application>, misalnya tepat sesudah bagian
+<provider> di atas.
+
+Berkas yang berpasangan: RtsPenerimaPembaruan.kt, disalin ke folder yang sama
+dengan MainActivity.kt.
 -->
 
 <!-- Salinan baris siap tempel (letakkan DI DALAM <application>) -->
@@ -141,4 +168,13 @@ disalin ke android\app\src\main\res\xml\file_paths.xml
         android:name="android.support.FILE_PROVIDER_PATHS"
         android:resource="@xml/file_paths" />
 </provider>
+
+<receiver
+    android:name=".RtsPenerimaPembaruan"
+    android:exported="true"
+    android:enabled="true">
+    <intent-filter>
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+    </intent-filter>
+</receiver>
 -->

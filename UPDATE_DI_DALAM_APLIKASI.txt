@@ -25,9 +25,41 @@
    Sesudah perubahan ini, alurnya menjadi:
        1. Notifikasi "Versi Baru RTS Panel Tersedia" muncul di layar HP
        2. Ketuk notifikasi -> muncul kotak pembaruan -> tekan PERBARUI SEKARANG
-       3. Aplikasi mengunduh sendiri (ada bilah kemajuan dalam persen)
+       3. Aplikasi mengunduh sendiri - ada bilah kemajuan (persen) pada kotak
+          aplikasi DAN pada pemberitahuan Android
        4. Begitu selesai, layar "Pasang" Android terbuka SENDIRI
-       5. Tekan Pasang -> selesai. Aplikasi memakai data lama (tidak logout)
+          (walaupun kotak kemajuan sudah ditutup petugas)
+       5. Tekan PASANG satu kali
+       6. Selesai. Aplikasi berusaha membuka dirinya sendiri; bila Android
+          menolak, muncul pemberitahuan "Pembaruan RTS Panel Selesai" yang
+          dapat ditekan - atau tombol BUKA pada layar pemasangan.
+          Data lama tetap utuh (petugas tidak perlu masuk ulang).
+
+ SEBERAPA OTOMATIS? (PERTANYAAN BAPAK)
+ -------------------------------------
+   Bagian                     | Otomatis?  | Keterangan
+   ---------------------------|------------|--------------------------------
+   Menampilkan pemberitahuan  | YA         | dari FCM, walau aplikasi ditutup
+   Mengunduh berkas           | YA         | di dalam aplikasi, ada kemajuan
+   Menampilkan kemajuan       | YA         | persen + bilah pada pemberitahuan
+   Membuka layar Pasang       | YA         | terbuka sendiri sesudah unduhan
+   Menekan tombol PASANG      | TIDAK      | wajib sekali ketuk (aturan Android)
+   Membuka aplikasi sesudah   | DICOBA     | berhasil pada banyak HP; bila
+   pemasangan selesai         |            | ditolak -> tekan pemberitahuan/memori
+
+   Mengapa tombol PASANG tidak dapat dilewati?
+   Android sejak versi 8 mewajibkan persetujuan pengguna setiap kali ada
+   aplikasi yang dipasang dari luar toko aplikasi. Tujuannya melindungi HP
+   dari aplikasi palsu. Tidak ada aplikasi biasa yang dapat melewatinya -
+   dan sebaiknya memang begitu.
+
+   SATU-SATUNYA cara agar pemasangan benar-benar tanpa sentuhan adalah
+   mendaftarkan HP-HP petugas sebagai perangkat yang DIKELOLA PERUSAHAAN
+   (Android Enterprise / device owner, biasanya lewat aplikasi MDM). Dengan
+   keadaan itu, sistem mengizinkan pemasangan tanpa layar konfirmasi. Ini
+   memerlukan penyiapan pada setiap HP (paling mudah sebelum HP dipakai, atau
+   lewat penyetelan ulang pabrik) - beri tahu saya bila Bapak ingin menempuh
+   cara ini, akan saya siapkan langkahnya.
 
 
 ==============================================================================
@@ -54,7 +86,14 @@
           (Bila folder "xml" belum ada di dalam folder "res", buat dulu
            foldernya - huruf kecil semua.)
 
-   [ ] 3. AndroidManifest.xml - TAMBAHKAN 2 bagian
+   [ ] 2b. RtsPenerimaPembaruan.kt  (BARU)
+          Dari : 2_APLIKASI_copy_ke_proyek\RtsPenerimaPembaruan.kt
+          Ke   : D:\Project\rts_panel_app\android\app\src\main\kotlin\
+                    com\example\rts_panel_app\RtsPenerimaPembaruan.kt
+          (Satu folder dengan MainActivity.kt. Isinya membuat aplikasi
+           berusaha terbuka sendiri sesudah pembaruan terpasang.)
+
+   [ ] 3. AndroidManifest.xml - TAMBAHKAN 3 bagian
           (3a) Izin, diletakkan DI ATAS baris <application>:
 
                 <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
@@ -70,6 +109,18 @@
                         android:name="android.support.FILE_PROVIDER_PATHS"
                         android:resource="@xml/file_paths" />
                 </provider>
+
+          (3c) Pembuka aplikasi sesudah pembaruan, diletakkan DI DALAM
+               <application> ... </application> (misalnya sesudah <provider>):
+
+                <receiver
+                    android:name=".RtsPenerimaPembaruan"
+                    android:exported="true"
+                    android:enabled="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                    </intent-filter>
+                </receiver>
 
           Tulis ${applicationId} apa adanya (jangan diganti) - Android sendiri
           yang mengisinya dengan nama paket aplikasi Bapak.
@@ -115,6 +166,11 @@
           Tekan PASANG. Aplikasi lama DIPERBARUI (bukan dipasang dua kali),
           karena nama paketnya tidak diubah - jadi tidak ada data yang hilang
           dan petugas tidak perlu masuk ulang.
+
+   [ ] 5. Selesai dipasang, aplikasi berusaha terbuka sendiri (berkas
+          RtsPenerimaPembaruan.kt). Bila Android menolak, tersedia:
+             - tombol BUKA pada layar pemasangan, atau
+             - pemberitahuan "Pembaruan RTS Panel Selesai" pada layar HP.
 
  SEKALI SAJA - IZIN PEMASANGAN
    Android 8 ke atas mewajibkan izin "Instal aplikasi tidak dikenal" untuk
@@ -196,6 +252,10 @@
                                   penanganan izin pemasangan (Android 8+).
  android_file_paths.xml         : BARU - daftar folder yang boleh dibagikan ke
                                   aplikasi pemasang Android (FileProvider).
+ android_RtsPenerimaPembaruan.kt: BARU - penerima pesan "aplikasi sudah
+                                  diperbarui" dari Android; berusaha membuka
+                                  aplikasi sendiri, atau menampilkan
+                                  pemberitahuan yang dapat ditekan.
  android_manifest_tambahan.xml  : DITAMBAH - izin REQUEST_INSTALL_PACKAGES dan
                                   bagian <provider> FileProvider.
  main.dart                      : kotak pembaruan berbunyi "aplikasi mengunduh
