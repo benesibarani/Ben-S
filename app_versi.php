@@ -45,7 +45,7 @@
  * Bila halaman pemeriksa ?diagnosa=1 menampilkan tulisan "VERSI BERKAS  : 4",
  * berarti berkas ini sudah terunggah dengan benar.
  * ------------------------------------------------------------------------ */
-define('APP_VERSI_BERKAS', 4);
+define('APP_VERSI_BERKAS', 5);
 
 require_once __DIR__ . '/config.php';
 
@@ -481,6 +481,123 @@ function app_nama_aman(string $teks): string
 }
 
 /* --------------------------------------------------------------------------
+ * MENYIMPAN SATU VERSI BARU (DIPAKAI DUA JALUR)
+ *
+ *   1. Unggahan lewat formulir halaman ini (batasnya mengikuti batas PHP)
+ *   2. PUBLIKASI berkas APK yang SUDAH ADA di folder apk/ - hasil unggahan
+ *      lewat FTP atau cPanel File Manager, yang TIDAK dibatasi PHP
+ *
+ * Karena keduanya memakai satu fungsi ini, hasilnya sama: keterangan versi
+ * ditulis, riwayat database dicatat, dan SELURUH HP menerima pemberitahuan
+ * pembaruan lewat Firebase Cloud Messaging (tetap otomatis).
+ * -------------------------------------------------------------------------- */
+function app_simpan_versi(
+    string $folder_apk,
+    string $berkas_json,
+    $conn,
+    string $nama_berkas,
+    string $nama_versi,
+    int $kode_versi,
+    bool $wajib,
+    string $catatan,
+    int $ukuran
+): array {
+    $data = [
+        'version_code' => $kode_versi,
+        'version_name' => $nama_versi,
+        'wajib' => $wajib,
+        'catatan' => $catatan,
+        'apk' => app_alamat_dasar() . '/apk/' . $nama_berkas,
+        'ukuran_mb' => round($ukuran / 1048576, 2),
+        'dipublikasikan' => date('d-m-Y H:i'),
+    ];
+
+    if (!app_tulis_versi($berkas_json, $data)) {
+        return [
+            'berhasil' => false,
+            'pesan' => 'Berkas keterangan versi (app_versi.json) gagal ditulis. '
+                . 'Periksa izin folder apk/.',
+            'data' => $data,
+        ];
+    }
+
+    $pesan = 'Versi ' . $nama_versi . ' (kode ' . $kode_versi . ') sudah '
+        . 'dipublikasikan dari berkas ' . $nama_berkas . '. '
+        . 'Seluruh tim akan menerima pemberitahuan pembaruan.';
+
+    /* Pemberitahuan otomatis ke seluruh HP - muncul walau aplikasi tidak dibuka. */
+    if (is_file(__DIR__ . '/api/notif_otomatis.php')) {
+        require_once __DIR__ . '/api/notif_otomatis.php';
+
+        if (function_exists('rts_notif_versi_baru') && $conn instanceof mysqli) {
+            try {
+                $kabar = rts_notif_versi_baru(
+                    $conn,
+                    $data,
+                    (string) ($_SESSION['email'] ?? '')
+                );
+
+                if ((int) $kabar['hp'] > 0) {
+                    $pesan .= ' Pemberitahuan sudah dikirim ke '
+                        . (int) $kabar['hp'] . ' HP petugas.';
+                }
+            } catch (Throwable $galat_notif) {
+                error_log('RTS notif versi: ' . $galat_notif->getMessage());
+            }
+        }
+    }
+
+    /* Riwayat pada tabel rts_app_versi (bila tabelnya sudah ada). */
+    if (app_ada_tabel($conn, 'rts_app_versi')) {
+        $simpanDb = $conn->prepare(
+            'INSERT INTO rts_app_versi
+             (version_code, version_name, wajib, catatan, apk,
+              ukuran_mb, diunggah_oleh, aktif)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
+        );
+
+        if ($simpanDb) {
+            $kodeDb = $kode_versi;
+            $namaDb = $nama_versi;
+            $wajibDb = $wajib ? 1 : 0;
+            $catatanDb = $catatan;
+            $apkDb = $data['apk'];
+            $ukuranDb = $data['ukuran_mb'];
+            $olehDb = (string) ($_SESSION['email'] ?? '');
+
+            $simpanDb->bind_param(
+                'isissds',
+                $kodeDb,
+                $namaDb,
+                $wajibDb,
+                $catatanDb,
+                $apkDb,
+                $ukuranDb,
+                $olehDb
+            );
+
+            if (!$simpanDb->execute()) {
+                $pesan .= ' Catatan: riwayat database gagal ditulis - '
+                    . $simpanDb->error;
+            }
+
+            $simpanDb->close();
+        }
+    }
+
+    /* Riwayat.txt supaya admin tahu apa yang terakhir dipublikasikan. */
+    @file_put_contents(
+        $folder_apk . '/riwayat.txt',
+        date('d-m-Y H:i') . ' | versi ' . $nama_versi . ' (kode ' . $kode_versi
+        . ') | ' . $nama_berkas . ' | wajib: ' . ($wajib ? 'ya' : 'tidak')
+        . ' | oleh ' . (string) ($_SESSION['email'] ?? '') . "\n",
+        FILE_APPEND
+    );
+
+    return ['berhasil' => true, 'pesan' => $pesan, 'data' => $data];
+}
+
+/* --------------------------------------------------------------------------
  * PROSES UNGGAH BERKAS APK
  * -------------------------------------------------------------------------- */
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['app_unggah'])) {
@@ -532,115 +649,86 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['app_unggah'])
             } else {
                 @chmod($tujuan, 0644);
 
-                $data = [
-                    'version_code' => $kode_versi,
-                    'version_name' => $nama_versi,
-                    'wajib' => $wajib,
-                    'catatan' => $catatan,
-                    'apk' => app_alamat_dasar() . '/apk/' . $nama_berkas,
-                    'ukuran_mb' => round($ukuran / 1048576, 2),
-                    'dipublikasikan' => date('d-m-Y H:i'),
-                ];
+                /* Seluruh pekerjaan (keterangan versi, pemberitahuan ke seluruh
+                   HP, riwayat database, dan riwayat.txt) dikerjakan oleh satu
+                   fungsi yang sama dengan jalur "publikasi berkas yang sudah
+                   ada" - sehingga hasilnya selalu sama. */
+                $app_hasil = app_simpan_versi(
+                    $app_folder,
+                    $app_berkas_json,
+                    $app_conn,
+                    $nama_berkas,
+                    $nama_versi,
+                    $kode_versi,
+                    $wajib,
+                    $catatan,
+                    $ukuran
+                );
 
-                if (app_tulis_versi($app_berkas_json, $data)) {
-                    $app_pesan = 'APK versi ' . $nama_versi . ' (kode ' . $kode_versi
-                        . ') berhasil diunggah. Aplikasi seluruh tim akan melihat '
-                        . 'pemberitahuan pembaruan pada pembukaan berikutnya.';
-
-                    /* -----------------------------------------------------------------
-                     * PEMBERITAHUAN OTOMATIS KE SELURUH HP
-                     *
-                     * Selain kotak pembaruan di dalam aplikasi (yang hanya terlihat
-                     * ketika aplikasi dibuka), unggahan ini juga langsung
-                     * memberitahu SELURUH HP lewat Firebase Cloud Messaging -
-                     * sehingga pemberitahuan muncul di layar HP walaupun aplikasi
-                     * sedang tidak dibuka.
-                     *
-                     * Isi pemberitahuan: judul versi, sifat wajib/tidaknya, dan
-                     * catatan pembaruan. Pada HP, pemberitahuan itu memuat tombol
-                     * UPDATE yang membuka aplikasi untuk memperbarui diri.
-                     *
-                     * Aman gagal: bila Firebase belum disiapkan atau belum ada HP
-                     * yang terdaftar, bagian ini berhenti dengan tenang dan
-                     * unggahan tetap dianggap berhasil.
-                     * ----------------------------------------------------------------- */
-                    if (is_file(__DIR__ . '/api/notif_otomatis.php')) {
-                        require_once __DIR__ . '/api/notif_otomatis.php';
-
-                        if (function_exists('rts_notif_versi_baru') && $app_conn instanceof mysqli) {
-                            try {
-                                $app_kabar = rts_notif_versi_baru(
-                                    $app_conn,
-                                    $data,
-                                    (string) ($_SESSION['email'] ?? '')
-                                );
-
-                                if ((int) $app_kabar['hp'] > 0) {
-                                    $app_pesan .= ' Pemberitahuan sudah dikirim ke '
-                                        . (int) $app_kabar['hp'] . ' HP petugas.';
-                                }
-                            } catch (Throwable $app_galat_notif) {
-                                // Pemberitahuan gagal tidak membatalkan unggahan.
-                                error_log('RTS notif versi: ' . $app_galat_notif->getMessage());
-                            }
-                        }
-                    }
-
-                    /* Bila tabel rts_app_versi sudah ada, unggahan ini juga
-                       dicatat ke database sehingga menjadi riwayat yang dapat
-                       dilihat kapan saja (dan dibaca aplikasi lewat API). */
-                    if (app_ada_tabel($app_conn, 'rts_app_versi')) {
-                        $simpanDb = $app_conn->prepare(
-                            'INSERT INTO rts_app_versi
-                             (version_code, version_name, wajib, catatan, apk,
-                              ukuran_mb, diunggah_oleh, aktif)
-                             VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
-                        );
-
-                        if ($simpanDb) {
-                            $kodeDb = $kode_versi;
-                            $namaDb = $nama_versi;
-                            $wajibDb = $wajib ? 1 : 0;
-                            $catatanDb = $catatan;
-                            $apkDb = $data['apk'];
-                            $ukuranDb = $data['ukuran_mb'];
-                            $olehDb = (string) ($_SESSION['email'] ?? '');
-
-                            $simpanDb->bind_param(
-                                'isissds',
-                                $kodeDb,
-                                $namaDb,
-                                $wajibDb,
-                                $catatanDb,
-                                $apkDb,
-                                $ukuranDb,
-                                $olehDb
-                            );
-
-                            if (!$simpanDb->execute()) {
-                                $app_galat = 'APK tersimpan, tetapi riwayat '
-                                    . 'database gagal ditulis: ' . $simpanDb->error;
-                            }
-
-                            $simpanDb->close();
-                        }
-                    }
-
-                    /* Catatan riwayat kecil, supaya admin tahu apa yang terakhir
-                       diunggah tanpa membuka folder apk/. */
-                    @file_put_contents(
-                        $app_folder . '/riwayat.txt',
-                        date('d-m-Y H:i') . ' | versi ' . $nama_versi . ' (kode '
-                        . $kode_versi . ') | ' . $nama_berkas . ' | wajib: '
-                        . ($wajib ? 'ya' : 'tidak') . ' | oleh '
-                        . (string)($_SESSION['email'] ?? '') . "\n",
-                        FILE_APPEND
-                    );
+                if ($app_hasil['berhasil']) {
+                    $app_pesan = $app_hasil['pesan'];
                 } else {
-                    $app_galat = 'APK tersimpan, tetapi berkas keterangan versi '
-                        . '(app_versi.json) gagal ditulis. Periksa izin folder apk/.';
+                    $app_galat = $app_hasil['pesan'];
                 }
             }
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------
+ * PROSES PUBLIKASI BERKAS APK YANG SUDAH ADA DI FOLDER apk/
+ *
+ * KEGUNAAN
+ * --------
+ * Berkas APK yang besar (misalnya di atas 50 MB) sering gagal diunggah lewat
+ * formulir web karena batas PHP (upload_max_filesize / post_max_size).
+ *
+ * Jalan keluarnya: unggah berkas APK itu lewat FTP (FileZilla) atau cPanel
+ * File Manager - keduanya TIDAK dibatasi PHP - langsung ke dalam folder apk/
+ * pada hosting. Setelah berkasnya ada di sana, cukup pilih berkasnya pada
+ * halaman ini, isi keterangan versi, lalu tekan PUBLIKASIKAN.
+ *
+ * Hasilnya SAMA dengan unggahan biasa: keterangan versi ditulis ke
+ * app_versi.json, riwayat dicatat ke database, dan SELURUH HP menerima
+ * pemberitahuan pembaruan lewat Firebase Cloud Messaging (tombol UPDATE).
+ * Jadi pembaruan OTOMATIS tetap berjalan tanpa memakai layanan pihak ketiga.
+ * -------------------------------------------------------------------------- */
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['app_publikasi'])) {
+    $nama_publikasi = basename((string)($_POST['nama_berkas'] ?? ''));
+    $nama_versi_pub = trim((string)($_POST['version_name'] ?? ''));
+    $kode_versi_pub = (int)($_POST['version_code'] ?? 0);
+    $wajib_pub = isset($_POST['wajib']) ? true : false;
+    $catatan_pub = trim((string)($_POST['catatan'] ?? ''));
+
+    $jalur_publikasi = $app_folder . '/' . $nama_publikasi;
+
+    if ($nama_publikasi === '' || strtolower((string)pathinfo($nama_publikasi, PATHINFO_EXTENSION)) !== 'apk') {
+        $app_galat = 'Berkas yang dipilih bukan berkas APK.';
+    } elseif (!is_file($jalur_publikasi)) {
+        $app_galat = 'Berkas ' . htmlspecialchars($nama_publikasi) . ' tidak ditemukan di folder apk/.';
+    } elseif ($nama_versi_pub === '') {
+        $app_galat = 'Kolom "Versi aplikasi" wajib diisi, contoh: 1.2.1';
+    } elseif (preg_match('/^[0-9]+(\.[0-9]+){0,3}$/', $nama_versi_pub) !== 1) {
+        $app_galat = 'Versi aplikasi hanya boleh berisi angka dan titik, contoh: 1.2.1';
+    } elseif ($kode_versi_pub < 1) {
+        $app_galat = 'Kolom "Kode versi" wajib diisi dengan angka 1 atau lebih besar.';
+    } else {
+        $app_hasil = app_simpan_versi(
+            $app_folder,
+            $app_berkas_json,
+            $app_conn,
+            $nama_publikasi,
+            $nama_versi_pub,
+            $kode_versi_pub,
+            $wajib_pub,
+            $catatan_pub,
+            (int)@filesize($jalur_publikasi)
+        );
+
+        if ($app_hasil['berhasil']) {
+            $app_pesan = $app_hasil['pesan'];
+        } else {
+            $app_galat = $app_hasil['pesan'];
         }
     }
 }
@@ -698,6 +786,22 @@ usort($app_daftar_apk, static function (array $a, array $b): int {
 });
 
 $app_alamat_json = app_alamat_dasar() . '/apk/app_versi.json';
+
+/* Berkas APK yang SUDAH ADA di folder apk/ tetapi BELUM dipublikasikan.
+   Berkas seperti ini muncul bila diunggah lewat FTP atau cPanel File Manager
+   (tidak dibatasi PHP), sehingga berguna untuk APK berukuran besar. */
+$app_nama_terbit = basename((string)($app_versi['apk'] ?? ''));
+$app_belum_publikasi = [];
+
+foreach ($app_daftar_apk as $app_satu) {
+    if ($app_satu['nama'] === $app_nama_terbit) {
+        continue;
+    }
+
+    $app_belum_publikasi[] = $app_satu;
+}
+
+$app_kode_saran = (int)($app_versi['version_code'] ?? 0) + 1;
 $app_json_siap = is_file($app_berkas_json);
 
 /* Riwayat versi pada database (bila tabelnya sudah ada). */
@@ -856,6 +960,99 @@ if ($app_tabel_db) {
         </div>
       <?php endif; ?>
     </div>
+    <div class="rts-card p-3 mt-3">
+      <h6 class="mb-3">
+        <i class="fa-solid fa-box-open text-danger me-2"></i>Publikasikan Berkas yang Sudah Ada di Folder apk/
+      </h6>
+
+      <p class="small text-muted mb-3">
+        Berguna untuk <strong>berkas APK berukuran besar</strong> (misalnya di atas 50 MB)
+        yang gagal diunggah lewat formulir karena batas PHP pada hosting.
+        Caranya:
+        <strong>1.</strong> unggah berkas APK lewat FTP (FileZilla) atau
+        <strong>cPanel &rarr; File Manager</strong> langsung ke folder
+        <code>apk/</code> &mdash; keduanya tidak dibatasi PHP;
+        <strong>2.</strong> berkasnya akan muncul pada daftar di bawah ini;
+        <strong>3.</strong> isi keterangan versi lalu tekan
+        <strong>PUBLIKASIKAN</strong>.
+        Hasilnya <strong>sama</strong> dengan unggahan biasa: seluruh HP menerima
+        pemberitahuan pembaruan (tombol UPDATE) secara otomatis.
+      </p>
+
+      <?php if (empty($app_belum_publikasi)): ?>
+        <div class="alert alert-light border mb-0 small">
+          Tidak ada berkas APK yang menunggu dipublikasikan. Seluruh berkas pada
+          folder <code>apk/</code> sudah pernah dipublikasikan, atau belum ada
+          berkas tambahan di sana.
+        </div>
+      <?php else: ?>
+        <?php foreach ($app_belum_publikasi as $app_pub): ?>
+          <form method="post" class="border rounded p-3 mb-3 bg-light-subtle" autocomplete="off">
+            <input type="hidden" name="app_publikasi" value="1">
+            <input type="hidden" name="nama_berkas" value="<?= htmlspecialchars((string)$app_pub['nama']) ?>">
+
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+              <i class="fa-solid fa-file-zipper text-danger"></i>
+              <span class="fw-semibold small"><?= htmlspecialchars((string)$app_pub['nama']) ?></span>
+              <span class="badge bg-light text-dark border">
+                <?= number_format((float)$app_pub['ukuran'] / 1048576, 1, ',', '.') ?> MB
+              </span>
+              <span class="badge bg-light text-dark border">
+                <?= date('d-m-Y H:i', (int)$app_pub['waktu']) ?>
+              </span>
+              <a class="small ms-auto" href="apk/<?= htmlspecialchars((string)$app_pub['nama']) ?>"
+                 target="_blank" rel="noopener">
+                <i class="fa-solid fa-download me-1"></i>periksa berkas
+              </a>
+            </div>
+
+            <div class="row g-2">
+              <div class="col-sm-4">
+                <label class="form-label small mb-1">Versi aplikasi <span class="text-danger">*</span></label>
+                <input type="text" name="version_name" class="form-control form-control-sm"
+                       placeholder="1.2.1" required
+                       value="<?= htmlspecialchars((string)($app_versi['version_name'] ?? '')) ?>">
+              </div>
+
+              <div class="col-sm-4">
+                <label class="form-label small mb-1">Kode versi <span class="text-danger">*</span></label>
+                <input type="number" name="version_code" class="form-control form-control-sm"
+                       min="1" required value="<?= (int)$app_kode_saran ?>">
+                <div class="form-text mb-0">
+                  Angka sesudah tanda + pada pubspec.yaml. Wajib lebih besar dari
+                  kode versi yang sedang dipakai (<?= (int)($app_versi['version_code'] ?? 0) ?>).
+                </div>
+              </div>
+
+              <div class="col-sm-4">
+                <label class="form-label small mb-1">Sifat pembaruan</label>
+                <div class="form-check mt-1">
+                  <input class="form-check-input" type="checkbox" name="wajib"
+                         id="wajib_pub_<?= htmlspecialchars((string)$app_pub['nama']) ?>" value="1">
+                  <label class="form-check-label small"
+                         for="wajib_pub_<?= htmlspecialchars((string)$app_pub['nama']) ?>">
+                    WAJIB (petugas tidak dapat menutup pemberitahuan)
+                  </label>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small mb-1">Catatan pembaruan</label>
+                <textarea name="catatan" class="form-control form-control-sm" rows="2"
+                          placeholder="Contoh: nama aplikasi menjadi RTS Panel; halaman Kelola Akun PRO."></textarea>
+              </div>
+
+              <div class="col-12 d-flex justify-content-end">
+                <button type="submit" class="btn btn-sm btn-danger">
+                  <i class="fa-solid fa-cloud-arrow-up me-1"></i>Publikasikan Berkas Ini
+                </button>
+              </div>
+            </div>
+          </form>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </div>
+
     <div class="rts-card p-3 mt-3">
       <h6 class="mb-3">
         <i class="fa-solid fa-clock-rotate-left text-danger me-2"></i>Riwayat Versi

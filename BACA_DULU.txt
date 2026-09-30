@@ -287,6 +287,11 @@
                                        (dipakai bila ukuran APK membengkak)
 
    4_PANDUAN_LENGKAP\
+      CARA_RELEASE_APK.txt             langkah rilis APK
+      APK_BESAR_CARA_UNGGAH.txt        mengunggah APK di atas 50 MB
+                                       (FTP + publikasikan dari web)
+
+   4_PANDUAN_LENGKAP\
       IKLAN_LANGGANAN_FOTO.txt         penjelasan rinci (bila ingin lebih tahu)
 
 
@@ -342,7 +347,15 @@
    Foto gagal diunggah                       | Periksa folder uploads dapat
                                              | ditulis (izin 755 pada File
                                              | Manager). Coba foto lebih kecil
-   Ukuran APK di atas 50 MB                  | Bersihkan folder assets:
+   Ukuran APK di atas 50 MB, atau unggahan   | Unggah lewat FTP ke folder
+   lewat web selalu gagal                    | public_html/apk, lalu buka
+                                             | app_versi.php - kartu
+                                             | "Publikasikan Berkas yang Sudah
+                                             | Ada" (lihat
+                                             |  APK_BESAR_CARA_UNGGAH.txt).
+                                             | Atau perkecil APK dulu -
+                                             | bersihkan folder assets:
+   Ukuran APK besar - bersihkan assets       | Bersihkan folder assets:
                                              |   .\BERSIHKAN_ASSETS.ps1
                                              | Lalu bangun ulang dengan
                                              |   flutter build apk --release

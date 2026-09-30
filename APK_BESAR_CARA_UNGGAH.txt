@@ -1,0 +1,249 @@
+==============================================================================
+ RTS PANEL BY BENE - MENGUNGGAH APK BERUKURAN BESAR (DI ATAS 50 MB)
+==============================================================================
+
+ PERTANYAAN BAPAK
+ ----------------
+ "Apakah tidak ada cara agar bisa upload file lebih dari 50 MB dari web?
+  Atau harus pakai pihak ketiga seperti Google Drive? Tapi pasti tidak bisa
+  otomatis update."
+
+ JAWABAN SINGKAT
+ --------------
+   BISA, dan TIDAK perlu pihak ketiga.
+   Pembaruan otomatis TETAP berjalan penuh (pemberitahuan ke layar HP +
+   tombol UPDATE), karena berkas APK tetap disimpan di hosting Bapak sendiri.
+
+   Yang berubah hanyalah CARA MEMINDAHKAN berkasnya ke hosting:
+        lewat FTP / cPanel File Manager  ->  lalu dipublikasikan dari web
+   Bukan lagi lewat formulir unggah pada halaman app_versi.php.
+
+ Isi berkas ini:
+   BAGIAN 1 - Sebab ukuran 50 MB bermasalah
+   BAGIAN 2 - CARA TERBAIK: unggah lewat FTP + publikasikan dari web (BARU)
+   BAGIAN 3 - CARA LAIN: menaikkan batas PHP hosting
+   BAGIAN 4 - Pilihan pihak ketiga (dan sebab sebaiknya dihindari)
+   BAGIAN 5 - Ringkasan perbandingan
+   BAGIAN 6 - Bila tetap ingin diunggah lewat formulir web
+
+
+==============================================================================
+ BAGIAN 1 - SEBAB UKURAN 50 MB BERMASALAH
+==============================================================================
+
+ Ada DUA batas yang berbeda, dan keduanya sering tertukar:
+
+   1. Batas PHP pada hosting
+         upload_max_filesize  (biasanya 2M - 64M)
+         post_max_size        (biasanya 8M - 64M)
+      Ini yang membuat unggahan lewat FORMULIR WEB gagal. Batas ini
+      diberlakukan oleh PHP sebelum berkas sampai ke halaman.
+
+   2. Batas halaman app_versi.php sendiri = 100 MB
+      (ditulis langsung pada kode: APP_BATAS_BITA 104857600)
+      Ini pemeriksaan TAMBAHAN sesudah berkas diterima PHP.
+
+ Artinya: walaupun app_versi.php mengizinkan 100 MB, berkas tetap GAGAL
+ bila batas PHP hosting hanya 8M.
+
+ Yang TIDAK dibatasi PHP: FTP dan cPanel File Manager. Keduanya memindahkan
+ berkas langsung ke folder hosting tanpa melewati PHP, sehingga berkas 100 MB
+ pun dapat diunggah dengan aman.
+
+
+==============================================================================
+ BAGIAN 2 - CARA TERBAIK: UNGGAH LEWAT FTP, LALU PUBLIKASIKAN DARI WEB
+==============================================================================
+
+ Fitur ini BARU saya tambahkan pada app_versi.php (versi berkas 5).
+ Namanya pada halaman: "Publikasikan Berkas yang Sudah Ada di Folder apk/"
+
+ LANGKAH-LANGKAHNYA
+
+   [ ] 1. Unggah berkas APK ke hosting memakai salah satu cara:
+
+          CARA A - FileZilla (FTP) - paling andal untuk berkas besar
+             [ ] 1. Buka FileZilla
+             [ ] 2. Isi: Host (contoh ftp.rts.benedic-s.com),
+                     Username, Password, Port 21
+                     (data FTP ada pada cPanel - FTP Accounts)
+             [ ] 3. Masuk ke folder:  public_html/apk
+             [ ] 4. Seret berkas app-release.apk dari komputer ke panel kanan
+             [ ] 5. Tunggu sampai selesai (ada bilah kemajuan)
+             [ ] 6. Ubah nama berkasnya bila perlu agar rapi, misalnya
+                     rts_panel_v4.apk
+                 (nama bebas, yang penting berakhiran .apk)
+
+          CARA B - cPanel File Manager
+             [ ] 1. cPanel - File Manager - masuk ke public_html/apk
+             [ ] 2. Klik Upload - pilih berkas APK - tunggu selesai
+             [ ] 3. Bila gagal karena batas, pakai CARA A (FTP tidak dibatasi)
+
+   [ ] 2. Buka https://rts.benedic-s.com/app_versi.php
+
+   [ ] 3. Gulir ke kartu "Publikasikan Berkas yang Sudah Ada di Folder apk/".
+          Berkas APK yang baru Bapak unggah akan muncul di sana, lengkap
+          dengan ukuran dan waktu unggahnya.
+
+   [ ] 4. Isi keterangan versinya:
+             Versi aplikasi : 1.2.1        (harus sama dengan pubspec.yaml)
+             Kode versi     : 4            (WAJIB lebih besar dari versi
+                                            yang sedang dipakai)
+             Sifat          : centang WAJIB bila petugas tidak boleh menunda
+             Catatan        : tulis isi pembaruan
+
+   [ ] 5. Tekan "Publikasikan Berkas Ini"
+
+   [ ] 6. Selesai. Yang terjadi otomatis:
+             - apk/app_versi.json diperbarui (aplikasi membacanya)
+             - riwayat dicatat ke tabel rts_app_versi
+             - SELURUH HP menerima pemberitahuan "Versi Baru RTS Panel
+               Tersedia" dengan tombol UPDATE
+             - halaman memberi tahu berapa HP yang berhasil dikirimi
+
+ Catatan penting: langkah 2 sampai 6 SAMA PERSIS dengan hasil unggahan lewat
+ formulir. Jadi pembaruan otomatis tidak berkurang sedikit pun.
+
+
+==============================================================================
+ BAGIAN 3 - CARA LAIN: MENAIKKAN BATAS PHP HOSTING
+==============================================================================
+
+ Bila ingin tetap memakai formulir unggah web untuk berkas besar, naikkan
+ batas PHP:
+
+   [ ] 1. cPanel - Software - MultiPHP INI Editor
+   [ ] 2. Pilih domain (rts.benedic-s.com), pilih "Editor Mode"
+   [ ] 3. Ubah menjadi:
+
+              upload_max_filesize = 100M
+              post_max_size = 100M
+              max_execution_time = 300
+              max_input_time = 300
+              memory_limit = 256M
+
+   [ ] 4. Save, lalu muat ulang https://rts.benedic-s.com/app_versi.php
+          Angka pada tulisan "Batas server saat ini:" harus sudah berubah.
+
+   Bila MultiPHP INI Editor tidak tersedia, buat berkas .user.ini di dalam
+   public_html berisi baris yang sama. Pada hosting LiteSpeed/Apache,
+   .htaccess juga dapat dipakai:
+
+              php_value upload_max_filesize 100M
+              php_value post_max_size 100M
+
+   Kelemahan cara ini:
+     - Tidak semua hosting mengizinkan (kadang tetap dibatasi admin hosting)
+     - Sambungan internet Bapak harus stabil: bila terputus di tengah,
+       unggahan 80 MB harus diulang dari awal
+     - Waktu unggah lama dan browser kadang kehabisan waktu (timeout)
+
+   Karena itu, untuk berkas besar saya tetap menyarankan BAGIAN 2 (FTP).
+
+
+==============================================================================
+ BAGIAN 4 - PILIHAN PIHAK KETIGA (DAN SEBAB SEBAIKNYA DIHINDARI)
+==============================================================================
+
+ Bapak benar: memakai pihak ketiga membuat pembaruan otomatis menjadi rapuh.
+
+ GOOGLE DRIVE
+   Bisa dipakai, TETAPI bermasalah:
+     - Tautan langsungnya tidak tetap. Google memakai tautan berbentuk
+       "confirm" dan halaman peringatan pemindaian virus untuk berkas besar,
+       sehingga aplikasi tidak dapat mengunduh sendiri dengan pasti.
+     - Ada batas kuota harian; bila terlampaui, berkas tidak dapat diunduh
+       (muncul halaman "Maaf, Anda tidak dapat melihat atau mengunduh berkas
+       ini untuk saat ini"). Petugas Anda akan mengalami ini tanpa pola.
+     - Tautan dapat berubah bila berkas dipindah/dinamai ulang.
+   Kesimpulan: untuk pembaruan aplikasi, Google Drive TIDAK disarankan.
+
+ PIHAK KETIGA YANG SEBENARNYA COCOK (bila nanti diperlukan)
+   - Firebase Storage  : Bapak sudah punya proyek Firebase. Tautan unduh
+                         dapat dibuat tetap (download token), dan pemberitahuan
+                         FCM sudah memakai Firebase juga. Kuota gratis:
+                         5 GB penyimpanan, 1 GB unduhan per hari.
+   - Cloudflare R2 / Backblaze B2 : murah, cepat, tautan tetap.
+   - GitHub Releases   : gratis sampai 2 GB per berkas, TETAPI memerlukan
+                         repositori publik (repo Bapak akan dikembalikan
+                         menjadi Private) - jadi tidak cocok.
+
+   Ketiganya MENGHASILKAN TAUTAN UNDUH TETAP, sehingga pembaruan otomatis
+   tetap dapat berjalan - caranya: isi kolom alamat APK pada app_versi.json
+   dengan tautan pihak ketiga itu, bukan berkas di folder apk/.
+
+   Untuk keadaan sekarang, cara ini BELUM diperlukan: FTP + publikasi sudah
+   cukup dan seluruh berkas tetap berada di hosting Bapak sendiri.
+
+
+==============================================================================
+ BAGIAN 5 - RINGKASAN PERBANDINGAN
+==============================================================================
+
+   Cara                        | Batas ukuran | Otomatis update | Catatan
+   ----------------------------|--------------|-----------------|------------
+   Formulir web (app_versi)    | batas PHP    | YA              | paling mudah
+   FTP + publikasikan (BARU)   | tidak ada    | YA              | DISARANKAN
+   cPanel File Manager + pub.  | tidak ada *  | YA              | * kecuali batas
+                               |              |                 |   hosting
+   Naikkan batas PHP           | sampai 100M  | YA              | bisa gagal
+                               |              |                 |   bila hosting
+                               |              |                 |   membatasi
+   Google Drive                | besar        | TIDAK andal     | tautan tidak
+                               |              |                 |   tetap
+   Firebase Storage            | besar        | YA              | perlu
+                               |              |                 |   penyiapan
+   split-per-abi (3 APK)       | memperkecil  | YA              | pelengkap
+                               | berkas       |                 |
+
+
+==============================================================================
+ BAGIAN 6 - BILA TETAP INGIN UNGGUL LEBIH KECIL: BIKIN APK-NYA KECIL
+==============================================================================
+
+ Cara paling sederhana menyelesaikan masalah "berkas terlalu besar" adalah
+ membuat berkasnya tidak besar:
+
+   [ ] 1. Bersihkan folder assets
+              cd D:\Project\rts_panel_app
+              .\BERSIHKAN_ASSETS.ps1              (memeriksa)
+              .\BERSIHKAN_ASSETS.ps1 -Pindahkan   (memindahkan)
+
+   [ ] 2. Bangun APK khusus HP modern (jauh lebih kecil)
+              flutter clean
+              flutter build apk --release --target-platform android-arm64
+
+   [ ] 3. Bila masih besar, bangun tiga APK terpisah
+              flutter clean
+              flutter build apk --release --split-per-abi
+              -> unggah app-arm64-v8a-release.apk
+
+   Patokan ukuran:
+       APK biasa (semua HP)      : sekitar 40-55 MB
+       APK khusus arm64          : sekitar 25-35 MB
+       APK arm64 + assets bersih : sekitar 20-30 MB
+
+   Cara ini menghilangkan kebutuhan unggah berkas besar sama sekali.
+
+
+==============================================================================
+ KESIMPULAN
+==============================================================================
+
+   Pertanyaan: apakah harus pakai pihak ketiga seperti Google Drive?
+
+   TIDAK. Sekarang cukup:
+        1. unggah APK ke public_html/apk lewat FileZilla (FTP)
+        2. buka app_versi.php - kartu "Publikasikan Berkas yang Sudah Ada"
+        3. isi versi + kode versi - tekan PUBLIKASIKAN
+      dan seluruh HP menerima pemberitahuan pembaruan secara otomatis.
+
+   Bila Bapak ingin saya SEDERHANAKAN lagi, ada dua pilihan yang bisa saya
+   buatkan pada putaran berikutnya:
+        a. Unggah bertahap (chunked upload) - halaman web yang memotong
+           berkas menjadi bagian-bagian kecil, sehingga unggahan 100 MB lewat
+           web menjadi mungkin walaupun batas PHP hanya 8M, dan dapat
+           dilanjutkan bila sambungan terputus.
+        b. Penghubung Firebase Storage - bila nanti kuota hosting terbatas.
+   Sebut saja bila salah satunya diperlukan.
+==============================================================================

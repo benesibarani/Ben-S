@@ -109,6 +109,26 @@
    3. Kuota internet petugas saat mengunduh lewat HP
 
  ------------------------------------------------------------------------
+ CARA 0 - UNGGAH LEWAT FTP, LALU PUBLIKASIKAN DARI WEB (DISARANKAN)
+ ------------------------------------------------------------------------
+
+ Cara ini TIDAK dibatasi PHP sama sekali - berkas 100 MB pun aman.
+
+   [ ] 1. Buka FileZilla, sambung ke hosting (data FTP ada di cPanel -
+          FTP Accounts), lalu masuk ke folder:  public_html/apk
+   [ ] 2. Seret berkas app-release.apk dari komputer ke folder itu
+          (Boleh diubah namanya menjadi rts_panel_v4.apk - nama bebas,
+           yang penting berakhiran .apk)
+   [ ] 3. Buka https://rts.benedic-s.com/app_versi.php
+   [ ] 4. Gulir ke kartu "Publikasikan Berkas yang Sudah Ada di Folder apk/"
+   [ ] 5. Isi Versi aplikasi (1.2.1) + Kode versi (4) + catatan, lalu tekan
+          PUBLIKASIKAN BERKAS INI
+   [ ] 6. Seluruh HP menerima pemberitahuan pembaruan + tombol UPDATE
+
+ Hasilnya SAMA dengan unggahan lewat formulir - pembaruan otomatis tetap
+ berjalan. Penjelasan lengkap: APK_BESAR_CARA_UNGGAH.txt
+
+ ------------------------------------------------------------------------
  CARA 1 - BERSIHKAN FOLDER ASSETS (PALING SERING JADI SEBABNYA)
  ------------------------------------------------------------------------
 
@@ -223,6 +243,17 @@
    saat dimampatkan), Firebase + AdMob, serta plugin peta/kamera yang akan
    ditambahkan pada putaran berikutnya. Jadi selama angka di atas tidak
    terlampaui jauh, ukuran APK masih normal.
+
+   Ringkasan pilihan mengunggah berkas besar:
+
+     Cara                        | Batas ukuran | Otomatis update
+     ----------------------------|--------------|-----------------
+     Formulir web (app_versi)    | batas PHP    | YA
+     FTP + publikasikan (CARA 0) | tidak ada    | YA  <-- DISARANKAN
+     Naikkan batas PHP           | sampai 100M  | YA
+     Google Drive                | besar        | TIDAK andal
+
+   Rincian tiap cara ada pada berkas APK_BESAR_CARA_UNGGAH.txt
 
 
 ==============================================================================
