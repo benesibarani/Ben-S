@@ -1,0 +1,33 @@
+<!--
+================================================================================
+RTS Panel By Bene
+TAMBAHAN IZIN UNTUK ANDROID
+================================================================================
+
+Berkas ini BUKAN berkas utuh. Hanya berisi baris-baris yang perlu ditambahkan
+pada AndroidManifest.xml di komputer Anda.
+
+Lokasi berkas:
+  D:\Project\rts_panel_app\android\app\src\main\AndroidManifest.xml
+
+Caranya:
+  1. Buka AndroidManifest.xml
+  2. Cari baris yang berisi:  <application
+  3. Tempelkan baris <uses-permission> di bawah ini TEPAT DI ATAS baris
+     <application>
+  4. Simpan
+
+Catatan:
+  - Jangan menempelkan komentar ini. Cukup baris <uses-permission> saja.
+  - Baris <uses-permission> lain yang sudah ada (misalnya INTERNET) tidak
+    perlu diubah dan tidak perlu dihapus.
+  - Bila baris LOCATION di bawah sudah ada di berkas Anda, tidak perlu
+    ditambahkan lagi (jangan sampai dua kali).
+-->
+
+<!-- Izin membaca titik lokasi untuk mengisi alamat dari koordinat (Ganti Alamat) -->
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+<!-- Izin menampilkan pemberitahuan pada layar HP (Android 13 ke atas) -->
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

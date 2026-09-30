@@ -1,0 +1,41 @@
+## =============================================================================
+##  RTS PANEL BY BENE - PENGATURAN GRADLE
+##  Salin SELURUH isi berkas ini ke:  D:\Project\rts_panel_app\android\gradle.properties
+##  (Ctrl+A lalu hapus, kemudian tempel seluruh isi berkas ini)
+## =============================================================================
+##
+##  KETERANGAN SETIAP BARIS:
+##
+##  1. kotlin.incremental=false
+##     kotlin.incremental.useClasspathSnapshot=false
+##     Mengatasi error "Could not close incremental caches ... different roots",
+##     karena cache paket Flutter berada di drive C sedangkan proyek di drive D.
+##
+##  2. android.newDsl=false
+##     android.builtInKotlin=false
+##     WAJIB agar proyek dapat dibangun pada Android Gradle Plugin (AGP) 9.
+##
+##     Tanpa dua baris ini, build gagal dengan salah satu pesan:
+##       - "Cannot add task 'generateLockfiles' as a task with that name already exists"
+##       - "Starting AGP 9+, only the new DSL interface will be read. This results
+##          in a build failure when applying the Flutter Gradle plugin"
+##
+##     Sebabnya: AGP 9 memakai cara penulisan (DSL) baru sebagai bawaan,
+##     sedangkan plugin Firebase (google-services) dan plugin Flutter masih
+##     memakai cara lama. Dua baris ini mengembalikan cara lama tersebut.
+##     Bila nanti Flutter dan Firebase sudah memakai cara baru, dua baris ini
+##     boleh dihapus.
+##
+##  PENTING: pada baris "org.gradle.jvmargs" di bawah, tulisan -Xmx4G berarti
+##  memori 4 GB untuk Gradle. Bila komputer Bapak memiliki RAM 8 GB atau lebih
+##  kecil, ubah menjadi -Xmx2G agar tidak kehabisan memori.
+## =============================================================================
+
+org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=2G -XX:ReservedCodeCacheSize=512m -XX:+HeapDumpOnOutOfMemoryError
+android.useAndroidX=true
+android.enableJetifier=true
+android.enableR8.fullMode=false
+kotlin.incremental=false
+kotlin.incremental.useClasspathSnapshot=false
+android.newDsl=false
+android.builtInKotlin=false

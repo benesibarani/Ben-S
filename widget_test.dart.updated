@@ -1,0 +1,14 @@
+import 'package:flutter_test/flutter_test.dart';
+
+import '../main.dart';
+
+void main() {
+  testWidgets('RTS Panel menampilkan halaman login', (tester) async {
+    await tester.pumpWidget(const RtsPanelApp());
+
+    expect(find.text('RTS PANEL'), findsOneWidget);
+    expect(find.text('Username'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+    expect(find.text('MASUK'), findsOneWidget);
+  });
+}

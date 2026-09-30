@@ -1,0 +1,54 @@
+name: rts_panel_app
+description: RTS Panel By Bene - aplikasi Android untuk sales dan supervisor.
+publish_to: 'none'
+
+# NOMOR VERSI - PENTING untuk fitur pembaruan otomatis.
+#   angka sebelum tanda + adalah versi yang dilihat pengguna (1.1.0)
+#   angka sesudah tanda + adalah kode versi (2) dan WAJIB selalu bertambah
+#   setiap kali aplikasi baru diunggah ke server, misalnya menjadi 3, 4, dan
+#   seterusnya. Isi kolom "version_code" pada halaman app_versi.php harus sama
+#   dengan angka sesudah tanda + ini.
+version: 1.1.0+2
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  # Membaca versi aplikasi yang terpasang (dipakai pembaruan otomatis).
+  package_info_plus: ^10.2.1
+  # Iklan Google AdMob: banner pada beranda dan iklan bentuk asli (native)
+  # pada setiap menu.
+  google_mobile_ads: ^9.1.0
+  # Mengubah titik GPS menjadi alamat lengkap (Ganti Alamat dari titik lokasi).
+  geocoding: ^4.0.0
+  # Membaca titik GPS tempat sales berdiri.
+  geolocator: ^14.0.3
+  http: ^1.2.2
+  # Pemberitahuan pada layar HP (bar status / layar kunci).
+  flutter_local_notifications: ^19.0.0
+  # Firebase: pemberitahuan masuk walau aplikasi ditutup sepenuhnya.
+  # firebase_core  : penghubung dasar ke layanan Firebase
+  # firebase_messaging : pengirim pemberitahuan ke layar HP
+  firebase_core: ^4.14.0
+  firebase_messaging: ^16.7.0
+  shared_preferences: ^2.3.2
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Seluruh gambar pada folder assets/images dipakai aplikasi, termasuk
+  # gambar latar halaman login dan beranda. Menambahkan gambar baru cukup
+  # dengan menyalin berkasnya ke folder itu, tanpa mengubah berkas ini.
+  assets:
+    - assets/images/
