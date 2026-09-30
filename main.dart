@@ -1902,26 +1902,12 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(height: 12),
           Row(
             children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    _initial(user.displayName),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
+              RtsFotoProfil(
+                ukuran: 46,
+                bolehGanti: true,
+                latarBelakang: const Color(0x2effffff),
+                garisTepi: const Color(0x4dffffff),
+                warnaHuruf: Colors.white,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -4508,7 +4494,7 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Row(
             children: [
-              const RtsFotoProfil(
+              RtsFotoProfil(
                 ukuran: 56,
                 bolehGanti: true,
                 latarBelakang: Color(0x2effffff),
@@ -12926,7 +12912,11 @@ class RtsFotoUnggah {
 }
 
 /// Foto pribadi petugas. Bila belum ada foto, ditampilkan huruf awal nama.
-class RtsFotoProfil extends StatelessWidget {
+///
+/// Mengetuk foto (bila [bolehGanti] true) membuka pilihan Ambil dari Kamera,
+/// Pilih dari Galeri, atau Hapus Foto. Setelah foto terunggah, tampilan
+/// langsung berubah tanpa perlu keluar dari halaman.
+class RtsFotoProfil extends StatefulWidget {
   const RtsFotoProfil({
     super.key,
     this.ukuran = 56,
@@ -12942,6 +12932,11 @@ class RtsFotoProfil extends StatelessWidget {
   final Color? garisTepi;
   final Color warnaHuruf;
 
+  @override
+  State<RtsFotoProfil> createState() => _RtsFotoProfilState();
+}
+
+class _RtsFotoProfilState extends State<RtsFotoProfil> {
   String _inisial(RtsUser? user) {
     final String nama = (user?.displayName ?? '').trim();
 
@@ -12950,15 +12945,21 @@ class RtsFotoProfil extends StatelessWidget {
     return nama.substring(0, 1).toUpperCase();
   }
 
+  Future<void> _ketuk() async {
+    await RtsFotoProfilPilih.tampilkan(context);
+
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final RtsUser? user = RtsSesi.user;
     final String alamat = (user?.fotoProfil ?? '').trim();
-    final double lengkung = ukuran * 0.32;
+    final double lengkung = widget.ukuran * 0.32;
 
     final TextStyle gayaHuruf = TextStyle(
-      color: warnaHuruf,
-      fontSize: ukuran * 0.42,
+      color: widget.warnaHuruf,
+      fontSize: widget.ukuran * 0.42,
       fontWeight: FontWeight.w800,
     );
 
@@ -12969,8 +12970,8 @@ class RtsFotoProfil extends StatelessWidget {
     } else {
       isi = Image.network(
         alamat,
-        width: ukuran,
-        height: ukuran,
+        width: widget.ukuran,
+        height: widget.ukuran,
         fit: BoxFit.cover,
         errorBuilder: (context, galat, tumpukan) =>
             Center(child: Text(_inisial(user), style: gayaHuruf)),
@@ -12979,8 +12980,8 @@ class RtsFotoProfil extends StatelessWidget {
 
           return Center(
             child: SizedBox(
-              width: ukuran * 0.34,
-              height: ukuran * 0.34,
+              width: widget.ukuran * 0.34,
+              height: widget.ukuran * 0.34,
               child: const CircularProgressIndicator(strokeWidth: 2),
             ),
           );
@@ -12989,21 +12990,23 @@ class RtsFotoProfil extends StatelessWidget {
     }
 
     final Widget kotak = Container(
-      width: ukuran,
-      height: ukuran,
+      width: widget.ukuran,
+      height: widget.ukuran,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: latarBelakang,
+        color: widget.latarBelakang,
         borderRadius: BorderRadius.circular(lengkung),
-        border: garisTepi == null ? null : Border.all(color: garisTepi!),
+        border: widget.garisTepi == null
+            ? null
+            : Border.all(color: widget.garisTepi!),
       ),
       child: isi,
     );
 
-    if (!bolehGanti) return kotak;
+    if (!widget.bolehGanti) return kotak;
 
     return GestureDetector(
-      onTap: () => RtsFotoProfilPilih.tampilkan(context),
+      onTap: _ketuk,
       child: Stack(
         children: [
           kotak,
@@ -13019,7 +13022,7 @@ class RtsFotoProfil extends StatelessWidget {
               ),
               child: Icon(
                 Icons.photo_camera_rounded,
-                size: ukuran * 0.24,
+                size: widget.ukuran * 0.24,
                 color: Colors.white,
               ),
             ),
