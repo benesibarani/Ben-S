@@ -51,24 +51,17 @@ $ap_galat = '';
 
 $ap_kolom_siap = false;
 
-$ap_cek_kolom = $conn->prepare(
-    'SELECT COUNT(*) AS total
-     FROM information_schema.COLUMNS
-     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
-);
+/* Pemeriksaan memakai SHOW COLUMNS, BUKAN information_schema.
+   Sebabnya: akun database cPanel (cpses_...) tidak diberi izin membaca
+   information_schema, sehingga muncul kesalahan:
+      #1044 - Access denied for user 'cpses_...'@'localhost'
+              to database 'information_schema'
+   SHOW COLUMNS selalu tersedia dan hasilnya sama. */
+$ap_hasil_kolom = @$conn->query("SHOW COLUMNS FROM sales_users LIKE 'akun_pro'");
 
-if ($ap_cek_kolom) {
-    $ap_tabel = 'sales_users';
-    $ap_kolom = 'akun_pro';
-
-    $ap_cek_kolom->bind_param('ss', $ap_tabel, $ap_kolom);
-    $ap_cek_kolom->execute();
-    $ap_hasil_kolom = $ap_cek_kolom->get_result();
-    $ap_baris_kolom = $ap_hasil_kolom ? $ap_hasil_kolom->fetch_assoc() : null;
-
-    $ap_kolom_siap = $ap_baris_kolom && (int)$ap_baris_kolom['total'] > 0;
-
-    $ap_cek_kolom->close();
+if ($ap_hasil_kolom instanceof mysqli_result) {
+    $ap_kolom_siap = $ap_hasil_kolom->num_rows > 0;
+    $ap_hasil_kolom->free();
 }
 
 /* --------------------------------------------------------------------------
@@ -202,10 +195,14 @@ $ap_alamat = $ap_skema . '://' . (string)($_SERVER['HTTP_HOST'] ?? '') . '/akun_
       <ol class="mb-0 ps-3 mt-2">
         <li>Buka <strong>phpMyAdmin</strong> pada cPanel.</li>
         <li>Pilih database yang sedang dipakai (untuk produksi: <code>benedics_bene_sales</code>).</li>
-        <li>Buka tab <strong>SQL</strong>, tempel perintah berikut, lalu tekan <strong>Go</strong>:</li>
+        <li>Buka tab <strong>SQL</strong>, tempel perintah berikut, lalu tekan <strong>Kirim</strong>:</li>
       </ol>
       <div class="mt-2 p-2 bg-white border rounded" style="font-family:monospace;font-size:12px">
         ALTER TABLE sales_users ADD COLUMN akun_pro TINYINT(1) NOT NULL DEFAULT 0;
+      </div>
+      <div class="mt-2">
+        Bila muncul pesan <code>#1060 - Duplicate column name 'akun_pro'</code>,
+        artinya kolomnya sudah ada - tidak ada yang rusak. Muat ulang halaman ini.
       </div>
       <div class="mt-2">
         Perintah itu hanya <strong>menambah satu kolom</strong> dan mengisinya dengan 0 (GRATIS)

@@ -64,24 +64,31 @@ function rts_login_has_column(mysqli $conn, string $table, string $column): bool
         return false;
     }
 
-    $stmt = $conn->prepare(
-        'SELECT COUNT(*) AS total
-         FROM information_schema.COLUMNS
-         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
-    );
+    /* Memakai SHOW COLUMNS, BUKAN information_schema: akun database cPanel
+       tidak diberi izin membaca information_schema (#1044). */
+    if (function_exists('rts_api_ada_kolom')) {
+        $ada = rts_api_ada_kolom($conn, $table, $column);
+        $cache[$key] = $ada;
 
-    if (!$stmt) {
+        return $ada;
+    }
+
+    if (preg_match('/^[A-Za-z0-9_]+$/', $table) !== 1
+        || preg_match('/^[A-Za-z0-9_]+$/', $column) !== 1) {
         $cache[$key] = false;
         return false;
     }
 
-    $stmt->bind_param('ss', $table, $column);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $baris = $result ? $result->fetch_assoc() : null;
-    $stmt->close();
+    $hasil = @$conn->query(
+        'SHOW COLUMNS FROM `' . $table . '` LIKE \''
+        . $conn->real_escape_string($column) . '\''
+    );
 
-    $ada = $baris && (int) $baris['total'] > 0;
+    $ada = ($hasil instanceof mysqli_result) && $hasil->num_rows > 0;
+
+    if ($hasil instanceof mysqli_result) {
+        $hasil->free();
+    }
 
     $cache[$key] = $ada;
 

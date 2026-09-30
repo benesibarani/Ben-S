@@ -4766,3 +4766,97 @@ keduanya harus didaftarkan lebih dahulu sebelum aplikasi dapat dibangun.
 | 2 | `Ctrl + Shift + P` - `Dart: Restart Analysis Server` | Membersihkan tulisan merah di VS Code |
 | 3 | `powershell -ExecutionPolicy Bypass -File .\PASANG_FITUR_BARU.ps1` | Ikon, izin iklan, lalu membangun dan memasang ke HP |
 
+---
+
+## BAGIAN 44 - MEMPERBAIKI ERROR #1044 PADA RTS_PANEL_AKUN_PRO
+
+### A. Kesalahan yang muncul
+
+Saat berkas `RTS_PANEL_AKUN_PRO.sql` dijalankan pada phpMyAdmin, muncul:
+
+```
+#1044 - Access denied for user 'cpses_begpopoyvq'@'localhost'
+        to database 'information_schema'
+```
+
+### B. Penyebabnya
+
+Berkas SQL versi 1 saya memakai tabel **information_schema** untuk memeriksa
+apakah kolomnya sudah ada:
+
+```sql
+SELECT COUNT(*) FROM information_schema.COLUMNS   <-- baris ini penyebabnya
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sales_users' ...
+```
+
+Akun database pada hosting cPanel **tidak diberi izin membaca tabel
+information_schema**. Karena baris itu berada paling atas, phpMyAdmin
+**berhenti di situ** dan perintah `ALTER TABLE` (yang sebenarnya menambah kolom)
+**tidak pernah dijalankan**.
+
+Catatan: tabel itu milik sistem MySQL, bukan tabel data Bapak - jadi tidak ada
+data Bapak yang tersentuh. Yang gagal hanyalah langkah pemeriksaannya.
+
+### C. Perbaikannya (versi 2)
+
+| Berkas | Perubahan |
+| --- | --- |
+| `RTS_PANEL_AKUN_PRO.sql` | Tidak lagi memakai `information_schema` - diganti `SHOW COLUMNS` yang selalu tersedia |
+| `akun_pro.php` | Pemeriksaan kolom juga diganti memakai `SHOW COLUMNS` |
+| `api/kolom.php` | Fungsi `rts_api_ada_kolom()` diganti memakai `SHOW COLUMNS` |
+| `api/login.php` | Fungsi pemeriksa kolom lama juga disamakan |
+
+Seluruh berkas PHP yang diperbarui ini **memakai nama tabel dan kolom yang
+diperiksa dengan pola huruf/angka saja** sebagai pengaman tambahan.
+
+### D. Cara tercepat menjalankan (satu baris saja)
+
+Sebenarnya hanya **satu baris** yang benar-benar diperlukan:
+
+```sql
+ALTER TABLE sales_users ADD COLUMN akun_pro TINYINT(1) NOT NULL DEFAULT 0;
+```
+
+| Nomor | Langkah |
+| --- | --- |
+| 1 | Buka cPanel - phpMyAdmin |
+| 2 | Klik database `benedics_bene_sales` pada panel kiri |
+| 3 | Klik tab **SQL** |
+| 4 | Tempel satu baris di atas, klik **Kirim** |
+| 5 | Bila muncul `#1060 - Duplicate column name 'akun_pro'`, artinya kolomnya **sudah ada** - tidak ada yang rusak, lanjut saja |
+
+Perintah pemeriksaan dan ringkasan yang ada di dalam berkas SQL sifatnya
+**pilihan** - tidak diperlukan untuk keberhasilan.
+
+### E. Bila ingin memakai berkas lengkapnya
+
+Berkas `RTS_PANEL_AKUN_PRO.sql` versi 2 sudah **tidak memakai
+information_schema**, sehingga seluruh isinya dapat dijalankan sekaligus:
+
+| Urutan | Isi berkas |
+| --- | --- |
+| LANGKAH 1 | `SHOW COLUMNS FROM sales_users LIKE 'akun_pro'` - pemeriksaan |
+| LANGKAH 2 | `ALTER TABLE sales_users ADD COLUMN akun_pro ...` - menambah kolom |
+| LANGKAH 3 | `SHOW COLUMNS ...` - memastikan kolomnya sudah ada |
+| LANGKAH 4 | Ringkasan jumlah akun PRO dan GRATIS |
+
+### F. Urutan pemasangan yang disarankan
+
+| Nomor | Langkah |
+| --- | --- |
+| 1 | Jalankan perintah SQL pada database **uji coba** (`benedics_coba`) |
+| 2 | Unggah seluruh berkas `RTS_PANEL_AKUN_PRO.zip` **versi 2** ke `public_html` |
+| 3 | Buka `https://coba.benedic-s.com/akun_pro.php` - pastikan daftar akun tampil (bukan peringatan kolom) |
+| 4 | Tekan **Jadikan PRO** pada satu akun uji, lalu buka aplikasi memakai akun itu - iklan harus hilang |
+| 5 | Setelah staging berhasil **dan produksi sudah di-backup**, ulangi langkah 1-2 pada produksi |
+
+### G. Bila masih ada kesalahan lain
+
+| Pesan | Sebab dan penanganan |
+| --- | --- |
+| `#1044 ... information_schema` | Berkas SQL versi lama masih dipakai - pakai versi 2, atau jalankan satu baris `ALTER TABLE` pada bagian D |
+| `#1060 Duplicate column name 'akun_pro'` | Kolomnya sudah ada - abaikan, lanjut ke langkah website |
+| `#1144 Access denied` pada `ALTER TABLE` | Akun database tidak berhak mengubah tabel - beri **ALL PRIVILEGES** lewat cPanel - MySQL Databases |
+| `#1146 Table 'sales_users' doesn't exist` | Database yang dipilih salah - pastikan `benedics_bene_sales` (produksi) atau `benedics_coba` (uji coba) |
+| Halaman `akun_pro.php` masih menampilkan peringatan kolom | Muat ulang dengan **Ctrl+F5**; bila tetap, pastikan yang diunggah adalah berkas dari paket versi 2 |
+

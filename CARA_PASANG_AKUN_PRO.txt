@@ -1,49 +1,106 @@
 ===============================================================================
  RTS PANEL BY BENE - AKUN PRO (IKLAN HANYA UNTUK AKUN GRATIS)
- Paket: RTS_PANEL_AKUN_PRO.zip
+ Paket: RTS_PANEL_AKUN_PRO.zip        VERSI 2 - 30 September 2026
 ===============================================================================
 
 ATURAN YANG DITERAPKAN (pilihan Bapak - pilihan b)
    Akun GRATIS : iklan tampil (banner beranda + iklan bentuk asli di 6 menu)
    Akun PRO    : iklan TIDAK tampil sama sekali
 
-ISI PAKET (ekstrak ke public_html)
+===============================================================================
+ YANG DIPERBAIKI PADA VERSI 2
+===============================================================================
+ Versi 1 gagal pada phpMyAdmin dengan pesan:
+
+    #1044 - Access denied for user 'cpses_begpopoyvq'@'localhost'
+            to database 'information_schema'
+
+ Sebabnya: berkas SQL versi 1 memakai tabel information_schema untuk memeriksa
+ kolom. Akun database cPanel tidak diberi izin membaca tabel itu, sehingga
+ phpMyAdmin BERHENTI pada baris pertama dan perintah ALTER TABLE (yang
+ sebenarnya menambah kolom) tidak pernah dijalankan.
+
+ Yang diperbaiki pada versi 2:
+   1. Berkas SQL tidak lagi memakai information_schema - diganti SHOW COLUMNS
+   2. akun_pro.php juga tidak lagi memakai information_schema
+   3. api/kolom.php dan api/login.php ikut diperbaiki dengan cara yang sama
+
+===============================================================================
+ CARA TERCEPAT (SATU BARIS DI phpMyAdmin)
+===============================================================================
+ 1. Buka cPanel - phpMyAdmin
+ 2. Klik database benedics_bene_sales pada panel kiri
+ 3. Klik tab SQL
+ 4. Tempel SATU baris berikut:
+
+      ALTER TABLE sales_users ADD COLUMN akun_pro TINYINT(1) NOT NULL DEFAULT 0;
+
+ 5. Klik Kirim
+ 6. Bila muncul "#1060 - Duplicate column name 'akun_pro'", artinya kolomnya
+    SUDAH ADA - tidak ada yang rusak, lanjutkan ke langkah berikutnya
+
+ Hanya perintah itu yang benar-benar diperlukan. Perintah lainnya (pemeriksaan
+ dan ringkasan) sudah disertakan di dalam berkas RTS_PANEL_AKUN_PRO.sql dan
+ bersifat pilihan.
+
+===============================================================================
+ ISI PAKET (ekstrak ke public_html)
+===============================================================================
    akun_pro.php                     halaman ADMIN untuk menandai akun PRO
    api/kolom.php                    berkas BARU  - pemeriksaan kolom database
    api/login.php                    diperbarui   - mengirim penanda akun_pro
    api/session_check.php            diperbarui   - mengirim penanda akun_pro
    api/api_bootstrap.php            diperbarui   - membaca kolom akun_pro
-   RTS_PANEL_AKUN_PRO.sql           perintah menambah kolom akun_pro
+   RTS_PANEL_AKUN_PRO.sql           perintah menambah kolom akun_pro (versi 2)
 
-URUTAN PEMASANGAN
-   1. Jalankan RTS_PANEL_AKUN_PRO.sql pada database UJI COBA (benedics_coba)
-      lewat phpMyAdmin - tab SQL - tempel isi berkas - Go
-   2. Unggah seluruh berkas pada paket ini ke public_html
-      (berkas di dalam folder api/ masuk ke folder api/ di server)
-   3. Uji di staging: buka https://coba.benedic-s.com/akun_pro.php
-      - halaman harus menampilkan daftar akun
-      - tekan "Jadikan PRO" pada satu akun uji
-      - buka aplikasi memakai akun itu - iklan harus hilang
-   4. Setelah staging berhasil DAN database produksi sudah di-backup:
-      ulangi langkah 1 dan 2 pada produksi (rts.benedic-s.com)
+===============================================================================
+ URUTAN PEMASANGAN
+===============================================================================
+ 1. Jalankan perintah SQL (bagian "CARA TERCEPAT" di atas) pada database
+    UJI COBA lebih dahulu: benedics_coba
+ 2. Unggah seluruh berkas paket ini ke public_html
+    (berkas di dalam folder api/ masuk ke folder api/ di server)
+ 3. Uji di staging: buka https://coba.benedic-s.com/akun_pro.php
+    - halaman harus menampilkan daftar akun (bukan peringatan kolom)
+    - tekan "Jadikan PRO" pada satu akun uji
+    - buka aplikasi memakai akun itu - iklan harus hilang
+ 4. Setelah staging berhasil DAN database produksi sudah di-backup:
+    ulangi langkah 1 dan 2 pada produksi (rts.benedic-s.com)
 
-YANG PENTING DIKETAHUI
-   - Selama kolom akun_pro belum ada, seluruh akun dianggap GRATIS.
-     Jadi memasang berkas PHP ini lebih dahulu TIDAK merusak apa pun.
-   - Perintah SQL-nya hanya MENAMBAH satu kolom; tidak ada data akun,
-     password, atau penjualan yang diubah.
-   - Aplikasi membaca status ini saat LOGIN. Setelah status diubah, pengguna
-     perlu login kembali (atau membuka aplikasi lagi) agar terlihat.
-   - Halaman akun_pro.php hanya dapat dibuka oleh role ADMIN.
-   - Akun ADMIN sendiri tidak dapat diubah menjadi GRATIS, agar tidak
-     terkunci dari halaman ini.
-   - Pembayaran/langganan belum ditangani; halaman ini hanya menandai akun.
+===============================================================================
+ BILA ADA MASALAH
+===============================================================================
+ Muncul "#1044 Access denied ... to database 'information_schema'"
+    Berarti berkas SQL versi LAMA yang dipakai. Pakai RTS_PANEL_AKUN_PRO.sql
+    dari paket VERSI 2 ini (tidak memakai information_schema), atau cukup
+    jalankan satu baris ALTER TABLE pada bagian "CARA TERCEPAT".
 
-UJI COBA TANPA MENGUBAH DATABASE
+ Muncul "#1060 Duplicate column name 'akun_pro'"
+    Kolomnya sudah ada. Tidak ada yang rusak. Lanjutkan ke langkah website.
+
+ Muncul "#1144 Access denied" pada ALTER TABLE
+    Akun database yang dipakai phpMyAdmin tidak berhak mengubah tabel. Buat
+    pengguna database lewat cPanel - MySQL Databases, beri ALL PRIVILEGES
+    untuk database tersebut, lalu ulangi.
+
+ Halaman akun_pro.php masih menampilkan peringatan kolom
+    Muat ulang halaman (Ctrl+F5). Bila tetap, pastikan berkas akun_pro.php
+    yang diunggah adalah dari paket VERSI 2 ini.
+
+ Status PRO diubah tetapi iklan masih tampil
+    Pengguna perlu LOGIN KEMBALI - status dibaca saat login.
+
+===============================================================================
+ YANG PENTING DIKETAHUI
+===============================================================================
+ - Selama kolom akun_pro belum ada, seluruh akun dianggap GRATIS. Jadi
+   memasang berkas PHP ini lebih dahulu TIDAK merusak apa pun.
+ - Perintah SQL hanya MENAMBAH satu kolom; tidak ada data akun, password,
+   atau penjualan yang diubah.
+ - Halaman akun_pro.php hanya dapat dibuka oleh role ADMIN, dan akun ADMIN
+   sendiri tidak dapat diubah menjadi GRATIS.
+ - Pembayaran/langganan belum ditangani; halaman ini hanya menandai akun.
+
+ UJI COBA TANPA MENGUBAH DATABASE
    Pada aplikasi: menu Profil - nyalakan "Uji coba Akun PRO" (khusus ADMIN).
-   Berguna untuk melihat tampilan bebas iklan sebelum kolom database dibuat.
-
-CARA CEPAT MEMERIKSA APAKAH BERHASIL
-   Akun PRO    -> tidak ada kotak iklan di beranda maupun pada keenam menu
-   Akun GRATIS -> iklan tampil seperti biasa
 ===============================================================================

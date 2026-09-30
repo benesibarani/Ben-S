@@ -10,6 +10,18 @@
  * Gunanya: menambah kolom baru pada database (misalnya kolom akun_pro untuk
  * Akun PRO) tidak akan membuat API yang sudah berjalan menjadi gagal. Selama
  * kolomnya belum ada, API memakai nilai bawaan.
+ *
+ * CATATAN PENTING TENTANG PENYIMPANAN DI cPanel
+ * ---------------------------------------------
+ * Pemeriksaan TIDAK memakai tabel information_schema, karena akun database
+ * pada sebagian hosting cPanel tidak diberi izin membaca tabel itu. Bila
+ * dipaksakan, muncul kesalahan:
+ *
+ *     #1044 - Access denied for user 'cpses_...'@'localhost'
+ *             to database 'information_schema'
+ *
+ * Sebagai gantinya dipakai perintah SHOW COLUMNS, yang selalu tersedia pada
+ * akun database biasa sekaligus lebih ringan.
  */
 
 if (!function_exists('rts_api_ada_kolom')) {
@@ -29,29 +41,24 @@ if (!function_exists('rts_api_ada_kolom')) {
             return $simpanan[$kunci];
         }
 
-        if ($conn->connect_errno) {
+        // Nama tabel dan kolom hanya boleh berisi huruf, angka, dan garis
+        // bawah. Selain itu ditolak, sebagai pengaman.
+        if (preg_match('/^[A-Za-z0-9_]+$/', $tabel) !== 1
+            || preg_match('/^[A-Za-z0-9_]+$/', $kolom) !== 1) {
             $simpanan[$kunci] = false;
             return false;
         }
 
-        $stmt = $conn->prepare(
-            'SELECT COUNT(*) AS total
-             FROM information_schema.COLUMNS
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+        $hasil = @$conn->query(
+            'SHOW COLUMNS FROM `' . $tabel . '` LIKE \''
+            . $conn->real_escape_string($kolom) . '\''
         );
 
-        if (!$stmt) {
-            $simpanan[$kunci] = false;
-            return false;
+        $ada = ($hasil instanceof mysqli_result) && $hasil->num_rows > 0;
+
+        if ($hasil instanceof mysqli_result) {
+            $hasil->free();
         }
-
-        $stmt->bind_param('ss', $tabel, $kolom);
-        $stmt->execute();
-        $hasil = $stmt->get_result();
-        $baris = $hasil ? $hasil->fetch_assoc() : null;
-        $stmt->close();
-
-        $ada = $baris && (int) $baris['total'] > 0;
 
         $simpanan[$kunci] = $ada;
 
