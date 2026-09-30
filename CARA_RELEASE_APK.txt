@@ -77,6 +77,10 @@
 
    Berkas inilah yang akan diunggah dan dibagikan ke seluruh petugas.
 
+   Bila hasilnya di atas 50 MB, lihat LANGKAH B2 di bawah - ada beberapa cara
+   memperkecilnya, dan salah satu sebab tersering adalah berkas yang tidak
+   seharusnya ada di dalam folder assets.
+
    Catatan tanda tangan aplikasi (signing):
      Secara bawaan, Flutter menandatangani APK rilis memakai kunci uji
      (debug key). Ini AMAN untuk dibagikan sendiri kepada petugas - hanya
@@ -88,6 +92,137 @@
      Bila nanti ingin diajukan ke Play Store, atau ingin peringatan itu
      hilang, kita buatkan kunci rilis tersendiri (keystore). Beri tahu saya
      bila ingin dibuatkan - jangan membuatnya sendiri supaya tidak salah.
+
+
+==============================================================================
+ LANGKAH B2 - BILA UKURAN APK DI ATAS 50 MB
+==============================================================================
+
+ Ini TERJADI? Tenang - masih dapat diunggah dan dipasang. Batas halaman
+ unggh di hosting adalah 100 MB, dan batas PHP (upload_max_filesize /
+ post_max_size) ditampilkan pada halaman app_versi.php bagian atas.
+
+ Tiga hal yang perlu diperhatikan bila APK besar:
+   1. Batas PHP pada hosting (bila terlalu kecil, unggahan gagal sebelum
+      dikirim - lihat bagian "BILA UNGGAHAN GAGAL" di bawah)
+   2. Waktu unggah lebih lama, dan bila sambungan terputus harus diulang
+   3. Kuota internet petugas saat mengunduh lewat HP
+
+ ------------------------------------------------------------------------
+ CARA 1 - BERSIHKAN FOLDER ASSETS (PALING SERING JADI SEBABNYA)
+ ------------------------------------------------------------------------
+
+ pubspec.yaml memuat aturan  assets: - assets/images/  yang artinya SELURUH
+ berkas dalam folder itu IKUT DIBUNGKUS ke dalam APK - bukan hanya gambar.
+ Bila di sana ada salinan database (.sql), berkas cadangan (.lama_), atau
+ gambar berganda, ukuran APK membengkak.
+
+   [ ] 1. Buka PowerShell:
+
+              cd D:\Project\rts_panel_app
+              .\BERSIHKAN_ASSETS.ps1
+
+          Skrip hanya MEMERIKSA dan menampilkan daftar berkas + ukurannya.
+
+   [ ] 2. Bila ada berkas yang sebaiknya keluar (mis. file .sql), jalankan:
+
+              .\BERSIHKAN_ASSETS.ps1 -Pindahkan
+
+          Berkas DIPINDAH (tidak dihapus) ke folder _di_luar_apk pada proyek.
+
+   [ ] 3. Bangun APK kembali:
+
+              flutter clean
+              flutter build apk --release
+
+ PENTING: salinan database di dalam APK dapat dibaca siapa pun yang memegang
+ berkas APK itu - termasuk data customer. Jangan pernah dibiarkan.
+
+ ------------------------------------------------------------------------
+ CARA 2 - BANGUN APK KHUSUS HP MODERN (satu berkas, jauh lebih kecil)
+ ------------------------------------------------------------------------
+
+   flutter clean
+   flutter build apk --release --target-platform android-arm64
+
+   Hasil: build\app\outputs\flutter-apk\app-release.apk
+   Berlaku untuk hampir seluruh HP tahun 2017 ke atas - termasuk CPH1937.
+   Perkiraan: sekitar 30-40% lebih kecil daripada APK biasa.
+
+   Bila ada petugas yang memakai HP lama (32-bit), dia TIDAK dapat memasang
+   berkas ini - untuk dia pakai APK dari Cara 3.
+
+ ------------------------------------------------------------------------
+ CARA 3 - TIGA APK TERPISAH (paling hemat kuota petugas)
+ ------------------------------------------------------------------------
+
+   flutter clean
+   flutter build apk --release --split-per-abi
+
+   Hasil di build\app\outputs\flutter-apk\:
+
+       app-arm64-v8a-release.apk      <-- unggah YANG INI ke app_versi.php
+       app-armeabi-v7a-release.apk    <-- untuk HP lama (bagikan bila perlu)
+       app-x86_64-release.apk         <-- untuk emulator di komputer
+
+   Halaman app_versi.php menerima satu berkas APK. Unggah versi arm64
+   (paling kecil dan cocok untuk hampir semua HP), sedangkan dua berkas
+   lainnya cukup disimpan untuk keperluan tertentu.
+
+ ------------------------------------------------------------------------
+ CARA 4 - MEMPERKECIL SEDIKIT LAGI (opsional)
+ ------------------------------------------------------------------------
+
+   flutter build apk --release --target-platform android-arm64 ^
+       --split-debug-info=build\symbols --obfuscate
+
+   Tanda ^ di atas adalah penyambung baris di PowerShell (sebenarnya Bapak
+   dapat menulisnya dalam satu baris tanpa tanda ^).
+
+   Simpan folder build\symbols dengan aman: bila nanti ada laporan aplikasi
+   tertutup sendiri, berkas itu diperlukan untuk membaca penyebabnya.
+
+ ------------------------------------------------------------------------
+ BILA UNGGAHAN GAGAL KARENA BATAS PHP
+ ------------------------------------------------------------------------
+
+ Tanda-tandanya: unggahan berhenti lalu muncul pesan "Ukuran berkas melebihi
+ batas server (...)" atau halaman kembali ke halaman unggah tanpa keterangan.
+
+   [ ] 1. Buka https://rts.benedic-s.com/app_versi.php - perhatikan tulisan
+          "Batas server saat ini: ... (post: ...)" di bagian atas halaman.
+
+   [ ] 2. Bila angkanya kecil (misalnya 2M atau 8M), naikkan lewat cPanel:
+
+              cPanel - Software - MultiPHP INI Editor
+              pilih domain rts.benedic-s.com
+              ubah dua baris berikut menjadi 100M:
+                   upload_max_filesize = 100M
+                   post_max_size = 100M
+              Save
+
+   [ ] 3. Muat ulang halaman app_versi.php - angka batasnya harus berubah
+          menjadi 100M. Baru unggah APK-nya.
+
+   Cara lain tanpa cPanel (bila MultiPHP INI Editor tidak ada): buat berkas
+   .user.ini di dalam public_html berisi dua baris yang sama. Bila hosting
+   memakai LiteSpeed/Apache, berkas .htaccess juga dapat dipakai:
+
+              php_value upload_max_filesize 100M
+              php_value post_max_size 100M
+
+ ------------------------------------------------------------------------
+ UKURAN WAJAR SEBAGAI PATOKAN
+ ------------------------------------------------------------------------
+
+   APK biasa (semua jenis HP)            : sekitar 40-55 MB
+   APK khusus arm64                      : sekitar 25-35 MB
+   APK arm64 dengan assets bersih        : sekitar 20-30 MB
+
+   Rincian yang wajar memakan tempat: mesin Flutter sendiri (sekitar 8-10 MB
+   saat dimampatkan), Firebase + AdMob, serta plugin peta/kamera yang akan
+   ditambahkan pada putaran berikutnya. Jadi selama angka di atas tidak
+   terlampaui jauh, ukuran APK masih normal.
 
 
 ==============================================================================

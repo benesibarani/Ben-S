@@ -16,6 +16,15 @@
 
    Iklan          : iklan muncul sekilas saat aplikasi dibuka (app open),
                     dan iklan native tampil di SELURUH menu
+
+   PENTING - ISI FOLDER assets\images
+     Folder itu hanya boleh berisi GAMBAR (.png .jpg .jpeg .webp). Seluruh
+     berkas di dalamnya ikut dibungkus ke dalam APK, sehingga salinan
+     database (.sql) atau berkas cadangan (.lama_) di sana membuat APK
+     membengkak DAN isinya dapat dibaca siapa pun.
+     Memeriksanya:  cd D:\Project\rts_panel_app
+                    .\BERSIHKAN_ASSETS.ps1            (memeriksa saja)
+                    .\BERSIHKAN_ASSETS.ps1 -Pindahkan  (memindahkan keluar)
    Langganan PRO  : halaman baru "Langganan PRO" di aplikasi, pembayaran
                     dengan QRIS Bapak (Rp5.000), masa berlaku 30 hari
    Uji coba       : 7 hari gratis, diberikan otomatis satu kali setiap akun
@@ -274,6 +283,8 @@
    3_SKRIP_POWERSHELL\
       LANGKAH1_PASANG_SEMUA.ps1        SATU skrip yang perlu dijalankan
       PASANG_GAMBAR_QRIS.ps1           khusus memasang gambar QRIS (bila perlu)
+      BERSIHKAN_ASSETS.ps1             memeriksa/membersihkan folder assets
+                                       (dipakai bila ukuran APK membengkak)
 
    4_PANDUAN_LENGKAP\
       IKLAN_LANGGANAN_FOTO.txt         penjelasan rinci (bila ingin lebih tahu)
@@ -331,6 +342,17 @@
    Foto gagal diunggah                       | Periksa folder uploads dapat
                                              | ditulis (izin 755 pada File
                                              | Manager). Coba foto lebih kecil
+   Ukuran APK di atas 50 MB                  | Bersihkan folder assets:
+                                             |   .\BERSIHKAN_ASSETS.ps1
+                                             | Lalu bangun ulang dengan
+                                             |   flutter build apk --release
+                                             |   --target-platform android-arm64
+                                             | (lihat CARA_RELEASE_APK.txt
+                                             |  LANGKAH B2)
+   Unggahan APK gagal / kembali ke halaman   | Batas PHP hosting. Naikkan
+   unggah tanpa keterangan                   | upload_max_filesize dan
+                                             | post_max_size lewat cPanel
+                                             | MultiPHP INI Editor (100M)
    Iklan layar pembuka tidak muncul          | Pastikan unit iklan 8277624384
                                              | di AdMob berformat "App open".
                                              | Unit iklan baru perlu beberapa
