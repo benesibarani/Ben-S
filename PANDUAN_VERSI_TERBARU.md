@@ -5632,3 +5632,92 @@ dahulu (misalnya menjadi `rts_panel_app_lama`), lalu ekstrak paket ke folder
 baru `rts_panel_app`. Dengan begitu folder lama tetap utuh sebagai cadangan -
 tetapi cara ini memerlukan penyalinan `android\`, `assets\`, dan `lib\` dari
 folder lama, sehingga **cara menimpa (nomor 1) tetap yang paling mudah**.
+
+## BAGIAN 52 - "adb : The term 'adb' is not recognized" (BUILD SUDAH BERHASIL)
+
+### A. APA YANG TERJADI
+
+Dari tangkapan layar Bapak (30 September 2026, sore):
+
+```text
+Running Gradle task 'assembleDebug'...        196,7s
+√ Built build\app\outputs\flutter-apk\app-debug.apk
+
+PS D:\Project\rts_panel_app> adb install -r build\app\outputs\flutter-apk\app-debug.apk
+adb : The term 'adb' is not recognized as the name of a cmdlet, function,
+script file, or operable program. ...
+```
+
+| Nomor | Yang terlihat | Artinya |
+| --- | --- | --- |
+| 1 | `√ Built ... app-debug.apk (196,7s)` | **BUILD BERHASIL** - berkas APK sudah jadi |
+| 2 | Kanan bawah VS Code: `CPH1937 (wireless) (android-arm64)` | HP Bapak **tersambung nirkabel** dan dikenali Flutter |
+| 3 | `adb : The term 'adb' is not recognized` | Perintah `adb` belum dikenal Windows |
+
+Jadi yang gagal **bukan build dan bukan sambungan HP** - hanya satu perintah
+yang belum dikenal. Sebabnya: `adb.exe` berada di dalam folder Android SDK
+(`platform-tools`) dan folder itu belum terdaftar pada PATH Windows. Flutter
+menemukannya sendiri, tetapi PowerShell tidak.
+
+Peringatan **Kotlin Gradle Plugin (KGP)** yang muncul di atasnya hanyalah
+peringatan biasa dari paket `firebase_core` - build tetap berhasil, jadi sekarang
+belum perlu diurus.
+
+### B. TIGA JALAN KELUAR
+
+| Nomor | Cara | Perintah | Kelebihan |
+| --- | --- | --- | --- |
+| A | Langsung lewat Flutter (tanpa adb) | `flutter run -d CPH1937` | Paling mudah - Flutter mencari adb sendiri |
+| B | Pemanggil adb (`ADB.ps1`) | `.\ADB.ps1 pasang` | Membantu mencari adb.exe otomatis |
+| C | Perbaiki permanen (`TAMBAH_ADB_KE_PATH.ps1`) | `.\TAMBAH_ADB_KE_PATH.ps1` | Sekali jalan, seterusnya `adb` dapat langsung diketik |
+
+Cara A adalah yang paling cepat sekarang, karena APK-nya sudah jadi:
+
+```text
+flutter devices                     (melihat nama HP, contoh CPH1937)
+flutter run -d CPH1937              (bangun + pasang + jalankan)
+flutter install --debug -d CPH1937  (pasang saja, bila tidak ingin dijalankan)
+```
+
+### C. BERKAS BARU PADA PAKET INI
+
+| Berkas | Kegunaan |
+| --- | --- |
+| `ADB.ps1` | Pemanggil adb: mencari `adb.exe` sendiri, lalu menjalankan perintah - `daftar`, `alamat`, `pasang`, `pasang-release`, `buka`, `catatan`, `bersih` |
+| `TAMBAH_ADB_KE_PATH.ps1` | Mendaftarkan folder `platform-tools` ke PATH pengguna Windows, dengan cadangan PATH lama |
+| `PASANG_CEPAT.ps1` (diperbarui) | Kini memakai HP yang **sudah tersambung** tanpa menanyakan IP:PORT lagi |
+| `RTS_PANEL_PERINTAH_HP.zip` | Paket kecil: keempat berkas di atas saja |
+
+Contoh pemakaian `ADB.ps1`:
+
+```text
+.\ADB.ps1                 bantuan + daftar HP
+.\ADB.ps1 daftar          melihat HP yang tersambung
+.\ADB.ps1 alamat          letak adb.exe (untuk disalin)
+.\ADB.ps1 pasang          memasang APK debug terbaru
+.\ADB.ps1 pasang-release  memasang APK release terbaru
+.\ADB.ps1 buka            membuka aplikasi di HP
+.\ADB.ps1 catatan         melihat catatan aplikasi
+.\ADB.ps1 bersih          menyambung ulang adb
+```
+
+### D. CATATAN PENTING TENTANG `TAMBAH_ADB_KE_PATH.ps1`
+
+| Nomor | Hal |
+| --- | --- |
+| 1 | Yang diubah hanya **PATH pengguna** (User PATH), bukan PATH sistem |
+| 2 | PATH lama **dicadangkan** ke `%USERPROFILE%\path_pengguna_cadangan.txt` sebelum diubah |
+| 3 | Bila folder `platform-tools` sudah ada pada PATH, skrip tidak mengubah apa pun |
+| 4 | Setelah dijalankan, **tutup jendela PowerShell lalu buka yang baru** - Windows membaca PATH hanya saat jendela dibuka |
+| 5 | Cara membatalkan tertulis di bagian bawah berkas cadangan itu |
+
+### E. BILA INGIN MENCOBA PERINTAH adb TANPA MENGUBAH APAPUN
+
+Satu baris berikut langsung memakai adb dari letaknya:
+
+```powershell
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" devices
+```
+
+Bila letak SDK berbeda, jalankan `.\ADB.ps1 alamat` untuk melihat letak
+sebenarnya, lalu ganti bagian dalam tanda kutip di atas.

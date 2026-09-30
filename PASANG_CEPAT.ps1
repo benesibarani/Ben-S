@@ -104,13 +104,50 @@ TulisHasil $true "adb ditemukan: $adb"
 
 # -----------------------------------------------------------------------------
 # 2. Alamat HP
+#
+# Diperiksa lebih dahulu: bila ada HP yang SUDAH tersambung ke adb, alamatnya
+# dipakai langsung - tidak perlu mengetik IP:PORT lagi. Ini memudahkan pada
+# keadaan yang sering terjadi: HP sudah tersambung (misalnya dari flutter run)
+# dan Bapak hanya ingin memasang ulang APK.
 # -----------------------------------------------------------------------------
+$sedangTersambung = @()
+
+$periksaHp = & $adb devices 2>&1
+
+foreach ($baris in $periksaHp) {
+    if ($baris -match "^(\S+)\s+device$") {
+        $sedangTersambung += $Matches[1]
+    }
+}
+
+if (-not $Alamat -and $sedangTersambung.Count -eq 1) {
+    $Alamat = $sedangTersambung[0]
+
+    Write-Host ""
+    Write-Host "   HP sudah tersambung - alamat dipakai langsung: $Alamat" -ForegroundColor Green
+}
+
 if (-not $Alamat) {
-    Write-Host ""
-    Write-Host "   Di HP: Pengaturan - Sistem - Opsi Pengembang - Penelusuran nirkabel." -ForegroundColor Yellow
-    Write-Host "   Catat IP address & Port yang muncul (contoh: 192.168.1.10:37000)." -ForegroundColor Yellow
-    Write-Host ""
-    $Alamat = Read-Host "   Tuliskan IP:PORT HP sekarang"
+    if ($sedangTersambung.Count -gt 1) {
+        Write-Host ""
+        Write-Host "   Ada $($sedangTersambung.Count) HP tersambung:" -ForegroundColor Yellow
+
+        $no = 1
+        foreach ($satu in $sedangTersambung) {
+            Write-Host "     $no. $satu" -ForegroundColor Gray
+            $no++
+        }
+
+        $pilih = Read-Host "   Tulis nomor HP yang ingin dipakai"
+        $Alamat = $sedangTersambung[[int]$pilih - 1]
+    }
+    else {
+        Write-Host ""
+        Write-Host "   Di HP: Pengaturan - Sistem - Opsi Pengembang - Penelusuran nirkabel." -ForegroundColor Yellow
+        Write-Host "   Catat IP address & Port yang muncul (contoh: 192.168.1.10:37000)." -ForegroundColor Yellow
+        Write-Host ""
+        $Alamat = Read-Host "   Tuliskan IP:PORT HP sekarang"
+    }
 }
 
 $Alamat = $Alamat.Trim()
@@ -152,14 +189,24 @@ if ($Pasangkan) {
     }
 }
 
-# Membersihkan sambungan lama, lalu menyambung ulang
-& $adb disconnect $ipSaja 2>&1 | Out-Null
-& $adb kill-server 2>&1 | Out-Null
-& $adb start-server 2>&1 | Out-Null
-
+# Bila HP sudah tersambung, langkah penyambungan dilewati.
 $tersambung = $false
 
-for ($i = 1; $i -le $Ulang; $i++) {
+foreach ($satu in $sedangTersambung) {
+    if ($satu -eq $Alamat) { $tersambung = $true }
+}
+
+if ($tersambung) {
+    TulisHasil $true "HP sudah tersambung sebelumnya - langsung dilanjutkan"
+}
+else {
+    # Membersihkan sambungan lama, lalu menyambung ulang
+    & $adb disconnect $ipSaja 2>&1 | Out-Null
+    & $adb kill-server 2>&1 | Out-Null
+    & $adb start-server 2>&1 | Out-Null
+}
+
+for ($i = 1; $i -le $Ulang -and -not $tersambung; $i++) {
     Write-Host ""
     Write-Host "   Percobaan $i dari $Ulang..." -ForegroundColor Gray
 

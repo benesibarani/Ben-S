@@ -9,6 +9,49 @@
 
 
 ------------------------------------------------------------------
+ PENTING - BILA MUNCUL: "adb : The term 'adb' is not recognized..."
+------------------------------------------------------------------
+
+ Ini BUKAN kegagalan build. Build-nya sudah berhasil; yang belum dikenali
+ hanya perintah "adb", karena adb.exe berada di dalam folder Android SDK
+ (platform-tools) dan folder itu belum terdaftar pada PATH Windows.
+
+ Ada TIGA jalan keluar - pilih salah satu:
+
+ A. PALING MUDAH - tidak memakai adb sama sekali (langsung dari Flutter):
+
+       flutter devices                      (lihat nama HP, contoh CPH1937)
+       flutter run -d CPH1937               (bangun + pasang + jalankan)
+       flutter install --debug -d CPH1937   (pasang saja, tanpa menjalankan)
+
+    Flutter mencari adb-nya sendiri, jadi tidak terpengaruh masalah PATH.
+
+ B. MEMAKAI PEMANGGIL adb (ADB.ps1) - mencari adb.exe secara otomatis:
+
+       .\ADB.ps1                (bantuan + daftar HP)
+       .\ADB.ps1 pasang         (memasang APK debug terbaru)
+       .\ADB.ps1 pasang-release (memasang APK release terbaru)
+       .\ADB.ps1 buka           (membuka aplikasi di HP)
+       .\ADB.ps1 catatan        (melihat catatan aplikasi)
+       .\ADB.ps1 alamat         (mencetak letak adb.exe untuk disalin)
+
+ C. MEMPERBAIKI PERMANEN - mendaftarkan adb ke PATH (sekali saja):
+
+       .\TAMBAH_ADB_KE_PATH.ps1
+
+    Setelah dijalankan: TUTUP jendela PowerShell, lalu BUKA BARU.
+    Sesudah itu perintah "adb ..." dapat diketik langsung seperti biasa.
+    PATH lama tetap dicadangkan ke berkas path_pengguna_cadangan.txt.
+
+ Cara memakai adb TANPA mengubah PATH (satu baris, untuk keperluan cepat):
+
+       & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" devices
+
+   (Bila letak SDK berbeda, jalankan ".\ADB.ps1 alamat" untuk melihat
+    letak sebenarnya, lalu ganti bagian dalam tanda kutip di atas.)
+
+
+------------------------------------------------------------------
  0. MEMERIKSA HP TERHUBUNG ATAU TIDAK
 ------------------------------------------------------------------
 
@@ -84,6 +127,9 @@
 
    flutter run -d 192.168.1.10:37000
 
+   (nama HP dapat juga dipakai, contoh: flutter run -d CPH1937 - lihat
+    daftar nama dengan perintah "flutter devices")
+
    Perintah ini: membangun versi debug, memasang ke HP, lalu membukanya.
    Setelah aplikasi jalan, pada jendela PowerShell:
 
@@ -107,6 +153,14 @@
    b. Memasangnya ke HP:
 
          adb install -r build\app\outputs\flutter-apk\app-debug.apk
+
+      Bila "adb" tidak dikenali, pakai salah satu pengganti berikut:
+
+         .\ADB.ps1 pasang
+         .\PASANG_CEPAT.ps1            (mendeteksi HP yang sudah tersambung)
+
+      PASANG_CEPAT.ps1 sekarang memakai HP yang SUDAH tersambung tanpa
+      menanyakan IP:PORT lagi.
 
       Keterangan: -r = timpa yang sudah ada tanpa menghapus data.
 
