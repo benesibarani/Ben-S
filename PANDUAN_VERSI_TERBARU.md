@@ -5473,3 +5473,75 @@ browser. Bila alamat berakhir `app_versi.php` tetapi isinya dashboard, berarti
 memang ada pengalihan dari dalam halaman. Bila alamatnya berubah menjadi
 `dashboard.php`, sebabnya ada pada berkas yang dijalankan lebih dahulu
 (`config.php` atau `header.php`).
+
+## BAGIAN 50 - CUACA TETAP TIDAK TAMPIL: BUILD DI HP MASIH LAMA + ALAT DIAGNOSA BARU
+
+### A. BUKTI DARI TANGKAPAN LAYAR (30 September 2026, 13.22)
+
+| Nomor | Yang terlihat | Artinya |
+| --- | --- | --- |
+| 1 | Beranda normal: kartu merah, iklan, 6 menu | Aplikasi berjalan baik |
+| 2 | Kartu merah **tidak memuat kotak cuaca** | Aplikasi memakai build lama |
+| 3 | Pengaturan HP - Aplikasi - Izin: **Lokasi "Diizinkan"** | Izin lokasi sudah diberikan - jadi kode permintaan izin sudah bekerja |
+
+Kesimpulan: seluruh perbaikan sisi server dan perizinan sudah bekerja. Yang
+tinggal adalah **build baru harus dipasang ke HP**, karena build yang terpasang
+masih versi yang kotak cuacanya hanya tampil BILA laporan berhasil. Selama
+laporan belum berhasil, kotak itu tidak digambar sama sekali - sehingga tidak
+ada tanda apa pun dan sebabnya tidak dapat dibaca dari HP.
+
+### B. PERBAIKAN YANG DIPASANG PADA PAKET INI (VERSI 5)
+
+| Nomor | Perbaikan | Kegunaan |
+| --- | --- | --- |
+| 1 | **Penanda kode aplikasi** `rtsKodeAplikasi = 'RTS-2026-09-30-5'` | Dapat dibandingkan antara nilai pada main.dart dan nilai pada HP - langsung ketahuan kalau build lama |
+| 2 | Kartu **Cuaca Beranda** kini menampilkan seluruh keterangan: kode aplikasi, versi terpasang, keadaan, izin lokasi, GPS aktif, titik lokasi, cuaca terbaca, dan keterangan teknis | Sebab kegagalan terbaca langsung di HP |
+| 3 | Tombol **SALIN KETERANGAN (KIRIM KE PENGEMBANG)** | Seluruh keterangan disalin ke papan klip sekali tekan, lalu cukup ditempelkan pada pesan - tidak perlu difoto atau diketik |
+| 4 | `RtsCuaca` kini mencatat: `izinLokasi`, `gpsAktif`, `titikTerakhir`, `pesanTeknis`, `dicobaPada`, `jumlahBerhasil` | Bahan keterangan pada kartu Pengaturan |
+| 5 | `PASANG_FITUR_BARU.ps1` memeriksa **penanda kode aplikasi** pada main.dart dan **mencetak nilainya** | Sebelum build dimulai, sudah diketahui apakah folder proyek berisi kode baru atau lama |
+| 6 | Pemeriksa skrip juga menampilkan baris izin lokasi pada AndroidManifest | Memastikan `ACCESS_FINE_LOCATION` dan `ACCESS_COARSE_LOCATION` benar-benar ada |
+
+Contoh tulisan yang dikeluarkan skrip pemasang:
+
+```text
+   [ADA] main.dart memuat penanda kode aplikasi
+   [ADA] kotak cuaca versi baru (selalu tampil, dapat diketuk)
+   [ADA] kartu pemeriksa Cuaca Beranda pada Pengaturan
+   [ADA] tombol SALIN KETERANGAN cuaca
+
+   KODE APLIKASI pada main.dart : RTS-2026-09-30-5
+   Sesudah aplikasi dipasang ke HP, buka Pengaturan - bagian
+   'Cuaca Beranda'. Nilai pada kotak merah muda HARUS SAMA dengan nilai di atas.
+```
+
+### C. LANGKAH YANG DISARANKAN
+
+| Nomor | Kegiatan | Berkas |
+| --- | --- | --- |
+| 1 | Unduh **ulang** `RTS_PANEL_FITUR_BARU.zip` (yang baru, memuat 6 berkas) | tautan pada pesan |
+| 2 | Hapus folder `D:\Project\rts_panel_app`, lalu ekstrak ulang dari nol | - |
+| 3 | Jalankan `PERBAIKI_PUBSPEC.ps1`, lalu `PASANG_FITUR_BARU.ps1` | - |
+| 4 | Perhatikan **KODE APLIKASI** yang dicetak skrip (harus `RTS-2026-09-30-5`) | - |
+| 5 | Buka aplikasi - kartu merah kini memuat kotak **Cuaca** | - |
+| 6 | Bila masih gagal: Pengaturan - Cuaca Beranda - tekan **SALIN KETERANGAN**, lalu tempelkan pada pesan | `CUACA_BELUM_TAMPIL.txt` |
+
+### D. CARA MEMBACA KETERANGAN YANG DISALIN
+
+| Baris | Arti dan tindakan |
+| --- | --- |
+| `GPS aktif : TIDAK` | Layanan Lokasi HP mati - hidupkan pada Pengaturan HP - Lokasi |
+| `Izin lokasi : Belum diizinkan` | Ketuk kotak Cuaca pada beranda, lalu pilih "Saat aplikasi digunakan" |
+| `Izin lokasi : Ditolak permanen` | Pengaturan HP - Aplikasi - RTS Panel - Izin - Lokasi - Izinkan |
+| `Titik lokasi : (belum ada)` + keadaan "Membaca titik GPS" | Pindah ke tempat terbuka; di dalam gedung GPS sering tidak mendapat titik |
+| `Keterangan teknis: TimeoutException` | Jaringan HP lambat - coba lagi, periksa paket data |
+| `Keadaan : Gagal menghubungi layanan cuaca` | Layanan Open-Meteo tidak terjangkau - periksa kuota data |
+| `Keadaan : Laporan cuaca siap` | Berhasil - suhu sudah tampil pada kartu merah |
+
+### E. CATATAN PENTING
+
+**Izin lokasi saja tidak cukup - GPS (Layanan Lokasi) pada HP juga harus
+aktif.** Bila GPS mati, aplikasi akan mencoba memakai titik lokasi terakhir
+yang pernah tercatat; bila belum pernah ada, laporan tidak dapat diambil.
+
+Laporan cuaca memakai layanan gratis **Open-Meteo** yang tidak memerlukan
+kunci API, sehingga tidak ada yang perlu diatur pada website.

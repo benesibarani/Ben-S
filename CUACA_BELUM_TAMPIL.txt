@@ -1,0 +1,193 @@
+==============================================================================
+ RTS PANEL BY BENE - CUACA BELUM TAMPIL DI KOTAK MERAH
+ Panduan perbaikan + cara mengirim keterangan kepada pengembang
+==============================================================================
+
+APA YANG SUDAH BENAR (dari tangkapan layar Bapak 30 September 2026)
+-------------------------------------------------------------------
+  [v] Izin Lokasi pada HP : "Diizinkan"
+      (Pengaturan HP - Aplikasi - rts_panel_app - Izin - Lokasi)
+  [v] Beranda, iklan, dan 6 menu tampil normal
+  [v] Tahap 2 sampai 4 sudah dikerjakan
+
+APA YANG MASIH KURANG
+---------------------
+  [ ] Kotak cuaca di samping nama Admin belum tampak
+
+SEBABNYA (dugaan terkuat)
+-------------------------
+  Aplikasi yang terpasang di HP masih BUILD LAMA - yaitu build dari paket
+  RTS_PANEL_FITUR_BARU.zip yang diunduh SEBELUM hari ini sore (atau sebelum
+  paket versi 5 dipasang).
+
+  Pada build lama, kotak cuaca hanya digambar BILA laporan cuaca sudah
+  berhasil. Jadi selama laporan belum berhasil, kotak itu tidak tampak sama
+  sekali - tidak ada tanda apa pun, sehingga sulit diketahui sebabnya.
+
+  Pada build baru (paket versi 5), kotak cuaca SELALU tampil dengan tulisan
+  "Cuaca - Ketuk untuk memuat", sehingga sebab kegagalan dapat dibaca
+  langsung pada layar.
+
+BUKTI CEPAT APAKAH BUILD DI HP MASIH LAMA
+-----------------------------------------
+  Buka aplikasi - menu "Pengaturan" - cari bagian "CUACA BERANDA".
+
+     TIDAK ADA bagian "Cuaca Beranda"       -> build lama, lanjutkan LANGKAH 1
+     ADA bagian "Cuaca Beranda", tetapi pada kotak merah muda tertulis
+     kode aplikasi yang BUKAN RTS-2026-09-30-5  -> build lama, lanjutkan LANGKAH 1
+     ADA dan kode aplikasi tertulis RTS-2026-09-30-5 -> build baru,
+     lanjutkan LANGKAH 5 (kirim keterangan)
+
+
+==============================================================================
+ LANGKAH 1 - UNDUH PAKET PALING BARU
+==============================================================================
+
+  Unduh ULANG (jangan memakai berkas lama yang masih ada di folder Unduhan):
+
+     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_FITUR_BARU.zip
+
+  Berkas ini harus berisi main.dart berukuran sekitar 384.000 bita.
+
+  TIPS: sebelum mengekstrak, HAPUS dulu folder:
+            D:\Project\rts_panel_app
+        lalu ekstrak ulang dari nol ke D:\Project. Dengan cara ini dijamin
+        tidak ada berkas lama yang tertinggal.
+
+
+==============================================================================
+ LANGKAH 2 - PERBAIKI PUBSPEC
+==============================================================================
+
+  [ ] 1. Buka PowerShell di folder D:\Project\rts_panel_app
+  [ ] 2. Jalankan:  .\PERBAIKI_PUBSPEC.ps1
+  [ ] 3. Di VS Code: Ctrl+Shift+P - "Dart: Restart Analysis Server"
+
+
+==============================================================================
+ LANGKAH 3 - JALANKAN PEMASANG (PERHATIKAN KODE APLIKASI)
+==============================================================================
+
+  [ ] 1. Jalankan:  .\PASANG_FITUR_BARU.ps1
+
+  [ ] 2. Perhatikan bagian "1. Memeriksa berkas aplikasi versi baru".
+         Harus muncul tulisan seperti ini (semua [ADA]):
+
+             [ADA] main.dart memuat modul iklan (RtsIklan)
+             [ADA] main.dart memuat laporan cuaca (RtsCuaca)
+             [ADA] main.dart memuat pembaruan otomatis (RtsPembaruan)
+             [ADA] main.dart memuat beranda baru (_DashboardPageState)
+             [ADA] main.dart memuat penanda kode aplikasi
+             [ADA] kotak cuaca versi baru (selalu tampil, dapat diketuk)
+             [ADA] kartu pemeriksa Cuaca Beranda pada Pengaturan
+             [ADA] tombol SALIN KETERANGAN cuaca
+
+             KODE APLIKASI pada main.dart : RTS-2026-09-30-5
+
+         CATAT nilai KODE APLIKASI itu - akan dicocokkan dengan HP.
+
+         Bila ada yang tertulis [BELUM] atau kode aplikasi tertulis
+         "(tidak ditemukan)", artinya folder proyek masih berisi main.dart
+         lama - ulangi LANGKAH 1 (hapus folder lalu ekstrak ulang).
+
+  [ ] 3. Bagian "1. Memeriksa" juga menampilkan baris izin lokasi. Pastikan
+         tertulis [ADA] pada:
+             izin lokasi ACCESS_FINE_LOCATION ada pada manifest
+             izin lokasi ACCESS_COARSE_LOCATION ada pada manifest
+
+  [ ] 4. Tunggu sampai build dan pemasangan selesai
+         (ada tulisan selesai / "Installing..." berhenti).
+
+  Bila ingin memakai penelusuran nirkabel secara terpisah:
+         .\PASANG_NIRKABEL.ps1
+
+
+==============================================================================
+ LANGKAH 4 - PERIKSA DI HP
+==============================================================================
+
+  [ ] 1. Buka aplikasi RTS Panel
+  [ ] 2. Beranda - lihat kartu merah "AKUN RTS PANEL", di samping nama Admin.
+         Sekarang HARUS ada kotak cuaca:
+              ikon awan + tulisan "Cuaca" + "Ketuk untuk memuat"
+              (atau langsung suhu, contoh "31 C - Medan - Cerah")
+  [ ] 3. Bila masih berbunyi "Ketuk untuk memuat", KETUK kotak itu.
+         Bila ada pertanyaan izin lokasi, pilih "Saat aplikasi digunakan".
+  [ ] 4. Perhatikan tulisan yang muncul pada bagian bawah layar
+         (contoh: "Layanan lokasi HP sedang dimatikan.").
+  [ ] 5. Buka menu "Pengaturan" - bagian "CUACA BERANDA".
+         Cocokkan kode aplikasi pada kotak merah muda dengan nilai yang
+         tercatat pada LANGKAH 3. Harus SAMA.
+
+
+==============================================================================
+ LANGKAH 5 - KIRIM KETERANGAN KEPADA PENGEMBANG (BILA MASIH GAGAL)
+==============================================================================
+
+  [ ] 1. Buka aplikasi - menu "Pengaturan" - bagian "CUACA BERANDA"
+  [ ] 2. Tekan tombol:  SALIN KETERANGAN (KIRIM KE PENGEMBANG)
+         Akan muncul tulisan "Keterangan cuaca sudah disalin."
+  [ ] 3. Buka WhatsApp / catatan / pesan kepada saya, lalu TEMPELKAN.
+         Isinya contoh:
+
+             KETERANGAN CUACA RTS PANEL
+             Kode aplikasi : RTS-2026-09-30-5
+             Versi terpasang: 1.1.0 (2)
+             Waktu         : 13.40
+             Server        : Server Produksi
+
+             Keadaan       : Lokasi HP belum aktif. Nyalakan Lokasi pada HP.
+             Izin lokasi   : Diizinkan saat aplikasi digunakan
+             GPS aktif     : TIDAK
+             Titik lokasi  : (belum ada)
+             Percobaan     : 13.40
+             Berhasil      : 0 kali
+
+             Keterangan teknis:
+             ...
+
+  Keterangan itu TIDAK memuat password dan aman dikirim. Dari tulisan itu
+  saya dapat langsung mengetahui sebabnya (izin, GPS, titik lokasi, atau
+  jaringan ke layanan cuaca).
+
+
+==============================================================================
+ SEBAB-SEBAB YANG MUNGKIN DAN TINDAKANNYA
+==============================================================================
+
+  Tulisan pada "Keadaan"                         | Tindakan
+  -----------------------------------------------|-----------------------------
+  Lokasi HP belum aktif / GPS aktif TIDAK        | Hidupkan GPS:
+                                                 | Pengaturan HP - Lokasi - ON
+  Izin lokasi belum diberikan                    | Ketuk kotak Cuaca, pilih
+                                                 | "Saat aplikasi digunakan"
+  Izin lokasi diblokir                           | Pengaturan HP - Aplikasi -
+                                                 | RTS Panel - Izin - Lokasi -
+                                                 | Izinkan
+  Membaca titik GPS saat ini...                  | Pindah ke tempat terbuka;
+                                                 | di dalam gedung GPS sering
+                                                 | tidak mendapat titik
+  Gagal menghubungi layanan cuaca                | Periksa kuota/paket data HP
+  Layanan cuaca menjawab kode 4xx/5xx            | Layanan cuaca (Open-Meteo)
+                                                 | sedang gangguan - coba lagi
+  Laporan cuaca siap                             | BERHASIL - suhu tampil pada
+                                                 | kartu merah
+
+  Catatan: laporan cuaca memakai layanan gratis Open-Meteo dan TIDAK
+  memerlukan kunci API, jadi tidak ada yang perlu diatur di website.
+
+  Lokasi HP (GPS) WAJIB hidup agar titik lokasi dapat dibaca. Izin saja
+  belum cukup - GPS juga harus aktif.
+
+
+==============================================================================
+ SETELAH CUACA BERHASIL
+==============================================================================
+
+  [ ] 1. Buat APK untuk dibagikan:
+             flutter build apk --release
+             Hasil: build\app\outputs\flutter-apk\app-release.apk
+  [ ] 2. Unggah lewat menu "Versi Aplikasi" pada website
+         (versi 1.1.0 dengan kode versi bertambah, misalnya 3)
+  [ ] 3. Kirim tautan APK kepada tim lewat WhatsApp
+==============================================================================

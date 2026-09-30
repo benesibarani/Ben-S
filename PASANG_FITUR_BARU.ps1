@@ -80,16 +80,46 @@ if (Test-Path "main.dart") {
     $adaPembaruan = $isiMain -match "class RtsPembaruan"
     $adaBeranda = $isiMain -match "class _DashboardPageState"
 
+    # Penanda kode aplikasi. Nilainya dicetak di sini supaya dapat dibandingkan
+    # dengan yang tertulis pada halaman Pengaturan di HP sesudah aplikasi
+    # dipasang. Bila berbeda, berarti yang terpasang masih build lama.
+    $adaKode = $isiMain -match "rtsKodeAplikasi\s*=\s*'([^']+)'"
+    $kodeAplikasi = "(tidak ditemukan)"
+
+    if ($adaKode) {
+        $kodeAplikasi = $Matches[1]
+    }
+
+    # Kotak cuaca versi baru: selalu tampil dan dapat diketuk.
+    $adaKotakBaru = $isiMain -match "Ketuk untuk memuat"
+
+    # Kartu pemeriksa cuaca pada halaman Pengaturan.
+    $adaKartuDiag = $isiMain -match "class RtsKartuCuaca"
+
+    # Tombol salin keterangan cuaca (untuk dikirim ke pengembang).
+    $adaSalinDiag = $isiMain -match "SALIN KETERANGAN"
+
     TulisHasil $adaIklan "main.dart memuat modul iklan (RtsIklan)"
     TulisHasil $adaCuaca "main.dart memuat laporan cuaca (RtsCuaca)"
     TulisHasil $adaPembaruan "main.dart memuat pembaruan otomatis (RtsPembaruan)"
     TulisHasil $adaBeranda "main.dart memuat beranda baru (_DashboardPageState)"
+    TulisHasil $adaKode "main.dart memuat penanda kode aplikasi"
+    TulisHasil $adaKotakBaru "kotak cuaca versi baru (selalu tampil, dapat diketuk)"
+    TulisHasil $adaKartuDiag "kartu pemeriksa Cuaca Beranda pada Pengaturan"
+    TulisHasil $adaSalinDiag "tombol SALIN KETERANGAN cuaca"
 
-    if (-not ($adaIklan -and $adaCuaca -and $adaPembaruan -and $adaBeranda)) {
+    Write-Host ""
+    Write-Host "   KODE APLIKASI pada main.dart : $kodeAplikasi" -ForegroundColor Cyan
+    Write-Host "   Sesudah aplikasi dipasang ke HP, buka Pengaturan - bagian" -ForegroundColor DarkGray
+    Write-Host "   'Cuaca Beranda'. Nilai pada kotak merah muda HARUS SAMA dengan" -ForegroundColor DarkGray
+    Write-Host "   nilai di atas. Bila berbeda, yang terpasang masih build lama." -ForegroundColor DarkGray
+
+    if (-not ($adaIklan -and $adaCuaca -and $adaPembaruan -and $adaBeranda -and $adaKode -and $adaKotakBaru)) {
         $bermasalah++
         Write-Host ""
         Write-Host "   main.dart BELUM versi terbaru." -ForegroundColor Red
-        Write-Host "   Pastikan RTS_PANEL_FITUR_BARU.zip sudah diekstrak ke $proyek." -ForegroundColor Yellow
+        Write-Host "   Pastikan RTS_PANEL_FITUR_BARU.zip yang PALING BARU sudah" -ForegroundColor Yellow
+        Write-Host "   diekstrak ke $proyek (pilih Timpa/Replace semua)." -ForegroundColor Yellow
     }
 }
 else {

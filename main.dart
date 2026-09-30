@@ -875,6 +875,14 @@ void rtsShowMessage(BuildContext context, String message,
     );
 }
 
+/// Penanda kode aplikasi.
+///
+/// Dipakai untuk memastikan aplikasi di HP benar-benar dibangun dari kode
+/// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
+/// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
+/// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
+const String rtsKodeAplikasi = 'RTS-2026-09-30-5';
+
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
 /// ATURAN IKLAN (pilihan Bapak - pilihan b):
@@ -10823,6 +10831,30 @@ class RtsCuaca {
   /// True bila GPS/lokasi HP sedang tidak aktif atau izinnya belum diberikan.
   static bool perluIzinLokasi = false;
 
+  // ---------------------------------------------------------------------
+  // Keterangan pemeriksaan - dipakai kartu "Cuaca Beranda" pada Pengaturan
+  // dan tombol "SALIN KETERANGAN" supaya hasilnya mudah dikirim kepada
+  // pengembang tanpa perlu menebak-nebak.
+  // ---------------------------------------------------------------------
+
+  /// Keadaan izin lokasi menurut HP, contoh: "Diizinkan", "Ditolak".
+  static String izinLokasi = 'Belum diperiksa';
+
+  /// True bila layanan Lokasi (GPS) pada HP sedang aktif.
+  static bool gpsAktif = false;
+
+  /// Titik lokasi terakhir yang berhasil dibaca, contoh: "3.5952, 98.6722".
+  static String titikTerakhir = '';
+
+  /// Keterangan teknis dari kegagalan terakhir (bila ada).
+  static String pesanTeknis = '';
+
+  /// Waktu percobaan pengambilan laporan yang terakhir.
+  static DateTime? dicobaPada;
+
+  /// Jumlah laporan yang berhasil diambil sejak aplikasi dibuka.
+  static int jumlahBerhasil = 0;
+
   static Future<RtsCuacaHari?> muat({bool paksa = false}) async {
     if (sedangMemuat) return data;
 
@@ -10836,6 +10868,8 @@ class RtsCuaca {
     }
 
     sedangMemuat = true;
+    dicobaPada = DateTime.now();
+    pesanTeknis = '';
 
     try {
       if (data == null) await _muatSimpanan();
@@ -10847,9 +10881,17 @@ class RtsCuaca {
           status = 'Titik lokasi tidak tersedia.';
         }
 
+        if (pesanTeknis.isEmpty) {
+          pesanTeknis = 'Titik lokasi tidak terbaca. Periksa izin Lokasi dan '
+              'pastikan GPS HP aktif.';
+        }
+
         sedangMemuat = false;
         return data;
       }
+
+      titikTerakhir = '${titik.latitude.toStringAsFixed(4)}, '
+          '${titik.longitude.toStringAsFixed(4)}';
 
       final Uri alamat = Uri.https('api.open-meteo.com', '/v1/forecast', {
         'latitude': titik.latitude.toStringAsFixed(4),
@@ -10867,6 +10909,7 @@ class RtsCuaca {
 
       if (balasan.statusCode != 200) {
         status = 'Layanan cuaca menjawab kode ${balasan.statusCode}.';
+        pesanTeknis = 'Open-Meteo menjawab kode ${balasan.statusCode}.';
         sedangMemuat = false;
         return data;
       }
@@ -10907,13 +10950,16 @@ class RtsCuaca {
       data = baru;
       diambilPada = DateTime.now();
       sedangMemuat = false;
-      status = 'Cuaca tampil pada beranda (diperbarui '
-          '${RtsWaktu.jamMenit(DateTime.now())}).';
+      jumlahBerhasil++;
+      pesanTeknis = '';
+      status = 'Laporan cuaca siap - ditampilkan pada beranda '
+          '(diperbarui ${RtsWaktu.jamMenit(DateTime.now())}).';
       await _simpan();
 
       return baru;
     } catch (galat) {
-      status = 'Gagal menghubungi layanan cuaca: $galat';
+      status = 'Gagal menghubungi layanan cuaca.';
+      pesanTeknis = galat.toString();
       sedangMemuat = false;
       return data;
     }
@@ -10935,6 +10981,8 @@ class RtsCuaca {
       // GPS HP mati: tidak ada gunanya meminta izin.
       final bool layananAktif = await Geolocator.isLocationServiceEnabled();
 
+      gpsAktif = layananAktif;
+
       if (!layananAktif) {
         perluIzinLokasi = true;
         status = 'Lokasi HP belum aktif. Nyalakan Lokasi pada HP.';
@@ -10951,9 +10999,25 @@ class RtsCuaca {
 
       LocationPermission izin = await Geolocator.checkPermission();
 
+      izinLokasi = izin == LocationPermission.whileInUse
+          ? 'Diizinkan saat aplikasi digunakan'
+          : (izin == LocationPermission.always
+              ? 'Diizinkan selalu'
+              : (izin == LocationPermission.denied
+                  ? 'Belum diizinkan'
+                  : 'Ditolak permanen'));
+
       // Izin belum pernah diminta: mintakan sekarang.
       if (izin == LocationPermission.denied) {
         izin = await Geolocator.requestPermission();
+
+        izinLokasi = izin == LocationPermission.whileInUse
+            ? 'Diizinkan saat aplikasi digunakan'
+            : (izin == LocationPermission.always
+                ? 'Diizinkan selalu'
+                : (izin == LocationPermission.denied
+                    ? 'Belum diizinkan'
+                    : 'Ditolak permanen'));
       }
 
       if (izin == LocationPermission.deniedForever) {
@@ -10983,6 +11047,9 @@ class RtsCuaca {
 
       status = 'Membaca titik GPS saat ini...';
 
+      pesanTeknis = 'Membaca titik GPS. Bila lama, pindah ke tempat terbuka '
+          '(di dalam ruangan GPS sering tidak mendapat titik).';
+
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.low,
@@ -10990,7 +11057,8 @@ class RtsCuaca {
         ),
       );
     } catch (galat) {
-      status = 'Titik lokasi tidak dapat dibaca: $galat';
+      status = 'Titik lokasi tidak dapat dibaca.';
+      pesanTeknis = galat.toString();
       perluIzinLokasi = true;
 
       return null;
@@ -11661,10 +11729,7 @@ class _RtsKartuCuacaState extends State<RtsKartuCuaca> {
     final RtsCuacaHari? hari = RtsCuaca.data;
 
     if (hari == null) {
-      rtsShowMessage(
-        context,
-        RtsCuaca.status,
-      );
+      rtsShowMessage(context, RtsCuaca.status);
       return;
     }
 
@@ -11672,6 +11737,58 @@ class _RtsKartuCuacaState extends State<RtsKartuCuaca> {
       context,
       'Laporan cuaca diperbarui: ${hari.suhu.round()} derajat, '
       '${hari.keterangan}${hari.kota.isEmpty ? '' : ' di ${hari.kota}'}.',
+      success: true,
+    );
+  }
+
+  /// Menyusun keterangan lengkap lalu menyalinnya ke papan klip HP.
+  ///
+  /// Guna: petugas dapat langsung menempelkannya pada pesan kepada pengembang
+  /// tanpa perlu mengetik ulang. Aman disalin - tidak memuat password.
+  Future<void> _salinKeterangan() async {
+    final RtsCuacaHari? hari = RtsCuaca.data;
+
+    final StringBuffer teks = StringBuffer();
+
+    teks.writeln('KETERANGAN CUACA RTS PANEL');
+    teks.writeln('Kode aplikasi : $rtsKodeAplikasi');
+    teks.writeln('Versi terpasang: ${RtsVersi.label}');
+    teks.writeln('Waktu         : ${RtsWaktu.jamMenit(DateTime.now())}');
+    teks.writeln('Server        : ${RtsConfig.serverLabel}');
+    teks.writeln('');
+    teks.writeln('Keadaan       : ${RtsCuaca.status}');
+    teks.writeln('Izin lokasi   : ${RtsCuaca.izinLokasi}');
+    teks.writeln('GPS aktif     : ${RtsCuaca.gpsAktif ? 'YA' : 'TIDAK'}');
+    teks.writeln('Titik lokasi  : ${RtsCuaca.titikTerakhir.isEmpty ? '(belum ada)' : RtsCuaca.titikTerakhir}');
+
+    if (RtsCuaca.dicobaPada != null) {
+      teks.writeln('Percobaan     : ${RtsWaktu.jamMenit(RtsCuaca.dicobaPada!)}');
+    }
+
+    teks.writeln('Berhasil      : ${RtsCuaca.jumlahBerhasil} kali');
+
+    if (hari != null) {
+      teks.writeln('');
+      teks.writeln('Suhu          : ${hari.suhu.round()} derajat');
+      teks.writeln('Keadaan cuaca : ${hari.keterangan}');
+      teks.writeln('Kota          : ${hari.kota.isEmpty ? '(tidak terbaca)' : hari.kota}');
+      teks.writeln('Terendah/Tertinggi: ${hari.min.round()} / ${hari.maks.round()}');
+      teks.writeln('Peluang hujan : ${hari.hujan}%');
+    }
+
+    if (RtsCuaca.pesanTeknis.isNotEmpty) {
+      teks.writeln('');
+      teks.writeln('Keterangan teknis:');
+      teks.writeln(RtsCuaca.pesanTeknis);
+    }
+
+    await Clipboard.setData(ClipboardData(text: teks.toString()));
+
+    if (!mounted) return;
+
+    rtsShowMessage(
+      context,
+      'Keterangan cuaca sudah disalin. Tempelkan pada pesan kepada pengembang.',
       success: true,
     );
   }
@@ -11685,10 +11802,37 @@ class _RtsKartuCuacaState extends State<RtsKartuCuaca> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Container(
+            padding: const EdgeInsets.all(11),
+            decoration: BoxDecoration(
+              color: const Color(0xfffff5f5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xfff0d8d8)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.verified_rounded, size: 17, color: rtsMaroon),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Kode aplikasi terpasang: $rtsKodeAplikasi\n'
+                    'Versi: ${RtsVersi.label}',
+                    style: const TextStyle(
+                      color: rtsMaroon,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 11),
           const Text(
             'Beranda menampilkan suhu dan keadaan cuaca hari ini pada lokasi '
             'petugas. Titik lokasi diambil dari GPS HP; bila belum pernah '
-            'diizinkan, aplikasi akan menanyakan izin sekali.',
+            'diizinkan, aplikasi akan menanyakan izin.',
             style: TextStyle(
               color: rtsTextSecondary,
               fontSize: 11.5,
@@ -11700,6 +11844,15 @@ class _RtsKartuCuacaState extends State<RtsKartuCuaca> {
             'Keadaan',
             RtsCuaca.status,
             valueColor: perluIzin ? rtsAmber : rtsTextPrimary,
+          ),
+          const RtsDivider(),
+          RtsInfoRow('Izin lokasi', RtsCuaca.izinLokasi),
+          const RtsDivider(),
+          RtsInfoRow('GPS HP', RtsCuaca.gpsAktif ? 'Aktif' : 'Tidak aktif'),
+          const RtsDivider(),
+          RtsInfoRow(
+            'Titik lokasi',
+            RtsCuaca.titikTerakhir.isEmpty ? 'Belum terbaca' : RtsCuaca.titikTerakhir,
           ),
           const RtsDivider(),
           RtsInfoRow(
@@ -11715,6 +11868,25 @@ class _RtsKartuCuacaState extends State<RtsKartuCuaca> {
               'Hari ini',
               'Terendah ${hari.min.round()} / Tertinggi ${hari.maks.round()} '
                   'derajat, peluang hujan ${hari.hujan}%',
+            ),
+          ],
+          if (RtsCuaca.pesanTeknis.isNotEmpty) ...[
+            const SizedBox(height: 11),
+            Container(
+              padding: const EdgeInsets.all(11),
+              decoration: BoxDecoration(
+                color: const Color(0xfff7f7f9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xffe6e6ee)),
+              ),
+              child: Text(
+                'Keterangan teknis:\n${RtsCuaca.pesanTeknis}',
+                style: const TextStyle(
+                  color: rtsTextSecondary,
+                  fontSize: 10.5,
+                  height: 1.45,
+                ),
+              ),
             ),
           ],
           const SizedBox(height: 12),
@@ -11750,6 +11922,29 @@ class _RtsKartuCuacaState extends State<RtsKartuCuaca> {
               ),
             ),
           ),
+          const SizedBox(height: 9),
+          SizedBox(
+            height: 46,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xffd8d8e2)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(13),
+                ),
+              ),
+              onPressed: _salinKeterangan,
+              icon: const Icon(Icons.copy_all_rounded,
+                  size: 17, color: rtsTextSecondary),
+              label: const Text(
+                'SALIN KETERANGAN (KIRIM KE PENGEMBANG)',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  color: rtsTextSecondary,
+                ),
+              ),
+            ),
+          ),
           if (perluIzin) ...[
             const SizedBox(height: 10),
             Container(
@@ -11768,7 +11963,7 @@ class _RtsKartuCuacaState extends State<RtsKartuCuaca> {
                     child: Text(
                       'Bila pertanyaan izin lokasi tidak muncul lagi, buka '
                       'Pengaturan HP - Aplikasi - RTS Panel - Izin - Lokasi, '
-                      'lalu pilih Izinkan.',
+                      'lalu pilih Izinkan. Untuk GPS: Pengaturan HP - Lokasi.',
                       style: TextStyle(
                         color: Color(0xff7a5a26),
                         fontSize: 11,
