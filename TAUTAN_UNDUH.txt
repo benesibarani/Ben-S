@@ -1,0 +1,126 @@
+==============================================================================
+ RTS PANEL BY BENE - DAFTAR TAUTAN UNDUH
+ Berkas ini selalu diperbarui setiap ada berkas/paket baru.
+==============================================================================
+
+PENTING - REPO SUDAH PRIVATE
+----------------------------
+Seluruh tautan di bawah meminta LOGIN GITHUB lebih dahulu.
+Gunakan akun GitHub: benesibarani
+Setelah login sekali, semua tautan di bawah langsung mengunduh berkasnya.
+
+Bila muncul halaman 404 (Page not found), berarti yang login bukan akun
+benesibarani. Keluar dari GitHub, lalu masuk memakai akun yang benar.
+
+
+------------------------------------------------------------------
+ 1. PAKET APLIKASI ANDROID (diekstrak ke D:\Project\rts_panel_app)
+------------------------------------------------------------------
+
+RTS_PANEL_FITUR_BARU.zip
+    (main.dart + pubspec.yaml + PASANG_FITUR_BARU.ps1 + PERBAIKI_PUBSPEC.ps1
+     + android_manifest_tambahan.xml - sudah termasuk IZIN LOKASI untuk cuaca)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_FITUR_BARU.zip
+
+
+------------------------------------------------------------------
+ 2. PAKET WEBSITE / SERVER  (diekstrak ke public_html)
+------------------------------------------------------------------
+
+RTS_PANEL_MENU_VERSI.zip
+    (sidebar.php + dashboard_updated.php + panduan - menambah menu
+     "Versi Aplikasi" pada dashboard website)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_MENU_VERSI.zip
+
+RTS_PANEL_VERSI_APK.zip
+    (paket lengkap: sidebar.php, app_versi.php, dashboard_updated.php,
+     api/app_versi.php, apk/, SQL tabel versi, panduan)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_VERSI_APK.zip
+
+RTS_PANEL_AKUN_PRO.zip
+    (akun_pro.php + api/ + SQL - akun GRATIS melihat iklan, akun PRO bebas iklan)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_AKUN_PRO.zip
+
+RTS_PANEL_FIREBASE.zip
+    (api fcm_kirim, device_token, notifications, inbox, pengajuan_toko)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_FIREBASE.zip
+
+
+------------------------------------------------------------------
+ 3. PANDUAN DAN CATATAN
+------------------------------------------------------------------
+
+PANDUAN_VERSI_TERBARU.md  (semua BAGIAN 1 sampai 46)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/PANDUAN_VERSI_TERBARU.md
+
+CARA_PASANG_VERSI_APK.txt  (panduan singkat: menu versi + unggah APK)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/CARA_PASANG_VERSI_APK.txt
+
+CARA_PASANG_AKUN_PRO.txt  (panduan singkat akun PRO + tabel masalah #1044)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/CARA_PASANG_AKUN_PRO.txt
+
+UJI_APLIKASI.md  (daftar pengujian setelah aplikasi terpasang)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/UJI_APLIKASI.md
+
+KODE_ADMOB.txt  (kode iklan AdMob yang sudah terpasang)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/KODE_ADMOB.txt
+
+BERSIHKAN_REPO.md  (laporan keamanan repo + langkah ganti password database)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/BERSIHKAN_REPO.md
+
+
+------------------------------------------------------------------
+ 4. BERKAS TERPISAH (bila hanya perlu satu berkas)
+------------------------------------------------------------------
+
+sidebar.php  (menu dashboard, 2,3 KB)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/sidebar.php
+
+dashboard_updated.php  (kartu pintasan versi pada dashboard)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/dashboard_updated.php
+
+app_versi.php  (halaman unggah APK)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/app_versi.php
+
+api/app_versi.php  (halaman API versi yang dibaca aplikasi)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/api/app_versi.php
+
+database/migrations/RTS_PANEL_APP_VERSI.sql  (tabel versi aplikasi)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/database/migrations/RTS_PANEL_APP_VERSI.sql
+
+database/migrations/RTS_PANEL_AKUN_PRO.sql  (kolom akun_pro)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/database/migrations/RTS_PANEL_AKUN_PRO.sql
+
+main.dart  (kode aplikasi Android lengkap -> berkas teks besar)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/main.dart
+
+PASANG_FITUR_BARU.ps1  (pemasang: izin lokasi + ikon + build + pasang ke HP)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/PASANG_FITUR_BARU.ps1
+
+PASANG_NIRKABEL.ps1  (memasang ke HP tanpa kabel)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/PASANG_NIRKABEL.ps1
+
+PERBAIKI_PUBSPEC.ps1  (mendaftarkan paket pubspec)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/PERBAIKI_PUBSPEC.ps1
+
+
+------------------------------------------------------------------
+ 5. SEMUA BERKAS SEKALIGUS
+------------------------------------------------------------------
+
+Seluruh isi cabang kerja dalam satu zip:
+  https://github.com/benesibarani/Ben-S/archive/refs/heads/arena/01a0beb2-ben-s.zip
+
+
+------------------------------------------------------------------
+ 6. URUTAN PEMAKAIAN
+------------------------------------------------------------------
+
+  Langkah 1  RTS_PANEL_FITUR_BARU.zip  -> ekstrak ke D:\Project\rts_panel_app (Timpa)
+  Langkah 2  PERBAIKI_PUBSPEC.ps1      -> jalankan
+  Langkah 3  PASANG_FITUR_BARU.ps1     -> jalankan (menambah izin lokasi, build, pasang)
+  Langkah 4  RTS_PANEL_MENU_VERSI.zip  -> unggah sidebar.php ke public_html
+  Langkah 5  RTS_PANEL_VERSI_APK.zip   -> unggah app_versi.php, api/, apk/
+  Langkah 6  RTS_PANEL_APP_VERSI.sql   -> jalankan lewat phpMyAdmin (tab SQL)
+  Langkah 7  app_versi.php             -> unggah APK terbaru lewat menu baru
+==============================================================================
