@@ -42,6 +42,28 @@
 
 
 ==============================================================================
+ PUTARAN 1B - PERBAIKAN: MENU "VERSI APLIKASI" TERLEMPAR KE DASHBOARD  (5 MENIT)
+==============================================================================
+
+  Berkas : RTS_PANEL_VERSI_APK.zip          (sudah Bapak unduh)
+  Sebab  : Halaman app_versi.php terlalu ketat memeriksa sesi login. Pada
+           akun Bapak, salah satu penanda sesi tidak terbaca, sehingga halaman
+           itu membuang pengunjung kembali ke dashboard.php. Sudah diperbaiki
+           (pemeriksaan berlapis + boleh dibaca dari database).
+  Hasil  : menu "Versi Aplikasi" dapat dibuka seperti menu lain.
+
+  [ ] 1. Ekstrak ulang RTS_PANEL_VERSI_APK.zip di komputer
+  [ ] 2. cPanel - File Manager - public_html
+  [ ] 3. Unggah (timpa) berkas: app_versi.php
+  [ ] 4. Buka dashboard, klik menu "Versi Aplikasi"
+         Halaman unggah APK harus terbuka, tidak kembali ke dashboard
+  [ ] 5. Bila MASIH kembali ke dashboard, buka alamat ini pada browser:
+         https://rts.benedic-s.com/app_versi.php?diagnosa=1
+         Akan muncul keterangan peran yang terbaca + daftar kunci session.
+         Kirimkan tulisan itu kepada saya apa adanya.
+
+
+==============================================================================
  PUTARAN 2 - HALAMAN UNGGAH APK + TABEL VERSI     (15 MENIT)
 ==============================================================================
 
@@ -98,11 +120,17 @@
   [ ] 7. Jalankan:  .\PASANG_NIRKABEL.ps1     (ikuti pertanyaan di layar)
   [ ] 8. Buka aplikasi RTS Panel di HP
   [ ] 9. Akan muncul pertanyaan izin lokasi -> pilih "Saat aplikasi digunakan"
-  [ ]10. Lihat kartu merah beranda: cuaca + suhu harus tampil
+  [ ]10. Lihat kartu merah beranda: kotak "Cuaca" tampil di samping nama.
+         Bila laporan sudah berhasil, kotak itu berubah menjadi suhu hari ini.
+         Bila masih bertulisan "Cuaca - Ketuk untuk memuat", KETUK kotak itu:
+         permintaan izin lokasi muncul lagi, lalu laporan diambil.
 
   Bila cuaca belum tampil:
-       Buka aplikasi - Profil - Pengaturan - bagian "CUACA BERANDA".
-       Di situ tertulis sebabnya. Kirimkan tulisannya kepada saya.
+       Kotak "Cuaca" pada kartu merah MEMANG selalu tampil (perbaikan baru),
+       sehingga mudah dilihat. Ketuk kotak itu - akan muncul tulisan
+       sebabnya pada layar bagian bawah (misalnya "Izin lokasi belum
+       diberikan." atau "Layanan lokasi HP dimatikan.").
+       Kirimkan tulisan itu kepada saya.
 
   BONUS (untuk PUTARAN 2D):  setelah langkah 8, jalankan
        flutter build apk --release
@@ -146,6 +174,7 @@
 ==============================================================================
 
   RTS_PANEL_MENU_VERSI.zip    -> PUTARAN 1   (menu dashboard)
+  RTS_PANEL_VERSI_APK.zip     -> PUTARAN 1B  (perbaikan tombol menu + halaman unggah)
   RTS_PANEL_VERSI_APK.zip     -> PUTARAN 2   (halaman unggah APK + SQL versi)
   RTS_PANEL_FITUR_BARU.zip    -> PUTARAN 3   (aplikasi Android + izin lokasi)
   RTS_PANEL_AKUN_PRO.zip      -> PUTARAN 4   (akun PRO, versi 2)

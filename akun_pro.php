@@ -28,15 +28,99 @@ require_once 'config.php';
 
 /* --------------------------------------------------------------------------
  * PENJAGA HALAMAN - hanya ADMIN
- * -------------------------------------------------------------------------- */
-if (empty($_SESSION['email'])) {
+ *
+ * PERBAIKAN (30 September 2026 - sama seperti app_versi.php):
+ * Penjagaan TIDAK boleh hanya memakai $_SESSION['email']. Bila kunci itu
+ * kosong (misalnya akun yang kolom emailnya kosong pada tabel sales_users),
+ * halaman ini mengalihkan pengunjung ke index.php; halaman login itu melihat
+ * session masih aktif lalu mengalihkan lagi ke dashboard.php. Akibatnya Admin
+ * yang sah seolah-olah tidak dapat membuka halaman ini.
+ *
+ * Pemeriksaan sekarang berlapis:
+ *   - login : salah satu penanda sudah ada (is_logged_in, user_id, username,
+ *             nama, email)
+ *   - peran : session (role / user_role); bila kosong dibaca dari
+ *             sales_users memakai username
+ * ------------------------------------------------------------------------ */
+
+$ap_penanda_login = ['is_logged_in', 'user_id', 'username', 'nama', 'email'];
+$ap_sudah_login = false;
+
+foreach ($ap_penanda_login as $ap_kunci_login) {
+    if (!empty($_SESSION[$ap_kunci_login])) {
+        $ap_sudah_login = true;
+        break;
+    }
+}
+
+if (!$ap_sudah_login) {
     header('Location: index.php');
     exit;
 }
 
-$ap_role = strtoupper((string)($_SESSION['role'] ?? ''));
+$ap_role = '';
+
+foreach (['role', 'user_role'] as $ap_kunci_role) {
+    $ap_nilai_role = strtoupper(trim((string) ($_SESSION[$ap_kunci_role] ?? '')));
+
+    if ($ap_nilai_role !== '') {
+        $ap_role = $ap_nilai_role;
+        break;
+    }
+}
+
+if ($ap_role === '' && isset($conn) && $conn instanceof mysqli) {
+    $ap_username = '';
+
+    foreach (['username', 'user', 'username_login'] as $ap_kunci_user) {
+        $ap_nilai_user = trim((string) ($_SESSION[$ap_kunci_user] ?? ''));
+
+        if ($ap_nilai_user !== '') {
+            $ap_username = $ap_nilai_user;
+            break;
+        }
+    }
+
+    if ($ap_username !== '') {
+        $ap_stmt_peran = @$conn->prepare(
+            'SELECT role FROM sales_users WHERE username = ? LIMIT 1'
+        );
+
+        if ($ap_stmt_peran) {
+            $ap_stmt_peran->bind_param('s', $ap_username);
+            $ap_stmt_peran->execute();
+            $ap_hasil_peran = $ap_stmt_peran->get_result();
+            $ap_baris_peran = $ap_hasil_peran ? $ap_hasil_peran->fetch_assoc() : null;
+            $ap_stmt_peran->close();
+
+            if ($ap_baris_peran) {
+                $ap_role = strtoupper(trim((string) ($ap_baris_peran['role'] ?? '')));
+            }
+        }
+    }
+}
+
+/* "SUPER ADMIN" dan "SUPER_ADMIN" diperlakukan sama dengan ADMIN. */
+if (str_replace([' ', '_'], '', $ap_role) === 'SUPERADMIN') {
+    $ap_role = 'ADMIN';
+}
 
 if ($ap_role !== 'ADMIN') {
+    if (isset($_GET['diagnosa'])) {
+        header('Content-Type: text/plain; charset=utf-8');
+
+        echo "PEMERIKSAAN HALAMAN AKUN PRO\n";
+        echo "============================\n\n";
+        echo 'Peran terbaca : ' . ($ap_role === '' ? '(kosong)' : $ap_role) . "\n\n";
+        echo "Kunci session yang tersedia:\n";
+
+        foreach (array_keys($_SESSION) as $ap_kunci_ada) {
+            echo '  - ' . $ap_kunci_ada . '\n';
+        }
+
+        exit;
+    }
+
     header('Location: dashboard.php');
     exit;
 }

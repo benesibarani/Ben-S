@@ -5147,3 +5147,128 @@ apa pun - berkas itu hanya cadangan yang belum dipakai website.
 | 4 | Muat ulang dashboard | **Ctrl+F5** |
 | 5 | Buka menu **Versi Aplikasi**, unggah APK terbaru | Halaman `app_versi.php` |
 | 6 | Periksa hasil | `https://rts.benedic-s.com/api/app_versi.php` dan `https://rts.benedic-s.com/apk/app_versi.json` |
+
+## BAGIAN 47 - TIGA PERBAIKAN: MENU VERSI APLIKASI, PESAN PEMBARUAN, KOTAK CUACA
+
+Bagian ini menjawab tiga laporan Bapak pada 30 September 2026.
+
+---
+
+### A. MASALAH 1 - MENU "VERSI APLIKASI" MALAH KEMBALI KE DASHBOARD
+
+**Gejala:** menu sudah tampak pada dashboard, tetapi ketika diklik halaman
+hanya kembali ke `dashboard.php`.
+
+**Sebabnya:** halaman `app_versi.php` memeriksa sesi login dengan satu kunci
+saja, yaitu `$_SESSION['email']`. Pada akun Bapak, kunci itu tidak terisi
+(misalnya kolom `email` pada tabel `sales_users` kosong untuk akun tersebut),
+sehingga alurnya menjadi berputar:
+
+```text
+klik menu Versi Aplikasi
+   -> app_versi.php melihat $_SESSION['email'] kosong
+   -> dialihkan ke index.php (halaman login)
+   -> index.php melihat sesi masih aktif
+   -> dialihkan lagi ke dashboard.php   (inilah yang Bapak lihat)
+```
+
+**Perbaikan:** penjagaan sekarang berlapis, sama seperti halaman dashboard:
+
+| Nomor | Pemeriksaan |
+| --- | --- |
+| 1 | Sudah login bila **salah satu** penanda ada: `is_logged_in`, `user_id`, `username`, `nama`, `email` |
+| 2 | Peran dibaca dari session (`role` atau `user_role`) |
+| 3 | Bila session tidak menyimpan peran, peran dibaca dari tabel `sales_users` memakai `username` |
+| 4 | Ejaan diseragamkan; **SUPER ADMIN** diperlakukan sama dengan **ADMIN** |
+| 5 | Koneksi database dicari dari beberapa nama variabel (`conn`, `mysqli`, `koneksi`, `db`, `link`) supaya tidak bergantung pada isi `config.php` |
+
+Bila halaman tetap tidak dapat dibuka, tersedia halaman pemeriksa:
+
+```text
+https://rts.benedic-s.com/app_versi.php?diagnosa=1
+```
+
+Halaman itu menampilkan peran yang terbaca dan daftar nama kunci session yang
+tersedia - cukup dikirimkan kepada saya apa adanya untuk ditindaklanjuti.
+
+**Perbaikan yang sama juga dipasang pada `akun_pro.php`**, karena halaman itu
+memakai penjagaan yang sama - supaya tidak terulang pada PUTARAN 4.
+
+---
+
+### B. MASALAH 2 - "TIDAK DAPAT MEMERIKSA PEMBARUAN" PADA APLIKASI
+
+**Gejala:** pada menu Pengaturan, tombol **Periksa Pembaruan Sekarang** menjawab
+"tidak dapat memeriksa pembaruan".
+
+**Sebabnya:** aplikasi menafsirkan semua jawaban yang bukan berisi versi
+sebagai kegagalan. Padahal jawaban "belum ada versi yang diumumkan" adalah
+jawaban yang **sah** - artinya memang belum ada APK yang diunggah. Sebelum
+APK pertama diunggah, keadaan itu memang wajar.
+
+**Perbaikan pada aplikasi:**
+
+| Nomor | Sebelum | Sesudah |
+| --- | --- | --- |
+| 1 | Belum ada versi = galat merah "Tidak dapat memeriksa pembaruan" | Belum ada versi = keterangan biasa "Belum ada versi aplikasi yang diumumkan di server." |
+| 2 | Sebab kegagalan tidak jelas | Sebabnya disebut jelas, misalnya: "Halaman api/app_versi.php belum ada di server.", "Berkas keterangan versi belum ada di server (kode 404).", "Halaman API menjawab kode 500." |
+| 3 | Jawaban server diabaikan | Pesan dari server (misalnya petunjuk menjalankan SQL tabel versi) ditampilkan apa adanya |
+
+Jadi setelah perbaikan ini, tombol itu akan memberi tahu **persis** apa yang
+kurang - apakah halaman API belum diunggah, tabelnya belum dibuat, atau memang
+belum ada APK yang diumumkan.
+
+---
+
+### C. MASALAH 3 - KOTAK CUACA TIDAK TAMPAK PADA KARTU MERAH
+
+**Gejala:** pada kartu merah "AKUN RTS PANEL" tidak ada kotak cuaca sama sekali.
+
+**Sebabnya:** kotak cuaca hanya digambar bila datanya sudah ada. Selama izin
+lokasi belum diberikan - dan pada HP Bapak build baru belum dipasang - kotak
+itu tidak digambar, sehingga tidak ada tanda apa pun bahwa laporan cuaca
+memang disediakan di situ.
+
+**Perbaikan:** kotak cuaca **selalu tampil**:
+
+| Keadaan | Tampilan kotak |
+| --- | --- |
+| Belum ada data | ikon cuaca + tulisan **Cuaca**, dan baris kecil **"Ketuk untuk memuat"** |
+| Sedang memuat | lingkaran putar kecil + tulisan **"Memuat..."** |
+| Data sudah ada | suhu (misalnya **31°C**), gambar cuaca, dan nama kota + keadaan |
+
+Kotak itu juga **dapat diketuk**. Mengetuknya akan:
+
+1. meminta izin lokasi bila belum pernah diberikan (pertanyaan izin muncul di
+   layar HP), lalu
+2. mengambil laporan cuaca, dan
+3. bila gagal, menampilkan sebabnya pada layar bagian bawah.
+
+Dengan begitu laporan cuaca dapat dihidupkan langsung dari beranda - tidak
+harus lewat halaman Pengaturan.
+
+**Yang tetap diperlukan:** build baru harus dipasang ke HP (PUTARAN 3), karena
+izin lokasi ditambahkan pada saat build. Aplikasi yang sekarang terpasang di
+HP masih build lama, sehingga kotak cuaca belum ada padanya.
+
+---
+
+### D. URUTAN PENGERJAAN SETELAH PERBAIKAN INI
+
+| Nomor | Kegiatan | Berkas |
+| --- | --- | --- |
+| 1 | Unggah `app_versi.php` yang baru (timpa), lalu klik menu Versi Aplikasi | `RTS_PANEL_VERSI_APK.zip` |
+| 2 | Bila masih kembali ke dashboard, buka `app_versi.php?diagnosa=1` dan kirimkan tulisannya | - |
+| 3 | Pasang aplikasi baru (izin lokasi + kotak cuaca) | `RTS_PANEL_FITUR_BARU.zip` |
+| 4 | Buka aplikasi, ketuk kotak "Cuaca" pada kartu merah, izinkan lokasi | - |
+| 5 | Uji tombol Periksa Pembaruan Sekarang - pesannya sudah jelas | - |
+
+### E. BILA MASIH ADA KENDALA
+
+| Kejadian | Sebab dan penanganan |
+| --- | --- |
+| Menu Versi Aplikasi tetap kembali ke dashboard | Buka `app_versi.php?diagnosa=1`, kirimkan tulisannya; periksa bahwa akun berperan ADMIN pada tabel `sales_users` |
+| Halaman `?diagnosa=1` berbunyi "Peran terbaca : (kosong)" | Kolom `role` akun itu kosong pada tabel `sales_users` - isi dengan `ADMIN` lewat phpMyAdmin |
+| Pesan "Halaman api/app_versi.php belum ada di server." | Berkas API belum diunggah - lihat PUTARAN 2 |
+| Pesan "Belum ada versi aplikasi yang diumumkan di server." | Wajar bila APK belum pernah diunggah - unggah APK pertama pada halaman Versi Aplikasi |
+| Kotak "Cuaca" tampil, tetapi tetap bertulisan "Ketuk untuk memuat" | Ketuk kotak itu dan kirimkan tulisan sebab yang muncul pada layar |

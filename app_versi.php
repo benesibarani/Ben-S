@@ -43,20 +43,145 @@ require_once 'config.php';
 
 /* --------------------------------------------------------------------------
  * PENJAGA HALAMAN - hanya ADMIN
- * -------------------------------------------------------------------------- */
-if (empty($_SESSION['email'])) {
+ *
+ * PERBAIKAN PENTING (dilaporkan 30 September 2026):
+ * Sebelumnya halaman ini hanya memakai $_SESSION['email'] untuk mengetahui
+ * apakah pengunjung sudah login, dan $_SESSION['role'] untuk memeriksa peran.
+ * Akibatnya Admin yang sah dapat terlempar kembali ke dashboard.php, karena:
+ *
+ *   1. Tidak semua halaman login mengisi kunci 'email' pada session (misalnya
+ *      akun yang kolom emailnya kosong pada tabel sales_users). Bila 'email'
+ *      kosong, halaman ini mengalihkan pengunjung ke index.php; halaman login
+ *      itu melihat session masih aktif, lalu mengalihkannya lagi ke
+ *      dashboard.php. Dari sisi pengguna: menekan menu "Versi Aplikasi"
+ *      seolah-olah tidak terjadi apa-apa, hanya kembali ke dashboard.
+ *   2. Nama kunci session dapat berbeda antar halaman (role / user_role),
+ *      dan ejaan perannya dapat berupa "admin", "Admin", atau "Super Admin".
+ *
+ * Karena itu sekarang dipakai pemeriksaan berlapis:
+ *   - login  : salah satu penanda sudah ada (is_logged_in, user_id, username,
+ *              nama, email)
+ *   - peran  : dibaca dari session (role / user_role); bila belum ada, dibaca
+ *              dari tabel sales_users memakai username; ejaan diseragamkan
+ *              dan "SUPER ADMIN" diperlakukan sama dengan "ADMIN"
+ *
+ * Bila tetap bukan ADMIN, pengunjung dialihkan ke dashboard.php seperti
+ * semula. Untuk memeriksa sebabnya, tambahkan ?diagnosa=1 pada alamat.
+ * ------------------------------------------------------------------------ */
+
+$app_penanda_login = ['is_logged_in', 'user_id', 'username', 'nama', 'email'];
+$app_sudah_login = false;
+
+foreach ($app_penanda_login as $app_kunci_login) {
+    if (!empty($_SESSION[$app_kunci_login])) {
+        $app_sudah_login = true;
+        break;
+    }
+}
+
+if (!$app_sudah_login) {
     header('Location: index.php');
     exit;
 }
 
-$app_role = strtoupper((string)($_SESSION['role'] ?? ''));
+/* --- Membaca peran dari session --------------------------------------- */
+$app_role = '';
+
+foreach (['role', 'user_role'] as $app_kunci_role) {
+    $app_nilai_role = strtoupper(trim((string) ($_SESSION[$app_kunci_role] ?? '')));
+
+    if ($app_nilai_role !== '') {
+        $app_role = $app_nilai_role;
+        break;
+    }
+}
+
+/* --- Bila session tidak menyimpan peran, dibaca dari database ---------- */
+if ($app_role === '' && isset($app_conn) && $app_conn instanceof mysqli) {
+    $app_username = '';
+
+    foreach (['username', 'user', 'username_login'] as $app_kunci_user) {
+        $app_nilai_user = trim((string) ($_SESSION[$app_kunci_user] ?? ''));
+
+        if ($app_nilai_user !== '') {
+            $app_username = $app_nilai_user;
+            break;
+        }
+    }
+
+    if ($app_username !== '') {
+        $app_stmt_peran = @$app_conn->prepare(
+            'SELECT role FROM sales_users WHERE username = ? LIMIT 1'
+        );
+
+        if ($app_stmt_peran) {
+            $app_stmt_peran->bind_param('s', $app_username);
+            $app_stmt_peran->execute();
+            $app_hasil_peran = $app_stmt_peran->get_result();
+            $app_baris_peran = $app_hasil_peran ? $app_hasil_peran->fetch_assoc() : null;
+            $app_stmt_peran->close();
+
+            if ($app_baris_peran) {
+                $app_role = strtoupper(trim((string) ($app_baris_peran['role'] ?? '')));
+            }
+        }
+    }
+}
+
+/* "SUPER ADMIN" dan "SUPER_ADMIN" diperlakukan sama dengan ADMIN. */
+if (str_replace([' ', '_'], '', $app_role) === 'SUPERADMIN') {
+    $app_role = 'ADMIN';
+}
 
 if ($app_role !== 'ADMIN') {
+    /* Halaman pemeriksa: buka app_versi.php?diagnosa=1 bila peran tidak
+       terbaca, supaya sebabnya dapat diketahui tanpa menebak-nebak. */
+    if (isset($_GET['diagnosa'])) {
+        header('Content-Type: text/plain; charset=utf-8');
+
+        echo "PEMERIKSAAN HALAMAN VERSI APLIKASI\n";
+        echo "==================================\n\n";
+        echo 'Peran terbaca : ' . ($app_role === '' ? '(kosong)' : $app_role) . "\n\n";
+
+        echo "Kunci session yang tersedia:\n";
+
+        foreach (array_keys($_SESSION) as $app_kunci_ada) {
+            echo '  - ' . $app_kunci_ada . '\n';
+        }
+
+        echo "\nKunci session yang diharapkan ada: role (atau user_role).\n";
+        echo "Kunci login yang diharapkan ada: is_logged_in, user_id, username, nama, atau email.\n";
+
+        exit;
+    }
+
     header('Location: dashboard.php');
     exit;
 }
 
 require_once 'header.php';
+
+/* --------------------------------------------------------------------------
+ * KONEKSI DATABASE
+ *
+ * Berkas config.php pada server dapat memakai nama variabel yang berbeda-beda
+ * untuk koneksi database. Di sini dicari salah satunya; bila tidak ada,
+ * halaman tetap bekerja seperti biasa - hanya riwayat versi pada database
+ * yang belum terisi. Halaman TIDAK berhenti hanya karena koneksi tidak ada.
+ * -------------------------------------------------------------------------- */
+$app_conn = null;
+
+foreach (['conn', 'mysqli', 'koneksi', 'db', 'link'] as $app_nama_koneksi) {
+    if (isset($GLOBALS[$app_nama_koneksi]) && $GLOBALS[$app_nama_koneksi] instanceof mysqli) {
+        $app_conn = $GLOBALS[$app_nama_koneksi];
+        break;
+    }
+
+    if (isset($$app_nama_koneksi) && $$app_nama_koneksi instanceof mysqli) {
+        $app_conn = $$app_nama_koneksi;
+        break;
+    }
+}
 
 /* --------------------------------------------------------------------------
  * PERSIAPAN FOLDER
@@ -241,8 +366,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['app_unggah'])
                     /* Bila tabel rts_app_versi sudah ada, unggahan ini juga
                        dicatat ke database sehingga menjadi riwayat yang dapat
                        dilihat kapan saja (dan dibaca aplikasi lewat API). */
-                    if (app_ada_tabel($conn, 'rts_app_versi')) {
-                        $simpanDb = $conn->prepare(
+                    if (app_ada_tabel($app_conn, 'rts_app_versi')) {
+                        $simpanDb = $app_conn->prepare(
                             'INSERT INTO rts_app_versi
                              (version_code, version_name, wajib, catatan, apk,
                               ukuran_mb, diunggah_oleh, aktif)
@@ -353,12 +478,12 @@ $app_alamat_json = app_alamat_dasar() . '/apk/app_versi.json';
 $app_json_siap = is_file($app_berkas_json);
 
 /* Riwayat versi pada database (bila tabelnya sudah ada). */
-$app_tabel_db = app_ada_tabel($conn, 'rts_app_versi');
+$app_tabel_db = app_ada_tabel($app_conn, 'rts_app_versi');
 
 $app_riwayat_db = [];
 
 if ($app_tabel_db) {
-    $ambilRiwayat = @$conn->query(
+    $ambilRiwayat = @$app_conn->query(
         'SELECT id, version_code, version_name, wajib, apk, ukuran_mb,
                 diunggah_oleh, dibuat_pada
          FROM rts_app_versi

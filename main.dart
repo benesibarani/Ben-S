@@ -11144,6 +11144,12 @@ class RtsPembaruan {
   static bool sedangMemeriksa = false;
   static String? pesanGalat;
 
+  /// Bernilai true bila server menjawab dengan benar bahwa belum ada versi
+  /// aplikasi yang diumumkan. Keadaan ini BUKAN kegagalan: aplikasi memang
+  /// sudah versi terbaru yang tersedia, jadi pesannya ditampilkan sebagai
+  /// keterangan biasa (hijau), bukan sebagai galat (merah).
+  static bool belumAdaVersi = false;
+
   static bool get adaPembaruan {
     final RtsInfoVersi? info = terbaru;
     if (info == null) return false;
@@ -11152,11 +11158,15 @@ class RtsPembaruan {
 
   /// Membaca keterangan versi dari server.
   static Future<RtsInfoVersi?> periksa() async {
+    belumAdaVersi = false;
+
     // ---------------------------------------------------------------------
     // Sumber 1: halaman API (membaca tabel rts_app_versi pada database).
     // Dipakai lebih dahulu karena lebih andal - bila berkas JSON terhapus
     // atau tidak dapat ditulis, keterangan versi tetap terbaca dari database.
     // ---------------------------------------------------------------------
+    String? sebabApi;
+
     try {
       final Uri alamatApi = Uri.parse('${RtsConfig.baseUrl}/app_versi.php');
 
@@ -11182,15 +11192,40 @@ class RtsPembaruan {
 
               return infoDariApi;
             }
+
+            sebabApi = 'Keterangan versi pada server belum lengkap.';
+          } else {
+            // Server menjawab dengan benar, hanya belum ada versi yang
+            // diumumkan. Ini jawaban yang sah, bukan kegagalan koneksi.
+            final String pesanServer =
+                (isi['message'] ?? '').toString().trim();
+
+            sebabApi = pesanServer.isEmpty
+                ? 'Belum ada versi aplikasi yang diumumkan di server.'
+                : pesanServer;
+
+            belumAdaVersi = true;
+
+            terbaru = null;
+            pesanGalat = sebabApi;
+
+            return null;
           }
+        } else {
+          sebabApi = 'Balasan halaman API tidak dikenali.';
         }
+      } else if (balasanApi.statusCode == 404) {
+        sebabApi = 'Halaman api/app_versi.php belum ada di server.';
+      } else {
+        sebabApi = 'Halaman API menjawab kode ${balasanApi.statusCode}.';
       }
     } catch (_) {
-      // API tidak tersedia: dicoba sumber kedua di bawah.
+      sebabApi = 'Halaman API tidak dapat dihubungi.';
     }
 
     // ---------------------------------------------------------------------
     // Sumber 2: berkas keterangan versi (apk/app_versi.json).
+    // Dipakai bila halaman API belum ada atau tidak menjawab.
     // ---------------------------------------------------------------------
     try {
       final Uri alamat = Uri.parse(RtsConfig.urlVersi);
@@ -11200,21 +11235,34 @@ class RtsPembaruan {
           .timeout(const Duration(seconds: 10));
 
       if (balasan.statusCode != 200) {
-        pesanGalat = 'Server menjawab kode ${balasan.statusCode}.';
+        pesanGalat = 'Berkas keterangan versi belum ada di server '
+            '(kode ${balasan.statusCode}).';
         return null;
       }
 
-      final Map<String, dynamic> isi =
-          (jsonDecode(balasan.body) as Map).cast<String, dynamic>();
+      final Object? isiMentah = jsonDecode(balasan.body);
 
-      final RtsInfoVersi? info = RtsInfoVersi.fromJson(isi);
+      if (isiMentah is! Map) {
+        pesanGalat = 'Isi berkas keterangan versi tidak dikenali.';
+        return null;
+      }
+
+      final RtsInfoVersi? info =
+          RtsInfoVersi.fromJson(isiMentah.cast<String, dynamic>());
+
+      if (info == null) {
+        belumAdaVersi = true;
+        terbaru = null;
+        pesanGalat = 'Belum ada versi aplikasi yang diumumkan di server.';
+        return null;
+      }
 
       terbaru = info;
       pesanGalat = null;
 
       return info;
     } catch (_) {
-      pesanGalat = 'Tidak dapat menghubungi server.';
+      pesanGalat = sebabApi ?? 'Tidak dapat menghubungi server.';
       return null;
     }
   }
@@ -11262,6 +11310,7 @@ class RtsPembaruan {
         rtsShowMessage(
           context,
           pesanGalat ?? 'Tidak dapat memeriksa pembaruan.',
+          success: belumAdaVersi,
         );
         return;
       }
@@ -11426,52 +11475,160 @@ class RtsPembaruan {
 /* ------------------------------------------------------------------------- */
 
 /// Kotak cuaca kecil pada beranda.
-class RtsKotakCuaca extends StatelessWidget {
+class RtsKotakCuaca extends StatefulWidget {
   const RtsKotakCuaca({super.key});
+
+  @override
+  State<RtsKotakCuaca> createState() => _RtsKotakCuacaState();
+}
+
+class _RtsKotakCuacaState extends State<RtsKotakCuaca> {
+  bool memuat = false;
+
+  /// Menekan kotak cuaca mengambil laporan sekali lagi.
+  ///
+  /// Bila titik lokasi belum diizinkan, permintaan izin muncul pada saat ini,
+  /// sehingga laporan cuaca dapat dihidupkan langsung dari beranda - tidak
+  /// harus lewat halaman Pengaturan lebih dahulu.
+  Future<void> _ambil() async {
+    if (memuat) return;
+
+    setState(() => memuat = true);
+
+    await RtsCuaca.muat(paksa: true);
+
+    if (!mounted) return;
+
+    setState(() => memuat = false);
+
+    final RtsCuacaHari? hari = RtsCuaca.data;
+
+    if (hari == null) {
+      // Keterangan sebabnya diambil dari RtsCuaca.status, misalnya:
+      // "Izin lokasi belum diberikan." atau "Layanan lokasi HP dimatikan."
+      rtsShowMessage(context, RtsCuaca.status);
+      return;
+    }
+
+    rtsShowMessage(
+      context,
+      'Cuaca diperbarui: ${hari.suhu.round()} derajat, ${hari.keterangan}.',
+      success: true,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final RtsCuacaHari? hari = RtsCuaca.data;
+    final bool sedangMemuat = memuat || RtsCuaca.sedangMemuat;
 
-    if (hari == null) return const SizedBox.shrink();
+    final BoxDecoration hiasan = BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.16),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.26)),
+    );
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.26)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+    // -----------------------------------------------------------------------
+    // Sebelum laporan pertama berhasil, kotak tetap ditampilkan dalam bentuk
+    // ringkas bertulisan "Cuaca" supaya petugas tahu tempatnya ada dan dapat
+    // menekannya untuk memuat. Bila dibiarkan kosong, petugas tidak tahu
+    // bahwa laporan cuaca memang disediakan di situ.
+    // -----------------------------------------------------------------------
+    if (hari == null) {
+      return GestureDetector(
+        onTap: _ambil,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+          decoration: hiasan,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(hari.ikon, color: Colors.white, size: 17),
-              const SizedBox(width: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  sedangMemuat
+                      ? const SizedBox(
+                          width: 15,
+                          height: 15,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.wb_cloudy_rounded,
+                          color: Colors.white,
+                          size: 17,
+                        ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Cuaca',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
               Text(
-                '${hari.suhu.round()}\u00b0C',
+                sedangMemuat ? 'Memuat...' : 'Ketuk untuk memuat',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w800,
+                  color: Color(0xccffffff),
+                  fontSize: 9.5,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 2),
-          Text(
-            hari.kota.isEmpty ? hari.keterangan : '${hari.kota} \u2022 ${hari.keterangan}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xccffffff),
-              fontSize: 10,
+        ),
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // Laporan cuaca sudah ada: suhu, gambar cuaca, kota, dan keadaannya.
+    // -----------------------------------------------------------------------
+    return GestureDetector(
+      onTap: _ambil,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+        decoration: hiasan,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(hari.ikon, color: Colors.white, size: 17),
+                const SizedBox(width: 6),
+                Text(
+                  '${hari.suhu.round()}\u00b0C',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 2),
+            Text(
+              hari.kota.isEmpty
+                  ? hari.keterangan
+                  : '${hari.kota} \u2022 ${hari.keterangan}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xccffffff),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
