@@ -362,7 +362,7 @@ class RtsPanelApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'RTS Panel By Bene',
+      title: 'RTS Panel',
       navigatorKey: rtsNavigatorKey,
       theme: ThemeData(
         useMaterial3: true,
