@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+================================================================================
+RTS Panel By Bene
+DAFTAR FOLDER YANG BOLEH DIBAGIKAN KE APLIKASI PEMASANG (FileProvider)
+================================================================================
+
+Berkas ini dipakai oleh MainActivity.kt saat membuka layar "Pasang" Android.
+
+Letak berkas ini di proyek Flutter Bapak:
+    D:\Project\rts_panel_app\android\app\src\main\res\xml\file_paths.xml
+
+Bila folder "xml" belum ada di dalam folder "res", buat dulu foldernya
+(nama folder harus tepat: xml, huruf kecil semua).
+
+Isinya adalah folder tempat aplikasi menyimpan berkas APK hasil unduhan,
+yaitu folder khusus milik aplikasi sendiri:
+    Android/data/<nama paket>/files/Download/rts_panel_update.apk
+
+Karena berkas itu berada di folder MILIK APLIKASI SENDIRI, Android tidak
+meminta izin penyimpanan sama sekali - jadi tidak ada izin tambahan yang
+mengganggu petugas.
+
+CATATAN: berkas ini TIDAK perlu diubah. Cukup disalin apa adanya.
+-->
+<paths>
+    <!-- Folder utama milik aplikasi (termasuk subfolder Download di dalamnya) -->
+    <external-files-path name="unduhan_luar" path="." />
+
+    <!-- Cadangan: sebagian HP menyimpan hasil unduhan pada folder di dalam
+         penyimpanan aplikasi. Keduanya ditulis supaya pembaruan tetap
+         bekerja di semua merek HP. -->
+    <files-path name="unduhan_dalam" path="." />
+</paths>

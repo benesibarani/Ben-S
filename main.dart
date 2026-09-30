@@ -962,7 +962,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-09-30-8';
+const String rtsKodeAplikasi = 'RTS-2026-10-01-9';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -11761,8 +11761,9 @@ class RtsPembaruan {
     keterangan
       ..writeln()
       ..writeln(
-        'Tekan PERBARUI SEKARANG, berkas pemasang akan diunduh. Setelah '
-        'selesai, buka berkas itu di HP lalu pilih Pasang.',
+        'Tekan PERBARUI SEKARANG - aplikasi mengunduh sendiri berkas '
+        'pembaruannya, lalu layar Pasang terbuka otomatis. Tidak perlu '
+        'membuka Chrome.',
       );
 
     final bool? lanjut = await showDialog<bool>(
@@ -11836,8 +11837,35 @@ class RtsPembaruan {
     await bukaUnduhan(context, info);
   }
 
-  /// Membuka tautan unduhan APK pada peramban HP.
+  /// Mengunduh pembaruan dan memasangnya.
+  ///
+  /// Urutannya:
+  ///   1. Dikerjakan DI DALAM APLIKASI (tanpa Chrome) lewat RtsPasangApk.
+  ///   2. Bila HP/perangkat tidak mendukung, atau saluran Android belum
+  ///      dipasang, barulah diunduh lewat peramban seperti cara lama.
+  ///
+  /// Jadi pembaruan selalu dapat dikerjakan, dalam keadaan apa pun.
   static Future<void> bukaUnduhan(
+    BuildContext context,
+    RtsInfoVersi info,
+  ) async {
+    final bool selesaiDiAplikasi = await RtsPasangApk.unduhDanPasang(
+      context,
+      info,
+    );
+
+    if (selesaiDiAplikasi) return;
+
+    if (!context.mounted) return;
+
+    await bukaPeramban(context, info);
+  }
+
+  /// Cara lama: membuka tautan unduhan pada peramban HP (Chrome).
+  ///
+  /// Dipakai sebagai cadangan bila pemasangan langsung di dalam aplikasi tidak
+  /// dapat dikerjakan pada HP tersebut.
+  static Future<void> bukaPeramban(
     BuildContext context,
     RtsInfoVersi info,
   ) async {
@@ -11868,6 +11896,401 @@ class RtsPembaruan {
         rtsShowMessage(context, 'Tidak dapat membuka tautan unduhan.');
       }
     }
+  }
+}
+
+
+/* ------------------------------------------------------------------------- */
+/* PEMBARUAN LANGSUNG DI DALAM APLIKASI (UNDUH + PASANG TANPA CHROME)         */
+/* ------------------------------------------------------------------------- */
+
+/// Mengunduh berkas pembaruan dan membuka layar Pasang Android LANGSUNG dari
+/// dalam aplikasi - tanpa membuka Chrome.
+///
+/// Cara kerjanya:
+///   1. Bagian Android (MainActivity.kt) meminta layanan DownloadManager milik
+///      Android mengunduh berkas APK ke folder khusus aplikasi. Unduhan tetap
+///      berjalan walaupun layar HP dimatikan, dan tidak meminta izin
+///      penyimpanan.
+///   2. Selagi mengunduh, aplikasi menampilkan besarnya kemajuan (persen).
+///   3. Begitu unduhan selesai, layar "Pasang" Android dibuka sendiri.
+///
+/// Bila HP belum mengizinkan pemasangan dari aplikasi ini (Android 8 ke atas),
+/// petugas diarahkan ke halaman pengaturan izin - cukup sekali untuk seterusnya.
+///
+/// AMAN GAGAL: bila berkas MainActivity.kt di proyek masih versi lama (saluran
+/// ini belum ada), seluruh pemanggilan gagal dengan sendirinya dan aplikasi
+/// memakai cara lama (membuka peramban). Jadi tidak ada yang rusak.
+class RtsPasangApk {
+  const RtsPasangApk._();
+
+  /// Nama saluran yang sama dengan yang dipakai MainActivity.kt.
+  static const MethodChannel _saluran = MethodChannel('rts/pembaruan');
+
+  /// Menjadi true bila perangkat ini ternyata tidak mendukung cara baru.
+  static bool tidakDidukung = false;
+
+  static Map<String, dynamic> _peta(Object? jawab) {
+    if (jawab is Map) {
+      return jawab.map<String, dynamic>(
+        (Object? kunci, Object? nilai) =>
+            MapEntry<String, dynamic>(kunci.toString(), nilai),
+      );
+    }
+
+    return <String, dynamic>{};
+  }
+
+  /// Meminta Android mengunduh berkas pembaruan.
+  static Future<Map<String, dynamic>> _mintaUnduh(RtsInfoVersi info) async {
+    try {
+      final Object? jawab = await _saluran.invokeMethod<Object>(
+        'pasang',
+        <String, dynamic>{
+          'url': info.alamatApk,
+          'nama': 'rts_panel_update.apk',
+        },
+      );
+
+      return _peta(jawab);
+    } catch (_) {
+      tidakDidukung = true;
+
+      return <String, dynamic>{};
+    }
+  }
+
+  /// Membaca kemajuan unduhan dari bagian Android.
+  static Future<Map<String, dynamic>> status() async {
+    try {
+      final Object? jawab = await _saluran.invokeMethod<Object>('status');
+
+      return _peta(jawab);
+    } catch (_) {
+      return <String, dynamic>{'status': 'GAGAL', 'pesan': 'Bagian Android tidak menjawab.'};
+    }
+  }
+
+  /// Memeriksa apakah cara baru ini tersedia pada HP ini.
+  static Future<bool> tersedia() async {
+    if (tidakDidukung) return false;
+
+    final Map<String, dynamic> jawab = await status();
+
+    if (jawab.isEmpty) return false;
+
+    return true;
+  }
+
+  /// Mengunduh berkas pembaruan lalu memasangnya.
+  ///
+  /// Mengembalikan true bila seluruhnya sudah ditangani di dalam aplikasi.
+  /// Mengembalikan false bila pemanggil perlu memakai cara lama (peramban).
+  static Future<bool> unduhDanPasang(
+    BuildContext context,
+    RtsInfoVersi info,
+  ) async {
+    if (tidakDidukung) return false;
+
+    // ------------------------------------------------------------------
+    // Diperiksa lebih dahulu: bila berkas pembaruan SUDAH pernah terunduh,
+    // tidak perlu diunduh ulang - cukup diselesaikan pemasangannya.
+    // ------------------------------------------------------------------
+    final Map<String, dynamic> keadaanAwal = await status();
+    final String awal = (keadaanAwal['status'] ?? '').toString();
+
+    if (awal == 'IZIN_DIPERLUKAN') {
+      return selesaikanIzin(context);
+    }
+
+    if (awal == 'SELESAI') {
+      if (context.mounted) {
+        rtsShowMessage(
+          context,
+          'Berkas pembaruan sudah terunduh dan siap dipasang. Bila layar '
+          'Pasang belum terbuka, buka pemberitahuan "Pembaruan RTS Panel" '
+          'pada layar HP.',
+          success: true,
+        );
+      }
+
+      return true;
+    }
+
+    Map<String, dynamic> jawab = await _mintaUnduh(info);
+
+    if (jawab.isEmpty) return false;
+
+    String keadaan = (jawab['status'] ?? '').toString();
+
+    // ------------------------------------------------------------------
+    // HP belum mengizinkan pemasangan dari aplikasi ini (Android 8+).
+    // ------------------------------------------------------------------
+    if (keadaan == 'IZIN_DIPERLUKAN') {
+      return selesaikanIzin(context);
+    }
+
+    // ------------------------------------------------------------------
+    // Unduhan tidak dapat dimulai -> pakai cara lama (peramban).
+    // ------------------------------------------------------------------
+    if (keadaan != 'DIMULAI' && keadaan != 'MENGUNDUH') {
+      final String pesan = (jawab['pesan'] ?? '').toString();
+
+      if (context.mounted && pesan.isNotEmpty) {
+        rtsShowMessage(context, pesan);
+      }
+
+      return false;
+    }
+
+    if (!context.mounted) return true;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => const _RtsKotakUnduhan(),
+    );
+
+    return true;
+  }
+
+  /// Meminta petugas menghidupkan izin "Instal aplikasi tidak dikenal".
+  ///
+  /// Dipakai pada dua keadaan:
+  ///   1. berkas belum diunduh, tetapi Android sudah menolak pemasangan;
+  ///   2. berkas SUDAH terunduh, tinggal menunggu izin pemasangan.
+  ///
+  /// Mengembalikan true bila sudah ditangani di dalam aplikasi, atau false
+  /// bila petugas memilih cara lama (unduh lewat Chrome).
+  static Future<bool> selesaikanIzin(BuildContext context) async {
+    if (!context.mounted) return true;
+
+    final String? pilihan = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.verified_user_rounded, color: rtsMaroon),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Satu Kali Pengaturan',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Supaya pembaruan dapat dipasang langsung dari aplikasi, Android '
+          'perlu izin "Instal aplikasi tidak dikenal" untuk RTS Panel.\n\n'
+          'Tekan BUKA PENGATURAN, hidupkan izin untuk RTS Panel, lalu tekan '
+          'PERBARUI SEKARANG lagi. Cukup SEKALI saja - pembaruan berikutnya '
+          'sudah berjalan sendiri.',
+          style: TextStyle(fontSize: 12.5, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop('peramban'),
+            child: const Text(
+              'UNDUH LEWAT CHROME',
+              style: TextStyle(color: rtsTextSecondary),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: rtsMaroon),
+            onPressed: () => Navigator.of(dialogContext).pop('setelan'),
+            child: const Text('BUKA PENGATURAN'),
+          ),
+        ],
+      ),
+    );
+
+    if (pilihan == 'peramban') return false;
+
+    if (pilihan != 'setelan') return true;
+
+    try {
+      await _saluran.invokeMethod<Object>('bukaIzin');
+    } catch (_) {
+      // pengaturan tidak dapat dibuka - pesan di bawah tetap ditampilkan
+    }
+
+    if (context.mounted) {
+      rtsShowMessage(
+        context,
+        'Hidupkan izin untuk RTS Panel, lalu tekan PERBARUI SEKARANG lagi - '
+        'berkasnya sudah terunduh, jadi tidak perlu menunggu lama.',
+        success: true,
+      );
+    }
+
+    return true;
+  }
+}
+
+/// Kotak kemajuan unduhan pembaruan.
+///
+/// Menutup sendiri begitu unduhan selesai (layar Pasang akan terbuka oleh
+/// bagian Android) atau bila unduhan gagal.
+class _RtsKotakUnduhan extends StatefulWidget {
+  const _RtsKotakUnduhan();
+
+  @override
+  State<_RtsKotakUnduhan> createState() => _RtsKotakUnduhanState();
+}
+
+class _RtsKotakUnduhanState extends State<_RtsKotakUnduhan> {
+  Timer? _pemantau;
+  double _persen = 0;
+  String _pesan = 'Menyiapkan unduhan...';
+  int _jumlahDiperiksa = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _pemantau = Timer.periodic(
+      const Duration(milliseconds: 700),
+      (Timer _) => _periksa(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pemantau?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _periksa() async {
+    final Map<String, dynamic> jawab = await RtsPasangApk.status();
+
+    if (!mounted) return;
+
+    final String keadaan = (jawab['status'] ?? '').toString();
+    final num? persen = jawab['persen'] as num?;
+
+    _jumlahDiperiksa++;
+
+    setState(() {
+      if (persen != null) {
+        _persen = persen.toDouble().clamp(0, 100);
+      }
+
+      if (keadaan == 'MENGUNDUH') {
+        _pesan = (jawab['pesan'] ?? 'Mengunduh berkas pembaruan...').toString();
+      } else if (keadaan == 'GAGAL') {
+        _pesan = (jawab['pesan'] ?? 'Unduhan gagal.').toString();
+      } else if (keadaan == 'IZIN_DIPERLUKAN') {
+        _pesan = 'Berkas sudah terunduh. Menunggu izin pemasangan.';
+      } else if (keadaan == 'SELESAI') {
+        _pesan = 'Unduhan selesai. Layar Pasang terbuka...';
+      }
+    });
+
+    final bool berhenti = keadaan == 'SELESAI' ||
+        keadaan == 'GAGAL' ||
+        keadaan == 'IZIN_DIPERLUKAN';
+
+    if (berhenti && mounted) {
+      _pemantau?.cancel();
+
+      Navigator.of(context).pop();
+
+      if (keadaan == 'IZIN_DIPERLUKAN') {
+        // Berkas sudah terunduh; yang kurang hanya izin pemasangan.
+        await RtsPasangApk.selesaikanIzin(context);
+      }
+
+      return;
+    }
+
+    // Pengaman: bila bagian Android tidak pernah menjawab, kotak ditutup
+    // supaya petugas tidak tertahan pada layar tunggu.
+    if (_jumlahDiperiksa > 150 && mounted) {
+      _pemantau?.cancel();
+
+      Navigator.of(context).pop();
+
+      rtsShowMessage(
+        context,
+        'Unduhan berjalan di latar belakang. Bila sudah selesai, ketuk '
+        'pemberitahuan "Pembaruan RTS Panel" pada layar HP.',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Row(
+        children: [
+          Icon(Icons.download_rounded, color: rtsMaroon),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Mengunduh Pembaruan',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: _persen <= 0 ? null : _persen / 100,
+              minHeight: 9,
+              backgroundColor: const Color(0xFFEDE3E1),
+              color: rtsMaroon,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _pesan,
+            style: const TextStyle(
+              fontSize: 12.5,
+              height: 1.5,
+              color: rtsTextPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${_persen.toStringAsFixed(0)} %',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: rtsMaroon,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Unduhan berjalan di dalam aplikasi. Layar Pasang akan terbuka '
+            'sendiri setelah berkas selesai diunduh.',
+            style: TextStyle(
+              fontSize: 11.5,
+              height: 1.4,
+              color: rtsTextSecondary,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text(
+            'SEMBUNYIKAN',
+            style: TextStyle(color: rtsTextSecondary),
+          ),
+        ),
+      ],
+    );
   }
 }
 

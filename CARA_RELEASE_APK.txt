@@ -21,7 +21,7 @@
 
    [ ] 2. Aplikasi sudah versi terbaru di komputer:
           buka menu Pengaturan pada aplikasi - penanda harus berbunyi
-          RTS-2026-09-30-8
+          RTS-2026-10-01-9
           (bila masih -5: jalankan .\LANGKAH1_PASANG_SEMUA.ps1 lebih dahulu)
 
    [ ] 3. Gambar QRIS sudah terpasang:
@@ -303,7 +303,7 @@
    [ ] 3. Aplikasi terpasang, dapat dibuka, dan NAMA pada layar HP sudah
           berbunyi "RTS Panel" (bukan rts_panel_app)
    [ ] 4. Masuk (login) berhasil, kartu akun tampil rapi
-   [ ] 5. Menu Pengaturan: penanda RTS-2026-09-30-8
+   [ ] 5. Menu Pengaturan: penanda RTS-2026-10-01-9
    [ ] 6. Profil - LANGGANAN PRO: gambar QRIS tampil + nominal Rp5.000
    [ ] 7. Profil - ketuk foto - pilih dari galeri: foto langsung berubah
    [ ] 8. Akun baru: kartu Rencana Akun berbunyi PRO (uji coba 7 hari)

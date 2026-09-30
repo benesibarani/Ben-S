@@ -197,7 +197,7 @@
 ==============================================================================
 
    [ ] 1. Layar HP: nama aplikasi harus "RTS Panel" (bukan rts_panel_app).
-          Menu Pengaturan: penanda kode aplikasi harus RTS-2026-09-30-8.
+          Menu Pengaturan: penanda kode aplikasi harus RTS-2026-10-01-9.
           (bila masih -6, berarti lib\main.dart belum terbarui - ulangi
            LANGKAH 4)
 
@@ -293,6 +293,8 @@
 
    4_PANDUAN_LENGKAP\
       IKLAN_LANGGANAN_FOTO.txt         penjelasan rinci (bila ingin lebih tahu)
+      UPDATE_DI_DALAM_APLIKASI.txt     pembaruan diunduh + dipasang LANGSUNG
+                                       dari aplikasi (tanpa Chrome)
       MENU_LANGGANAN_PRO.txt           menu baru di sidebar khusus ADMIN: lihat
                                        status PRO/GRATIS tiap user + edit harga
                                        dan durasi PRO (3 berkas server)

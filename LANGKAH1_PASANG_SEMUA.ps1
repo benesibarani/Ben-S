@@ -112,6 +112,8 @@ if (-not (Test-Path $folderAplikasi)) {
 $berkasMain = Join-Path $folderAplikasi 'main.dart'
 $berkasPubspec = Join-Path $folderAplikasi 'pubspec.yaml'
 $berkasManifestPanduan = Join-Path $folderAplikasi 'android_manifest_tambahan.xml'
+$berkasMainActivity = Join-Path $folderAplikasi 'MainActivity.kt'
+$berkasFilePaths = Join-Path $folderAplikasi 'file_paths.xml'
 
 Baik 'Berkas aplikasi dari paket ditemukan.'
 
@@ -260,6 +262,122 @@ if (-not (Test-Path $jalurManifest)) {
         Info 'Baris itu seharusnya sudah ada sejak putaran iklan sebelumnya.'
         Info 'Contoh barisnya ada pada berkas android_manifest_tambahan.xml'
         Info '(folder 2_APLIKASI_copy_ke_proyek) bagian bawah.'
+    }
+}
+
+# =============================================================================
+# 4b. PEMBARUAN LANGSUNG DI DALAM APLIKASI (unduh + pasang tanpa Chrome)
+# =============================================================================
+
+Judul '4b. Menyiapkan pembaruan langsung di dalam aplikasi'
+
+if (-not (Test-Path $berkasMainActivity) -or -not (Test-Path $berkasFilePaths)) {
+    Awas 'Berkas MainActivity.kt / file_paths.xml tidak ditemukan di folder paket.'
+    Info 'Pembaruan lewat peramban (Chrome) tetap bekerja seperti biasa.'
+} elseif (-not (Test-Path $folderProyek)) {
+    Awas 'Folder proyek belum ditemukan - langkah ini dilewati.'
+} else {
+    # --- Nama paket aplikasi dibaca dari build.gradle(.kts) ------------------
+    $pakej = 'com.example.rts_panel_app'
+    $berkasGradle = Join-Path $folderProyek 'android\app\build.gradle.kts'
+
+    if (-not (Test-Path $berkasGradle)) {
+        $berkasGradle = Join-Path $folderProyek 'android\app\build.gradle'
+    }
+
+    if (Test-Path $berkasGradle) {
+        $isiGradle = Get-Content $berkasGradle -Raw
+
+        if ($isiGradle -match 'applicationId\s*=?\s*"([^"]+)"') {
+            $pakej = $Matches[1]
+        }
+    }
+
+    Info ('Nama paket aplikasi : ' + $pakej)
+
+    # --- 1) MainActivity.kt --------------------------------------------------
+    $folderMainLama = Join-Path $folderProyek 'android\app\src\main'
+    $mainLama = $null
+
+    if (Test-Path $folderMainLama) {
+        $mainLama = Get-ChildItem -Path $folderMainLama -Recurse -Filter 'MainActivity.kt' -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+    }
+
+    if ($mainLama) {
+        $folderTujuanMain = $mainLama.DirectoryName
+        $cadanganMain = $mainLama.FullName + '.lama_' + (Get-Date -Format 'ddMM-yyyy_HHmmss')
+        Copy-Item -Path $mainLama.FullName -Destination $cadanganMain -Force
+        Info ('cadangan lama : ' + (Split-Path $cadanganMain -Leaf))
+    } else {
+        $folderTujuanMain = Join-Path (Join-Path $folderProyek 'android\app\src\main\kotlin') ($pakej -replace '\.', '\')
+        New-Item -ItemType Directory -Path $folderTujuanMain -Force | Out-Null
+        Info ('folder baru dibuat : ' + $folderTujuanMain)
+    }
+
+    $isiMain = Get-Content $berkasMainActivity -Raw
+    $isiMain = [regex]::Replace($isiMain, '(?m)^package\s+[A-Za-z0-9_.]+', ('package ' + $pakej), 1)
+    Simpan-TanpaBom (Join-Path $folderTujuanMain 'MainActivity.kt') $isiMain
+    Baik 'MainActivity.kt dipasang - pembaruan dapat diunduh & dipasang dari aplikasi.'
+
+    # --- 2) file_paths.xml ---------------------------------------------------
+    $folderXml = Join-Path $folderProyek 'android\app\src\main\res\xml'
+
+    if (-not (Test-Path $folderXml)) {
+        New-Item -ItemType Directory -Path $folderXml -Force | Out-Null
+    }
+
+    Copy-Item -Path $berkasFilePaths -Destination (Join-Path $folderXml 'file_paths.xml') -Force
+    Baik 'file_paths.xml dipasang pada android\app\src\main\res\xml.'
+
+    # --- 3) AndroidManifest.xml : izin + pembagi berkas ----------------------
+    if (-not (Test-Path $jalurManifest)) {
+        Awas 'AndroidManifest.xml tidak ditemukan - bagian ini dilewati.'
+    } else {
+        $isiMan = Get-Content $jalurManifest -Raw
+
+        if ($isiMan -match 'REQUEST_INSTALL_PACKAGES') {
+            Baik 'Izin REQUEST_INSTALL_PACKAGES sudah ada.'
+        } elseif ($isiMan -match '<application') {
+            $cadanganManifest2 = $jalurManifest + '.lama_' + (Get-Date -Format 'ddMM-yyyy_HHmmss')
+            Copy-Item -Path $jalurManifest -Destination $cadanganManifest2 -Force
+            Info ('cadangan lama : ' + (Split-Path $cadanganManifest2 -Leaf))
+
+            $barisIzinPasang = '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />'
+            $penggantiIzin = "`r`n    " + $barisIzinPasang + "`r`n`r`n`$1"
+            $isiMan = [regex]::Replace($isiMan, '(\s*<application)', $penggantiIzin, 1)
+            Info 'Izin REQUEST_INSTALL_PACKAGES ditambahkan.'
+        }
+
+        if ($isiMan -match 'rtsberkas') {
+            Baik 'Bagian <provider> FileProvider sudah ada.'
+        } elseif ($isiMan -match '<application[^>]*>') {
+            $provider = @'
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.rtsberkas"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+'@
+            $isiMan = [regex]::Replace($isiMan, '(<application[^>]*>)', ('$1' + "`r`n" + $provider), 1)
+            Info 'Bagian <provider> FileProvider ditambahkan.'
+        }
+
+        Simpan-TanpaBom $jalurManifest $isiMan
+
+        $cekBeres = Get-Content $jalurManifest -Raw
+
+        if (($cekBeres -match 'REQUEST_INSTALL_PACKAGES') -and ($cekBeres -match 'rtsberkas')) {
+            Baik 'AndroidManifest.xml siap untuk pembaruan di dalam aplikasi.'
+        } else {
+            Awas 'Sebagian penambahan pada AndroidManifest.xml belum berhasil.'
+            Info 'Buka android_manifest_tambahan.xml untuk menambahkan manual.'
+        }
     }
 }
 
@@ -419,7 +537,9 @@ Write-Host '     3. Tekan tombol PERBARUI DATABASE' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Periksa di aplikasi:' -ForegroundColor White
 Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-09-30-7' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-01-9' -ForegroundColor Gray
+Write-Host '     Pembaruan   : kotak Pembaruan -> PERBARUI SEKARANG' -ForegroundColor Gray
+Write-Host '                   (berkas diunduh DI DALAM aplikasi, tanpa Chrome)' -ForegroundColor Gray
 Write-Host '     Profil      : tombol LANGGANAN PRO tampil + gambar QRIS tampil' -ForegroundColor Gray
 Write-Host '     Profil      : ketuk foto -> pilih dari galeri -> foto berubah' -ForegroundColor Gray
 Write-Host '     Beranda     : iklan banner + iklan native tampil (akun GRATIS)' -ForegroundColor Gray

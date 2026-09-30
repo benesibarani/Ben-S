@@ -36,6 +36,14 @@ Catatan:
      Memilih foto dari galeri TIDAK memerlukan izin tambahan. -->
 <uses-permission android:name="android.permission.CAMERA" />
 
+<!-- Izin memasang pembaruan LANGSUNG DARI DALAM APLIKASI (Android 8 ke atas).
+     Tanpa izin ini, Android hanya mengizinkan pemasangan lewat peramban
+     (Chrome). Izin ini tetap meminta persetujuan petugas sekali saja: saat
+     pertama kali menekan Pasang, Android menampilkan halaman pengaturan
+     "Instal aplikasi tidak dikenal" - setelah diizinkan, pembaruan berikutnya
+     berjalan sendiri. -->
+<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
 <!--
 ================================================================================
 KODE APLIKASI ADMOB - CARA PEMASANGANNYA BERBEDA
@@ -72,4 +80,65 @@ garis miring (/). Jangan sampai tertukar.
 <meta-data
     android:name="com.google.android.gms.ads.APPLICATION_ID"
     android:value="ca-app-pub-1905352530630884~8932651962" />
+-->
+
+<!--
+================================================================================
+PEMBARUAN LANGSUNG DI DALAM APLIKASI - BAGIAN INI LETAKNYA DI DALAM <application>
+================================================================================
+
+Baris di bawah ini BUKAN <uses-permission>. Letaknya DI DALAM tag
+<application> ... </application>, sama seperti meta-data AdMob di atas.
+
+Kegunaannya: memberi tahu Android bahwa aplikasi ini boleh membagikan berkas
+APK hasil unduhannya kepada aplikasi pemasang Android (yang menampilkan layar
+"Pasang"). Tanpa bagian ini, setelah berkas selesai diunduh, aplikasi tidak
+dapat membuka layar Pasang.
+
+Contoh susunan yang benar:
+
+    <application
+        android:label="RTS Panel"
+        android:icon="@mipmap/ic_launcher">
+
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-1905352530630884~8932651962" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.rtsberkas"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <activity ...>
+            ...
+        </activity>
+    </application>
+
+Jangan menyalin tanda kutip pada ${applicationId} - tulis apa adanya, sebab
+Android akan menggantinya sendiri dengan nama paket aplikasi Bapak.
+
+Bila baris <provider> itu SUDAH ADA (misalnya karena sudah pemasangan
+sebelumnya), TIDAK perlu ditambahkan lagi.
+
+Berkas yang berpasangan dengan bagian ini: android_file_paths.xml, yang harus
+disalin ke android\app\src\main\res\xml\file_paths.xml
+-->
+
+<!-- Salinan baris siap tempel (letakkan DI DALAM <application>) -->
+<!--
+<provider
+    android:name="androidx.core.content.FileProvider"
+    android:authorities="${applicationId}.rtsberkas"
+    android:exported="false"
+    android:grantUriPermissions="true">
+    <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/file_paths" />
+</provider>
 -->

@@ -1,0 +1,209 @@
+==============================================================================
+ RTS PANEL BY BENE - PEMBARUAN LANGSUNG DI DALAM APLIKASI
+ (unduh + pasang TANPA membuka Chrome)
+==============================================================================
+
+ PERTANYAAN BAPAK
+ ----------------
+ "Kalau update tidak bisa ya mulai mendownload, loading dan penginstalan
+  tidak bisa langsung di aplikasinya. Ini kan biasa harus dari Google Chrome
+  proses downloadnya. Kalau semua langsung dari aplikasi apakah bisa?
+  Ketika muncul notice Update, dan di klik update maka muncul loading."
+
+ JAWABAN
+ -------
+   BISA. Seluruh proses dapat dikerjakan oleh aplikasi sendiri:
+       notifikasi UPDATE  ->  unduh di dalam aplikasi  ->  layar Pasang
+   Tanpa membuka Chrome sama sekali, tanpa mencari berkas di folder Unduhan.
+
+   Sebelumnya aplikasi MEMANG hanya dapat MEMBUKA TAUTAN unduhan; yang
+   mengunduh adalah Chrome. Berkasnya tersimpan di folder unduhan Chrome,
+   sehingga petugas harus: buka Chrome - tunggu - buka daftar unduhan -
+   ketuk berkas - tekan Pasang. Belum lagi Chrome kadang menampilkan
+   peringatan "berkas ini dapat membahayakan perangkat".
+
+   Sesudah perubahan ini, alurnya menjadi:
+       1. Notifikasi "Versi Baru RTS Panel Tersedia" muncul di layar HP
+       2. Ketuk notifikasi -> muncul kotak pembaruan -> tekan PERBARUI SEKARANG
+       3. Aplikasi mengunduh sendiri (ada bilah kemajuan dalam persen)
+       4. Begitu selesai, layar "Pasang" Android terbuka SENDIRI
+       5. Tekan Pasang -> selesai. Aplikasi memakai data lama (tidak logout)
+
+
+==============================================================================
+ BAGIAN 1 - CARA MEMASANG (2 BERKAS BARU + 1 BERKAS DIUBAH)
+==============================================================================
+
+ Paling mudah: jalankan LANGKAH1_PASANG_SEMUA.ps1 dari paket
+ RTS_PANEL_PUTARAN_7.zip - langkah 4b menangani ketiga berkas di bawah ini
+ secara otomatis (termasuk menyalin ke folder yang benar).
+
+ Bila Bapak ingin memasang sendiri, ini berkasnya:
+
+   [ ] 1. MainActivity.kt
+          Dari : 2_APLIKASI_copy_ke_proyek\MainActivity.kt
+          Ke   : D:\Project\rts_panel_app\android\app\src\main\kotlin\
+                    com\example\rts_panel_app\MainActivity.kt
+          (Timpa berkas MainActivity.kt yang sudah ada - ganti seluruh isinya.
+           Bila folder itu berbeda, cari berkas bernama MainActivity.kt di
+           dalam folder android\app\src\main - itulah tempatnya.)
+
+   [ ] 2. file_paths.xml
+          Dari : 2_APLIKASI_copy_ke_proyek\file_paths.xml
+          Ke   : D:\Project\rts_panel_app\android\app\src\main\res\xml\file_paths.xml
+          (Bila folder "xml" belum ada di dalam folder "res", buat dulu
+           foldernya - huruf kecil semua.)
+
+   [ ] 3. AndroidManifest.xml - TAMBAHKAN 2 bagian
+          (3a) Izin, diletakkan DI ATAS baris <application>:
+
+                <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+          (3b) Pembagi berkas, diletakkan DI DALAM <application> ... </application>:
+
+                <provider
+                    android:name="androidx.core.content.FileProvider"
+                    android:authorities="${applicationId}.rtsberkas"
+                    android:exported="false"
+                    android:grantUriPermissions="true">
+                    <meta-data
+                        android:name="android.support.FILE_PROVIDER_PATHS"
+                        android:resource="@xml/file_paths" />
+                </provider>
+
+          Tulis ${applicationId} apa adanya (jangan diganti) - Android sendiri
+          yang mengisinya dengan nama paket aplikasi Bapak.
+          Contoh susunan lengkapnya ada pada android_manifest_tambahan.xml.
+
+   [ ] 4. main.dart (versi baru, penanda RTS-2026-10-01-9) - seperti biasa
+          Ke   : D:\Project\rts_panel_app\lib\main.dart
+
+   [ ] 5. Setelah semua tersalin:
+              cd D:\Project\rts_panel_app
+              flutter clean
+              flutter pub get
+              flutter run -d CPH1937
+
+ Perubahan ini hanya di sisi ANDROID (Kotlin), jadi TIDAK menambah paket
+ baru pada pubspec.yaml - tidak perlu menunggu unduhan paket tambahan.
+ Bila Gradle mengeluh "Unresolved reference: FileProvider", tambahkan satu
+ baris di android\app\build.gradle.kts pada bagian dependencies:
+
+     implementation("androidx.core:core-ktx:1.13.1")
+
+
+==============================================================================
+ BAGIAN 2 - APA YANG DILIHAT PETUGAS
+==============================================================================
+
+   [ ] 1. Pemberitahuan pembaruan muncul (tetap seperti sebelumnya, dari FCM).
+          Pada pemberitahuan ada tombol UPDATE.
+
+   [ ] 2. Menekan tombol UPDATE membuka aplikasi, lalu tampil kotak
+          "Pembaruan Tersedia" berisi versi, ukuran berkas, dan catatan
+          pembaruan. Tekan PERBARUI SEKARANG.
+
+   [ ] 3. Muncul kotak "Mengunduh Pembaruan" dengan bilah kemajuan + persen.
+             - Unduhan berjalan walau layar HP dimatikan.
+             - Petugas boleh menekan SEMBUNYIKAN; unduhan tetap berjalan,
+               dan dapat dipantau dari pemberitahuan "Pembaruan RTS Panel"
+               pada layar HP.
+             - Bila sambungan internet terputus, unduhan menunggu sambungan
+               kembali (tidak mengulang dari nol).
+
+   [ ] 4. Sesudah selesai, layar Pasang Android terbuka SENDIRI.
+          Tekan PASANG. Aplikasi lama DIPERBARUI (bukan dipasang dua kali),
+          karena nama paketnya tidak diubah - jadi tidak ada data yang hilang
+          dan petugas tidak perlu masuk ulang.
+
+ SEKALI SAJA - IZIN PEMASANGAN
+   Android 8 ke atas mewajibkan izin "Instal aplikasi tidak dikenal" untuk
+   aplikasi yang memasang APK. Pada pemasangan pertama, aplikasi menampilkan
+   kotak "Satu Kali Pengaturan":
+
+        [ UNDUH LEWAT CHROME ]     [ BUKA PENGATURAN ]
+
+   Tekan BUKA PENGATURAN -> hidupkan izin untuk RTS Panel -> kembali ke
+   aplikasi -> tekan PERBARUI SEKARANG lagi.
+   BERKASNYA SUDAH TERUNDUH pada keadaan ini, jadi tidak menunggu lama.
+   Setelah itu, pembaruan berikutnya berjalan sendiri tanpa pertanyaan lagi.
+
+   Bila petugas tidak ingin mengurus izin, tombol UNDUH LEWAT CHROME tetap
+   disediakan - jadi pembaruan tidak pernah gagal total.
+   Di aplikasi, izin itu juga dapat dihidupkan lebih dahulu lewat:
+        Pengaturan HP -> Aplikasi -> RTS Panel -> Instal aplikasi tidak dikenal
+
+
+==============================================================================
+ BAGIAN 3 - YANG BELUM BERUBAH (DAN SEBABNYA)
+==============================================================================
+
+   Pemasangan APK baru TIDAK dapat dikerjakan sepenuhnya tanpa persetujuan
+   pengguna. Ini aturan Android (sejak versi 8), bukan kekurangan aplikasi:
+   Android WAJIB menampilkan layar "Pasang" yang harus ditekan sekali.
+   Aplikasi sekarang sudah mengantarkan sampai layar itu terbuka sendiri -
+   itulah batas terjauh yang diizinkan Android.
+
+   Sesudah aplikasi sudah memasang pembaruan sekali dan izin pemasangan
+   diberikan, prosesnya menjadi: ketuk notifikasi -> PERBARUI SEKARANG ->
+   tunggu -> PASANG. Tiga sentuhan, tanpa Chrome.
+
+
+==============================================================================
+ BAGIAN 4 - BILA ADA MASALAH
+==============================================================================
+
+ Kotak pembaruan langsung membuka Chrome, tidak ada bilah kemajuan
+   -> Berkas MainActivity.kt belum terpasang. Ulangi BAGIAN 1 langkah 1,
+      lalu JUMPA: flutter clean -> flutter pub get -> flutter run lagi.
+   -> Ini "aman gagal": aplikasi memakai cara lama, sehingga pembaruan tidak
+      pernah gagal total.
+
+ Muncul pesan "Satu Kali Pengaturan" berulang kali
+   -> Izin pemasangan belum dihidupkan. Pengaturan HP -> Aplikasi ->
+      RTS Panel -> Instal aplikasi tidak dikenal -> hidupkan.
+
+ Muncul "Unduhan gagal ... periksa sambungan internet"
+   -> Ketuk PERBARUI SEKARANG lagi. Sebab tersering: sambungan putus.
+   -> Bila tertulis "Server menolak permintaan unduhan (berkas tidak
+      ditemukan)", berarti berkas APK di folder apk/ sudah dihapus atau
+      namanya diubah. Periksa pada halaman app_versi.php.
+
+ Muncul "Penyimpanan HP tidak cukup"
+   -> Kosongkan penyimpanan HP (berkas APK sekitar 25-55 MB).
+
+ Gagal menyusun aplikasi (build) setelah memasang berkas ini
+   -> Periksa nama folder MainActivity.kt. Tempat paling aman: di dalam
+      folder android\app\src\main\kotlin\com\example\rts_panel_app\
+   -> Bila muncul "Unresolved reference: FileProvider", tambahkan baris
+      implementation("androidx.core:core-ktx:1.13.1") pada dependencies.
+   -> Bila ragu, kembalikan saja MainActivity.kt dari berkas cadangan
+      (berkas .lama_<tanggal> yang dibuat LANGKAH1) - aplikasi tetap dapat
+      dibangun dan pembaruan memakai cara lama (Chrome).
+
+ Aplikasi terpasang dua kali / muncul dua ikon
+   -> Pastikan applicationId TIDAK diubah (tetap com.example.rts_panel_app).
+      Inilah sebabnya berkas ini tidak menyentuh applicationId.
+
+
+==============================================================================
+ RINGKASAN PERUBAHAN
+==============================================================================
+
+ android_MainActivity.kt        : BARU - mengunduh lewat layanan DownloadManager
+                                  milik Android, memeriksa kemajuan, dan
+                                  membuka layar Pasang sendiri. Termasuk
+                                  penanganan izin pemasangan (Android 8+).
+ android_file_paths.xml         : BARU - daftar folder yang boleh dibagikan ke
+                                  aplikasi pemasang Android (FileProvider).
+ android_manifest_tambahan.xml  : DITAMBAH - izin REQUEST_INSTALL_PACKAGES dan
+                                  bagian <provider> FileProvider.
+ main.dart                      : kotak pembaruan berbunyi "aplikasi mengunduh
+                                  sendiri ... tidak perlu membuka Chrome";
+                                  ditambah kelas RtsPasangApk (penghubung ke
+                                  bagian Android) dan kotak kemajuan unduhan;
+                                  cara lama (peramban) tetap tersedia sebagai
+                                  cadangan; penanda naik ke RTS-2026-10-01-9.
+ LANGKAH1_PASANG_SEMUA.ps1      : langkah baru 4b - memasang ketiga berkas
+                                  Android di atas secara otomatis.
+==============================================================================

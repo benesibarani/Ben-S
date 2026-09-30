@@ -29,7 +29,7 @@
 #     flutter run -d CPH1937
 # =============================================================================
 
-$harapan = 'RTS-2026-09-30-8'
+$harapan = 'RTS-2026-10-01-9'
 
 function TulisJudul($teks) {
     Write-Host ""

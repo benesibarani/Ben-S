@@ -5878,7 +5878,7 @@ belum terkirim.
 | 3 | Pengingat berhenti **sendiri** setelah versi terpasang sama dengan versi di server - tidak perlu dimatikan manual |
 | 4 | Pemberitahuan dari server yang memuat keterangan versi langsung dipakai: bila aplikasi sedang terbuka, kotak pembaruan beserta tombol **PERBARUI SEKARANG** langsung tampil |
 | 5 | Menekan tombol UPDATE (atau pemberitahuannya) membuka aplikasi, lalu aplikasi memeriksa versi dan menampilkan kotak pembaruan |
-| 6 | Penanda kode aplikasi dinaikkan menjadi **`RTS-2026-09-30-8`** |
+| 6 | Penanda kode aplikasi dinaikkan menjadi **`RTS-2026-10-01-9`** |
 
 Perbedaan penting antara pemberitahuan biasa dan pengingat pembaruan:
 

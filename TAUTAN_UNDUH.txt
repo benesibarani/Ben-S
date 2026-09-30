@@ -3,6 +3,26 @@
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.
 ==============================================================================
 
+BARU - PEMBARUAN DIUNDUH + DIPASANG LANGSUNG DARI APLIKASI (TANPA CHROME)
+--------------------------------------------------------------------------
+UPDATE_DI_DALAM_APLIKASI.txt - notifikasi UPDATE -> unduh di dalam aplikasi ->
+                               layar Pasang terbuka sendiri. Berisi cara
+                               memasang 2 berkas Android + 1 berkas diubah
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/UPDATE_DI_DALAM_APLIKASI.txt
+
+  1. MainActivity.kt  (BARU) - unduh + buka layar Pasang dari dalam aplikasi
+     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/android_MainActivity.kt
+  2. file_paths.xml   (BARU) - daftar folder untuk aplikasi pemasang Android
+     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/android_file_paths.xml
+  3. android_manifest_tambahan.xml - + izin pemasangan + <provider>
+     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/android_manifest_tambahan.xml
+  4. main.dart (penanda RTS-2026-10-01-9)
+     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+
+  Paling mudah: jalankan LANGKAH1_PASANG_SEMUA.ps1 dari RTS_PANEL_PUTARAN_7.zip
+  (langkah 4b memasang seluruh berkas di atas secara otomatis).
+
+
 BARU - MENU "LANGGANAN PRO" PADA SIDEBAR (KHUSUS ADMIN)
 -------------------------------------------------------
 MENU_LANGGANAN_PRO.txt - menu baru di sidebar bagian ADMINISTRASI untuk
