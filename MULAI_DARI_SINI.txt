@@ -1,0 +1,169 @@
+==============================================================================
+ RTS PANEL BY BENE - MULAI DARI SINI
+ Panduan urutan pengerjaan. JANGAN dibuka/dikerjakan semua sekaligus.
+ Kerjakan SATU PUTARAN, lalu kabari saya hasilnya. Baru lanjut putaran
+ berikutnya.
+==============================================================================
+
+->
+->  URUTANNYA: PUTARAN 1 -> 2 -> 3 -> 4 -> 5
+->  Jangan melompat. Setiap putaran sudah diuji dan tidak merusak yang lain.
+->
+
+  CARA MEMBACANYA: tanda [ ] berarti belum dikerjakan,
+                   tanda [v] berarti sudah selesai.
+
+
+==============================================================================
+ PUTARAN 1 - MENU "VERSI APLIKASI" PADA DASHBOARD   (10 MENIT, PALING CEPAT)
+==============================================================================
+
+  Berkas : RTS_PANEL_MENU_VERSI.zip        (sudah Bapak unduh)
+  Tempat : cPanel - File Manager
+  Risiko : tidak ada. Hanya menambah satu menu.
+  Hasil  : di dashboard muncul menu "Versi Aplikasi" di kiri bawah.
+
+  [ ] 1. Ekstrak RTS_PANEL_MENU_VERSI.zip di komputer
+  [ ] 2. Buka cPanel - File Manager - masuk ke folder public_html
+  [ ] 3. Unggah berkas: sidebar.php
+         (bila ada pertanyaan "File sudah ada, timpa?" -> pilih YA / Overwrite)
+  [ ] 4. Buka https://rts.benedic-s.com/dashboard.php pada browser
+  [ ] 5. Tekan Ctrl+F5 (muat ulang tanpa cache)
+  [ ] 6. Lihat menu kiri bawah, bagian ADMINISTRASI:
+         harus ada "Versi Aplikasi" di bawah "Kelola User"
+
+  Bila belum tampak:
+       - pastikan yang login adalah akun ADMIN (bukan ASS / WSS / RTS)
+       - tekan Keluar, lalu masuk lagi, lalu Ctrl+F5
+       - pastikan sidebar.php benar-benar ada di dalam public_html
+
+  KABARI SAYA bila menu sudah tampak, atau bila belum tampak + tulis
+  apa yang terlihat pada layar.
+
+
+==============================================================================
+ PUTARAN 2 - HALAMAN UNGGAH APK + TABEL VERSI     (15 MENIT)
+==============================================================================
+
+  Berkas : RTS_PANEL_VERSI_APK.zip          (sudah Bapak unduh)
+           database/migrations/RTS_PANEL_APP_VERSI.sql  (ada di dalam paket)
+  Tempat : phpMyAdmin + cPanel File Manager
+  Hasil  : menu Versi Aplikasi membuka halaman unggah APK yang bekerja penuh.
+
+  ---- 2A. Database (sekali saja) ----
+  [ ] 1. Buka cPanel - phpMyAdmin
+  [ ] 2. Klik database (uji coba: benedics_coba  |  produksi: benedics_bene_sales)
+  [ ] 3. Klik tab "SQL"
+  [ ] 4. Buka berkas RTS_PANEL_APP_VERSI.sql dengan Notepad,
+         salin SELURUH isinya, tempel pada kotak SQL
+  [ ] 5. Klik "Kirim" (Go). Harus muncul satu baris: rts_app_versi
+
+  ---- 2B. Berkas website ----
+  [ ] 6. Buka cPanel - File Manager - public_html
+  [ ] 7. unggah: app_versi.php
+  [ ] 8. buat folder "apk" bila belum ada (klik kanan - Create Folder,
+         nama: apk), lalu unggah ke dalamnya: index.html dan app_versi.json
+  [ ] 9. buat/unggah folder "api" -> unggah: app_versi.php
+  [ ]10. klik kanan folder apk -> Change Permissions -> 0755
+
+  ---- 2C. Periksa ----
+  [ ]11. Dari dashboard klik menu "Versi Aplikasi"
+         Halaman unggah APK harus terbuka (belum perlu unggah apa pun)
+  [ ]12. Buka https://rts.benedic-s.com/api/app_versi.php pada browser
+         Harus muncul tulisan JSON (belum ada versi = wajar)
+
+  KABARI SAYA bila halaman sudah terbuka. Unggah APK-nya nanti setelah
+  PUTARAN 3 selesai (APK-nya belum ada).
+
+
+==============================================================================
+ PUTARAN 3 - APLIKASI DI HP: CUACA + IZIN LOKASI   (30-45 MENIT, DI KOMPUTER)
+==============================================================================
+
+  Berkas : RTS_PANEL_FITUR_BARU.zip         (sudah Bapak unduh)
+  Tempat : komputer, folder D:\Project\rts_panel_app
+  Hasil  : laporan cuaca di samping nama Admin pada beranda muncul.
+
+  [ ] 1. Ekstrak RTS_PANEL_FITUR_BARU.zip ke D:\Project\rts_panel_app
+         (pilih TIMPA / Replace semua)
+  [ ] 2. Buka PowerShell di folder D:\Project\rts_panel_app
+  [ ] 3. Jalankan:  .\PERBAIKI_PUBSPEC.ps1     (tunggu sampai selesai)
+  [ ] 4. Di VS Code: tekan Ctrl+Shift+P -> tulis "Dart: Restart Analysis Server"
+  [ ] 5. Jalankan:  .\PASANG_FITUR_BARU.ps1
+         Perhatikan tulisan yang muncul, seharusnya ada:
+             DITAMBAH: izin android.permission.ACCESS_FINE_LOCATION
+             DITAMBAH: izin android.permission.ACCESS_COARSE_LOCATION
+  [ ] 6. Di HP: Pengaturan - Sistem - Opsi Pengembang - Penelusuran nirkabel (ON)
+         Catat alamat IP + PORT yang muncul
+  [ ] 7. Jalankan:  .\PASANG_NIRKABEL.ps1     (ikuti pertanyaan di layar)
+  [ ] 8. Buka aplikasi RTS Panel di HP
+  [ ] 9. Akan muncul pertanyaan izin lokasi -> pilih "Saat aplikasi digunakan"
+  [ ]10. Lihat kartu merah beranda: cuaca + suhu harus tampil
+
+  Bila cuaca belum tampil:
+       Buka aplikasi - Profil - Pengaturan - bagian "CUACA BERANDA".
+       Di situ tertulis sebabnya. Kirimkan tulisannya kepada saya.
+
+  BONUS (untuk PUTARAN 2D):  setelah langkah 8, jalankan
+       flutter build apk --release
+  Hasilnya: D:\Project\rts_panel_app\build\app\outputs\flutter-apk\app-release.apk
+       Simpan berkas itu - nanti diunggah pada halaman Versi Aplikasi.
+
+
+==============================================================================
+ PUTARAN 4 - AKUN PRO (BEBAS IKLAN) + PEMBARUAN APLIKASI
+==============================================================================
+
+  Berkas : RTS_PANEL_AKUN_PRO.zip            (sudah Bapak unduh)
+           app-release.apk  (hasil PUTARAN 3)
+  Hasil  : akun berbayar bebas iklan; aplikasi seluruh tim bisa memperbarui
+           diri sendiri.
+
+  [ ] 1. Jalankan RTS_PANEL_AKUN_PRO.sql pada database UJI COBA (benedics_coba)
+  [ ] 2. Unggah isi RTS_PANEL_AKUN_PRO.zip ke public_html
+  [ ] 3. Buka akun_pro.php - tandai satu akun uji sebagai PRO
+  [ ] 4. Buka aplikasi memakai akun itu - iklan harus hilang
+  [ ] 5. Bila sudah lancar: ulangi langkah 1-2 pada database PRODUKSI
+         (WAJIB backup dulu melalui cPanel - Backup - Download a copy)
+  [ ] 6. Buka menu "Versi Aplikasi" - unggah app-release.apk
+         (isi nama versi + kode versi SAMA dengan pubspec.yaml)
+  [ ] 7. Buka aplikasi di HP -> akan muncul pemberitahuan pembaruan
+
+
+==============================================================================
+ PUTARAN 5 - KEAMANAN (JANGAN DITUNDA TERLALU LAMA)
+==============================================================================
+
+  [ ] 1. cPanel - MySQL Databases - ubah password akun database
+  [ ] 2. Perbarui password pada public_html/config.php
+  [ ] 3. Uji website + aplikasi (login harus tetap bisa)
+  [ ] 4. Beri tahu saya hasilnya - saya bersihkan berkas lama yang masih
+         memuat password terbuka (dashboard.php lama) dari repo
+
+
+==============================================================================
+ RINGKASAN: BERKAS MANA UNTUK APA
+==============================================================================
+
+  RTS_PANEL_MENU_VERSI.zip    -> PUTARAN 1   (menu dashboard)
+  RTS_PANEL_VERSI_APK.zip     -> PUTARAN 2   (halaman unggah APK + SQL versi)
+  RTS_PANEL_FITUR_BARU.zip    -> PUTARAN 3   (aplikasi Android + izin lokasi)
+  RTS_PANEL_AKUN_PRO.zip      -> PUTARAN 4   (akun PRO, versi 2)
+  RTS_PANEL_FIREBASE.zip      -> nanti       (pemberitahuan HP - bila belum)
+  PANDUAN_VERSI_TERBARU.md    -> bacaan bila ada yang macet (semua BAGIAN)
+  TAUTAN_UNDUH.txt            -> daftar semua tautan unduh
+
+
+==============================================================================
+ ATURAN PENTING
+==============================================================================
+
+  1. SATU PUTARAN DULU. Kabari saya hasilnya sebelum lanjut.
+     Dengan begitu bila ada yang salah, kita perbaiki kecil-kecil saja.
+  2. Jangan mengubah PRODUKSI sebelum uji coba di benedics_coba berhasil.
+  3. Selalu backup dulu sebelum perubahan di produksi.
+  4. Bila ada tulisan galat di layar, KIRIMKAN TULISANNYA APA ADANYA
+     (screenshot lebih bagus) - jangan diketik ulang/diringkas.
+  5. Bila bingung di tengah langkah, BERHENTI. Jangan menebak-nebak,
+     tanyakan dulu.
+==============================================================================
