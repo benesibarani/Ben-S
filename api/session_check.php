@@ -49,6 +49,7 @@ rts_api_response(true, 'Sesi masih berlaku.', [
         'role' => (string) $user['role'],
         'salesman' => (string) ($user['salesman'] ?? ''),
         'sales_district' => (string) ($user['sales_district'] ?? ''),
+        'akun_pro' => (int) ($user['akun_pro'] ?? 0),
     ],
     'scope' => [
         'mode' => (string) ($scope['mode'] ?? ''),

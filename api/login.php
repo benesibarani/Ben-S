@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once dirname(__DIR__) . '/config.php';
+require_once __DIR__ . '/kolom.php';
 
 /**
  * Mencari koneksi database dari config.php.
@@ -117,6 +118,7 @@ if ($username === '' || $password === '') {
 // Tabel sales_users produksi bisa berbeda dengan staging, jadi kolom diperiksa dulu.
 $punyaUsername = rts_login_has_column($conn, 'sales_users', 'username');
 $punyaStatus = rts_login_has_column($conn, 'sales_users', 'status_aktif');
+$punyaAkunPro = rts_api_ada_kolom($conn, 'sales_users', 'akun_pro');
 $punyaSalesman = rts_login_has_column($conn, 'sales_users', 'salesman');
 $punyaDistrict = rts_login_has_column($conn, 'sales_users', 'sales_district');
 
@@ -130,6 +132,7 @@ $kolom = [
     $punyaSalesman ? 'salesman' : "'' AS salesman",
     $punyaDistrict ? 'sales_district' : "'' AS sales_district",
     $punyaStatus ? 'status_aktif' : "'Aktif' AS status_aktif",
+    $punyaAkunPro ? 'akun_pro' : '0 AS akun_pro',
 ];
 
 $kolomLogin = $punyaUsername ? 'username' : 'email';
@@ -203,5 +206,6 @@ api_response(true, 'Login berhasil.', [
         'salesman' => $user['salesman'] ?? '',
         'sales_district' => $user['sales_district'] ?? '',
         'status_aktif' => $user['status_aktif'] ?? 'Aktif',
+        'akun_pro' => rts_api_akun_pro($user),
     ],
 ]);

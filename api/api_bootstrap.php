@@ -59,6 +59,9 @@ function rts_api_handle_preflight(): void
 
 /* --------------------------------------------------------------- database */
 
+/* Pemeriksaan keberadaan kolom (dipakai untuk kolom baru seperti akun_pro). */
+require_once __DIR__ . '/kolom.php';
+
 function rts_api_db(): mysqli
 {
     static $conn = null;
@@ -212,9 +215,15 @@ function rts_api_require_user(): array
     $conn = rts_api_db();
     $hash = hash('sha256', $token);
 
+    // Kolom akun_pro (penanda Akun PRO) hanya dipakai bila sudah ada, supaya
+    // API tetap berjalan pada database yang belum ditambahi kolom itu.
+    $punyaAkunPro = rts_api_ada_kolom($conn, 'sales_users', 'akun_pro');
+
+    $kolomAkunPro = $punyaAkunPro ? 'u.akun_pro' : '0 AS akun_pro';
+
     $stmt = $conn->prepare(
         'SELECT t.id AS token_id, t.expires_at, u.id, u.username, u.nama_lengkap, u.email, u.role,
-                u.salesman, u.sales_district, u.status_aktif
+                u.salesman, u.sales_district, u.status_aktif, ' . $kolomAkunPro . '
          FROM api_tokens t
          INNER JOIN sales_users u ON u.id = t.user_id
          WHERE t.token_hash = ?
@@ -254,6 +263,7 @@ function rts_api_require_user(): array
         'role' => strtoupper((string) $row['role']),
         'salesman' => (string) ($row['salesman'] ?? ''),
         'sales_district' => (string) ($row['sales_district'] ?? ''),
+        'akun_pro' => rts_api_akun_pro($row),
     ];
 }
 

@@ -50,16 +50,22 @@ CATATAN PENTING
    - Bila iklan tetap tidak muncul setelah lebih dari satu jam, kirimkan
      keluaran aplikasi (flutter run) ke saya untuk diperiksa.
 
-CATATAN TENTANG PEMBAGIAN IKLAN (menunggu keputusan Bapak)
-   Keadaan sekarang : iklan tampil untuk SEMUA akun, termasuk ADMIN.
+ATURAN PEMBAGIAN IKLAN (SUDAH DITETAPKAN - pilihan b)
+   Akun GRATIS : iklan tampil (banner beranda + iklan bentuk asli di 6 menu)
+   Akun PRO    : iklan TIDAK tampil sama sekali
 
-   Pilihan yang tersedia bila nanti ingin diatur:
-     a) Iklan tetap tampil untuk semua akun (seperti sekarang)
-     b) Iklan hanya untuk akun GRATIS; Akun PRO (berbayar) bebas iklan
-     c) Iklan hanya untuk akun dengan tingkat akses tertentu
+   Cara menandai akun PRO:
+      1. Jalankan RTS_PANEL_AKUN_PRO.sql lewat phpMyAdmin (menambah kolom
+         akun_pro pada tabel sales_users - aman, hanya menambah kolom)
+      2. Unggah paket RTS_PANEL_AKUN_PRO.zip ke public_html
+      3. Buka https://rts.benedic-s.com/akun_pro.php (khusus ADMIN)
+      4. Tekan "Jadikan PRO" pada akun yang berlangganan
 
-   Saya belum mengubah apa pun untuk pembagian ini - beri tahu saya pilihan
-   mana yang Bapak inginkan, dan saya sesuaikan.
+   Saklar utama: pada main.dart, "saklarIklan = false" mematikan SELURUH
+   iklan tanpa memandang tingkat akun.
+
+   Uji coba tanpa mengubah database: halaman Profil pada aplikasi - nyalakan
+   "Uji coba Akun PRO" (khusus ADMIN) untuk melihat tampilan bebas iklan.
 
    Untuk melihat penghasilan iklan: AdMob - Laporan - lihat perkiraan
    pendapatan, jumlah tampilan, dan tingkat klik.

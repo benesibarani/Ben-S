@@ -4563,3 +4563,115 @@ berjalan normal - bukan kesalahan.
 | Tidak muncul pada satu menu saja | Periksa keluaran `flutter run` - cari tulisan `onAdFailedToLoad` beserta kodenya, lalu kirimkan ke saya |
 | Muncul di beranda tetapi tidak pada menu | Kemungkinan unit Native advanced belum melayani permintaan - tunggu satu jam, lalu coba lagi |
 
+---
+
+## BAGIAN 42 - ATURAN IKLAN: HANYA UNTUK AKUN GRATIS (PILIHAN B)
+
+### A. Aturan yang diterapkan
+
+| Tingkat akun | Iklan pada beranda (banner) | Iklan pada keenam menu (native) |
+| --- | --- | --- |
+| **GRATIS** | Tampil | Tampil |
+| **PRO** | Tidak tampil | Tidak tampil |
+
+Akun PRO **bebas iklan sepenuhnya** - bukan hanya iklan yang dikurangi.
+
+### B. Bagaimana aplikasi mengetahui sebuah akun PRO
+
+| Nomor | Kejadian |
+| --- | --- |
+| 1 | Server menyimpan penanda pada kolom `akun_pro` di tabel `sales_users` (1 = PRO, 0 = GRATIS) |
+| 2 | Saat login, `api/login.php` mengirim penanda itu bersama data akun |
+| 3 | Saat aplikasi dibuka dengan "Ingat saya", `api/session_check.php` mengirim penanda yang sama |
+| 4 | Aplikasi menyimpannya pada sesi, lalu memakai `RtsTingkatAkun.pro` untuk menentukan iklan tampil atau tidak |
+| 5 | `RtsIklan.aktif` bernilai true hanya bila akun **bukan** PRO dan saklar utama menyala |
+
+Karena penanda ini datang dari server, **pengguna tidak dapat memalsukannya**
+dari HP - berbeda bila statusnya hanya disimpan di aplikasi.
+
+### C. Selama kolom database belum ada
+
+API memeriksa keberadaan kolom `akun_pro` lebih dahulu (berkas baru
+`api/kolom.php`). Bila kolomnya belum ada:
+
+| Hal | Akibatnya |
+| --- | --- |
+| API | Tetap berjalan normal - memakai nilai bawaan 0 |
+| Aplikasi | Seluruh akun dianggap GRATIS, iklan tampil seperti biasa |
+| Halaman `akun_pro.php` | Menampilkan petunjuk cara membuat kolomnya |
+
+Jadi **tidak ada yang rusak** bila berkas PHP dipasang lebih dahulu sebelum
+kolomnya dibuat.
+
+### D. Cara menandai akun PRO
+
+**Urutan yang disarankan (uji coba lebih dahulu):**
+
+| Nomor | Langkah |
+| --- | --- |
+| 1 | Jalankan `RTS_PANEL_AKUN_PRO.sql` pada database **uji coba** (`benedics_coba`) lewat phpMyAdmin - tab SQL - tempel - Go |
+| 2 | Unggah semua berkas `RTS_PANEL_AKUN_PRO.zip` ke `public_html` (berkas `api/*` ke folder `api/`) |
+| 3 | Buka `https://coba.benedic-s.com/akun_pro.php` - tekan **Jadikan PRO** pada satu akun uji |
+| 4 | Buka aplikasi dengan akun itu - iklan harus hilang |
+| 5 | Setelah staging berhasil **dan database produksi sudah di-backup**: ulangi langkah 1-2 pada produksi |
+
+**Perintah SQL-nya (hanya menambah kolom, tidak mengubah data):**
+
+```sql
+ALTER TABLE sales_users ADD COLUMN akun_pro TINYINT(1) NOT NULL DEFAULT 0;
+```
+
+### E. Uji coba tanpa mengubah database
+
+Pada halaman **Profil** aplikasi tersedia saklar **"Uji coba Akun PRO"**
+(khusus ADMIN). Menyalakannya akan menyembunyikan seluruh iklan untuk mencoba
+tampilan bebas iklan, tanpa perlu membuat kolom database.
+
+Catatan: perubahan saklar ini terlihat setelah **kembali ke beranda** atau
+aplikasi dibuka ulang, karena kotak iklan sudah terbentuk pada tampilan
+sebelumnya.
+
+### F. Halaman akun_pro.php
+
+| Bagian | Kegunaan |
+| --- | --- |
+| Ringkasan | Jumlah akun seluruhnya, jumlah PRO, jumlah GRATIS |
+| Daftar akun | Nama, email, username, role, district, status aktif, dan tingkat akun |
+| Tombol ubah | "Jadikan PRO" atau "Jadikan GRATIS" pada tiap akun |
+| Pencarian | Menyaring daftar menurut nama, username, atau email |
+| Petunjuk | Muncul otomatis bila kolom database belum ada, lengkap dengan perintah SQL-nya |
+
+Keamanan halaman ini:
+
+| Hal | Keterangan |
+| --- | --- |
+| Hanya ADMIN | Role lain diarahkan kembali ke dashboard |
+| Akun sendiri | Tidak dapat diubah menjadi GRATIS, agar ADMIN tidak terkunci dari halaman ini |
+| Data yang diubah | Hanya kolom `akun_pro` - kolom lain tidak disentuh |
+| Password | Tidak pernah ditampilkan |
+
+### G. Berkas yang berubah
+
+| Berkas | Keadaan | Isi |
+| --- | --- | --- |
+| `main.dart` | Diperbarui | `RtsUser.akunPro`, modul `RtsTingkatAkun`, `RtsIklan.aktif` mengikuti tingkat akun, kartu Rencana Akun menampilkan tingkat + saklar uji |
+| `api/kolom.php` | **Berkas baru** | Pemeriksaan keberadaan kolom |
+| `api/login.php` | Diperbarui | Mengirim `akun_pro` |
+| `api/session_check.php` | Diperbarui | Mengirim `akun_pro` |
+| `api/api_bootstrap.php` | Diperbarui | Membaca `akun_pro` dari database |
+| `akun_pro.php` | **Berkas baru** | Halaman pengaturan akun PRO |
+| `RTS_PANEL_AKUN_PRO.sql` | **Berkas baru** | Menambah kolom `akun_pro` |
+| `KODE_ADMOB.txt` | Diperbarui | Aturan pembagian iklan |
+| `RTS_PANEL_FITUR_BARU.zip` | Dibuat ulang | Memuat `main.dart` terbaru |
+| `RTS_PANEL_AKUN_PRO.zip` | **Paket baru** | Seluruh berkas akun PRO + cara pasang |
+
+### H. Bila ada masalah
+
+| Keadaan | Sebab dan penanganan |
+| --- | --- |
+| Halaman akun_pro.php menampilkan peringatan kolom | Jalankan SQL-nya lebih dahulu (perintah tersedia di halaman itu) |
+| Status PRO berubah di website tetapi iklan masih tampil | Pengguna perlu **login kembali** - status dibaca saat login |
+| Iklan tetap tampil walau akun sudah PRO | Periksa `api/login.php` dan `api/session_check.php` benar-benar yang baru (bukan berkas lama yang tertinggal) |
+| Muncul "Duplicate column name 'akun_pro'" | Kolomnya sudah ada - tidak perlu dikerjakan lagi, tidak ada yang rusak |
+| Ingin mematikan SELURUH iklan sementara | Ubah `static const bool saklarIklan = true;` menjadi `false` pada `class RtsIklan` di `main.dart` |
+

@@ -274,6 +274,9 @@ void main() async {
   // pembaruan otomatis untuk membandingkan dengan versi di server.
   await RtsVersi.muat();
 
+  // Membaca tingkat akun (GRATIS / PRO). Akun PRO bebas iklan.
+  await RtsTingkatAkun.muat();
+
   // Menyiapkan mesin iklan. Dijalankan tanpa ditunggu supaya pembukaan
   // aplikasi tetap cepat; kegagalan tidak mengganggu aplikasi.
   unawaited(RtsIklan.siapkan());
@@ -379,6 +382,17 @@ class RtsPanelApp extends StatelessWidget {
 /* MODEL                                                                      */
 /* ------------------------------------------------------------------------- */
 
+/// Membaca nilai benar dari server yang dapat berbentuk true, 1, "1",
+/// atau "true". Dipakai untuk kolom bertipe TINYINT seperti akun_pro.
+bool rtsBenar(Object? nilai) {
+  if (nilai == true) return true;
+  if (nilai == false || nilai == null) return false;
+
+  final String teks = nilai.toString().trim().toLowerCase();
+
+  return teks == '1' || teks == 'true' || teks == 'ya';
+}
+
 class RtsUser {
   const RtsUser({
     required this.id,
@@ -387,6 +401,7 @@ class RtsUser {
     required this.role,
     required this.salesman,
     required this.salesDistrict,
+    this.akunPro = false,
   });
 
   final int id;
@@ -396,6 +411,13 @@ class RtsUser {
   final String salesman;
   final String salesDistrict;
 
+  /// True bila akun ini berlangganan (Akun PRO). Akun PRO bebas iklan.
+  ///
+  /// Nilai ini datang dari server (kolom akun_pro pada tabel sales_users).
+  /// Bila kolomnya belum ada di server, nilainya false sehingga seluruh akun
+  /// dianggap GRATIS dan iklan tampil seperti biasa.
+  final bool akunPro;
+
   factory RtsUser.fromJson(Map<String, dynamic> json) {
     return RtsUser(
       id: int.tryParse((json['id'] ?? '0').toString()) ?? 0,
@@ -404,6 +426,7 @@ class RtsUser {
       role: (json['role'] ?? '').toString().toUpperCase(),
       salesman: (json['salesman'] ?? '').toString(),
       salesDistrict: (json['sales_district'] ?? '').toString(),
+      akunPro: rtsBenar(json['akun_pro']),
     );
   }
 
@@ -415,6 +438,7 @@ class RtsUser {
       'role': role,
       'salesman': salesman,
       'sales_district': salesDistrict,
+      'akun_pro': akunPro,
     };
   }
 
@@ -849,6 +873,72 @@ void rtsShowMessage(BuildContext context, String message,
         duration: const Duration(seconds: 3),
       ),
     );
+}
+
+/// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
+///
+/// ATURAN IKLAN (pilihan Bapak - pilihan b):
+///   - Akun GRATIS : iklan tampil (banner pada beranda dan iklan bentuk asli
+///                   pada setiap menu)
+///   - Akun PRO    : iklan TIDAK tampil sama sekali
+///
+/// Sumber kebenaran: kolom `akun_pro` pada tabel `sales_users`, yang dikirim
+/// server lewat login.php dan session_check.php. Selama kolom itu belum ada di
+/// server, seluruh akun dianggap GRATIS - jadi memasang bagian ini tidak
+/// mengubah apa pun sebelum kolomnya dibuat.
+///
+/// Tersedia juga saklar UJI COBA (khusus ADMIN, pada halaman Profil) untuk
+/// mencoba tampilan bebas iklan tanpa perlu mengubah database.
+class RtsTingkatAkun {
+  const RtsTingkatAkun._();
+
+  static const String _kunciUji = 'rts_akun_pro_uji';
+
+  static bool _uji = false;
+
+  /// True bila akun ini dianggap PRO menurut data server.
+  static bool get dariServer => RtsSesi.user?.akunPro ?? false;
+
+  /// True bila akun ini dianggap PRO (data server atau saklar uji coba).
+  static bool get pro => dariServer || _uji;
+
+  /// Nama tingkat akun untuk ditampilkan.
+  static String get label => pro ? 'PRO' : 'GRATIS';
+
+  /// Keterangan singkat tingkat akun.
+  static String get keterangan {
+    if (pro) return 'Bebas iklan - seluruh iklan dimatikan.';
+    return 'Dengan iklan - seluruh menu utama tetap dapat dipakai.';
+  }
+
+  /// True bila saklar uji coba sedang menyala.
+  static bool get ujiMenyala => _uji;
+
+  /// True bila saklar uji coba boleh dipakai (khusus ADMIN).
+  static bool get bolehUji =>
+      const ['ADMIN', 'ASS'].contains(RtsSesi.user?.role ?? '');
+
+  static Future<void> muat() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      _uji = prefs.getBool(_kunciUji) ?? false;
+    } catch (_) {
+      _uji = false;
+    }
+  }
+
+  static Future<void> setUji(bool nilai) async {
+    _uji = nilai;
+
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      await prefs.setBool(_kunciUji, nilai);
+    } catch (_) {
+      // pengaturan gagal disimpan, tetap dipakai untuk sesi ini
+    }
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -10367,7 +10457,11 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
 /// jam) sebelum mulai menampilkan iklan. Selama menunggu, kotak iklan tidak
 /// muncul dan aplikasi tetap berjalan normal.
 ///
-/// Untuk mematikan seluruh iklan sementara: ubah aktif menjadi false.
+/// ATURAN IKLAN (pilihan b - sudah diterapkan):
+///   Akun GRATIS : iklan tampil pada beranda dan keenam menu
+///   Akun PRO    : iklan tidak tampil sama sekali
+///   Saklar utama: ubah saklarIklan menjadi false untuk mematikan semua iklan
+///                 tanpa memandang tingkat akun.
 class RtsIklan {
   const RtsIklan._();
 
@@ -10387,8 +10481,19 @@ class RtsIklan {
   ///                        Notifikasi, Sinkronisasi, Profil, Pengaturan)
   static const String nativeIklan = 'ca-app-pub-1905352530630884/9404285058';
 
-  /// Setel false bila ingin mematikan seluruh iklan pada aplikasi.
-  static const bool aktif = true;
+  /// Saklar utama. Setel false bila ingin mematikan SELURUH iklan aplikasi,
+  /// tanpa memandang tingkat akun.
+  static const bool saklarIklan = true;
+
+  /// Iklan hanya dipakai untuk akun GRATIS.
+  ///
+  /// Akun PRO (berlangganan) bebas iklan, sesuai pilihan Bapak. Tingkat akun
+  /// dibaca dari RtsTingkatAkun, yang bersumber dari kolom `akun_pro` pada
+  /// tabel sales_users di server.
+  static bool get aktif => saklarIklan && !RtsTingkatAkun.pro;
+
+  /// True bila iklan dimatikan karena akun ini PRO.
+  static bool get bebasIklan => !RtsTingkatAkun.pro;
 
   static bool _siap = false;
   static Future<void>? _proses;
@@ -11256,13 +11361,21 @@ class RtsKotakCuaca extends StatelessWidget {
 ///
 /// Dipakai untuk membedakan akun GRATIS dan akun PRO (berbayar) yang akan
 /// ditambahkan pada pembaruan berikutnya.
-class RtsKartuRencanaAkun extends StatelessWidget {
+class RtsKartuRencanaAkun extends StatefulWidget {
   const RtsKartuRencanaAkun({super.key, required this.user});
 
   final RtsUser user;
 
   @override
+  State<RtsKartuRencanaAkun> createState() => _RtsKartuRencanaAkunState();
+}
+
+class _RtsKartuRencanaAkunState extends State<RtsKartuRencanaAkun> {
+  @override
   Widget build(BuildContext context) {
+    final bool pro = RtsTingkatAkun.pro;
+    final bool dariServer = RtsTingkatAkun.dariServer;
+
     return RtsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -11273,40 +11386,50 @@ class RtsKartuRencanaAkun extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xfffaecee),
+                  color: pro
+                      ? const Color(0xffe8f5ec)
+                      : const Color(0xfffaecee),
                   borderRadius: BorderRadius.circular(13),
                 ),
-                child: const Icon(
-                  Icons.workspace_premium_outlined,
-                  color: rtsMaroon,
+                child: Icon(
+                  pro
+                      ? Icons.workspace_premium_rounded
+                      : Icons.workspace_premium_outlined,
+                  color: pro ? rtsGreen : rtsMaroon,
                   size: 22,
                 ),
               ),
               const SizedBox(width: 13),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Akun GRATIS',
-                      style: TextStyle(
+                      'Akun ${RtsTingkatAkun.label}',
+                      style: const TextStyle(
                         color: rtsTextPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      'Seluruh menu utama tetap dapat dipakai.',
-                      style: TextStyle(color: rtsTextSecondary, fontSize: 11.5),
+                      RtsTingkatAkun.keterangan,
+                      style: const TextStyle(
+                        color: rtsTextSecondary,
+                        fontSize: 11.5,
+                        height: 1.35,
+                      ),
                     ),
                   ],
                 ),
               ),
               RtsBadge(
-                'AKTIF',
-                background: const Color(0xffe8f5ec),
-                foreground: rtsGreen,
+                RtsTingkatAkun.label,
+                background: pro
+                    ? const Color(0xffe8f5ec)
+                    : const Color(0xfffaecee),
+                foreground: pro ? rtsGreen : rtsMaroon,
               ),
             ],
           ),
@@ -11318,15 +11441,22 @@ class RtsKartuRencanaAkun extends StatelessWidget {
               borderRadius: BorderRadius.circular(13),
               border: Border.all(color: rtsCardBorder),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.info_outline_rounded, size: 17, color: rtsMaroon),
-                SizedBox(width: 9),
+                Icon(
+                  pro ? Icons.block_rounded : Icons.campaign_outlined,
+                  size: 17,
+                  color: pro ? rtsGreen : rtsMaroon,
+                ),
+                const SizedBox(width: 9),
                 Expanded(
                   child: Text(
-                    'Akun PRO (berbayar) akan tersedia pada pembaruan '
-                    'berikutnya, berisi menu tambahan khusus pelanggan PRO.',
-                    style: TextStyle(
+                    pro
+                        ? 'Iklan dimatikan untuk akun ini, karena Akun PRO '
+                            'bebas iklan.'
+                        : 'Iklan ditampilkan pada akun ini. Beralih ke Akun PRO '
+                            'menghilangkan seluruh iklan.',
+                    style: const TextStyle(
                       color: rtsTextSecondary,
                       fontSize: 11.5,
                       height: 1.45,
@@ -11336,11 +11466,65 @@ class RtsKartuRencanaAkun extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 13),
+          const Text(
+            'Akun PRO (berbayar) akan tersedia pada pembaruan berikutnya, '
+            'berisi menu tambahan khusus pelanggan PRO.',
+            style: TextStyle(
+              color: rtsTextSecondary,
+              fontSize: 11.5,
+              height: 1.45,
+            ),
+          ),
+          if (RtsTingkatAkun.bolehUji && !dariServer) ...[
+            const SizedBox(height: 6),
+            const RtsDivider(),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              activeColor: rtsMaroon,
+              value: RtsTingkatAkun.ujiMenyala,
+              onChanged: (bool nilai) async {
+                await RtsTingkatAkun.setUji(nilai);
+
+                if (!context.mounted) return;
+
+                setState(() {});
+
+                rtsShowMessage(
+                  context,
+                  nilai
+                      ? 'Uji coba Akun PRO menyala. Iklan disembunyikan - '
+                          'berlaku setelah kembali ke beranda atau aplikasi '
+                          'dibuka ulang.'
+                      : 'Uji coba Akun PRO dimatikan. Iklan tampil kembali.',
+                  success: true,
+                );
+              },
+              title: const Text(
+                'Uji coba Akun PRO',
+                style: TextStyle(
+                  color: rtsTextPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              subtitle: const Text(
+                'Khusus ADMIN. Menyembunyikan iklan untuk mencoba tampilan '
+                'bebas iklan tanpa mengubah database.',
+                style: TextStyle(
+                  color: rtsTextSecondary,
+                  fontSize: 11,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
+
 
 /// Kartu "Pembaruan Aplikasi" pada halaman Pengaturan.
 class RtsKartuPembaruan extends StatefulWidget {
