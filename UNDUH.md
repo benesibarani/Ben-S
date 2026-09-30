@@ -105,16 +105,25 @@ tampil. Setelah aplikasi terpasang, izinkan lokasi saat HP bertanya.
 
 ---
 
-## BILA DIMINTA LOGIN
+## SOAL LOGIN
 
-Repo ini bersifat **pribadi** (Private), sehingga GitHub meminta login lebih
-dahulu. Gunakan akun GitHub Bapak (**benesibarani**) - setelah login, seluruh
-tautan di atas langsung berjalan.
+**Keadaan 30 September 2026 (sore): repo ini PUBLIC kembali** - dipilih Bapak
+agar tautan unduhan langsung berjalan tanpa perlu login. Jadi seluruh tautan di
+atas sekarang dapat dibuka siapa pun yang memiliki alamatnya.
 
-Bila muncul halaman **404 / Page not found** padahal sudah login, periksa apakah
-akun yang dipakai benar akun `benesibarani` (bukan akun GitHub yang lain).
+Beberapa hal yang perlu diketahui karena repo publik:
 
-Catatan: sejak 30 September 2026 repo ini berstatus Private, setelah sebelumnya
-sempat publik. Berkas dump database produksi (`benedics_benes_sales.sql`) sudah
-dihapus dari cabang `main`. Penjelasan lengkap ada pada berkas
-`BERSIHKAN_REPO.md`.
+| Nomor | Hal | Keadaan sekarang |
+| --- | --- | --- |
+| 1 | `dashboard.php` versi lama yang memuat password database langsung | **Sudah dihapus dari repositori** (30 Sep 2026) - salinan di hosting tidak diubah |
+| 2 | Berkas dump database produksi | Sudah dihapus dari cabang `main`, tetapi masih ada pada **riwayat** `main` (dapat dibuka lewat alamat commit lama) |
+| 3 | Langkah keamanan nomor 3 - ganti password database cPanel | **BELUM dikerjakan** |
+
+Saran: setelah semua berkas selesai diunduh dan pekerjaan selesai, kembalikan
+repo menjadi **Private** lagi (Settings - General - Danger Zone - Change
+visibility - Make private), dan **ganti password database** pada cPanel.
+Selama repo publik, siapa pun yang tahu alamatnya dapat membaca seluruh berkas
+di dalamnya.
+
+Bila muncul halaman **404 / Page not found**, biasanya karena nama berkas salah
+ketik. Periksa kembali alamatnya.

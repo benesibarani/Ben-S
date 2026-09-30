@@ -3,14 +3,23 @@
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.
 ==============================================================================
 
-PENTING - REPO SUDAH PRIVATE
-----------------------------
-Seluruh tautan di bawah meminta LOGIN GITHUB lebih dahulu.
-Gunakan akun GitHub: benesibarani
-Setelah login sekali, semua tautan di bawah langsung mengunduh berkasnya.
+TAUTAN LANGSUNG - REPO PUBLIC (30 September 2026)
+-------------------------------------------------
+Repo sedang PUBLIC, jadi seluruh tautan di bawah dapat diklik langsung tanpa
+login. Cukup klik, berkasnya langsung terunduh.
 
-Bila muncul halaman 404 (Page not found), berarti yang login bukan akun
-benesibarani. Keluar dari GitHub, lalu masuk memakai akun yang benar.
+PANDUAN LANGKAH DEMI LANGKAH
+----------------------------
+MULAI_DARI_SINI.txt        - urutan 5 putaran
+PUTARAN_2_DAN_3.txt        - langkah rinci Putaran 2 & 3 (2A-2C, 3A-3E)
+
+PENGINGAT KEAMANAN
+------------------
+Karena repo publik, siapa pun dapat membaca berkasnya. Setelah semua
+pekerjaan selesai:
+  1. Kembalikan repo menjadi Private (Settings - General - Danger Zone), dan
+  2. Ganti password database pada cPanel (MySQL Databases - Change Password).
+Berkas dashboard.php lama yang memuat password sudah dihapus dari repo.
 
 
 ------------------------------------------------------------------
@@ -55,7 +64,13 @@ RTS_PANEL_FIREBASE.zip
  3. PANDUAN DAN CATATAN
 ------------------------------------------------------------------
 
-PANDUAN_VERSI_TERBARU.md  (semua BAGIAN 1 sampai 46)
+PUTARAN_2_DAN_3.txt  (panduan rinci Putaran 2 & 3: 2A-2C, 3A-3E)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PUTARAN_2_DAN_3.txt
+
+MULAI_DARI_SINI.txt  (urutan 5 putaran + daftar berkas)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/MULAI_DARI_SINI.txt
+
+PANDUAN_VERSI_TERBARU.md  (semua BAGIAN 1 sampai 49)
   https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/PANDUAN_VERSI_TERBARU.md
 
 CARA_PASANG_VERSI_APK.txt  (panduan singkat: menu versi + unggah APK)

@@ -1,0 +1,207 @@
+==============================================================================
+ RTS PANEL BY BENE - PUTARAN 2 DAN 3 (DIKERJAKAN BERURUTAN)
+ Unggah berkas website + pasang tabel versi  ->  lalu  ->  build aplikasi HP
+==============================================================================
+
+  Kerjakan dari atas ke bawah. Setiap bagian ada "PERIKSA" - pastikan dulu
+  hasilnya benar sebelum lanjut ke nomor berikutnya.
+
+  Tanda [ ] = belum dikerjakan,  [v] = sudah selesai.
+
+
+==============================================================================
+ BAGIAN 2A - MEMBUAT TABEL VERSI PADA DATABASE   (5 MENIT)
+==============================================================================
+
+  [ ] 1. Buka cPanel - phpMyAdmin
+  [ ] 2. Pilih database:
+             uji coba : benedics_coba
+             produksi : benedics_bene_sales
+         Saran: kerjakan yang UJI COBA dulu.
+  [ ] 3. Klik tab "SQL" (di bagian atas)
+  [ ] 4. Salin SELURUH isi berkas database/migrations/RTS_PANEL_APP_VERSI.sql
+         (ada di dalam RTS_PANEL_VERSI_APK.zip), tempel pada kotak SQL
+  [ ] 5. Klik tombol "Kirim" (Go)
+
+  PERIKSA: muncul satu baris dengan tulisan rts_app_versi
+           Bila ada tulisan merah, salin dan kirimkan kepada saya.
+
+  Catatan: berkas SQL ini tidak memakai information_schema, sehingga tidak
+  akan menimbulkan kesalahan #1044 seperti pada akun PRO.
+
+
+==============================================================================
+ BAGIAN 2B - MENGUNGGAH BERKAS WEBSITE   (10 MENIT)
+==============================================================================
+
+  [ ] 1. Buka cPanel - File Manager - masuk ke folder: public_html
+         (folder website rts.benedic-s.com)
+  [ ] 2. Unggah BERKAS ini (timpa bila ditanya):
+             app_versi.php              <-- versi 4
+  [ ] 3. Pastikan folder "apk" ada. Bila belum ada, buat:
+             klik kanan - Create Folder - nama: apk - Create New Folder
+  [ ] 4. Masuk ke folder apk, unggah (timpa) DUA berkas ini:
+             index.html
+             app_versi.json
+  [ ] 5. Masuk ke folder "api", unggah (timpa) berkas:
+             app_versi.php
+  [ ] 6. Kembali ke public_html, klik kanan folder "apk" - Change Permissions
+         - isi 0755 - klik Change Permissions
+  [ ] 7. Berkas cek_session.php dan sidebar.php sudah pernah diunggah -
+         tidak perlu diulang
+
+
+==============================================================================
+ BAGIAN 2C - MEMERIKSA HASIL UNGGAHAN   (3 MENIT)
+==============================================================================
+
+  [ ] 1. Buka: https://rts.benedic-s.com/app_versi.php?diagnosa=1
+         Tulisan pertamanya harus: VERSI BERKAS  : 4
+         Bagian bawah harus berbunyi:
+             HASIL: penjaga LOLOS - halaman tidak mengalihkan pengunjung.
+
+  [ ] 2. Buka: https://rts.benedic-s.com/api/app_versi.php
+         Akan muncul tulisan JSON. Tulisan "success": false dengan pesan
+         "Belum ada versi aplikasi yang diumumkan" artinya SUDAH BENAR
+         (memang belum ada APK yang diunggah).
+
+  [ ] 3. Buka dashboard - klik menu "Versi Aplikasi"
+         Halaman unggah APK harus terbuka.
+
+  Bila nomor 1 atau 3 belum benar, JANGAN lanjut - kirimkan tulisannya.
+
+
+==============================================================================
+ BAGIAN 3A - MENYIAPKAN APLIKASI DI KOMPUTER   (20-30 MENIT)
+==============================================================================
+
+  [ ] 1. Ekstrak RTS_PANEL_FITUR_BARU.zip ke:  D:\Project\rts_panel_app
+         Pilih TIMPA / Replace semua berkas yang ditanya.
+  [ ] 2. Buka PowerShell di folder itu:
+             klik kanan di dalam folder - Open in Terminal
+             (atau: tekan Shift + klik kanan - Open PowerShell window here)
+  [ ] 3. Jalankan:
+             .\PERBAIKI_PUBSPEC.ps1
+         Tunggu sampai selesai (ada tulisan selesai / pub get berhasil).
+  [ ] 4. Buka VS Code - tekan Ctrl+Shift+P - tulis:
+             Dart: Restart Analysis Server
+         lalu tekan Enter (supaya tanda merah palsu hilang).
+  [ ] 5. Jalankan:
+             .\PASANG_FITUR_BARU.ps1
+         Perhatikan tulisan yang muncul. HARUS ADA dua baris ini:
+             DITAMBAH: izin android.permission.ACCESS_FINE_LOCATION
+             DITAMBAH: izin android.permission.ACCESS_COARSE_LOCATION
+         (bila tertulis "sudah ada", tidak masalah - berarti memang sudah ada)
+     Bila gagal di tengah, kirimkan tulisannya kepada saya.
+
+
+==============================================================================
+ BAGIAN 3B - MEMASANG APLIKASI KE HP TANPA KABEL   (10 MENIT)
+==============================================================================
+
+  [ ] 1. Di HP: Pengaturan - Tentang Ponsel - ketuk "Nomor Bentukan" 7 kali
+         (melewati langkah ini bila Opsi Pengembang sudah pernah dibuka)
+  [ ] 2. Di HP: Pengaturan - Sistem - Opsi Pengembang:
+             - "Penelusuran nirkabel" (Wireless debugging) -> HIDUPKAN
+             - Ketuk "Penelusuran nirkabel" - catat:
+                   IP address & Port  (contoh: 192.168.1.10:37000)
+             - Tekan "Pair device with pairing code" - akan muncul
+               kode 6 angka + IP:PORT untuk memasangkan
+  [ ] 3. Di komputer, jalankan:  .\PASANG_NIRKABEL.ps1
+         Ikuti pertanyaannya: masukkan IP:PORT dan kode pasangan bila diminta.
+  [ ] 4. Tunggu sampai aplikasi terpasang (ada tulisan "Installing..." lalu
+         "Syncing files to device" berhenti).
+
+  PERIKSA: ikon RTS Panel ada pada HP, dan aplikasi dapat dibuka.
+
+
+==============================================================================
+ BAGIAN 3C - MENGAKTIFKAN LAPORAN CUACA   (5 MENIT)
+==============================================================================
+
+  [ ] 1. Buka aplikasi RTS Panel di HP
+  [ ] 2. Akan muncul pertanyaan izin:
+             "Izinkan RTS Panel mengakses lokasi perangkat ini?"
+         Pilih: "Saat aplikasi digunakan" (While using the app)
+  [ ] 3. Buka beranda. Pada kartu merah, di samping nama Admin, sekarang ada
+         KOTAK CUACA. Bentuknya salah satu dari:
+             a) ikon awan + tulisan "Cuaca" + "Ketuk untuk memuat"
+                -> KETUK kotak itu, lalu izinkan lokasi bila ditanya
+             b) suhu hari ini, contoh: "31°C" + "Medan - Cerah"
+                -> berarti SUDAH BERHASIL
+
+  Bila masih berbunyi "Ketuk untuk memuat" setelah diketuk:
+       akan muncul tulisan sebabnya pada bagian bawah layar
+       (contoh: "Layanan lokasi HP sedang dimatikan.")
+       Kirimkan tulisan itu kepada saya.
+
+  Bila GPS HP mati: Pengaturan HP - Lokasi -> hidupkan.
+  Bila lokasi pernah ditolak: Pengaturan HP - Aplikasi - RTS Panel -
+       Izin - Lokasi -> pilih "Izinkan".
+
+
+==============================================================================
+ BAGIAN 3D - MEMBUAT BERKAS APK UNTUK DIUNGGAH   (15 MENIT)
+==============================================================================
+
+  [ ] 1. Di folder D:\Project\rts_panel_app, jalankan:
+             flutter build apk --release
+  [ ] 2. Hasilnya ada pada berkas:
+             D:\Project\rts_panel_app\build\app\outputs\flutter-apk\app-release.apk
+  [ ] 3. Buka https://rts.benedic-s.com/app_versi.php (menu Versi Aplikasi)
+  [ ] 4. Isi formulir:
+             Versi aplikasi : 1.1.0
+             Kode versi     : 2
+             Berkas APK     : pilih app-release.apk
+             Catatan        : Perbaikan cuaca beranda, ikon lokasi, tampilan.
+             Wajib          : TIDAK perlu dicentang
+         Klik: Unggah & Umumkan Versi Ini
+  [ ] 5. Buka https://rts.benedic-s.com/api/app_versi.php
+         Sekarang harus berbunyi "success": true dengan kode versi 2.
+  [ ] 6. Buka aplikasi di HP - Profil - Pengaturan - "Periksa Pembaruan Sekarang"
+         Karena versi terpasang sama (2), akan muncul keterangan
+         "Aplikasi sudah memakai versi terbaru (1.1.0)". Itu artinya SUDAH BENAR.
+
+  CATATAN tentang uji pemberitahuan pembaruan:
+       Pemberitahuan pembaruan baru muncul pada HP yang versinya LEBIH RENDAH
+       dari versi di server. Untuk mencobanya:
+         1. di pubspec.yaml ganti baris version menjadi  1.1.0+3
+         2. jalankan flutter build apk --release
+         3. unggah dengan kode versi 3
+         4. buka aplikasi pada HP yang masih versi 2 -> muncul pemberitahuan
+       Angka kode versi WAJIB selalu bertambah.
+
+
+==============================================================================
+ BAGIAN 3E - BERBAGI APLIKASI KE SELURUH TIM
+==============================================================================
+
+  Cara paling gampang: kirimkan tautan berkas APK yang sudah diunggah.
+  Buka https://rts.benedic-s.com/app_versi.php - pada bagian
+  "Berkas APK di Server", klik nama berkasnya -> salin alamat itu
+  (contoh: https://rts.benedic-s.com/apk/rts_panel_v2.apk) dan kirimkan
+  lewat WhatsApp. Petugas tinggal membuka tautan itu di HP.
+
+
+==============================================================================
+ BILA ADA YANG MACET
+==============================================================================
+
+  Masalah                          | Tindakan
+  ---------------------------------|------------------------------------------
+  SQL menampilkan tulisan merah    | Salin tulisannya, kirim ke saya
+  #1044 information_schema         | Berkas SQL lama yang dipakai - pakai dari
+                                   | paket ini (tidak memakai information_schema)
+  #1060 Duplicate column           | Hanya untuk akun PRO, abaikan
+  Halaman app_versi.php kembali    | Buka ?diagnosa=1, kirim bagian SIMULASI
+  ke dashboard                     | PENJAGA HALAMAN
+  api/app_versi.php 404            | Berkas api/app_versi.php belum diunggah -
+                                   | ulangi BAGIAN 2B nomor 5
+  Unggahan APK gagal izin folder   | Folder apk izinnya bukan 0755 - ulangi
+                                   | BAGIAN 2B nomor 6
+  Cuaca tidak tampil               | Ketuk kotak "Cuaca" pada kartu merah -
+                                   | kirimkan tulisan sebab yang muncul
+  PowerShell tidak mau menjalankan |
+  skrip (Execution Policy)         | Jalankan dulu di PowerShell:
+                                   | Set-ExecutionPolicy -Scope Process Bypass
+==============================================================================

@@ -80,6 +80,8 @@
 
 ==============================================================================
  PUTARAN 2 - HALAMAN UNGGAH APK + TABEL VERSI     (15 MENIT)
+ ->  Dikerjakan bersama PUTARAN 3? Pakai berkas PUTARAN_2_DAN_3.txt
+ ->  (berisi langkah 2A-2C dan 3A-3E yang lebih rinci)
 ==============================================================================
 
   Berkas : RTS_PANEL_VERSI_APK.zip          (sudah Bapak unduh)
@@ -191,6 +193,7 @@
   RTS_PANEL_MENU_VERSI.zip    -> PUTARAN 1   (menu dashboard)
   RTS_PANEL_VERSI_APK.zip     -> PUTARAN 1B  (perbaikan tombol menu + halaman unggah)
   RTS_PANEL_PERIKSA_SESSION.zip -> PUTARAN 1B (hanya 2 berkas pemeriksa, paling cepat)
+  PUTARAN_2_DAN_3.txt         -> panduan rinci PUTARAN 2 & 3 (2A-2C, 3A-3E)
   RTS_PANEL_VERSI_APK.zip     -> PUTARAN 2   (halaman unggah APK + SQL versi)
   RTS_PANEL_FITUR_BARU.zip    -> PUTARAN 3   (aplikasi Android + izin lokasi)
   RTS_PANEL_AKUN_PRO.zip      -> PUTARAN 4   (akun PRO, versi 2)
