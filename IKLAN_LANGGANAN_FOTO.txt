@@ -229,7 +229,7 @@
 
   LANGKAH 5 - PERIKSA
   -------------------
-  [ ] Pengaturan -> penanda kode aplikasi harus berbunyi: RTS-2026-09-30-7
+  [ ] Pengaturan -> penanda kode aplikasi harus berbunyi: RTS-2026-09-30-8
   [ ] Profil -> tombol LANGGANAN PRO terbuka dan menampilkan QRIS
   [ ] Profil -> ketuk foto -> pilih dari galeri -> foto berubah
   [ ] Beranda -> iklan banner + iklan native tampil (akun GRATIS)

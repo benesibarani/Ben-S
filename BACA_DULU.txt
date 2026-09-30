@@ -188,7 +188,7 @@
 ==============================================================================
 
    [ ] 1. Layar HP: nama aplikasi harus "RTS Panel" (bukan rts_panel_app).
-          Menu Pengaturan: penanda kode aplikasi harus RTS-2026-09-30-7.
+          Menu Pengaturan: penanda kode aplikasi harus RTS-2026-09-30-8.
           (bila masih -6, berarti lib\main.dart belum terbarui - ulangi
            LANGKAH 4)
 

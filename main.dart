@@ -962,7 +962,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-09-30-7';
+const String rtsKodeAplikasi = 'RTS-2026-09-30-8';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -2164,12 +2164,6 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
     );
-  }
-
-  String _initial(String name) {
-    final String clean = name.trim();
-    if (clean.isEmpty) return 'R';
-    return clean.substring(0, 1).toUpperCase();
   }
 
   void _openMenu(BuildContext context, String menu) {
@@ -4330,14 +4324,6 @@ class _ProfilePageState extends State<ProfilePage> {
     baruController.dispose();
     ulangiController.dispose();
     super.dispose();
-  }
-
-  String get _inisial {
-    final String bersih = user.displayName.trim();
-
-    if (bersih.isEmpty) return 'R';
-
-    return bersih.substring(0, 1).toUpperCase();
   }
 
   Future<void> _gantiPassword() async {
@@ -11671,7 +11657,13 @@ class RtsPembaruan {
 
       return info;
     } catch (_) {
-      pesanGalat = sebabApi ?? 'Tidak dapat menghubungi server.';
+      // sebabApi sudah pasti terisi pada jalur ini (semua jalur di atas
+      // mengembalikan nilai atau mengisinya), tetapi pemeriksaan kosong tetap
+      // dipakai supaya keterangannya selalu berguna bagi pengguna.
+      final String sebab = (sebabApi ?? '').trim();
+
+      pesanGalat = sebab.isEmpty ? 'Tidak dapat menghubungi server.' : sebab;
+
       return null;
     }
   }

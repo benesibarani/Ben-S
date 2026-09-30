@@ -41,7 +41,7 @@ SEBAB YANG SUDAH DIPASTIKAN (30 September 2026, malam)
       flutter run -d CPH1937
 
   Setelah itu buka aplikasi - menu Pengaturan - bagian "CUACA BERANDA".
-  Kode aplikasi harus terbaca: RTS-2026-09-30-7
+  Kode aplikasi harus terbaca: RTS-2026-09-30-8
 
 
 SEBAB LAIN YANG MUNGKIN (bila kode di atas sudah benar)
@@ -64,8 +64,8 @@ BUKTI CEPAT APAKAH BUILD DI HP MASIH LAMA
 
      TIDAK ADA bagian "Cuaca Beranda"       -> build lama, lanjutkan LANGKAH 1
      ADA bagian "Cuaca Beranda", tetapi pada kotak merah muda tertulis
-     kode aplikasi yang BUKAN RTS-2026-09-30-7  -> build lama, lanjutkan LANGKAH 1
-     ADA dan kode aplikasi tertulis RTS-2026-09-30-7 -> build baru,
+     kode aplikasi yang BUKAN RTS-2026-09-30-8  -> build lama, lanjutkan LANGKAH 1
+     ADA dan kode aplikasi tertulis RTS-2026-09-30-8 -> build baru,
      lanjutkan LANGKAH 5 (kirim keterangan)
 
 
@@ -110,7 +110,7 @@ BUKTI CEPAT APAKAH BUILD DI HP MASIH LAMA
   [ ] 2. Jalankan:  .\PERIKSA_KODE_APLIKASI.ps1
   [ ] 3. Baca hasilnya:
              semua [ADA] dan
-             "KODE APLIKASI : RTS-2026-09-30-7"
+             "KODE APLIKASI : RTS-2026-09-30-8"
          berarti folder sudah benar - lanjut LANGKAH 2.
          Bila ada [BELUM] - ekstrak RTS_PANEL_FITUR_BARU.zip ke folder ini
          dengan pilihan TIMPA / Replace, lalu jalankan skrip ini lagi.
@@ -162,7 +162,7 @@ BUKTI CEPAT APAKAH BUILD DI HP MASIH LAMA
              [ADA] kartu pemeriksa Cuaca Beranda pada Pengaturan
              [ADA] tombol SALIN KETERANGAN cuaca
 
-             KODE APLIKASI pada main.dart : RTS-2026-09-30-7
+             KODE APLIKASI pada main.dart : RTS-2026-09-30-8
 
          CATAT nilai KODE APLIKASI itu - akan dicocokkan dengan HP.
 
@@ -211,7 +211,7 @@ BUKTI CEPAT APAKAH BUILD DI HP MASIH LAMA
          Isinya contoh:
 
              KETERANGAN CUACA RTS PANEL
-             Kode aplikasi : RTS-2026-09-30-7
+             Kode aplikasi : RTS-2026-09-30-8
              Versi terpasang: 1.1.0 (2)
              Waktu         : 13.40
              Server        : Server Produksi
