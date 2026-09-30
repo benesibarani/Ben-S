@@ -59,9 +59,15 @@ RTS_PANEL_AKUN_PRO.zip
     (akun_pro.php + api/ + SQL - akun GRATIS melihat iklan, akun PRO bebas iklan)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_AKUN_PRO.zip
 
-RTS_PANEL_FIREBASE.zip
-    (api fcm_kirim, device_token, notifications, inbox, pengajuan_toko)
+RTS_PANEL_FIREBASE.zip   (11 berkas - PEMBERITAHUAN OTOMATIS ke layar HP)
+    (api/notif_otomatis.php BARU + api/fcm_kirim.php + app_versi.php +
+     upload_customer.php + device_token + request_action/create +
+     inbox_updated + pengajuan_toko_updated + SQL tabel token +
+     NOTIFIKASI_OTOMATIS.txt)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_FIREBASE.zip
+
+NOTIFIKASI_OTOMATIS.txt  (panduan pemberitahuan otomatis + ujian + kendala)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/NOTIFIKASI_OTOMATIS.txt
 
 
 ------------------------------------------------------------------

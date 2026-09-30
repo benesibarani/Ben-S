@@ -141,6 +141,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_customer'])) {
 
                         $conn->commit();
                         $message = $count . ' data berhasil diproses' . ($skipped ? ', ' . $skipped . ' baris kosong dilewati' : '') . '.';
+
+                        /* -----------------------------------------------------------------
+                         * PEMBERITAHUAN OTOMATIS: DATA CUSTOMER DIPERBARUI
+                         *
+                         * Dikirim ke seluruh petugas (kecuali Admin yang melakukan)
+                         * langsung ke layar HP, sehingga mereka dapat menarik data
+                         * terbaru tanpa harus diberi tahu lewat pesan terpisah.
+                         *
+                         * Aman gagal: bila tabel pemberitahuan atau Firebase belum
+                         * ada, bagian ini berhenti dengan tenang dan unggahan tetap
+                         * dianggap berhasil.
+                         * ----------------------------------------------------------------- */
+                        if (is_file(__DIR__ . '/api/notif_otomatis.php')) {
+                            require_once __DIR__ . '/api/notif_otomatis.php';
+
+                            if (function_exists('rts_notif_aktivitas') && isset($conn) && $conn instanceof mysqli) {
+                                try {
+                                    $judulNotif = 'Data Customer Diperbarui';
+                                    $pesanNotif = (string) $count . ' data customer baru saja '
+                                        . 'diperbarui oleh Admin pada ' . date('d-m-Y H:i') . '. '
+                                        . 'Buka menu Sinkronisasi untuk mengambil data terbaru.';
+
+                                    rts_notif_aktivitas(
+                                        $conn,
+                                        $judulNotif,
+                                        $pesanNotif,
+                                        'AKTIVITAS',
+                                        ['halaman' => 'master_customer'],
+                                        (string) ($_SESSION['email'] ?? '')
+                                    );
+                                } catch (Throwable $galatNotif) {
+                                    error_log('RTS notif customer: ' . $galatNotif->getMessage());
+                                }
+                            }
+                        }
                     } catch (Throwable $exception) {
                         $conn->rollback();
                         $error = 'Upload dibatalkan: ' . $exception->getMessage();

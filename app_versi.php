@@ -547,6 +547,45 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['app_unggah'])
                         . ') berhasil diunggah. Aplikasi seluruh tim akan melihat '
                         . 'pemberitahuan pembaruan pada pembukaan berikutnya.';
 
+                    /* -----------------------------------------------------------------
+                     * PEMBERITAHUAN OTOMATIS KE SELURUH HP
+                     *
+                     * Selain kotak pembaruan di dalam aplikasi (yang hanya terlihat
+                     * ketika aplikasi dibuka), unggahan ini juga langsung
+                     * memberitahu SELURUH HP lewat Firebase Cloud Messaging -
+                     * sehingga pemberitahuan muncul di layar HP walaupun aplikasi
+                     * sedang tidak dibuka.
+                     *
+                     * Isi pemberitahuan: judul versi, sifat wajib/tidaknya, dan
+                     * catatan pembaruan. Pada HP, pemberitahuan itu memuat tombol
+                     * UPDATE yang membuka aplikasi untuk memperbarui diri.
+                     *
+                     * Aman gagal: bila Firebase belum disiapkan atau belum ada HP
+                     * yang terdaftar, bagian ini berhenti dengan tenang dan
+                     * unggahan tetap dianggap berhasil.
+                     * ----------------------------------------------------------------- */
+                    if (is_file(__DIR__ . '/api/notif_otomatis.php')) {
+                        require_once __DIR__ . '/api/notif_otomatis.php';
+
+                        if (function_exists('rts_notif_versi_baru') && $app_conn instanceof mysqli) {
+                            try {
+                                $app_kabar = rts_notif_versi_baru(
+                                    $app_conn,
+                                    $data,
+                                    (string) ($_SESSION['email'] ?? '')
+                                );
+
+                                if ((int) $app_kabar['hp'] > 0) {
+                                    $app_pesan .= ' Pemberitahuan sudah dikirim ke '
+                                        . (int) $app_kabar['hp'] . ' HP petugas.';
+                                }
+                            } catch (Throwable $app_galat_notif) {
+                                // Pemberitahuan gagal tidak membatalkan unggahan.
+                                error_log('RTS notif versi: ' . $app_galat_notif->getMessage());
+                            }
+                        }
+                    }
+
                     /* Bila tabel rts_app_versi sudah ada, unggahan ini juga
                        dicatat ke database sehingga menjadi riwayat yang dapat
                        dilihat kapan saja (dan dibaca aplikasi lewat API). */

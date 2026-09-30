@@ -5809,3 +5809,117 @@ Sebaiknya `main.dart` hanya disimpan pada satu tempat saja, yaitu
 `lib\main.dart`, agar tidak ada lagi kemungkinan berkas tertukar. Paket tetap
 memuat salinan di akar folder karena skrip pemeriksa membandingkan keduanya -
 bila berbeda, skrip akan memberitahu.
+
+## BAGIAN 54 - PEMBERITAHUAN OTOMATIS KE LAYAR HP (TIGA PERMINTAAN BAPAK)
+
+Tiga pertanyaan Bapak pada 30 September 2026:
+
+1. Apakah pembaruan aplikasi dapat memunculkan pemberitahuan di layar HP
+   walaupun aplikasi tidak dibuka?
+2. Apakah seluruh aktivitas Admin - misalnya data Customer diperbarui - juga
+   memunculkan pemberitahuan otomatis walaupun aplikasi tidak dibuka?
+3. Mohon dibuat: bila HP masih memakai aplikasi lama, muncul pemberitahuan
+   terus-menerus dengan tombol UPDATE.
+
+**Jawabannya: ketiganya BISA**, dan sudah dikerjakan pada paket ini.
+
+---
+
+### A. CARA KERJANYA
+
+Pemberitahuan ini memakai **Firebase Cloud Messaging (FCM)** - layanan
+pemberitahuan resmi Google yang sudah disiapkan sejak awal. Pemberitahuan
+jenis ini muncul di layar HP **walaupun aplikasi sedang ditutup**, sama seperti
+pemberitahuan WhatsApp.
+
+```text
+   Server (rts.benedic-s.com)                    HP petugas
+   --------------------------                    ----------
+   Admin unggah APK baru
+        |
+        v
+   app_versi.php  ---> api/notif_otomatis.php
+                             |
+                             +--> catat ke tabel notifications
+                             |    (menu Pemberitahuan di aplikasi)
+                             |
+                             +--> api/fcm_kirim.php  ---> Firebase
+                                                              |
+                                                              v
+                                                    LAYAR HP menyala:
+                                                    "Versi Baru RTS Panel"
+                                                    [ UPDATE ]
+```
+
+---
+
+### B. PERUBAHAN PADA KODE
+
+#### B1. Sisi server
+
+| Berkas | Keadaan | Isi perubahan |
+| --- | --- | --- |
+| `api/notif_otomatis.php` | **BARU** | Satu pintu pemberitahuan: mencatat ke tabel `notifications` **dan** mengirim ke layar HP. Berisi `rts_notif_semua()`, `rts_notif_kirim()`, `rts_notif_versi_baru()`, `rts_notif_aktivitas()`, `rts_notif_daftar_penerima()`, `rts_notif_catat()` |
+| `api/fcm_kirim.php` | diperbarui | Ditambah `rts_push_kirim_semua()` - mengirim ke **seluruh** HP sekaligus. Pemeriksaan tabel tidak lagi memakai `information_schema` (menghindari kesalahan #1044) |
+| `app_versi.php` | diperbarui | Setelah unggahan APK berhasil, **otomatis** mengirim pemberitahuan versi baru ke seluruh HP, dan menyebutkan jumlah HP yang berhasil dikirimi |
+| `upload_customer.php` | diperbarui | Setelah unggahan data customer berhasil, seluruh petugas (kecuali Admin yang melakukan) menerima pemberitahuan "Data Customer Diperbarui" |
+| `pengajuan_toko.php` | (sudah ada) | Pengajuan baru dari website sudah memberi tahu ADMIN dan ASS |
+
+Semua bagian ini **aman gagal**: bila Firebase belum disiapkan atau tabelnya
+belum ada, halaman tetap bekerja seperti biasa - hanya pemberitahuannya yang
+belum terkirim.
+
+#### B2. Sisi aplikasi
+
+| Nomor | Perubahan |
+| --- | --- |
+| 1 | Pemberitahuan dapat memuat **tombol**. Pada pemberitahuan pembaruan, tombolnya bertuliskan **UPDATE** |
+| 2 | Kelas baru **`RtsPengingatPembaruan`**: menampilkan pengingat pembaruan dan **mengulanginya setiap jam** sampai aplikasi benar-benar diperbarui |
+| 3 | Pengingat berhenti **sendiri** setelah versi terpasang sama dengan versi di server - tidak perlu dimatikan manual |
+| 4 | Pemberitahuan dari server yang memuat keterangan versi langsung dipakai: bila aplikasi sedang terbuka, kotak pembaruan beserta tombol **PERBARUI SEKARANG** langsung tampil |
+| 5 | Menekan tombol UPDATE (atau pemberitahuannya) membuka aplikasi, lalu aplikasi memeriksa versi dan menampilkan kotak pembaruan |
+| 6 | Penanda kode aplikasi dinaikkan menjadi **`RTS-2026-09-30-6`** |
+
+Perbedaan penting antara pemberitahuan biasa dan pengingat pembaruan:
+
+| Jenis | Kapan muncul | Berhenti kapan |
+| --- | --- | --- |
+| Pemberitahuan pengajuan (sudah ada) | Saat ada pengajuan baru | Sekali muncul |
+| Pemberitahuan aktivitas Admin | Saat Admin mengubah data | Sekali muncul |
+| **Pengingat pembaruan (baru)** | Segera saat versi baru terdeteksi | **Setelah aplikasi diperbarui** |
+
+---
+
+### C. YANG PERLU DIKERJAKAN SEKALI SAJA
+
+| Nomor | Kegiatan | Keterangan |
+| --- | --- | --- |
+| 1 | Unduh **kunci layanan Firebase** (service account) dari console Firebase, ubah namanya menjadi `rts_fcm_service_account.json`, unggah ke **`/home/benedics/`** | JANGAN ke dalam `public_html` - berkas ini seperti kunci rumah |
+| 2 | Jalankan `RTS_PANEL_TABEL_DEVICE_TOKENS.sql` pada database (uji coba dulu) | Membuat tabel `rts_device_tokens` |
+| 3 | Unggah 4 berkas ke `public_html`: `api/notif_otomatis.php`, `api/fcm_kirim.php`, `app_versi.php`, `upload_customer.php` | Seluruhnya ada pada `RTS_PANEL_FIREBASE.zip` |
+| 4 | Pasang APK baru ke HP, lalu masuk | Token HP otomatis terdaftar ke server setiap login |
+
+Urutan lengkap beserta cara menguji ada pada berkas **`NOTIFIKASI_OTOMATIS.txt`**.
+
+---
+
+### D. CARA MENGUJI
+
+| Ujian | Cara | Hasil yang diharapkan |
+| --- | --- | --- |
+| Pemberitahuan biasa | Aplikasi - Pengaturan - Pemberitahuan HP - tombol uji | Pemberitahuan muncul di layar HP |
+| **Versi baru** | Unggah APK dengan kode versi lebih tinggi lewat menu Versi Aplikasi | Seluruh HP menerima pemberitahuan bertombol UPDATE, **walau aplikasi tertutup** |
+| **Aktivitas Admin** | Unggah CSV customer berisi 1-2 baris uji | Petugas lain menerima pemberitahuan "Data Customer Diperbarui" |
+| **Pengingat berulang** | Biarkan aplikasi versi lama tetap terpasang | Pemberitahuan pembaruan muncul kembali setiap jam, sampai aplikasi diperbarui |
+
+---
+
+### E. CATATAN PENTING
+
+| Nomor | Hal |
+| --- | --- |
+| 1 | Pemberitahuan HP memerlukan izin **"Izinkan Notifikasi"** pada HP (Android 13 ke atas). Aplikasi sudah meminta izin ini saat pertama dibuka |
+| 2 | Pemberitahuan hanya terkirim kepada HP yang **sudah pernah masuk** (login) sesudah fitur ini dipasang - karena token HP dikirim saat login |
+| 3 | Bila pemberitahuan tidak muncul, periksa keadaan pada aplikasi: **Pengaturan - Pemberitahuan HP**. Bila tertulis "Aktif", seluruh syarat sudah terpenuhi |
+| 4 | Jumlah HP yang berhasil dikirimi dicatat pada halaman `app_versi.php` setelah unggahan berhasil |
+| 5 | Token HP yang sudah tidak berlaku (mis. aplikasi dihapus) otomatis dibuang dari database oleh `api/fcm_kirim.php` |

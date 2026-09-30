@@ -408,13 +408,19 @@ if (!function_exists('rts_fcm_tabel_ada')) {
             return $ada;
         }
 
-        $hasil = $conn->query(
-            "SELECT COUNT(*) AS total FROM information_schema.TABLES
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'rts_device_tokens'"
-        );
+        /* Memakai SHOW TABLES, BUKAN information_schema.
+           Sebabnya: akun database cPanel (cpses_...) tidak diberi izin membaca
+           information_schema, sehingga muncul kesalahan:
+              #1044 - Access denied for user 'cpses_...'@'localhost'
+                      to database 'information_schema'
+           SHOW TABLES selalu tersedia dan hasilnya sama. */
+        $hasil = @$conn->query("SHOW TABLES LIKE 'rts_device_tokens'");
 
-        $baris = $hasil ? $hasil->fetch_assoc() : null;
-        $ada = $baris && (int) $baris['total'] > 0;
+        $ada = ($hasil instanceof mysqli_result) && $hasil->num_rows > 0;
+
+        if ($hasil instanceof mysqli_result) {
+            $hasil->free();
+        }
 
         return $ada;
     }
@@ -540,6 +546,97 @@ if (!function_exists('rts_push_kirim')) {
         } catch (Throwable $galat) {
             // Pemberitahuan HP tidak boleh sampai mengganggu proses utama.
             error_log('RTS FCM: ' . $galat->getMessage());
+
+            return 0;
+        }
+    }
+}
+
+if (!function_exists('rts_push_kirim_semua')) {
+    /**
+     * Mengirim pemberitahuan HP ke SELURUH perangkat yang terdaftar.
+     *
+     * Dipakai untuk pengumuman yang berlaku bagi semua petugas, misalnya
+     * "versi aplikasi baru tersedia" dan "data customer diperbarui".
+     *
+     * Aman dipanggil walaupun Firebase belum disiapkan atau daftar token
+     * masih kosong: fungsi ini langsung berhenti tanpa mengubah apa pun.
+     *
+     * @param array<string,mixed> $data    keterangan tambahan untuk aplikasi
+     * @param array<int,string>   $kecuali daftar email yang TIDAK dikirimi
+     *
+     * @return int jumlah HP yang berhasil dikirimi
+     */
+    function rts_push_kirim_semua(
+        mysqli $conn,
+        string $judul,
+        string $pesan,
+        array $data = [],
+        array $kecuali = []
+    ): int {
+        try {
+            if (!rts_fcm_siap() || !rts_fcm_tabel_ada($conn)) {
+                return 0;
+            }
+
+            $ambil = $conn->query('SELECT id, token, user_email FROM rts_device_tokens');
+
+            if (!$ambil) {
+                return 0;
+            }
+
+            $daftar = [];
+
+            while ($baris = $ambil->fetch_assoc()) {
+                $email = trim((string) ($baris['user_email'] ?? ''));
+
+                if ($email !== '' && in_array($email, $kecuali, true)) {
+                    continue;
+                }
+
+                $daftar[] = ['id' => (int) $baris['id'], 'token' => (string) $baris['token']];
+            }
+
+            $ambil->free();
+
+            if (!$daftar) {
+                return 0;
+            }
+
+            /* Kunci pemberitahuan: dipakai aplikasi supaya tidak menampilkan
+               pemberitahuan yang sama dua kali ketika diperiksa berkala. */
+            if (empty($data['kunci'])) {
+                $data['kunci'] = 'UMUM|' . substr(md5($judul . '|' . $pesan . '|' . date('YmdH')), 0, 16);
+            }
+
+            $berhasil = 0;
+            $mati = [];
+
+            foreach ($daftar as $satu) {
+                if ($satu['token'] === '') {
+                    continue;
+                }
+
+                $kabar = rts_fcm_kirim_token($satu['token'], $judul, $pesan, $data);
+
+                if ($kabar['ok']) {
+                    $berhasil++;
+                    continue;
+                }
+
+                if ($kabar['token_mati']) {
+                    $mati[] = $satu['id'];
+                }
+            }
+
+            if ($mati) {
+                $daftarId = implode(',', array_map('intval', $mati));
+                $conn->query('DELETE FROM rts_device_tokens WHERE id IN (' . $daftarId . ')');
+            }
+
+            return $berhasil;
+        } catch (Throwable $galat) {
+            error_log('RTS FCM semua: ' . $galat->getMessage());
 
             return 0;
         }

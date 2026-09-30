@@ -881,7 +881,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-09-30-5';
+const String rtsKodeAplikasi = 'RTS-2026-09-30-6';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -3436,6 +3436,93 @@ Future<void> rtsPesanFirebaseLatar(RemoteMessage pesan) async {
   await RtsPushFcm.tandaiDiketahui(pesan);
 }
 
+/// Pengingat pembaruan aplikasi yang muncul pada layar HP.
+///
+/// Dipakai untuk dua hal:
+///   1. Memberitahukan adanya versi baru walaupun aplikasi sedang TIDAK
+///      dibuka - baik dari pemeriksaan di dalam aplikasi (setiap kali
+///      aplikasi dibuka) maupun dari pemberitahuan yang dikirim server
+///      ketika Admin mengunggah APK baru.
+///   2. Mengingatkan BERULANG setiap jam sampai aplikasi benar-benar
+///      diperbarui. Pengingat ini berhenti sendiri setelah versi terpasang
+///      sudah sama dengan versi di server.
+///
+/// Pada layar HP, pemberitahuan ini memuat tombol **UPDATE**. Menekan tombol
+/// (atau pemberitahuannya) membuka aplikasi; aplikasi lalu memeriksa versi
+/// dan menampilkan kotak pembaruan beserta tombol unduh.
+class RtsPengingatPembaruan {
+  const RtsPengingatPembaruan._();
+
+  /// Nomor pemberitahuan (tetap, supaya tidak menumpuk di layar HP).
+  static const int idSekarang = 9001;
+
+  /// Nomor pengingat berulang.
+  static const int idBerkala = 9002;
+
+  /// Menampilkan pengingat pembaruan.
+  ///
+  /// Bila [info] kosong atau versinya TIDAK lebih baru daripada versi yang
+  /// terpasang, seluruh pengingat yang sedang berjalan dibatalkan - inilah
+  /// yang membuat pemberitahuan berhenti sendiri setelah aplikasi diperbarui.
+  static Future<void> perbarui(RtsInfoVersi? info) async {
+    if (info == null || info.kode <= RtsVersi.kode) {
+      await hentikan();
+      return;
+    }
+
+    final String judul = info.wajib
+        ? 'Pembaruan WAJIB RTS Panel'
+        : 'Versi Baru RTS Panel Tersedia';
+
+    final String pesan = 'Versi terpasang: ${RtsVersi.label}. '
+        'Versi terbaru: ${info.nama} (${info.kode}). '
+        'Tekan UPDATE untuk memperbarui aplikasi.'
+        '${info.catatan.isEmpty ? '' : '\n\n${info.catatan}'}';
+
+    await RtsLayananNotif.tampilkan(
+      id: idSekarang,
+      judul: judul,
+      pesan: pesan,
+      tombol: 'UPDATE',
+      payload: 'pembaruan',
+    );
+
+    await RtsLayananNotif.berkala(
+      id: idBerkala,
+      judul: judul,
+      pesan: pesan,
+    );
+  }
+
+  /// Membatalkan seluruh pengingat pembaruan.
+  static Future<void> hentikan() async {
+    await RtsLayananNotif.hentikan(idSekarang);
+    await RtsLayananNotif.hentikan(idBerkala);
+  }
+
+  /// Dipanggil ketika server mengirim pemberitahuan berisi keterangan versi.
+  ///
+  /// Keterangan versi itu langsung dipakai - jadi pengingat dan tombol UPDATE
+  /// muncul walaupun petugas belum membuka aplikasinya.
+  static Future<void> dariServer(Map<String, dynamic> data) async {
+    final RtsInfoVersi? info = RtsInfoVersi.fromJson(data);
+
+    if (info == null) return;
+
+    RtsPembaruan.terbaru = info;
+
+    await perbarui(info);
+
+    // Bila aplikasi sedang terbuka, kotak pembaruan langsung ditampilkan
+    // supaya petugas dapat langsung menekan tombol unduh.
+    final BuildContext? konteks = rtsNavigatorKey.currentContext;
+
+    if (konteks != null && konteks.mounted) {
+      await RtsPembaruan.tampilkan(konteks, info);
+    }
+  }
+}
+
 /// Pemberitahuan HP lewat Firebase Cloud Messaging.
 ///
 /// Dipakai untuk pemberitahuan yang harus tetap masuk walaupun aplikasi
@@ -3621,6 +3708,20 @@ class RtsPushFcm {
     try {
       await tandaiDiketahui(pesan);
 
+      // Pemberitahuan dari server yang memuat keterangan versi baru:
+      // ditangani oleh RtsPengingatPembaruan supaya tombol UPDATE muncul dan
+      // kotak pembaruan langsung tampil bila aplikasi sedang dibuka.
+      final String tipe = pesan.data['tipe']?.toString() ?? '';
+
+      if (tipe.toLowerCase() == 'versi') {
+        await RtsPengingatPembaruan.dariServer(
+          pesan.data.map((String kunci, Object? nilai) =>
+              MapEntry<String, dynamic>(kunci, nilai)),
+        );
+
+        return;
+      }
+
       if (!tampilkan) return;
 
       final String kunci = pesan.data['kunci']?.toString() ?? '';
@@ -3722,14 +3823,32 @@ class RtsLayananNotif {
   }
 
   /// Menampilkan satu pemberitahuan.
+  ///
+  /// [tombol]  : tulisan tombol pada pemberitahuan, contoh "UPDATE".
+  ///             Menekan tombol itu membuka aplikasi, sehingga pemeriksaan
+  ///             pembaruan dijalankan dan kotak pembaruan tampil.
+  /// [payload] : keterangan yang dikirim kembali saat pemberitahuan ditekan.
   static Future<void> tampilkan({
     required int id,
     required String judul,
     required String pesan,
+    String tombol = '',
+    String payload = '',
   }) async {
     if (!await siapkan()) return;
 
     try {
+      final List<AndroidNotificationAction> aksi = tombol.isEmpty
+          ? const <AndroidNotificationAction>[]
+          : <AndroidNotificationAction>[
+              AndroidNotificationAction(
+                'buka',
+                tombol,
+                showsUserInterface: true,
+                cancelNotification: true,
+              ),
+            ];
+
       await _plugin.show(
         id,
         judul,
@@ -3743,11 +3862,76 @@ class RtsLayananNotif {
             priority: Priority.high,
             icon: '@mipmap/ic_launcher',
             styleInformation: BigTextStyleInformation(pesan),
+            actions: aksi,
+            autoCancel: true,
           ),
         ),
+        payload: payload,
       );
     } catch (_) {
       // Pemberitahuan gagal ditampilkan, aplikasi tetap berjalan.
+    }
+  }
+
+  /// Menampilkan pemberitahuan BERULANG setiap jam sampai dibatalkan.
+  ///
+  /// Dipakai untuk mengingatkan pembaruan aplikasi: pemberitahuan ini muncul
+  /// kembali dengan sendirinya walaupun aplikasi tidak sedang dibuka, sampai
+  /// petugas benar-benar memperbarui aplikasinya.
+  static Future<void> berkala({
+    required int id,
+    required String judul,
+    required String pesan,
+    String tombol = 'UPDATE',
+    String payload = 'pembaruan',
+  }) async {
+    if (!await siapkan()) return;
+
+    try {
+      final List<AndroidNotificationAction> aksi = tombol.isEmpty
+          ? const <AndroidNotificationAction>[]
+          : <AndroidNotificationAction>[
+              AndroidNotificationAction(
+                'buka',
+                tombol,
+                showsUserInterface: true,
+                cancelNotification: true,
+              ),
+            ];
+
+      await _plugin.periodicallyShow(
+        id,
+        judul,
+        pesan,
+        RepeatInterval.hourly,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _saluran.id,
+            _saluran.name,
+            channelDescription: _saluran.description,
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+            styleInformation: BigTextStyleInformation(pesan),
+            actions: aksi,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: payload,
+      );
+    } catch (_) {
+      // Diabaikan: pengingat berkala tidak wajib berhasil.
+    }
+  }
+
+  /// Membatalkan satu pemberitahuan, termasuk pengingat berulangnya.
+  static Future<void> hentikan(int id) async {
+    if (!await siapkan()) return;
+
+    try {
+      await _plugin.cancel(id);
+    } catch (_) {
+      // Diabaikan.
     }
   }
 
@@ -3762,7 +3946,32 @@ class RtsLayananNotif {
   }
 
   static void _ketuk(NotificationResponse respon) {
-    // Membuka menu Pemberitahuan saat pemberitahuan pada HP ditekan.
+    final String payload =
+        (respon.payload ?? '').trim().toLowerCase();
+
+    // Tombol UPDATE pada pemberitahuan pembaruan: aplikasi sudah dibuka oleh
+    // Android; di sini pemeriksaan pembaruan dijalankan supaya kotak
+    // pembaruan beserta tombol unduh langsung tampil.
+    if (payload == 'pembaruan' || payload == 'versi') {
+      Future<void>.delayed(const Duration(milliseconds: 1200), () async {
+        final BuildContext? konteks = rtsNavigatorKey.currentContext;
+
+        if (konteks == null || !konteks.mounted) return;
+
+        final RtsInfoVersi? info = RtsPembaruan.terbaru;
+
+        if (info != null && info.kode > RtsVersi.kode) {
+          await RtsPembaruan.tampilkan(konteks, info);
+          return;
+        }
+
+        await RtsPembaruan.periksaManual(konteks);
+      });
+
+      return;
+    }
+
+    // Membuka menu Pemberitahuan saat pemberitahuan biasa ditekan.
     Future<void>.delayed(const Duration(milliseconds: 900), () {
       final RtsUser? user = RtsSesi.user;
       final String token = RtsSesi.token;
@@ -11258,6 +11467,10 @@ class RtsPembaruan {
               terbaru = infoDariApi;
               pesanGalat = null;
 
+              // Pengingat pembaruan pada layar HP ikut diperbarui: muncul bila
+              // ada versi lebih baru, berhenti bila versi sudah terbaru.
+              unawaited(RtsPengingatPembaruan.perbarui(infoDariApi));
+
               return infoDariApi;
             }
 
@@ -11276,6 +11489,9 @@ class RtsPembaruan {
 
             terbaru = null;
             pesanGalat = sebabApi;
+
+            // Belum ada versi diumumkan: tidak ada pengingat yang perlu jalan.
+            unawaited(RtsPengingatPembaruan.perbarui(null));
 
             return null;
           }
@@ -11322,11 +11538,14 @@ class RtsPembaruan {
         belumAdaVersi = true;
         terbaru = null;
         pesanGalat = 'Belum ada versi aplikasi yang diumumkan di server.';
+        unawaited(RtsPengingatPembaruan.perbarui(null));
         return null;
       }
 
       terbaru = info;
       pesanGalat = null;
+
+      unawaited(RtsPengingatPembaruan.perbarui(info));
 
       return info;
     } catch (_) {

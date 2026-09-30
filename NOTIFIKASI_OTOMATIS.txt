@@ -1,0 +1,173 @@
+==============================================================================
+ RTS PANEL BY BENE - PEMBERITAHUAN OTOMATIS KE LAYAR HP
+ Menjawab tiga pertanyaan Bapak (30 September 2026)
+==============================================================================
+
+ JAWABAN SINGKAT
+ ---------------
+  1. BISA - versi baru langsung memberi tahu seluruh HP walaupun aplikasi
+     tidak dibuka.
+  2. BISA - aktivitas Admin (mis. data customer diperbarui) otomatis memberi
+     tahu seluruh petugas ke layar HP.
+  3. BISA - bila aplikasi di HP masih versi lama, muncul pemberitahuan
+     berulang setiap jam dengan tombol UPDATE sampai aplikasi diperbarui.
+
+ Caranya memakai Firebase Cloud Messaging (FCM) - layanan pemberitahuan resmi
+ Google yang sudah kita siapkan sejak awal. Pemberitahuan jenis ini muncul di
+ layar HP walau aplikasi sedang ditutup, persis seperti pemberitahuan WhatsApp.
+
+
+==============================================================================
+ BAGIAN 1 - YANG SUDAH DIBUAT (KODE)
+==============================================================================
+
+  A. DI SISI SERVER (website)
+
+     Berkas baru : api/notif_otomatis.php
+        Satu pintu untuk mengirim pemberitahuan. Setiap pemberitahuan:
+           - dicatat ke tabel notifications (muncul di menu Pemberitahuan),
+           - dikirim ke layar HP lewat Firebase.
+
+     Berkas diperbarui : api/fcm_kirim.php
+        - Ditambah fungsi rts_push_kirim_semua() - mengirim ke SELURUH HP
+          sekaligus (sebelumnya hanya bisa satu email).
+        - Pemeriksaan tabel tidak lagi memakai information_schema, supaya
+          tidak menimbulkan kesalahan #1044 seperti kasus akun PRO.
+
+     Berkas diperbarui : app_versi.php
+        Setelah Admin mengunggah APK baru, halaman ini OTOMATIS mengirim
+        pemberitahuan ke seluruh HP: "Versi baru RTS Panel tersedia" beserta
+        catatan pembaruan dan tombol UPDATE.
+
+     Berkas diperbarui : upload_customer.php
+        Setelah unggahan data customer berhasil, seluruh petugas (kecuali
+        Admin yang melakukan) menerima pemberitahuan: "Data Customer
+        Diperbarui" beserta ajakan membuka menu Sinkronisasi.
+
+     Sudah ada sebelumnya : pengajuan_toko.php
+        Pengajuan baru dari website sudah memberi tahu ADMIN dan ASS.
+
+  B. DI SISI APLIKASI (main.dart)
+
+     - Pemberitahuan sekarang dapat memuat TOMBOL. Pada pemberitahuan
+       pembaruan, tombolnya bertuliskan UPDATE.
+     - Ditambah pengingat BERULANG setiap jam (RtsPengingatPembaruan):
+       pemberitahuan pembaruan muncul kembali sampai aplikasi diperbarui.
+       Pengingat berhenti SENDIRI setelah versi terpasang sudah sama dengan
+       versi di server.
+     - Pemberitahuan dari server yang memuat keterangan versi langsung
+       dipakai: bila aplikasi sedang dibuka, kotak pembaruan beserta tombol
+       "PERBARUI SEKARANG" langsung tampil.
+     - Menekan tombol UPDATE (atau pemberitahuannya) membuka aplikasi, lalu
+       aplikasi memeriksa versi dan menampilkan kotak pembaruan.
+
+
+==============================================================================
+ BAGIAN 2 - YANG PERLU BAPAK LAKUKAN (3 LANGKAH, SEKALI SAJA)
+==============================================================================
+
+  LANGKAH 1 - KUNCI FIREBASE DI HOSTING
+  -------------------------------------
+  Supaya server boleh mengirim pemberitahuan, diperlukan berkas kunci
+  (service account) dari Firebase.
+
+  [ ] 1. Buka console.firebase.google.com - pilih proyek:
+             gen-lang-client-0966094088
+  [ ] 2. Klik ikon gerigi (kiri atas) - Project settings
+  [ ] 3. Buka tab "Service accounts"
+  [ ] 4. Klik "Generate new private key" - Generate key
+         Akan terunduh berkas berakhiran .json
+  [ ] 5. Ubah nama berkas itu menjadi:
+             rts_fcm_service_account.json
+  [ ] 6. Lewat cPanel - File Manager, unggah berkas itu ke folder:
+             /home/benedics/
+         PENTING: JANGAN ke dalam public_html. Berkas ini seperti kunci rumah -
+         bila ditaruh di public_html, siapa pun dapat mengambilnya.
+
+     Bila Bapak sudah mengunggahnya dahulu, langkah ini boleh dilewati.
+
+  LANGKAH 2 - TABEL TOKEN HP DI DATABASE
+  --------------------------------------
+  [ ] 1. cPanel - phpMyAdmin - pilih database (uji coba dulu: benedics_coba)
+  [ ] 2. Tab SQL - tempel isi berkas: RTS_PANEL_TABEL_DEVICE_TOKENS.sql
+         (ada di dalam RTS_PANEL_FIREBASE.zip)
+  [ ] 3. Klik Kirim. Harus muncul tabel: rts_device_tokens
+  [ ] 4. Ulangi pada database produksi (benedics_bene_sales) setelah backup
+
+  LANGKAH 3 - UNGGAH BERKAS KE public_html
+  ----------------------------------------
+  [ ] 1. Unggah (timpa) berkas berikut:
+             api/notif_otomatis.php     <-- berkas BARU
+             api/fcm_kirim.php          <-- diperbarui
+             app_versi.php              <-- diperbarui (bagian versi)
+             upload_customer.php        <-- diperbarui
+  [ ] 2. Pastikan folder api/ berada di dalam public_html
+
+
+==============================================================================
+ BAGIAN 3 - CARA MENGUJI
+==============================================================================
+
+  UJI 1 - PEMBERITAHUAN MASUK SAAT APLIKASI DIBUKA
+  ------------------------------------------------
+  [ ] 1. Buka aplikasi - menu Pengaturan - bagian "Pemberitahuan HP"
+  [ ] 2. Tekan tombol uji pemberitahuan (bila tersedia)
+         Harus muncul pemberitahuan pada layar HP.
+
+  UJI 2 - PEMBERITAHUAN VERSI BARU (WAJIB DIUJI)
+  ----------------------------------------------
+  [ ] 1. Buka https://rts.benedic-s.com/app_versi.php (menu Versi Aplikasi)
+  [ ] 2. Unggah APK dengan kode versi LEBIH TINGGI dari yang terpasang
+         (mis. sekarang terpasang kode 2, unggah kode 3)
+  [ ] 3. Setelah muncul tulisan "berhasil diunggah", lihat layar HP
+         (aplikasi boleh dalam keadaan tertutup)
+  [ ] 4. Harus muncul pemberitahuan: "Versi Baru RTS Panel Tersedia"
+         dengan tombol UPDATE
+  [ ] 5. Tekan tombol UPDATE - aplikasi terbuka dan kotak pembaruan tampil
+
+  UJI 3 - PEMBERITAHUAN DATA CUSTOMER
+  -----------------------------------
+  [ ] 1. Buka menu Upload Customer - unggah berkas CSV berisi 1-2 baris uji
+  [ ] 2. Setelah muncul tulisan berhasil, lihat layar HP petugas lain
+  [ ] 3. Harus muncul pemberitahuan: "Data Customer Diperbarui"
+
+
+==============================================================================
+ BAGIAN 4 - BILA PEMBERITAHUAN TIDAK MUNCUL
+==============================================================================
+
+  Yang diperiksa                     | Tindakan
+  -----------------------------------|----------------------------------------
+  Perizinan                           | Di HP: Pengaturan - Aplikasi - RTS Panel -
+  "Izinkan Notifikasi" belum dijawab  | Izin - Notifikasi - Izinkan
+  Aplikasi di HP belum versi baru     | Pasang APK terbaru lebih dahulu
+  (belum ada fitur pemberitahuan)     |
+  Kunci Firebase belum diunggah       | Ulangi LANGKAH 1 (folder /home/benedics/)
+  Tabel rts_device_tokens belum ada   | Ulangi LANGKAH 2 (jalankan berkas SQL)
+  HP belum terdaftar                  | Buka aplikasi - Keluar - masuk lagi
+                                      | (token dikirim ulang setiap login)
+  Pemberitahuan muncul tetapi kosong  | Periksa aplikasi memakai versi terbaru
+  Tulisan pada kartu "Pemberitahuan    | Buka aplikasi - Pengaturan - bagian
+  HP" pada Pengaturan berbunyi         | "Pemberitahuan HP" - kirimkan tulisannya
+  "Belum aktif - ..."                 | kepada pengembang
+
+  Catatan: halaman Pengaturan pada aplikasi menampilkan keadaan pemberitahuan
+  HP. Bila tertulis "Aktif", seluruh syarat sudah terpenuhi.
+
+
+==============================================================================
+ BAGIAN 5 - URUTAN PENGERJAAN YANG DISARANKAN
+==============================================================================
+
+  [ ] 1. LANGKAH 1: unduh kunci Firebase - unggah ke /home/benedics/
+  [ ] 2. LANGKAH 2: jalankan SQL tabel token (uji coba benedics_coba dulu)
+  [ ] 3. LANGKAH 3: unggah keempat berkas ke public_html
+  [ ] 4. Pasang APK baru ke HP (memuat fitur pemberitahuan + tombol UPDATE)
+  [ ] 5. Masuk ke aplikasi (token HP otomatis terdaftar ke server)
+  [ ] 6. UJI 2 - unggah versi lebih tinggi, lihat pemberitahuan di layar HP
+  [ ] 7. Bila sudah lancar pada uji coba, ulangi pada produksi
+
+  Setelah seluruh uji berhasil, jangan lupa:
+  - kembali jadikan repositori GitHub Private, dan
+  - ganti password database pada cPanel (langkah keamanan yang masih tertunda)
+==============================================================================
