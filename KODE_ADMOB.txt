@@ -1,0 +1,53 @@
+===============================================================================
+ RTS PANEL BY BENE - KODE IKLAN ADMOB (CATATAN CEPAT)
+ Diperbarui: 30 September 2026
+===============================================================================
+
+AKUN ADMOB BAPAK
+   Penerbit (publisher) : ca-app-pub-1905352530630884
+
+TIGA KODE YANG DIPAKAI
+   (+/- dipakai untuk menandai kode aplikasi, / dipakai untuk kode unit iklan)
+
+   1. Kode APLIKASI            ca-app-pub-1905352530630884~8932651962
+      Letaknya : android/app/src/main/AndroidManifest.xml
+      Siapa yang menulis : skrip PASANG_FITUR_BARU.ps1 (otomatis)
+      Keadaan  : SUDAH DIPASANG
+
+   2. Kode unit iklan BANNER   ca-app-pub-1905352530630884/6675189094
+      Letaknya : main.dart - class RtsIklan - baris bannerIklan
+      Tampil di: beranda, kotak di bawah kotak merah akun
+      Keadaan  : SUDAH DIPASANG
+
+   3. Kode unit iklan NATIVE   BELUM ADA (masih menunggu dibuat)
+      Letaknya : main.dart - class RtsIklan - baris nativeIklan
+      Tampil di: keenam menu (Master Customer, Pengajuan, Notifikasi,
+                 Sinkronisasi, Profil, Pengaturan)
+      Keadaan  : sementara memakai kode UJI resmi Google
+                 ca-app-pub-3940256099942544/2247696110
+
+CARA MEMBUAT UNIT IKLAN "NATIVE" (satu kali saja, sekitar 2 menit)
+   1. Buka https://admob.google.com
+   2. Menu kiri: Apps  - pilih aplikasi "RTS Panel"
+   3. Menu kiri: Ad units  - tekan tombol ADD AD UNIT
+   4. Pilih format: NATIVE  - tekan Continue
+   5. Isi nama, contoh: "RTS Panel Native"  - tekan Save
+   6. Akan muncul kotak "Ad unit created" berisi dua kode:
+         - kode APLIKASI  (tanda ~)  -> jangan dipakai, sudah ada
+         - kode UNIT IKLAN (tanda /) -> INI YANG DIBUTUHKAN
+   7. Kirimkan kode yang bertanda / itu kepada saya (bentuknya seperti:
+         ca-app-pub-1905352530630884/1234567890)
+
+   Setelah kode itu dipasang, seluruh pekerjaan iklan selesai.
+
+CATATAN PENTING
+   - Unit iklan baru biasanya perlu waktu paling lama satu jam sebelum mulai
+     menampilkan iklan. Selama menunggu, kotak iklan tidak muncul dan aplikasi
+     tetap berjalan normal - ini bukan kesalahan.
+   - Jangan menekan iklan sendiri berulang kali, karena dapat dianggap
+     pelanggaran oleh Google. Untuk mencoba, cukup satu-dua kali.
+   - Bila iklan tidak muncul sama sekali padahal sudah lewat satu jam, kirimkan
+     keluaran aplikasi (flutter run) ke saya untuk diperiksa.
+   - Untuk mematikan iklan sementara: ubah "static const bool aktif = true;"
+     menjadi "false" pada class RtsIklan di main.dart.
+===============================================================================

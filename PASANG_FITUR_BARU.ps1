@@ -30,7 +30,9 @@ param(
 
 $ErrorActionPreference = "Continue"
 $proyek = "D:\Project\rts_panel_app"
-$kodeAplikasiAdmob = "ca-app-pub-3940256099942544~3347511713"
+# Kode aplikasi AdMob milik Bapak (akun ca-app-pub-1905352530630884).
+# Bila kode ini diganti, cukup ubah tulisan di dalam tanda kutip.
+$kodeAplikasiAdmob = "ca-app-pub-1905352530630884~8932651962"
 $folderCadangan = "cadangan_arena"
 
 function TulisJudul($teks) {
@@ -279,20 +281,30 @@ else {
 }
 
 # --- Kode aplikasi AdMob (wajib; tanpa ini aplikasi langsung tertutup) ---
-if ($isiManifest -notmatch "com.google.android.gms.ads.APPLICATION_ID") {
+# Bila kode sudah ada (misalnya masih kode uji dari percobaan sebelumnya),
+# nilainya DIPERBARUI menyesuaikan kode di bagian atas skrip ini.
+$polaKodeAdmob = 'android:name="com\.google\.android\.gms\.ads\.APPLICATION_ID"\s+android:value="[^"]*"'
+
+if ($isiManifest -match $polaKodeAdmob) {
+    $kodeBaru = 'android:name="com.google.android.gms.ads.APPLICATION_ID"' + "`r`n" +
+        '            android:value="' + $kodeAplikasiAdmob + '"'
+
+    $isiManifest = $isiManifest -replace $polaKodeAdmob, $kodeBaru
+
+    Write-Host "   DIPERBARUI: kode aplikasi AdMob menjadi $kodeAplikasiAdmob" -ForegroundColor Green
+}
+elseif ($isiManifest -notmatch "com.google.android.gms.ads.APPLICATION_ID") {
     $metaAdmob = @"
-        <!-- Kode aplikasi AdMob. Ganti nilai di bawah dengan kode aplikasi
-             milik Anda dari https://admob.google.com setelah akun disetujui.
-             Nilai sekarang adalah kode UJI resmi Google. -->
+        <!-- Kode aplikasi AdMob RTS Panel. Nilai ini diambil dari variabel
+             $kodeAplikasiAdmob pada bagian atas skrip PASANG_FITUR_BARU.ps1.
+             Ganti di skrip itu, bukan langsung di berkas ini, supaya tidak
+             tertimpa saat skrip dijalankan lagi. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="$kodeAplikasiAdmob"/>
 "@
     $isiManifest = $isiManifest -replace "(?m)^(\s*</application>)", "$metaAdmob`r`n`$1"
-    Write-Host "   DITAMBAH: kode aplikasi AdMob (masih kode uji)" -ForegroundColor Green
-}
-else {
-    Write-Host "   sudah ada: kode aplikasi AdMob" -ForegroundColor Gray
+    Write-Host "   DITAMBAH: kode aplikasi AdMob $kodeAplikasiAdmob" -ForegroundColor Green
 }
 
 if ($isiManifest -ne $isiAwal) {

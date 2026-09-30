@@ -10355,23 +10355,40 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
 
 /// Pengaturan iklan AdMob RTS Panel.
 ///
-/// CARA MENGATUR IKLAN:
-///   1. Buat akun di https://admob.google.com
-///   2. Daftarkan aplikasi dengan nama paket: com.example.rts_panel_app
-///   3. Buat dua unit iklan: satu "Banner", satu "Native"
-///   4. Ganti tiga kode di bawah ini dengan kode dari akun AdMob Anda
-///   5. Ganti juga APPLICATION_ID pada berkas
-///      android/app/src/main/AndroidManifest.xml
+/// KEADAAN SEKARANG (30 September 2026):
+///   - Kode aplikasi AdMob  : ca-app-pub-1905352530630884~8932651962
+///   - Iklan Banner beranda : ca-app-pub-1905352530630884/6675189094
+///   - Iklan Native menu    : masih kode UJI Google (unit Native belum dibuat)
 ///
-/// Selama akun AdMob belum disetujui, aplikasi memakai KODE UJI milik Google.
-/// Iklan uji aman dipakai berulang kali dan tidak melanggar aturan AdMob.
+/// CARA MELENGKAPI:
+///   1. Buka https://admob.google.com - Apps - aplikasi RTS Panel
+///   2. Ad units - ADD AD UNIT - pilih format "Native"
+///   3. Salin ID unit iklan itu, lalu ganti nilai nativeIklan di bawah ini
+///   4. Jalankan PASANG_FITUR_BARU.ps1 lagi
+///
+/// Catatan: unit iklan baru biasanya perlu beberapa saat (paling lama satu
+/// jam) sebelum mulai menampilkan iklan. Selama menunggu, kotak iklan tidak
+/// muncul dan aplikasi tetap berjalan normal.
 class RtsIklan {
   const RtsIklan._();
 
-  /// Ganti dengan kode unit iklan Banner milik Anda.
-  static const String bannerIklan = 'ca-app-pub-3940256099942544/6300978111';
+  /// Kode aplikasi AdMob (akun ca-app-pub-1905352530630884).
+  /// Nilai ini dipasang pada android/app/src/main/AndroidManifest.xml oleh
+  /// skrip PASANG_FITUR_BARU.ps1, bukan di berkas ini.
+  static const String kodeAplikasi = 'ca-app-pub-1905352530630884~8932651962';
 
-  /// Ganti dengan kode unit iklan Native milik Anda.
+  /// Kode unit iklan BANNER milik Bapak (sudah diisi).
+  static const String bannerIklan = 'ca-app-pub-1905352530630884/6675189094';
+
+  /// Kode unit iklan NATIVE.
+  ///
+  /// SEMENTARA masih memakai kode UJI resmi Google, karena unit iklan bentuk
+  /// Native belum dibuat pada akun AdMob Bapak. Cara membuatnya:
+  ///   AdMob - Apps - pilih aplikasi RTS Panel - Ad units - ADD AD UNIT
+  ///   - pilih format "Native" - beri nama misalnya "RTS Panel Native"
+  ///   - salin ID unit iklan yang muncul (bentuknya:
+  ///     ca-app-pub-1905352530630884/xxxxxxxxxx)
+  ///   - ganti nilai di bawah ini dengan ID tersebut
   static const String nativeIklan = 'ca-app-pub-3940256099942544/2247696110';
 
   /// Setel false bila ingin mematikan seluruh iklan pada aplikasi.

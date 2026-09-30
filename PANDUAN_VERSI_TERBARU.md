@@ -4417,3 +4417,69 @@ menampung menu ketujuh.
 | "Aplikasi sudah memakai versi terbaru" padahal ada versi baru | Angka `version_code` pada halaman app_versi.php harus LEBIH BESAR dari angka sesudah + pada pubspec.yaml saat APK itu dibangun |
 | Unggahan APK gagal | Ukuran APK melebihi batas server - naikkan `upload_max_filesize` dan `post_max_size` pada cPanel (misalnya 64M), lalu coba lagi |
 
+---
+
+## BAGIAN 40 - KODE IKLAN ADMOB BAPAK SUDAH DIPASANG
+
+### A. Kode dari akun AdMob Bapak
+
+Akun AdMob: **ca-app-pub-1905352530630884**
+
+| Nomor | Kode | Letaknya | Keadaan |
+| --- | --- | --- | --- |
+| 1 | Kode aplikasi: `ca-app-pub-1905352530630884~8932651962` | `android/app/src/main/AndroidManifest.xml` | **SUDAH DIPASANG** - ditulis otomatis oleh `PASANG_FITUR_BARU.ps1` |
+| 2 | Unit iklan **Banner**: `ca-app-pub-1905352530630884/6675189094` | `main.dart` - `class RtsIklan` - `bannerIklan` | **SUDAH DIPASANG** |
+| 3 | Unit iklan **Native** | `main.dart` - `class RtsIklan` - `nativeIklan` | **BELUM ADA** - unitnya belum dibuat di AdMob |
+
+Catatan: kode aplikasi memakai tanda `~` (tilde), kode unit iklan memakai tanda
+`/` (garis miring). Keduanya berbeda dan tidak dapat ditukar.
+
+### B. Yang masih perlu dibuat: unit iklan Native
+
+Unit iklan yang dibuat Bapak (kode `6675189094`) berformat **Banner**, sehingga
+belum dapat dipakai untuk iklan bentuk asli pada keenam menu. Sementara ini
+aplikasi memakai kode **UJI resmi Google** untuk iklan native.
+
+Cara membuat unit Native (sekitar 2 menit):
+
+| Nomor | Langkah |
+| --- | --- |
+| 1 | Buka https://admob.google.com |
+| 2 | Menu kiri **Apps** - pilih aplikasi RTS Panel |
+| 3 | Menu kiri **Ad units** - tekan **ADD AD UNIT** |
+| 4 | Pilih format **Native** - **Continue** |
+| 5 | Isi nama, misalnya "RTS Panel Native" - **Save** |
+| 6 | Salin kode yang bertanda garis miring (contoh: `ca-app-pub-1905352530630884/1234567890`) |
+| 7 | Kirimkan kode itu ke saya, atau ganti sendiri baris `nativeIklan` pada `class RtsIklan` di `main.dart`, lalu jalankan `PASANG_FITUR_BARU.ps1` lagi |
+
+### C. Yang berubah pada berkas
+
+| Berkas | Perubahan |
+| --- | --- |
+| `main.dart` | `bannerIklan` diisi kode Bapak; ditambah `kodeAplikasi` sebagai catatan; keterangan modul iklan diperbarui |
+| `PASANG_FITUR_BARU.ps1` | `$kodeAplikasiAdmob` diisi kode Bapak; skrip kini **memperbarui** kode aplikasi bila sudah ada di manifest (sebelumnya hanya menambah) |
+
+Perbaikan penting pada skrip: sebelumnya, bila `APPLICATION_ID` sudah ada di
+`AndroidManifest.xml` (misalnya masih kode uji dari percobaan sebelumnya), skrip
+akan **melewatinya** dan kode Bapak tidak pernah terpasang. Sekarang kode lama
+selalu digantikan dengan kode pada skrip.
+
+### D. Hal yang perlu diketahui tentang iklan baru
+
+| Hal | Keterangan |
+| --- | --- |
+| Waktu tunggu | Unit iklan baru dapat memerlukan waktu **paling lama satu jam** sebelum menampilkan iklan. Selama menunggu, kotak iklan tidak muncul dan aplikasi berjalan normal - ini bukan kesalahan |
+| Jangan menekan iklan sendiri | Menekan iklan sendiri berulang kali dapat dianggap pelanggaran oleh Google dan berisiko akun dinonaktifkan. Cukup satu-dua kali untuk mencoba |
+| Tampilan "Test Ad" | Selama masih memakai kode uji, yang muncul adalah tulisan "Test Ad" berwarna. Setelah kode Bapak terpasang, iklan asli yang muncul |
+| Iklan kosong di staging | Wajar - AdMob dapat membatasi permintaan iklan dari data uji |
+
+### E. Urutan yang disarankan sekarang
+
+| Nomor | Pekerjaan |
+| --- | --- |
+| 1 | Ekstrak `RTS_PANEL_FITUR_BARU.zip` (isi terbaru) ke `D:\Project\rts_panel_app` - pilih Timpa |
+| 2 | Jalankan `PASANG_NIRKABEL.ps1` bila HP belum tersambung (kabel USB rusak) |
+| 3 | Jalankan `PASANG_FITUR_BARU.ps1` |
+| 4 | Periksa di HP: ikon RTS Panel, kotak cuaca, kotak iklan banner di beranda, iklan di keenam menu |
+| 5 | Buat unit iklan **Native** di AdMob, lalu kirimkan kodenya kepada saya untuk dipasang pada pembaruan berikutnya |
+
