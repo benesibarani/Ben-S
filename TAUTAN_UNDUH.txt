@@ -26,8 +26,9 @@ Berkas dashboard.php lama yang memuat password sudah dihapus dari repo.
  1. PAKET APLIKASI ANDROID (diekstrak ke D:\Project\rts_panel_app)
 ------------------------------------------------------------------
 
-RTS_PANEL_FITUR_BARU.zip   (11 berkas)
-    (main.dart + pubspec.yaml + PASANG_FITUR_BARU.ps1 + PASANG_CEPAT.ps1
+RTS_PANEL_FITUR_BARU.zip   (13 berkas - kini memuat lib\main.dart)
+    (lib/main.dart + main.dart + pubspec.yaml + PASANG_MAIN_DART.ps1
+     + PASANG_FITUR_BARU.ps1 + PASANG_CEPAT.ps1
      + ADB.ps1 + TAMBAH_ADB_KE_PATH.ps1 + PERBAIKI_PUBSPEC.ps1
      + PERIKSA_KODE_APLIKASI.ps1 + android_manifest_tambahan.xml
      + CUACA_BELUM_TAMPIL.txt + INSTAL_LEWAT_TERMINAL.txt
@@ -70,9 +71,14 @@ RTS_PANEL_FIREBASE.zip
 CUACA_BELUM_TAMPIL.txt  (panduan cuaca: 5 langkah + tabel sebab & tindakan)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/CUACA_BELUM_TAMPIL.txt
 
-RTS_PANEL_PERINTAH_HP.zip   (paket kecil 4 berkas: lembar perintah + ADB.ps1
+RTS_PANEL_PERINTAH_HP.zip   (paket kecil 5 berkas: PASANG_MAIN_DART.ps1
+                            + lembar perintah + ADB.ps1
                             + TAMBAH_ADB_KE_PATH.ps1 + PASANG_CEPAT.ps1)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERINTAH_HP.zip
+
+PASANG_MAIN_DART.ps1  (PENTING: menyalin main.dart ke lib\main.dart -
+                       berkas itulah yang dibangun Flutter)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PASANG_MAIN_DART.ps1
 
 INSTAL_LEWAT_TERMINAL.txt  (lembar perintah terminal: sambung nirkabel,
                             memasang APK, membuka aplikasi, melihat catatan,

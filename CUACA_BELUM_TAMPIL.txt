@@ -14,8 +14,38 @@ APA YANG MASIH KURANG
 ---------------------
   [ ] Kotak cuaca di samping nama Admin belum tampak
 
-SEBABNYA (dugaan terkuat)
--------------------------
+SEBAB YANG SUDAH DIPASTIKAN (30 September 2026, malam)
+----------------------------------------------------
+  Flutter membangun aplikasi dari berkas:      lib\main.dart
+  BUKAN dari berkas:                           main.dart (akar folder proyek)
+
+  Di folder proyek Bapak ada DUA berkas main.dart:
+      D:\Project\rts_panel_app\main.dart        <- berkas dari paket (sudah baru)
+      D:\Project\rts_panel_app\lib\main.dart   <- yang DIBANGUN Flutter (masih lama)
+
+  Karena kode baru hanya masuk ke main.dart (akar), build berhasil dan
+  aplikasi terpasang - tetapi tampilannya TIDAK berubah, karena yang dibangun
+  tetap lib\main.dart versi lama.
+
+  PERBAIKAN CEPAT - jalankan di PowerShell:
+
+      .\PASANG_MAIN_DART.ps1        (menyalin main.dart ke lib\main.dart,
+                                     berkas lama dicadangkan otomatis)
+      flutter clean
+      flutter run -d CPH1937
+
+  Cara yang lebih ringkas (satu baris, tanpa skrip):
+
+      copy main.dart lib\main.dart
+      flutter clean
+      flutter run -d CPH1937
+
+  Setelah itu buka aplikasi - menu Pengaturan - bagian "CUACA BERANDA".
+  Kode aplikasi harus terbaca: RTS-2026-09-30-5
+
+
+SEBAB LAIN YANG MUNGKIN (bila kode di atas sudah benar)
+------------------------------------------------------
   Aplikasi yang terpasang di HP masih BUILD LAMA - yaitu build dari paket
   RTS_PANEL_FITUR_BARU.zip yang diunduh SEBELUM hari ini sore (atau sebelum
   paket versi 5 dipasang).

@@ -64,10 +64,12 @@ Write-Host "   Folder sekarang: $(Get-Location)" -ForegroundColor Gray
 
 $adaPubspec = Test-Path "pubspec.yaml"
 $adaMain = Test-Path "main.dart"
+$adaLib = Test-Path "lib\main.dart"
 $adaAndroid = Test-Path "android"
 
 TulisHasil $adaPubspec "pubspec.yaml"
-TulisHasil $adaMain "main.dart"
+TulisHasil $adaMain "main.dart (akar folder - berkas dari paket)"
+TulisHasil $adaLib "lib\main.dart (BERKAS YANG DIBANGUN FLUTTER)"
 TulisHasil $adaAndroid "folder android (WAJIB - tidak ada di dalam paket zip)"
 
 if (-not ($adaPubspec -and $adaMain)) {
@@ -86,17 +88,46 @@ if (-not $adaAndroid) {
 }
 
 # -----------------------------------------------------------------------------
-# 1. Penanda kode aplikasi pada main.dart
+# 1. Penanda kode aplikasi pada main.dart DAN lib\main.dart
+#
+# PENTING: Flutter membangun aplikasi dari lib\main.dart, bukan dari main.dart
+# yang ada di akar folder proyek. Bila hanya main.dart (akar) yang baru,
+# tampilan aplikasi TIDAK berubah walaupun build berhasil.
 # -----------------------------------------------------------------------------
-TulisJudul "1. Kode aplikasi pada main.dart"
+TulisJudul "1. Kode aplikasi pada main.dart dan lib\main.dart"
+
+function AmbilPenanda($jalur) {
+    if (-not (Test-Path $jalur)) { return "" }
+
+    $isi = Get-Content $jalur -Raw
+
+    if ($isi -match "rtsKodeAplikasi\s*=\s*'([^']+)'") {
+        return $Matches[1]
+    }
+
+    return ""
+}
+
+$kodeAkarFile = AmbilPenanda "main.dart"
+$kodeLibFile = AmbilPenanda "lib\main.dart"
+
+Write-Host ""
+Write-Host "   Kode pada main.dart       : $(if ($kodeAkarFile) { $kodeAkarFile } else { '(tidak ada penanda / versi lama)' })" -ForegroundColor Gray
+Write-Host "   Kode pada lib\main.dart   : $(if ($kodeLibFile) { $kodeLibFile } else { '(tidak ada penanda / versi lama)' })" -ForegroundColor Gray
+Write-Host "   Diharapkan                : $harapanKode" -ForegroundColor Cyan
+Write-Host ""
+
+if ($kodeLibFile -ne $harapanKode) {
+    $bermasalah++
+    Write-Host "   [PERHATIAN] lib\main.dart BELUM versi terbaru!" -ForegroundColor Red
+    Write-Host "   Inilah sebabnya tampilan aplikasi tidak berubah di HP." -ForegroundColor Yellow
+    Write-Host "   Jalankan:  .\PASANG_MAIN_DART.ps1" -ForegroundColor Yellow
+    Write-Host "   (skrip itu menyalin main.dart ke lib\main.dart, dengan cadangan)" -ForegroundColor DarkGray
+}
 
 $isiMain = Get-Content "main.dart" -Raw
-$kodeAplikasi = "(tidak ditemukan)"
-$adaKode = $isiMain -match "rtsKodeAplikasi\s*=\s*'([^']+)'"
-
-if ($adaKode) {
-    $kodeAplikasi = $Matches[1]
-}
+$kodeAplikasi = $kodeAkarFile
+$adaKode = ($kodeAplikasi -ne "")
 
 $infoMain = Get-Item "main.dart"
 $ukuranMain = [math]::Round($infoMain.Length / 1024)

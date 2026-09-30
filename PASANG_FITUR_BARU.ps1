@@ -127,6 +127,68 @@ else {
     $bermasalah++
 }
 
+# -----------------------------------------------------------------------------
+#  BAGIAN 1B - MEMASTIKAN lib\main.dart SAMA DENGAN main.dart
+#
+#  Flutter membangun aplikasi dari lib\main.dart. Bila hanya main.dart (akar)
+#  yang diperbarui, build berhasil tetapi tampilan aplikasi TIDAK berubah -
+#  inilah yang membuat perbaikan cuaca tidak tampak di HP.
+# -----------------------------------------------------------------------------
+TulisJudul "1b. Menyamakan lib\main.dart dengan main.dart"
+
+function AmbilPenandaMain($jalur) {
+    if (-not (Test-Path $jalur)) { return "" }
+
+    $isi = Get-Content $jalur -Raw
+
+    if ($isi -match "rtsKodeAplikasi\s*=\s*'([^']+)'") {
+        return $Matches[1]
+    }
+
+    return ""
+}
+
+$kodeAkarMain = AmbilPenandaMain "main.dart"
+$kodeLibMain = AmbilPenandaMain "lib\main.dart"
+
+Write-Host "   main.dart (akar)     : $(if ($kodeAkarMain) { $kodeAkarMain } else { '(versi lama)' })" -ForegroundColor Gray
+Write-Host "   lib\main.dart        : $(if ($kodeLibMain) { $kodeLibMain } else { '(versi lama)' })" -ForegroundColor Gray
+
+if (-not (Test-Path "lib\main.dart")) {
+    Write-Host ""
+    Write-Host "   lib\main.dart TIDAK ADA." -ForegroundColor Red
+    Write-Host "   Folder lib mungkin terhapus - hubungi pengembang." -ForegroundColor Yellow
+    $bermasalah++
+}
+elseif ($kodeAkarMain -and $kodeAkarMain -ne $kodeLibMain) {
+    $cadanganLib = "lib\main.dart.lama_" + (Get-Date -Format "yyyy-MM-dd_HHmmss")
+
+    Copy-Item "lib\main.dart" $cadanganLib -Force
+
+    if (Test-Path $cadanganLib) {
+        Write-Host ""
+        Write-Host "   Cadangan berkas lama : $cadanganLib" -ForegroundColor Green
+        Copy-Item "main.dart" "lib\main.dart" -Force
+
+        $kodeSetelahSalin = AmbilPenandaMain "lib\main.dart"
+
+        if ($kodeSetelahSalin -eq $kodeAkarMain) {
+            Write-Host "   DISALIN: lib\main.dart kini memuat kode $kodeSetelahSalin" -ForegroundColor Green
+        }
+        else {
+            Write-Host "   Penyalinan ke lib\main.dart belum berhasil." -ForegroundColor Red
+            $bermasalah++
+        }
+    }
+    else {
+        Write-Host "   Cadangan gagal dibuat - penyalinan dibatalkan." -ForegroundColor Red
+        $bermasalah++
+    }
+}
+else {
+    Write-Host "   Sudah sama - tidak perlu disalin." -ForegroundColor Green
+}
+
 if (Test-Path "pubspec.yaml") {
     $isiPubspec = Get-Content "pubspec.yaml" -Raw
 

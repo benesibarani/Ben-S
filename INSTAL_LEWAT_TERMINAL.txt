@@ -52,6 +52,29 @@
 
 
 ------------------------------------------------------------------
+ PENTING - FLUTTER MEMBANGUN DARI lib\main.dart
+------------------------------------------------------------------
+
+ Bila kode baru ditaruh pada main.dart (akar folder) tetapi lib\main.dart
+ masih lama, maka build BERHASIL dan aplikasi terpasang, TETAPI TAMPILANNYA
+ TIDAK BERUBAH. Ini sering terjadi.
+
+ Perbaikannya (satu baris):
+
+       copy main.dart lib\main.dart
+       flutter clean
+       flutter run -d CPH1937
+
+ Atau memakai skrip yang menyediakan cadangan otomatis:
+
+       .\PASANG_MAIN_DART.ps1
+
+ Memeriksa apakah kedua berkas sudah sama:
+
+       .\PERIKSA_KODE_APLIKASI.ps1
+
+
+------------------------------------------------------------------
  0. MEMERIKSA HP TERHUBUNG ATAU TIDAK
 ------------------------------------------------------------------
 

@@ -5721,3 +5721,91 @@ Satu baris berikut langsung memakai adb dari letaknya:
 
 Bila letak SDK berbeda, jalankan `.\ADB.ps1 alamat` untuk melihat letak
 sebenarnya, lalu ganti bagian dalam tanda kutip di atas.
+
+## BAGIAN 53 - TAMPILAN TIDAK BERUBAH WALAU BUILD BERHASIL (DUA BERKAS main.dart)
+
+### A. SEBABNYA - DITEMUKAN DARI TANGKAPAN LAYAR
+
+Pada daftar berkas VS Code Bapak terlihat **dua** berkas `main.dart`:
+
+```text
+D:\Project\rts_panel_app\
+    main.dart          <- berkas dari paket (sudah versi terbaru)
+    lib\
+        main.dart      <- BERKAS YANG DIBANGUN FLUTTER (masih versi lama)
+```
+
+**Flutter membangun aplikasi dari `lib\main.dart`**, bukan dari `main.dart`
+yang ada di akar folder proyek. Karena kode baru selama ini hanya masuk ke
+`main.dart` (akar), maka:
+
+| Yang terjadi | Sebab |
+| --- | --- |
+| `flutter build apk` berhasil | Perintah build hanya memeriksa sintaks dan paket - tidak tahu isi berkas mana yang seharusnya dipakai |
+| Aplikasi terpasang dan terbuka normal | Sama seperti sebelumnya - yang dibangun tetap `lib\main.dart` versi lama |
+| Tampilan tidak berubah (kotak cuaca tetap tidak ada) | Kode kotak cuaca ada pada `main.dart` (akar), yang tidak pernah ikut dibangun |
+
+Inilah sebabnya seluruh perbaikan cuaca (BAGIAN 45 sampai 50) tidak pernah
+terlihat di HP, walaupun build selalu berhasil.
+
+### B. PERBAIKAN CEPAT (PILIH SALAH SATU)
+
+**Cara 1 - satu baris perintah (paling ringkas):**
+
+```text
+copy main.dart lib\main.dart
+flutter clean
+flutter run -d CPH1937
+```
+
+**Cara 2 - memakai skrip dengan cadangan otomatis (disarankan):**
+
+```text
+.\PASANG_MAIN_DART.ps1
+flutter clean
+flutter run -d CPH1937
+```
+
+Skrip itu:
+
+| Nomor | Kegiatan |
+| --- | --- |
+| 1 | Membaca penanda kode pada `main.dart` dan `lib\main.dart` |
+| 2 | Memilih berkas yang paling baru |
+| 3 | Mencadangkan `lib\main.dart` lama ke `lib\main.dart.lama_thnnn-bb-tt_jjmmss` |
+| 4 | Menyalin berkas baru ke `lib\main.dart` |
+| 5 | Memeriksa hasilnya dan menunjukkan langkah berikutnya |
+
+**Cara 3 - cukup ekstrak paket yang baru:**
+Paket `RTS_PANEL_FITUR_BARU.zip` sejak sekarang memuat **dua** berkas sekaligus
+(`lib/main.dart` dan `main.dart`), sehingga mengekstrak paket ke folder proyek
+langsung memperbarui berkas yang benar.
+
+### C. CARA MEMASTIKAN SUDAH BENAR
+
+| Nomor | Kegiatan | Yang diharapkan |
+| --- | --- | --- |
+| 1 | Jalankan `.\PERIKSA_KODE_APLIKASI.ps1` | Baris `Kode pada lib\main.dart` menampilkan `RTS-2026-09-30-5` |
+| 2 | `flutter clean` lalu `flutter run -d CPH1937` | Aplikasi terpasang ulang |
+| 3 | Di HP: menu **Pengaturan** bagian **CUACA BERANDA** | Pada kotak merah muda tertulis `Kode aplikasi terpasang: RTS-2026-09-30-5` |
+| 4 | Beranda, kartu merah, di samping nama Admin | Muncul kotak **Cuaca** (ikon awan + tulisan "Cuaca" + "Ketuk untuk memuat") |
+
+Bila pada nomor 3 kode aplikasi **belum sama**, berarti aplikasi di HP belum
+tergantikan - jalankan `.\PASANG_CEPAT.ps1` atau `flutter run` sekali lagi.
+
+### D. PERUBAHAN PADA SKRIP (PAKET INI)
+
+| Berkas | Perubahan |
+| --- | --- |
+| `PASANG_MAIN_DART.ps1` | **Baru** - memindahkan `main.dart` ke `lib\main.dart` dengan cadangan otomatis |
+| `PERIKSA_KODE_APLIKASI.ps1` | Kini memeriksa `lib\main.dart` (berkas yang dibangun) dan membandingkannya dengan `main.dart` akar, serta menyarankan `PASANG_MAIN_DART.ps1` bila berlainan |
+| `PASANG_FITUR_BARU.ps1` | Ditambah langkah **1b**: menyamakan `lib\main.dart` dengan `main.dart` secara otomatis (dengan cadangan) sebelum build |
+| `RTS_PANEL_FITUR_BARU.zip` | Kini memuat `lib/main.dart` **dan** `main.dart` sekaligus (13 entri) |
+| `RTS_PANEL_PERINTAH_HP.zip` | Kini 5 berkas (ditambah `PASANG_MAIN_DART.ps1`) |
+
+### E. CATATAN UNTUK PENGEMBANG
+
+Sebaiknya `main.dart` hanya disimpan pada satu tempat saja, yaitu
+`lib\main.dart`, agar tidak ada lagi kemungkinan berkas tertukar. Paket tetap
+memuat salinan di akar folder karena skrip pemeriksa membandingkan keduanya -
+bila berbeda, skrip akan memberitahu.
