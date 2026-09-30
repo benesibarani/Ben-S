@@ -39,7 +39,193 @@
  * ============================================================================
  */
 
-require_once 'config.php';
+/* --------------------------------------------------------------------------
+ * VERSI BERKAS: 3  (30 September 2026 - 15:00)
+ *
+ * Bila halaman pemeriksa ?diagnosa=1 menampilkan tulisan "VERSI BERKAS: 3",
+ * berarti berkas ini sudah terunggah dengan benar.
+ * ------------------------------------------------------------------------ */
+define('APP_VERSI_BERKAS', 3);
+
+require_once __DIR__ . '/config.php';
+
+/* --------------------------------------------------------------------------
+ * MEMULAI SESSION
+ *
+ * PERBAIKAN PENTING (laporan 30 September 2026 - kedua):
+ * Halaman ini sebelumnya TIDAK memanggil session_start() sendiri, tetapi
+ * bergantung pada config.php. Bila config.php tidak memulainya, $_SESSION
+ * kosong, sehingga halaman:
+ *     - menganggap pengunjung belum login, lalu mengalihkan ke index.php;
+ *       index.php melihat sesinya masih aktif, lalu mengalihkannya lagi ke
+ *       dashboard.php. Itulah sebabnya menu "Versi Aplikasi" SELALU kembali
+ *       ke dashboard, termasuk pada alamat ?diagnosa=1.
+ * Sekarang session dipastikan aktif lebih dahulu, sebelum apa pun dibaca.
+ * ------------------------------------------------------------------------ */
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    @session_start();
+}
+
+/* --------------------------------------------------------------------------
+ * HALAMAN PEMERIKSA - ?diagnosa=1
+ *
+ * SENGAJA diletakkan SEBELUM semua pengalihan, supaya hasil pemeriksaan tetap
+ * dapat dilihat walaupun halaman ini menolak pengunjung. Tanpa ini, alamat
+ * pemeriksa pun ikut teralihkan ke dashboard.php dan tidak ada gunanya.
+ *
+ * Isi laporan ini aman dikirimkan: nilai session hanya ditampilkan sebentar
+ * (beberapa huruf pertama), bukan seluruhnya.
+ * ------------------------------------------------------------------------ */
+if (isset($_GET['diagnosa'])) {
+    header('Content-Type: text/plain; charset=utf-8');
+
+    /** Menampilkan sebagian nilai saja, supaya aman dikirim lewat pesan. */
+    $app_samar = static function (string $nilai): string {
+        $nilai = trim($nilai);
+
+        if ($nilai === '') {
+            return '(kosong)';
+        }
+
+        if (strlen($nilai) <= 4) {
+            return str_repeat('*', strlen($nilai));
+        }
+
+        return substr($nilai, 0, 3) . '***' . substr($nilai, -1) . ' (' . strlen($nilai) . ' huruf)';
+    };
+
+    echo "PEMERIKSAAN HALAMAN VERSI APLIKASI\n";
+    echo "==================================\n";
+    echo 'VERSI BERKAS  : ' . APP_VERSI_BERKAS . "\n";
+    echo 'Waktu server  : ' . date('d-m-Y H:i:s') . "\n";
+    echo 'Nama berkas   : ' . basename(__FILE__) . "\n";
+    echo 'Folder        : ' . __DIR__ . "\n";
+    echo 'PHP           : ' . PHP_VERSION . "\n\n";
+
+    /* --- Session --- */
+    echo "SESSION\n";
+    echo '  status aktif : ' . (session_status() === PHP_SESSION_ACTIVE ? 'YA' : 'TIDAK') . "\n";
+    echo '  nama session : ' . session_name() . "\n";
+    echo '  id session   : ' . $app_samar((string) session_id()) . "\n";
+    echo '  jumlah kunci : ' . count($_SESSION) . "\n\n";
+
+    echo "KUNCI SESSION YANG TERSEDIA\n";
+
+    if (empty($_SESSION)) {
+        echo "  (tidak ada - session kosong)\n";
+    } else {
+        foreach (array_keys($_SESSION) as $app_kunci_ada) {
+            echo '  - ' . $app_kunci_ada . "\n";
+        }
+    }
+
+    echo "\nNILAI SESSION YANG DIPAKAI PEMERIKSAAN\n";
+
+    foreach (['is_logged_in', 'user_id', 'username', 'user', 'email', 'nama',
+              'nama_lengkap', 'role', 'user_role'] as $app_kunci_penting) {
+        $app_ada_kunci = array_key_exists($app_kunci_penting, $_SESSION) ? 'ada' : 'tidak ada';
+        $app_nilai_kunci = array_key_exists($app_kunci_penting, $_SESSION)
+            ? $app_samar((string) $_SESSION[$app_kunci_penting])
+            : '-';
+
+        echo '  ' . str_pad($app_kunci_penting, 14) . ': ' . $app_ada_kunci
+            . ' / ' . $app_nilai_kunci . "\n";
+    }
+
+    /* --- Koneksi database --- */
+    echo "\nDATABASE\n";
+
+    $app_nama_koneksi_ditemukan = '(tidak ditemukan)';
+
+    foreach (['conn', 'mysqli', 'koneksi', 'db', 'link'] as $app_nama_cek) {
+        if ((isset($GLOBALS[$app_nama_cek]) && $GLOBALS[$app_nama_cek] instanceof mysqli)
+            || (isset($$app_nama_cek) && $$app_nama_cek instanceof mysqli)) {
+            $app_nama_koneksi_ditemukan = $app_nama_cek;
+            break;
+        }
+    }
+
+    echo '  koneksi      : ' . $app_nama_koneksi_ditemukan . "\n";
+
+    if (isset($app_conn) && $app_conn instanceof mysqli && !$app_conn->connect_errno) {
+        echo '  status       : terhubung' . "\n";
+
+        $app_user_db = '';
+
+        foreach (['username', 'user', 'username_login'] as $app_kunci_db) {
+            $app_nilai_db = trim((string) ($_SESSION[$app_kunci_db] ?? ''));
+
+            if ($app_nilai_db !== '') {
+                $app_user_db = $app_nilai_db;
+                break;
+            }
+        }
+
+        echo '  username sesi: ' . $app_samar($app_user_db) . "\n";
+
+        if ($app_user_db !== '') {
+            $app_st = @$app_conn->prepare('SELECT role, nama_lengkap, email FROM sales_users WHERE username = ? LIMIT 1');
+
+            if ($app_st) {
+                $app_st->bind_param('s', $app_user_db);
+                $app_st->execute();
+                $app_hasil = $app_st->get_result();
+                $app_baris = $app_hasil ? $app_hasil->fetch_assoc() : null;
+                $app_st->close();
+
+                if ($app_baris) {
+                    echo '  role di DB   : ' . strtoupper(trim((string) ($app_baris['role'] ?? ''))) . "\n";
+                    echo '  nama di DB   : ' . $app_samar((string) ($app_baris['nama_lengkap'] ?? '')) . "\n";
+                } else {
+                    echo "  role di DB   : (username tidak ditemukan pada sales_users)\n";
+                }
+            } else {
+                echo '  role di DB   : (permintaan gagal: ' . $app_conn->error . ")\n";
+            }
+        }
+    } elseif (isset($app_conn) && $app_conn instanceof mysqli) {
+        echo '  status       : GAGAL - ' . $app_conn->connect_error . "\n";
+    } else {
+        echo "  status       : tidak ada koneksi database di halaman ini\n";
+    }
+
+    /* --- Berkas pendukung --- */
+    echo "\nBERKAS\n";
+
+    foreach (['config.php', 'auth.php', 'header.php', 'footer.php', 'sidebar.php',
+              'api/app_versi.php', 'apk/app_versi.json', 'apk'] as $app_cek_berkas) {
+        echo '  ' . str_pad($app_cek_berkas, 20) . ': '
+            . (file_exists(__DIR__ . '/' . $app_cek_berkas) ? 'ADA' : 'TIDAK ADA') . "\n";
+    }
+
+    /* --- Kesimpulan --- */
+    echo "\nKESIMPULAN\n";
+
+    $app_penanda_ada = false;
+
+    foreach (['is_logged_in', 'user_id', 'username', 'nama', 'email'] as $app_penanda) {
+        if (!empty($_SESSION[$app_penanda])) {
+            $app_penanda_ada = true;
+            break;
+        }
+    }
+
+    if (empty($_SESSION)) {
+        echo "  Session kosong. Kemungkinan besar cookie session tidak terkirim\n";
+        echo "  pada halaman ini (mis. cookie_path berbeda), atau session memang\n";
+        echo "  belum dibuat karena belum login pada browser ini.\n";
+    } elseif (!$app_penanda_ada) {
+        echo "  Session ada, tetapi tidak satu pun penanda login terisi.\n";
+        echo "  Kirimkan kunci session di atas kepada pengembang.\n";
+    } else {
+        echo "  Session lengkap. Bila halaman tetap mengalihkan, kirimkan\n";
+        echo "  seluruh tulisan ini kepada pengembang.\n";
+    }
+
+    echo "\nHalaman ini tidak mengubah data apa pun.\n";
+
+    exit;
+}
 
 /* --------------------------------------------------------------------------
  * PENJAGA HALAMAN - hanya ADMIN
@@ -134,32 +320,11 @@ if (str_replace([' ', '_'], '', $app_role) === 'SUPERADMIN') {
 }
 
 if ($app_role !== 'ADMIN') {
-    /* Halaman pemeriksa: buka app_versi.php?diagnosa=1 bila peran tidak
-       terbaca, supaya sebabnya dapat diketahui tanpa menebak-nebak. */
-    if (isset($_GET['diagnosa'])) {
-        header('Content-Type: text/plain; charset=utf-8');
-
-        echo "PEMERIKSAAN HALAMAN VERSI APLIKASI\n";
-        echo "==================================\n\n";
-        echo 'Peran terbaca : ' . ($app_role === '' ? '(kosong)' : $app_role) . "\n\n";
-
-        echo "Kunci session yang tersedia:\n";
-
-        foreach (array_keys($_SESSION) as $app_kunci_ada) {
-            echo '  - ' . $app_kunci_ada . '\n';
-        }
-
-        echo "\nKunci session yang diharapkan ada: role (atau user_role).\n";
-        echo "Kunci login yang diharapkan ada: is_logged_in, user_id, username, nama, atau email.\n";
-
-        exit;
-    }
-
     header('Location: dashboard.php');
     exit;
 }
 
-require_once 'header.php';
+require_once __DIR__ . '/header.php';
 
 /* --------------------------------------------------------------------------
  * KONEKSI DATABASE
@@ -792,4 +957,4 @@ if ($app_tabel_db) {
   </div>
 </div>
 
-<?php require_once 'footer.php'; ?>
+<?php require_once __DIR__ . '/footer.php'; ?>

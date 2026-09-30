@@ -27,6 +27,11 @@ RTS_PANEL_FITUR_BARU.zip
  2. PAKET WEBSITE / SERVER  (diekstrak ke public_html)
 ------------------------------------------------------------------
 
+RTS_PANEL_PERIKSA_SESSION.zip
+    (cek_session.php + app_versi.php - paket kecil untuk memeriksa
+     mengapa halaman mengalihkan kembali ke dashboard)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERIKSA_SESSION.zip
+
 RTS_PANEL_MENU_VERSI.zip
     (sidebar.php + dashboard_updated.php + panduan - menambah menu
      "Versi Aplikasi" pada dashboard website)
@@ -72,6 +77,9 @@ BERSIHKAN_REPO.md  (laporan keamanan repo + langkah ganti password database)
 ------------------------------------------------------------------
  4. BERKAS TERPISAH (bila hanya perlu satu berkas)
 ------------------------------------------------------------------
+
+cek_session.php  (pemeriksa session - hapus setelah selesai)
+  https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/cek_session.php
 
 sidebar.php  (menu dashboard, 2,3 KB)
   https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/sidebar.php

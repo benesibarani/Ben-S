@@ -24,7 +24,68 @@
  * ============================================================================
  */
 
-require_once 'config.php';
+/* --------------------------------------------------------------------------
+ * VERSI BERKAS: 3  (30 September 2026 - 15:00)
+ * ------------------------------------------------------------------------ */
+define('AP_VERSI_BERKAS', 3);
+
+require_once __DIR__ . '/config.php';
+
+/* --------------------------------------------------------------------------
+ * MEMULAI SESSION
+ *
+ * Sama seperti app_versi.php: halaman ini TIDAK boleh bergantung pada
+ * config.php untuk memulai session. Bila session tidak aktif, $_SESSION
+ * kosong, halaman mengira pengunjung belum login, lalu mengalihkannya ke
+ * index.php - dan index.php mengalihkannya lagi ke dashboard.php. Akibatnya
+ * halaman ini seolah-olah tidak dapat dibuka.
+ * ------------------------------------------------------------------------ */
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    @session_start();
+}
+
+/* --------------------------------------------------------------------------
+ * HALAMAN PEMERIKSA - ?diagnosa=1
+ * Diletakkan SEBELUM semua pengalihan supaya hasilnya selalu dapat dilihat.
+ * ------------------------------------------------------------------------ */
+if (isset($_GET['diagnosa'])) {
+    header('Content-Type: text/plain; charset=utf-8');
+
+    $ap_samar = static function (string $nilai): string {
+        $nilai = trim($nilai);
+
+        if ($nilai === '') {
+            return '(kosong)';
+        }
+
+        if (strlen($nilai) <= 4) {
+            return str_repeat('*', strlen($nilai));
+        }
+
+        return substr($nilai, 0, 3) . '*** (' . strlen($nilai) . ' huruf)';
+    };
+
+    echo "PEMERIKSAAN HALAMAN AKUN PRO\n";
+    echo "============================\n";
+    echo 'VERSI BERKAS  : ' . AP_VERSI_BERKAS . "\n";
+    echo 'Waktu server  : ' . date('d-m-Y H:i:s') . "\n";
+    echo 'PHP           : ' . PHP_VERSION . "\n\n";
+
+    echo "SESSION\n";
+    echo '  status aktif : ' . (session_status() === PHP_SESSION_ACTIVE ? 'YA' : 'TIDAK') . "\n";
+    echo '  jumlah kunci : ' . count($_SESSION) . "\n";
+
+    foreach (array_keys($_SESSION) as $ap_kunci_ada) {
+        echo '  - ' . $ap_kunci_ada . "\n";
+    }
+
+    echo "\nKoneksi database: "
+        . (isset($conn) && $conn instanceof mysqli ? 'ADA' : 'TIDAK ADA') . "\n";
+
+    echo "\nHalaman ini tidak mengubah data apa pun.\n";
+
+    exit;
+}
 
 /* --------------------------------------------------------------------------
  * PENJAGA HALAMAN - hanya ADMIN
@@ -106,26 +167,11 @@ if (str_replace([' ', '_'], '', $ap_role) === 'SUPERADMIN') {
 }
 
 if ($ap_role !== 'ADMIN') {
-    if (isset($_GET['diagnosa'])) {
-        header('Content-Type: text/plain; charset=utf-8');
-
-        echo "PEMERIKSAAN HALAMAN AKUN PRO\n";
-        echo "============================\n\n";
-        echo 'Peran terbaca : ' . ($ap_role === '' ? '(kosong)' : $ap_role) . "\n\n";
-        echo "Kunci session yang tersedia:\n";
-
-        foreach (array_keys($_SESSION) as $ap_kunci_ada) {
-            echo '  - ' . $ap_kunci_ada . '\n';
-        }
-
-        exit;
-    }
-
     header('Location: dashboard.php');
     exit;
 }
 
-require_once 'header.php';
+require_once __DIR__ . '/header.php';
 
 /* --------------------------------------------------------------------------
  * PEMERIKSAAN KOLOM
@@ -401,4 +447,4 @@ $ap_alamat = $ap_skema . '://' . (string)($_SERVER['HTTP_HOST'] ?? '') . '/akun_
   </div>
 <?php endif; ?>
 
-<?php require_once 'footer.php'; ?>
+<?php require_once __DIR__ . '/footer.php'; ?>

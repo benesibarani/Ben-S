@@ -5272,3 +5272,120 @@ HP masih build lama, sehingga kotak cuaca belum ada padanya.
 | Pesan "Halaman api/app_versi.php belum ada di server." | Berkas API belum diunggah - lihat PUTARAN 2 |
 | Pesan "Belum ada versi aplikasi yang diumumkan di server." | Wajar bila APK belum pernah diunggah - unggah APK pertama pada halaman Versi Aplikasi |
 | Kotak "Cuaca" tampil, tetapi tetap bertulisan "Ketuk untuk memuat" | Ketuk kotak itu dan kirimkan tulisan sebab yang muncul pada layar |
+
+## BAGIAN 48 - MENU VERSI APLIKASI MASIH KEMBALI KE DASHBOARD (SEBAB SEBENARNYA)
+
+### A. GEJALA
+
+| Nomor | Yang Bapak lihat |
+| --- | --- |
+| 1 | Menu **Versi Aplikasi** diklik, halaman kembali ke `dashboard.php` |
+| 2 | Alamat pemeriksa `app_versi.php?diagnosa=1` **juga** kembali ke dashboard |
+
+Gejala nomor 2 itulah petunjuk utamanya: halaman pemeriksa pun teralihkan,
+padahal halaman itu seharusnya menampilkan keterangan.
+
+### B. SEBAB SEBENARNYA
+
+Ada **dua** kesalahan yang bertumpuk, keduanya sudah diperbaiki.
+
+| Nomor | Kesalahan | Akibat |
+| --- | --- | --- |
+| 1 | `app_versi.php` **tidak memanggil `session_start()` sendiri** - hanya menunggu `config.php` | Bila `config.php` tidak memulai session, isi `$_SESSION` kosong. Halaman mengira pengunjung belum login, lalu mengalihkan ke `index.php`; halaman login itu melihat sesinya masih aktif, lalu mengalihkannya lagi ke `dashboard.php`. Dari sisi pemakai: terasa seperti "tidak terjadi apa-apa" |
+| 2 | Blok pemeriksa `?diagnosa=1` saya letakkan **setelah** pemeriksaan login | Karena pemeriksaan login gagal, blok pemeriksa tidak pernah dijalankan - alamat itu pun ikut teralihkan, sehingga tidak ada keterangan yang bisa dilihat |
+
+Urutan yang lama (salah):
+
+```text
+buka app_versi.php?diagnosa=1
+   -> session kosong (session belum dimulai di berkas ini)
+   -> dianggap belum login
+   -> dialihkan ke index.php   (blok diagnosa TIDAK pernah sampai dijalankan)
+   -> index.php melihat sesi aktif -> dialihkan ke dashboard.php
+```
+
+### C. PERBAIKAN
+
+| Nomor | Perbaikan | Berkas |
+| --- | --- | --- |
+| 1 | Berkas memulai session sendiri bila belum aktif (`session_status()` lalu `session_start()`) | `app_versi.php`, `akun_pro.php` |
+| 2 | Blok pemeriksa `?diagnosa=1` **dipindahkan ke paling atas**, sebelum semua pengalihan - jadi hasilnya selalu dapat dilihat | `app_versi.php`, `akun_pro.php` |
+| 3 | Isi pemeriksa ditambah: status session, daftar kunci session, nilai penting (ditampilkan sebagian), koneksi database, peran dari database, dan daftar berkas pendukung | `app_versi.php` |
+| 4 | Penanda **VERSI BERKAS** dipasang pada berkas, supaya dapat dipastikan berkas yang diunggah benar-benar yang baru (harus tertulis **VERSI BERKAS : 3**) | `app_versi.php`, `akun_pro.php` |
+| 5 | `require_once` memakai `__DIR__` supaya berkas pendukung selalu diambil dari folder yang sama | `app_versi.php`, `akun_pro.php` |
+| 6 | Berkas pemeriksa mandiri **`cek_session.php`** dibuat - tanpa penjagaan login sama sekali, sehingga selalu dapat dibuka | `cek_session.php` (baru) |
+
+Perbaikan yang sama dipasang pada `akun_pro.php` supaya PUTARAN 4 tidak
+mengalami kendala serupa.
+
+### D. CARA MEMAKAI PEMERIKSA
+
+**Langkah 1 - unggah dua berkas** ke dalam `public_html`:
+
+```text
+app_versi.php     (versi 3)
+cek_session.php   (baru)
+```
+
+**Langkah 2 - buka halaman pemeriksa mandiri:**
+
+```text
+https://rts.benedic-s.com/cek_session.php
+```
+
+Halaman itu **tidak mungkin teralihkan**, karena tidak ada pemeriksaan login
+di dalamnya. Isi yang ditampilkan:
+
+| Bagian | Gunanya |
+| --- | --- |
+| SESSION | status, nama, dan jumlah kunci session |
+| DAFTAR KUNCI SESSION | nama kunci yang benar-benar ada pada sesi Bapak |
+| NILAI PENTING | dipakai untuk memastikan kunci mana yang terisi (ditampilkan sebagian) |
+| COOKIE YANG DITERIMA | memastikan cookie session benar-benar terkirim |
+| PENGATURAN SESSION | `save_path`, `cookie_path`, nama session |
+| BERKAS DI FOLDER INI | memastikan `config.php`, `api/app_versi.php`, dan lainnya memang ada |
+| app_versi.php | **versi berkas** yang sedang terpasang di server |
+
+Nilai session hanya ditampilkan sebagian (tiga huruf pertama), jadi **aman**
+dikirimkan lewat pesan. Berkas ini tidak mengubah data apa pun.
+
+**Langkah 3 - buka halaman pemeriksa halaman versi:**
+
+```text
+https://rts.benedic-s.com/app_versi.php?diagnosa=1
+```
+
+Tulisan pertamanya harus:
+
+```text
+VERSI BERKAS  : 3
+```
+
+Bila yang muncul **versi berkas 1**, berarti berkas `app_versi.php` di server
+belum tertimpa - unggah ulang, lalu muat ulang dengan **Ctrl+F5**.
+
+### E. CARA MEMBACA HASIL PEMERIKSAAN
+
+| Yang terlihat pada `cek_session.php` | Artinya | Tindakan |
+| --- | --- | --- |
+| `kunci tersimpan: 0` padahal dashboard dapat dibuka | Cookie session tidak terkirim ke berkas ini | Kirimkan seluruh isi halaman kepada saya |
+| `kunci tersimpan: 4` atau lebih, ada `role` dan `username` | Session sehat | Halaman `app_versi.php` seharusnya sudah terbuka setelah berkas versi 3 diunggah |
+| `role` tertulis `(kosong)` pada NILAI PENTING | Kolom `role` akun itu kosong pada tabel `sales_users` | Isi kolom `role` dengan `ADMIN` lewat phpMyAdmin |
+| `config.php: TIDAK ADA` | Berkas config tidak ada pada folder itu | Berkas website berada di folder yang berbeda - kirimkan keterangan folder yang tertulis |
+| `app_versi.php : versi berkas 1` | Berkas baru belum tertimpa | Unggah ulang `app_versi.php` dari paket versi 3 |
+
+### F. SETELAH MASALAHNYA SELESAI
+
+Berkas `cek_session.php` **sebaiknya dihapus** dari `public_html` (cPanel -
+File Manager - pilih berkas - Delete), karena berkas itu tidak diperlukan lagi
+sehari-hari.
+
+### G. RINGKASAN PERUBAHAN BERKAS
+
+| Berkas | Keadaan |
+| --- | --- |
+| `app_versi.php` | 960 baris - versi berkas 3 (session + pemeriksa di atas + riwayat versi) |
+| `akun_pro.php` | 450 baris - versi berkas 3 (session + pemeriksa di atas) |
+| `cek_session.php` | 144 baris - berkas pemeriksa baru |
+| `RTS_PANEL_PERIKSA_SESSION.zip` | paket kecil: `cek_session.php` + `app_versi.php` saja |
+| `RTS_PANEL_VERSI_APK.zip` | paket lengkap 9 berkas |
