@@ -457,6 +457,64 @@ require_once __DIR__ . '/header.php';
     </div>
 </div>
 
+<?php
+/* ---------------------------------------------------------------------------
+ * KARTU PINTASAN ADMIN: VERSI APLIKASI ANDROID
+ *
+ * Hanya tampil untuk role ADMIN. Kartu ini membaca berkas apk/app_versi.json
+ * bila ada, sehingga Admin langsung mengetahui versi mana yang sedang
+ * diumumkan ke seluruh tim tanpa membuka halaman app_versi.php lebih dahulu.
+ *
+ * Halaman pengunggahan APK: app_versi.php (menu "Versi Aplikasi").
+ * ------------------------------------------------------------------------ */
+if ($role === 'ADMIN'):
+
+    $dash_versi_berkas = __DIR__ . '/apk/app_versi.json';
+    $dash_versi = [];
+
+    if (is_file($dash_versi_berkas)) {
+        $dash_isi = @file_get_contents($dash_versi_berkas);
+
+        if ($dash_isi !== false) {
+            $dash_baca = json_decode($dash_isi, true);
+
+            if (is_array($dash_baca)) {
+                $dash_versi = $dash_baca;
+            }
+        }
+    }
+
+    $dash_ada_versi = !empty($dash_versi['version_code']);
+?>
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body d-flex align-items-center flex-wrap gap-3">
+        <div class="display-6 text-danger"><i class="fa-solid fa-mobile-screen-button"></i></div>
+        <div class="flex-grow-1">
+            <h6 class="fw-bold text-dark mb-1">Versi Aplikasi Android</h6>
+            <?php if ($dash_ada_versi): ?>
+                <p class="mb-0 text-muted small">
+                    Sedang diumumkan:
+                    <strong>versi <?= htmlspecialchars((string)($dash_versi['version_name'] ?? '-')) ?></strong>
+                    (kode <?= (int)$dash_versi['version_code'] ?>)
+                    &middot; <?= !empty($dash_versi['wajib']) ? 'WAJIB diperbarui' : 'pembaruan pilihan' ?>
+                    <?php if (!empty($dash_versi['dipublikasikan'])): ?>
+                        &middot; <?= htmlspecialchars((string)$dash_versi['dipublikasikan']) ?>
+                    <?php endif; ?>
+                </p>
+            <?php else: ?>
+                <p class="mb-0 text-muted small">
+                    Belum ada versi yang diumumkan. Unggah berkas APK terbaru agar
+                    aplikasi seluruh tim menawarkan pembaruan otomatis saat dibuka.
+                </p>
+            <?php endif; ?>
+        </div>
+        <a href="app_versi.php" class="btn btn-danger btn-sm fw-bold">
+            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Kelola Versi Aplikasi
+        </a>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- MONITORING STOK KRITIS -->
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center rounded-top-4">
@@ -552,6 +610,15 @@ require_once __DIR__ . '/header.php';
             <a href="inbox.php" class="stretched-link"></a>
         </div>
     </div>
+    <?php if ($role === 'ADMIN'): ?>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 text-center p-3">
+                <div class="display-6 text-danger mb-2"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                <h6 class="fw-bold mb-0">Versi APK</h6>
+                <a href="app_versi.php" class="stretched-link"></a>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

@@ -5080,3 +5080,70 @@ ditandai wajib) tombol itu tidak dapat dilewati.
 | Aplikasi tidak menawarkan pembaruan | Kode versi di server harus **lebih besar** daripada `version` pada `pubspec.yaml`, dan `aktif` harus `1` |
 | Pertanyaan izin lokasi tidak muncul di HP | Buka Pengaturan HP - Aplikasi - RTS Panel - Izin - Lokasi - pilih **Izinkan** |
 | Cuaca tampil, tetapi kotanya tidak sesuai | Titik lokasi murni dari GPS HP - bukan kesalahan aplikasi; kartu cuaca memang mengikuti posisi petugas |
+
+## BAGIAN 46 - MENU "VERSI APLIKASI" PADA DASHBOARD WEBSITE
+
+### A. MASALAHNYA
+
+Halaman pengunggahan APK sebenarnya **sudah ada** sejak BAGIAN 45
+(`app_versi.php`), tetapi **belum ada menu yang menunjuk ke halaman itu** pada
+dashboard. Akibatnya, halaman tersebut hanya dapat dibuka bila alamatnya
+diketik langsung pada browser - dan itu tidak praktis.
+
+Perbaikannya: menambahkan menu **Versi Aplikasi** pada sisi kiri dashboard,
+tepat di bawah **Kelola User**, pada bagian **ADMINISTRASI**.
+
+Menu ini **hanya tampil untuk akun berperan ADMIN**, sesuai aturan bahwa hanya
+Admin yang mengurusi pembaruan aplikasi. Akun ASS, WSS, SMST, RTS, dan TF tidak
+melihat menu tersebut - jadi tampilan mereka tetap bersih seperti sebelumnya.
+
+### B. YANG BERUBAH
+
+| Berkas | Perubahan |
+| --- | --- |
+| `sidebar.php` | Menu baru **Versi Aplikasi** (ikon HP) pada bagian ADMINISTRASI, hanya ADMIN |
+| `dashboard_updated.php` | Kartu **Versi Aplikasi Android** + tombol **Kelola Versi Aplikasi**, dan pintasan **Versi APK** pada baris pintasan bawah - keduanya hanya ADMIN |
+
+Menu pada sidebar adalah bagian yang **wajib** dipasang. Kartu pada dashboard
+bersifat **pilihan** (boleh dilewati).
+
+### C. CARA MEMASANG
+
+| Nomor | Kegiatan |
+| --- | --- |
+| 1 | Unggah `sidebar.php` dari paket `RTS_PANEL_VERSI_APK.zip` ke `public_html` (timpa) |
+| 2 | Buka dashboard, tekan **Ctrl+F5** |
+| 3 | Menu **Versi Aplikasi** tampil di bawah **Kelola User** |
+| 4 | Klik menu itu - halaman unggah APK terbuka |
+
+Bila ingin kartu pintasan juga tampil pada dashboard (pilihan):
+
+| Nomor | Kegiatan |
+| --- | --- |
+| 1 | Unggah `dashboard_updated.php` ke `public_html` |
+| 2 | Lewat File Manager, ubah namanya menjadi `dashboard.php` (unduh dulu yang lama sebagai cadangan) |
+| 3 | Tekan **Ctrl+F5** pada dashboard |
+
+Catatan: berkas `dashboard_updated.php` yang belum diganti nama tidak mengubah
+apa pun - berkas itu hanya cadangan yang belum dipakai website.
+
+### D. BILA MENU BELUM TAMPAK
+
+| Kejadian | Sebab dan penanganan |
+| --- | --- |
+| Menu tidak tampak | Akun yang dipakai bukan ADMIN - menu ini sengaja hanya untuk ADMIN |
+| Menu tidak tampak pada akun ADMIN | Berkas `sidebar.php` belum diunggah ke `public_html`, atau browser masih memakai tampilan lama - tekan **Ctrl+F5**, atau keluar lalu masuk kembali |
+| Menu diklik, muncul **404 Not Found** | Berkas `app_versi.php` belum diunggah - lihat BAGIAN 45 LANGKAH 2 |
+| Halaman terbuka, tetapi muncul peringatan tabel belum ada | Tabel `rts_app_versi` belum dibuat - jalankan `RTS_PANEL_APP_VERSI.sql`; halaman tetap dapat dipakai walau tabel belum ada |
+| Halaman terbuka, lalu kembali ke dashboard | Akun bukan ADMIN - halaman `app_versi.php` memang mengalihkan pengunjung non-ADMIN ke dashboard |
+
+### E. URUTAN LENGKAP DARI NOL (RINGKAS)
+
+| Nomor | Kegiatan | Berkas |
+| --- | --- | --- |
+| 1 | Jalankan SQL tabel versi | `database/migrations/RTS_PANEL_APP_VERSI.sql` |
+| 2 | Unggah halaman + menu | `app_versi.php`, `sidebar.php`, `api/app_versi.php`, folder `apk/` |
+| 3 | (Pilihan) pasang kartu dashboard | `dashboard_updated.php` lalu ganti nama menjadi `dashboard.php` |
+| 4 | Muat ulang dashboard | **Ctrl+F5** |
+| 5 | Buka menu **Versi Aplikasi**, unggah APK terbaru | Halaman `app_versi.php` |
+| 6 | Periksa hasil | `https://rts.benedic-s.com/api/app_versi.php` dan `https://rts.benedic-s.com/apk/app_versi.json` |

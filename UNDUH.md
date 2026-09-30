@@ -37,9 +37,13 @@ Tempel alamat berikut pada peramban (Chrome), lalu tekan Enter:
 
     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_FIREBASE.zip
 
-**Paket Versi & Unggah APK untuk server** (halaman unggah + API versi + SQL tabel versi):
+**Paket Versi & Unggah APK untuk server** (menu sidebar + halaman unggah + API versi + SQL tabel versi):
 
     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_VERSI_APK.zip
+
+**Paket Menu Saja** (bila hanya ingin menambahkan menu "Versi Aplikasi" pada dashboard):
+
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_MENU_VERSI.zip
 
 **Panduan lengkap** (5.000+ baris, semua bagian 1-45):
 
@@ -63,6 +67,8 @@ Tempel alamat berikut pada peramban (Chrome), lalu tekan Enter:
 | CARA_PASANG_VERSI_APK.txt | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/CARA_PASANG_VERSI_APK.txt |
 | RTS_PANEL_APP_VERSI.sql | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/database/migrations/RTS_PANEL_APP_VERSI.sql |
 | app_versi.php (halaman unggah) | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/app_versi.php |
+| sidebar.php (menu dashboard) | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/sidebar.php |
+| dashboard_updated.php (kartu pintasan) | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/dashboard_updated.php |
 | api/app_versi.php (API versi) | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/api/app_versi.php |
 
 ---
@@ -89,7 +95,7 @@ dahulu, baru diekstrak di komputer.
 | 2 | `PERBAIKI_PUBSPEC.ps1` | Jalankan pertama: mendaftarkan paket iklan + `flutter pub get` |
 | 3 | `PASANG_FITUR_BARU.ps1` | Jalankan kedua: ikon Android, **izin lokasi + izin iklan**, build, dan pasang ke HP |
 | 4 | `RTS_PANEL_AKUN_PRO.zip` | Ekstrak ke `public_html` pada hosting (uji coba dulu) |
-| 5 | `RTS_PANEL_VERSI_APK.zip` | Ekstrak ke `public_html`; jalankan dulu `RTS_PANEL_APP_VERSI.sql` |
+| 5 | `RTS_PANEL_VERSI_APK.zip` | Ekstrak ke `public_html` (menu "Versi Aplikasi" + halaman unggah APK); jalankan dulu `RTS_PANEL_APP_VERSI.sql` |
 | 6 | `RTS_PANEL_FIREBASE.zip` | Ekstrak ke `public_html` (bila belum dipasang) |
 
 Catatan penting untuk paket nomor 3: skrip `PASANG_FITUR_BARU.ps1` sekarang

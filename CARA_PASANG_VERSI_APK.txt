@@ -7,9 +7,11 @@ APA YANG BERKAS INI SELESAIKAN?
 -------------------------------
 Setelah dipasang, Bapak dapat:
 
-  1. Mengunggah berkas APK terbaru lewat website (bukan lewat File Manager)
-  2. Melihat riwayat seluruh versi yang pernah diunggah
-  3. Membiarkan aplikasi di HP seluruh tim menawarkan pembaruan sendiri
+  1. Membuka menu baru "Versi Aplikasi" pada dashboard website
+     (menu ini muncul pada bagian ADMINISTRASI, hanya untuk akun ADMIN)
+  2. Mengunggah berkas APK terbaru lewat website (bukan lewat File Manager)
+  3. Melihat riwayat seluruh versi yang pernah diunggah
+  4. Membiarkan aplikasi di HP seluruh tim menawarkan pembaruan sendiri
      setiap kali aplikasi dibuka
 
 
@@ -28,6 +30,9 @@ GAMBARAN JALUR PEMBARUAN
 ISI PAKET RTS_PANEL_VERSI_APK.zip
 ---------------------------------
   app_versi.php                          -> public_html/app_versi.php
+  sidebar.php                            -> public_html/sidebar.php
+                                            (MENAMBAH menu "Versi Aplikasi")
+  dashboard_updated.php                  -> OPSIONAL, lihat LANGKAH 5
   api/app_versi.php                      -> public_html/api/app_versi.php
   apk/app_versi.json                     -> public_html/apk/app_versi.json
   apk/index.html                         -> public_html/apk/index.html
@@ -58,7 +63,8 @@ LANGKAH 1 - BUAT TABEL VERSI PADA DATABASE (SEKALI SAJA)
 LANGKAH 2 - UNGGAH BERKAS WEBSITE
 ---------------------------------
   1. Buka cPanel - File Manager - public_html
-  2. Unggah ketiga berkas berikut, dengan susunan folder yang sama:
+  2. Unggah berkas berikut, dengan susunan folder yang sama:
+       sidebar.php           <-- penambah menu "Versi Aplikasi"
        app_versi.php
        api/app_versi.php
        apk/index.html
@@ -67,12 +73,25 @@ LANGKAH 2 - UNGGAH BERKAS WEBSITE
      (klik kanan - Create Folder, nama: apk, izin 0755)
   4. Pastikan izin folder apk/ = 0755 agar berkas APK dapat ditulis
      (File Manager - klik kanan folder apk - Change Permissions - 0755)
+  5. Buka dashboard, lalu tekan Ctrl+F5 (muat ulang tanpa cache).
+     Menu "Versi Aplikasi" akan tampil pada bagian ADMINISTRASI, di bawah
+     "Kelola User". Bila belum tampak, keluar (Keluar) lalu masuk kembali.
+
+  Catatan: sidebar.php adalah berkas MENU, bukan halaman. Bila sudah
+  diunggah tetapi menu belum tampak, yang perlu diperiksa:
+    - akun yang dipakai berperan ADMIN (menu ini sengaja hanya untuk ADMIN)
+    - berkas sidebar.php benar-benar berada di dalam public_html
+    - browser dimuat ulang dengan Ctrl+F5
 
 
 LANGKAH 3 - UNGGAH APK LEWAT WEBSITE
 ------------------------------------
   1. Buka: https://rts.benedic-s.com/app_versi.php
-     (hanya dapat dibuka oleh akun berperan ADMIN)
+     Caranya dari dashboard:
+       - klik menu "Versi Aplikasi" pada bagian ADMINISTRASI (kiri bawah), atau
+       - klik kartu "Versi Aplikasi Android" lalu tombol "Kelola Versi Aplikasi"
+         (bila LANGKAH 5 dikerjakan)
+     Halaman ini hanya dapat dibuka oleh akun berperan ADMIN.
   2. Isi formulir:
        Versi aplikasi   : 1.2.0        (angka sebelum tanda + di pubspec.yaml)
        Kode versi       : 3            (angka sesudah tanda + di pubspec.yaml)
@@ -101,8 +120,35 @@ LANGKAH 4 - PERIKSA HASILNYA
      muncul kotak pemberitahuan pembaruan.
 
 
+LANGKAH 5 - OPSIONAL: KARTU PINTASAN PADA DASHBOARD
+---------------------------------------------------
+  Berkas dashboard_updated.php pada paket ini menambahkan, khusus ADMIN:
+
+    - kartu "Versi Aplikasi Android" yang menyebutkan versi yang sedang
+      diumumkan, lengkap dengan tombol "Kelola Versi Aplikasi"
+    - pintasan "Versi APK" pada baris pintasan menu di bagian bawah
+
+  Cara memasangnya:
+    1. Unggah dashboard_updated.php ke dalam public_html
+    2. Lewat File Manager, ubah nama berkas pada server menjadi: dashboard.php
+       (ganti berkas dashboard.php yang lama - sebaiknya unduh dulu yang lama
+        sebagai cadangan dengan cara memilih Download)
+    3. Buka dashboard, tekan Ctrl+F5
+
+  Bila tidak ingin mengubah tampilan dashboard, LANGKAH ini boleh dilewati.
+  Menu "Versi Aplikasi" pada sidebar (LANGKAH 2) sudah cukup untuk membuka
+  halaman pengunggahan APK.
+
+  PENTING: berkas dashboard_updated.php yang belum diganti nama TIDAK
+  mengubah apa pun - berkas itu hanya cadangan yang belum dipakai website.
+
+
 MASALAH YANG MUNGKIN MUNCUL
 ---------------------------
+  Menu "Versi Aplikasi" tidak tampak pada dashboard
+       Periksa 1: akun yang dipakai harus berperan ADMIN (bukan ASS/WSS/RTS)
+       Periksa 2: berkas sidebar.php sudah diunggah ke dalam public_html
+       Periksa 3: browser dimuat ulang dengan Ctrl+F5, atau keluar lalu masuk lagi
   Halaman app_versi.php menulis: tabel rts_app_versi belum ada
        Sebab  : LANGKAH 1 belum dikerjakan
        Tindakan: jalankan RTS_PANEL_APP_VERSI.sql pada database
