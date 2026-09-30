@@ -55,8 +55,45 @@
  BAGIAN 2 - CARA TERBAIK: UNGGAH LEWAT FTP, LALU PUBLIKASIKAN DARI WEB
 ==============================================================================
 
- Fitur ini BARU saya tambahkan pada app_versi.php (versi berkas 5).
- Namanya pada halaman: "Publikasikan Berkas yang Sudah Ada di Folder apk/"
+ Fitur ini ada pada app_versi.php (versi berkas 5, dan disempurnakan pada
+ versi 6). Namanya pada halaman: "Publikasikan Berkas yang Sudah Ada di
+ Folder apk/"
+
+ ------------------------------------------------------------------------
+ PENTING - MENGAPA TIDAK MUNCUL KARTU PUBLIKASINYA?
+ ------------------------------------------------------------------------
+
+ Bila setelah mengunggah APK lewat FileZilla, pada halaman app_versi.php
+ TIDAK tampak berkasnya beserta kolom keterangan versi, sebabnya hampir
+ selalu: BERKAS app_versi.php DI HOSTING MASIH VERSI LAMA. Kartu
+ "Publikasikan Berkas yang Sudah Ada di Folder apk/" baru ada mulai versi
+ berkas 5, jadi halaman versi lama hanya dapat menampilkan daftar berkas
+ APK tanpa kolom keterangan versinya.
+
+ Cara memastikan:
+   [ ] 1. Unggah app_versi.php versi terbaru (versi berkas 6, 51.443 bita)
+          ke public_html - satu folder dengan dashboard.php
+   [ ] 2. Buka https://rts.benedic-s.com/app_versi.php?diagnosa=1
+          Bagian atas harus menulis:  VERSI BERKAS  : 6
+   [ ] 3. Buka https://rts.benedic-s.com/app_versi.php
+          Kartu "Berkas APK di Server" akan menampilkan berkas yang Bapak
+          unggah lewat FileZilla (misalnya app-release.apk, 55,8 MB), dan
+          tepat di bawahnya muncul kartu "Publikasikan Berkas yang Sudah Ada
+          di Folder apk/" berisi kolom: Versi aplikasi, Kode versi, Wajib,
+          Catatan pembaruan, lalu tombol PUBLIKASIKAN BERKAS INI.
+   [ ] 4. Isi keterangannya, kemudian tekan PUBLIKASIKAN BERKAS INI.
+          Setelah itu app_versi.json terisi (lihat kartu "Berkas Keterangan
+          Versi" di sebelah kanan) dan seluruh HP menerima pemberitahuan
+          pembaruan bertombol UPDATE.
+
+ Nama berkas boleh apa saja - app-release.apk maupun rts_panel_v4.apk.
+ Alamat unduhan pada app_versi.json mengikuti nama berkas itu, dan aplikasi
+ membaca alamat tersebut, jadi keduanya sama-sama bekerja.
+
+ Pada versi berkas 6, isi berkas diperiksa lebih dahulu: berkas yang bukan
+ APK (berukuran terlalu kecil atau tidak diawali tanda PK) ditolak dengan
+ keterangan yang jelas. Tombol hapus (tempat sampah) juga sudah bekerja
+ untuk semua berkas, kecuali berkas yang sedang dipublikasikan.
 
  LANGKAH-LANGKAHNYA
 

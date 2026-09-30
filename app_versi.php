@@ -40,12 +40,22 @@
  */
 
 /* --------------------------------------------------------------------------
- * VERSI BERKAS: 4  (30 September 2026 - 16:00)
+ * VERSI BERKAS: 6  (1 Oktober 2026 - 01:10)
  *
- * Bila halaman pemeriksa ?diagnosa=1 menampilkan tulisan "VERSI BERKAS  : 4",
+ *   - Tombol hapus kini bekerja untuk SEMUA berkas APK di folder apk/, termasuk
+ *     berkas yang diunggah lewat FTP (namanya bebas, misalnya app-release.apk).
+ *     Berkas yang sedang dipublikasikan dilindungi supaya tautan unduhan
+ *     aplikasi tidak menunjuk ke berkas yang sudah hilang.
+ *   - Sebelum dipublikasikan, isi berkas diperiksa: harus berukuran wajar dan
+ *     benar-benar berkas APK (berkas APK selalu diawali tanda PK, karena APK
+ *     adalah berkas ZIP). Salah pilih berkas langsung diberi tahu.
+ *
+ * VERSI BERKAS: 5  - kartu "Publikasikan Berkas yang Sudah Ada di Folder apk/"
+ *
+ * Bila halaman pemeriksa ?diagnosa=1 menampilkan tulisan "VERSI BERKAS  : 6",
  * berarti berkas ini sudah terunggah dengan benar.
  * ------------------------------------------------------------------------ */
-define('APP_VERSI_BERKAS', 5);
+define('APP_VERSI_BERKAS', 6);
 
 require_once __DIR__ . '/config.php';
 
@@ -470,6 +480,27 @@ function app_alamat_dasar(): string
 }
 
 /**
+ * Memeriksa apakah sebuah berkas benar-benar berisi berkas APK.
+ *
+ * Berkas APK dibungkus sebagai berkas ZIP, jadi dua bita pertamanya selalu
+ * "PK". Pemeriksaan ini menangkap kesalahan yang sering terjadi: berkas lain
+ * (misalnya halaman galat atau berkas gambar) diubah namanya menjadi .apk.
+ */
+function app_isi_apk_benar(string $jalur): bool
+{
+    $pegang = @fopen($jalur, 'rb');
+
+    if (!$pegang) {
+        return false;
+    }
+
+    $tanda = (string) @fread($pegang, 2);
+    @fclose($pegang);
+
+    return $tanda === 'PK';
+}
+
+/**
  * Membersihkan nama berkas APK.
  */
 function app_nama_aman(string $teks): string
@@ -706,6 +737,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['app_publikasi
         $app_galat = 'Berkas yang dipilih bukan berkas APK.';
     } elseif (!is_file($jalur_publikasi)) {
         $app_galat = 'Berkas ' . htmlspecialchars($nama_publikasi) . ' tidak ditemukan di folder apk/.';
+    } elseif (($app_ukuran_pub = (int) @filesize($jalur_publikasi)) < 1048576) {
+        $app_galat = 'Berkas ' . htmlspecialchars($nama_publikasi) . ' ukurannya hanya '
+            . number_format($app_ukuran_pub / 1024, 0, ',', '.') . ' KB. Berkas APK yang benar '
+            . 'berukuran puluhan MB - kemungkinan berkas ini bukan APK (misalnya halaman galat '
+            . 'yang tersimpan dengan akhiran .apk).';
+    } elseif (!app_isi_apk_benar($jalur_publikasi)) {
+        $app_galat = 'Isi berkas ' . htmlspecialchars($nama_publikasi) . ' bukan berkas APK '
+            . '(berkas APK selalu diawali tanda PK). Pastikan berkas yang diunggah lewat FTP '
+            . 'benar-benar app-release.apk hasil flutter build apk, bukan berkas lain.';
     } elseif ($nama_versi_pub === '') {
         $app_galat = 'Kolom "Versi aplikasi" wajib diisi, contoh: 1.2.1';
     } elseif (preg_match('/^[0-9]+(\.[0-9]+){0,3}$/', $nama_versi_pub) !== 1) {
@@ -742,14 +782,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['app_hapus']))
     if ($nama !== '' && strtolower((string)pathinfo($nama, PATHINFO_EXTENSION)) === 'apk') {
         $jalur = $app_folder . '/' . $nama;
 
-        if (is_file($jalur) && strpos($nama, 'rts_panel') === 0) {
-            if (@unlink($jalur)) {
-                $app_pesan = 'Berkas ' . htmlspecialchars($nama) . ' dihapus.';
-            } else {
-                $app_galat = 'Gagal menghapus berkas. Periksa izin folder apk/.';
-            }
-        } else {
+        $app_versi_hapus = app_baca_versi($app_berkas_json);
+        $app_terbit_hapus = basename((string) ($app_versi_hapus['apk'] ?? ''));
+
+        if (!is_file($jalur)) {
             $app_galat = 'Berkas tidak ditemukan.';
+        } elseif ($nama === $app_terbit_hapus) {
+            $app_galat = 'Berkas ' . htmlspecialchars($nama) . ' sedang DIPUBLIKASIKAN, jadi belum '
+                . 'dapat dihapus - tautan unduhan pada aplikasi menunjuk ke berkas ini. '
+                . 'Publikasikan berkas APK yang lain lebih dahulu, lalu berkas ini dapat dihapus.';
+        } elseif (@unlink($jalur)) {
+            $app_pesan = 'Berkas ' . htmlspecialchars($nama) . ' dihapus.';
+        } else {
+            $app_galat = 'Gagal menghapus berkas. Periksa izin folder apk/.';
         }
     }
 }
