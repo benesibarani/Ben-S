@@ -138,11 +138,11 @@ if (!function_exists('rts_lg_pengaturan_siapkan')) {
             return true;
         }
 
-        $sql = 'CREATE TABLE IF NOT EXISTS rts_lg_pengaturan (
+        $sql = "CREATE TABLE IF NOT EXISTS rts_lg_pengaturan (
             kunci VARCHAR(40) NOT NULL PRIMARY KEY,
             nilai VARCHAR(190) NOT NULL DEFAULT '',
             diperbarui DATETIME NULL DEFAULT NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
         return (bool) @$conn->query($sql);
     }

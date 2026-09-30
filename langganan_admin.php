@@ -33,18 +33,196 @@
  */
 
 /* --------------------------------------------------------------------------
+ * VERSI BERKAS: 3  (1 Oktober 2026 - 00:35)
+ *   - PENGAMAN: berkas api/langganan_inti.php diperiksa lebih dahulu, sehingga
+ *     berkas yang terpotong tidak lagi menampilkan halaman HTTP ERROR 500
+ *     yang kosong, melainkan keterangan yang dapat dibaca
+ *   - Penangkap galat PHP (khusus ADMIN) + periksa berkas pada ?diagnosa=1
+ *
  * VERSI BERKAS: 2  (30 September 2026 - 23:58)
  *   - Kartu PENGATURAN HARGA & DURASI (harga, lama PRO, lama uji coba)
  *   - Ringkasan jumlah akun PRO / TRIAL / GRATIS
  *   - Pencarian & penyaringan daftar akun
  *   - Menu "Langganan PRO" pada sidebar (lihat sidebar.php)
  * ------------------------------------------------------------------------ */
-define('LG_VERSI_BERKAS', 2);
+define('LG_VERSI_BERKAS', 3);
+
+/* Ukuran berkas api/langganan_inti.php versi 2 yang UTUH (bita).
+   Bila berkas di hosting lebih kecil dari ini, berkas itu terpotong saat
+   diunggah - dan itulah yang dahulu membuat halaman ini berbunyi
+   "HTTP ERROR 500" tanpa penjelasan apa pun. */
+define('LG_INTI_UKURAN_BENAR', 28819);
 
 require_once __DIR__ . '/config.php';
 
-if (is_file(__DIR__ . '/api/langganan_inti.php')) {
-    require_once __DIR__ . '/api/langganan_inti.php';
+/* ==========================================================================
+ *  PENGAMAN BERKAS INTI
+ *  Pemeriksaan dilakukan SEBELUM berkas dimuat, sebab berkas PHP yang tidak
+ *  utuh menghentikan seluruh halaman tanpa dapat ditangkap (tidak seperti
+ *  galat PHP biasa). Bila ada masalah, yang tampil adalah keterangan yang
+ *  dapat dibaca beserta cara memperbaikinya.
+ * ========================================================================== */
+
+if (!function_exists('lg_periksa_isi_php')) {
+    /**
+     * Memeriksa apakah isi berkas PHP tampak utuh (tanda kurung berpasangan).
+     * Berkas yang terpotong hampir selalu menyisakan tanda buka tanpa penutup.
+     *
+     * @return string kosong bila utuh, atau keterangan masalahnya
+     */
+    function lg_periksa_isi_php(string $teks): string
+    {
+        $tumpukan = [];
+        $panjang = strlen($teks);
+        $baris = 1;
+        $i = 0;
+        $pasangan = [')' => '(', '}' => '{', ']' => '['];
+        $kutip_ganda = chr(34);
+        $kutip_tunggal = chr(39);
+        $miring = chr(92);
+        $baris_baru = chr(10);
+
+        while ($i < $panjang) {
+            $c = $teks[$i];
+
+            if ($c === $baris_baru) {
+                $baris++;
+                $i++;
+
+                continue;
+            }
+
+            if ($c === '/' && $i + 1 < $panjang && $teks[$i + 1] === '/') {
+                while ($i < $panjang && $teks[$i] !== $baris_baru) {
+                    $i++;
+                }
+
+                continue;
+            }
+
+            if ($c === '/' && $i + 1 < $panjang && $teks[$i + 1] === '*') {
+                $i += 2;
+
+                while ($i + 1 < $panjang && !($teks[$i] === '*' && $teks[$i + 1] === '/')) {
+                    if ($teks[$i] === $baris_baru) {
+                        $baris++;
+                    }
+
+                    $i++;
+                }
+
+                $i += 2;
+
+                continue;
+            }
+
+            if ($c === $kutip_ganda || $c === $kutip_tunggal) {
+                $kunci = $c;
+                $i++;
+
+                while ($i < $panjang) {
+                    if ($teks[$i] === $miring) {
+                        $i += 2;
+
+                        continue;
+                    }
+
+                    if ($teks[$i] === $kunci) {
+                        $i++;
+
+                        break;
+                    }
+
+                    if ($teks[$i] === $baris_baru) {
+                        $baris++;
+                    }
+
+                    $i++;
+                }
+
+                continue;
+            }
+
+            if ($c === '(' || $c === '{' || $c === '[') {
+                $tumpukan[] = [$c, $baris];
+            } elseif (isset($pasangan[$c])) {
+                if (!$tumpukan) {
+                    return 'ada tanda ' . $c . ' berlebih pada baris ' . $baris;
+                }
+
+                $atas = array_pop($tumpukan);
+
+                if ($atas[0] !== $pasangan[$c]) {
+                    return 'tanda kurung tidak berpasangan pada baris ' . $baris;
+                }
+            }
+
+            $i++;
+        }
+
+        if ($tumpukan) {
+            $atas = end($tumpukan);
+
+            return 'tanda ' . $atas[0] . ' pada baris ' . $atas[1]
+                . ' belum ditutup (berkas tampak terpotong)';
+        }
+
+        return '';
+    }
+}
+
+$lg_inti_berkas = __DIR__ . '/api/langganan_inti.php';
+$lg_inti_isi = '';
+$lg_inti_masalah = '';
+
+if (is_file($lg_inti_berkas)) {
+    $lg_inti_isi = (string) @file_get_contents($lg_inti_berkas);
+
+    if ($lg_inti_isi === '') {
+        $lg_inti_masalah = 'Berkas api/langganan_inti.php tidak dapat dibaca (isinya kosong).';
+    }
+} else {
+    $lg_inti_masalah = 'Berkas api/langganan_inti.php belum ada di folder api/ pada hosting.';
+}
+
+if ($lg_inti_masalah === '') {
+    $lg_inti_tanda = lg_periksa_isi_php($lg_inti_isi);
+
+    if ($lg_inti_tanda !== '') {
+        $lg_inti_masalah = 'Berkas api/langganan_inti.php TIDAK UTUH: ' . $lg_inti_tanda
+            . '. Ukuran di hosting ' . number_format(strlen($lg_inti_isi), 0, ',', '.')
+            . ' bita, seharusnya ' . number_format(LG_INTI_UKURAN_BENAR, 0, ',', '.') . ' bita.';
+    } elseif (strlen($lg_inti_isi) < (int) round(LG_INTI_UKURAN_BENAR * 0.98)) {
+        $lg_inti_masalah = 'Berkas api/langganan_inti.php tampak TERPOTONG: ukurannya '
+            . number_format(strlen($lg_inti_isi), 0, ',', '.') . ' bita, seharusnya '
+            . number_format(LG_INTI_UKURAN_BENAR, 0, ',', '.') . ' bita.';
+    } else {
+        require_once $lg_inti_berkas;
+    }
+}
+
+if ($lg_inti_masalah !== '') {
+    header('Content-Type: text/html; charset=utf-8');
+
+    echo '<!doctype html><html lang="id"><head><meta charset="utf-8">'
+        . '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        . '<title>Berkas belum utuh</title></head>'
+        . '<body style="font-family:Segoe UI,Tahoma,Arial,sans-serif;background:#f6f4f2;color:#2b2523;padding:34px">'
+        . '<div style="max-width:760px;margin:0 auto;background:#fff;border-radius:16px;padding:24px 26px;'
+        . 'box-shadow:0 6px 18px rgba(43,37,35,.08)">'
+        . '<h2 style="margin:0 0 10px;color:#8c1c25">Halaman Langganan PRO belum dapat dibuka</h2>'
+        . '<p style="line-height:1.65;font-size:14px">' . $lg_inti_masalah . '</p>'
+        . '<p style="line-height:1.65;font-size:14px"><b>Cara memperbaiki:</b> buka paket '
+        . 'RTS_PANEL_PUTARAN_7.zip, lalu unggah berkas '
+        . '<code>1_SERVER_unggah_ke_hosting/api/langganan_inti.php</code> ke folder <code>api/</code> '
+        . 'pada hosting. Gunakan cPanel &rarr; File Manager &rarr; Upload - '
+        . 'jangan menyalin-tempel isi berkas, sebab cara itu mudah terpotong.</p>'
+        . '<p style="line-height:1.65;font-size:14px">Sesudah diunggah, muat ulang halaman ini.</p>'
+        . '<p style="font-size:13.5px"><a href="langganan_admin.php" style="color:#a52430">Muat ulang halaman</a>'
+        . ' &middot; <a href="index.php" style="color:#a52430">Beranda</a></p>'
+        . '</div></body></html>';
+
+    exit;
 }
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -68,6 +246,16 @@ if (isset($_GET['diagnosa'])) {
     echo 'Uji coba       : ' . rts_lg_trial() . " hari\n";
     echo 'Tabel pengaturan: ' . ((isset($conn) && $conn instanceof mysqli
         && function_exists('rts_lg_ada_tabel') && rts_lg_ada_tabel($conn, 'rts_lg_pengaturan')) ? 'ADA' : 'BELUM ADA') . "\n";
+
+    echo "\nPERIKSA BERKAS (pastikan ukurannya sama dengan paket)\n";
+    echo 'langganan_admin.php : ' . number_format((int) @filesize(__FILE__), 0, ',', '.') . " bita\n";
+    echo 'api/langganan_inti.php : ' . number_format((int) @filesize(__DIR__ . '/api/langganan_inti.php'), 0, ',', '.')
+        . ' bita (seharusnya ' . number_format(LG_INTI_UKURAN_BENAR, 0, ',', '.') . ") bita\n";
+    echo 'sidebar.php : ' . number_format((int) @filesize(__DIR__ . '/sidebar.php'), 0, ',', '.') . " bita\n";
+    echo 'Menu Langganan PRO pada sidebar : '
+        . (strpos((string) @file_get_contents(__DIR__ . '/sidebar.php'), 'langganan_admin.php') !== false
+            ? 'ADA (sidebar.php sudah diperbarui)'
+            : 'BELUM ADA (unggah ulang sidebar.php)') . "\n";
     echo 'Session aktif  : ' . (session_status() === PHP_SESSION_ACTIVE ? 'YA' : 'TIDAK') . "\n";
     echo 'Kunci session  : ' . implode(', ', array_keys($_SESSION)) . "\n";
 
@@ -132,6 +320,40 @@ if ($lg_peran !== 'ADMIN') {
         . '<p><a href="index.php">Kembali ke beranda</a></p></body></html>';
     exit;
 }
+
+/* ==========================================================================
+ *  PENANGKAP GALAT PHP (khusus ADMIN)
+ *  Dipasang sesudah pemeriksaan ADMIN, sehingga hanya ADMIN yang melihat isi
+ *  galatnya. Fungsinya mengubah halaman putih "HTTP ERROR 500" menjadi
+ *  keterangan yang dapat dibaca dan dapat dikirimkan kepada saya.
+ * ========================================================================== */
+
+register_shutdown_function(static function (): void {
+    $galat = error_get_last();
+
+    if (!is_array($galat)) {
+        return;
+    }
+
+    $jenis_fatal = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR];
+
+    if (!in_array((int) $galat['type'], $jenis_fatal, true)) {
+        return;
+    }
+
+    if (!headers_sent()) {
+        header('Content-Type: text/html; charset=utf-8');
+    }
+
+    echo '<div style="margin:16px auto;max-width:900px;border:1px solid #f0c9c9;background:#fdeeee;'
+        . 'color:#8c1c25;border-radius:12px;padding:14px 16px;font-family:Segoe UI,Tahoma,Arial,sans-serif;'
+        . 'font-size:13.5px;line-height:1.6">'
+        . '<b>GALAT PHP pada halaman ini</b><br>'
+        . htmlspecialchars((string) $galat['message'])
+        . '<br>Berkas: ' . htmlspecialchars(basename((string) $galat['file']))
+        . ' &middot; baris ' . (int) $galat['line']
+        . '<br>Kirimkan tulisan ini kepada saya supaya dapat saya perbaiki.</div>';
+});
 
 if (!isset($conn) || !($conn instanceof mysqli)) {
     header('Content-Type: text/html; charset=utf-8');

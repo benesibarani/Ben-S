@@ -164,14 +164,66 @@
 
 
 ==============================================================================
+ BAGIAN 5 - BILA MUNCUL "HTTP ERROR 500" (SUDAH DIPERBAIKI)
+==============================================================================
+
+ Apa yang terjadi
+   Halaman langganan_admin.php sempat berbunyi "This page isn't working -
+   HTTP ERROR 500". Sebabnya BUKAN pada halaman itu sendiri, melainkan pada
+   berkas api/langganan_inti.php versi 2 yang saya kirim lebih dahulu:
+
+     Di dalamnya ada baris pembuat tabel:
+         nilai VARCHAR(190) NOT NULL DEFAULT ''     <-- memakai ' (kutip tunggal)
+     pada PHP tanda kutip tunggal di dalam kutip tunggal harus ditulis \'
+     (garis miring + kutip). Karena garis miringnya hilang, kalimat PHP-nya
+     terputus dan PHP menghentikan seluruh halaman -> HTTP ERROR 500.
+
+   Akibat berantai: SEMUA berkas yang memuat berkas inti itu ikut gagal,
+   termasuk api/login.php dan api/session_check.php - jadi aplikasi Android
+   pun dapat gagal masuk. Karena itu berkas inti yang baru WAJIB diunggah.
+
+ Sudah diperbaiki
+   - api/langganan_inti.php : baris itu kini memakai tanda kutip ganda,
+     sehingga tidak ada lagi tanda kutip yang perlu dilindungi.
+     Ukuran berkas yang benar: 28.819 bita (877 baris).
+   - langganan_admin.php versi 3 : ditambah pengaman. Sebelum berkas inti
+     dimuat, halaman memeriksa dulu apakah berkas itu utuh (ukurannya dan
+     pasangan tanda kurungnya). Bila tidak utuh, yang tampil bukan halaman
+     500 yang kosong, melainkan keterangan + cara memperbaikinya.
+   - Ditambah penangkap galat PHP (khusus ADMIN): bila di kemudian hari ada
+     galat PHP yang fatal, halaman menampilkan tulisan galatnya sehingga dapat
+     Bapak kirimkan kepada saya.
+
+ Yang perlu Bapak lakukan sekarang
+   [ ] 1. Unggah ULANG dua berkas dari paket RTS_PANEL_PUTARAN_7.zip:
+            api/langganan_inti.php   -> ke folder api/     (WAJIB, 28.819 bita)
+            langganan_admin.php      -> ke public_html     (45.415 bita, v3)
+   [ ] 2. Buka https://rts.benedic-s.com/langganan_admin.php?diagnosa=1
+          Bagian "PERIKSA BERKAS" harus menulis:
+            api/langganan_inti.php : 28.819 bita (seharusnya 28.819 bita)
+            Menu Langganan PRO pada sidebar : ADA (sidebar.php sudah diperbarui)
+   [ ] 3. Buka https://rts.benedic-s.com/langganan_admin.php - halaman harus
+          terbuka normal beserta kartu Pengaturan Harga & Durasi.
+   [ ] 4. Uji aplikasi: keluar lalu masuk kembali pada aplikasi HP, untuk
+          memastikan login tidak terpengaruh.
+
+ Catatan cara mengunggah
+   Gunakan cPanel - File Manager - Upload (pilih berkasnya), atau FileZilla.
+   JANGAN menyalin-tempel isi berkas ke editor cPanel, sebab berkas panjang
+   mudah terpotong dan hasilnya HTTP ERROR 500.
+
+
+==============================================================================
  RINGKASAN PERUBAHAN BERKAS
 ==============================================================================
 
  sidebar.php            : menu "Langganan PRO" + lencana pembayaran menunggu
                           (tampil hanya untuk ADMIN)
- langganan_admin.php    : versi 2 - kartu pengaturan harga & durasi, ringkasan
-                          status akun, pencarian & penyaringan
- api/langganan_inti.php : versi 2 - harga, lama PRO, lama uji coba dibaca dari
-                          database (tabel rts_lg_pengaturan) dengan nilai
-                          bawaan Rp5.000 / 30 hari / 7 hari
+ langganan_admin.php    : versi 3 (45.415 bita) - kartu pengaturan harga &
+                          durasi, ringkasan status akun, pencarian & penyaringan,
+                          pengaman berkas inti + penangkap galat PHP
+ api/langganan_inti.php : versi 2 (28.819 bita) - harga, lama PRO, lama uji coba
+                          dibaca dari database (tabel rts_lg_pengaturan) dengan
+                          nilai bawaan Rp5.000 / 30 hari / 7 hari
+                          (perbaikan HTTP 500 ada pada berkas ini)
 ==============================================================================
