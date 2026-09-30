@@ -1,0 +1,378 @@
+==============================================================================
+ RTS PANEL BY BENE - RENCANA FITUR PRO (SETELAH RILIS)
+ Menjawab enam permintaan Bapak - SEMUANYA BISA
+==============================================================================
+
+ Catatan: berkas ini RENCANA. Tidak ada kode yang berubah hari ini.
+ Berkas hari ini: CARA_RELEASE_APK.txt (untuk rilis sekarang) + rencana ini.
+
+ Untuk memulai pengerjaan, saya perlu jawaban Bapak atas 5 pertanyaan pada
+ bagian "YANG SAYA PERLUKAN DARI BAPAK" di bawah.
+
+
+==============================================================================
+ RINGKASAN - NAMA MENU YANG SAYA REKOMENDASIKAN
+==============================================================================
+
+   No  Permintaan Bapak                | Nama menu usulan      | Letak
+   ----|-------------------------------|-----------------------|----------
+   1   Peta customer + filter          | PETA CUSTOMER         | Beranda
+   2   Cek customer terdekat           | RADAR KUNJUNGAN       | Beranda
+   3   Urutan toko dari kantor         | RUTE HARIAN           | Beranda
+   4   Daftar piutang / titip          | PIUTANG CUSTOMER      | Beranda
+   5   Stok barang bawaan + kasir      | BARANG BAWAAN dan     | Beranda
+       (rokok: pack & batang)          | KASIR                 |
+   6   Foto berstempel tanggal + jam   | (otomatis pada semua  | -
+       sampai detik                    |  foto dokumentasi)    |
+
+ Alasan pemilihan nama:
+   - Singkat, jelas, dan memakai istilah yang sudah biasa dipakai tim sales.
+   - Tidak tumpang tindih dengan menu yang sudah ada (Master Customer,
+     Pengajuan, Pemberitahuan, Sinkronisasi, Profil, Pengaturan).
+   - "Radar" sudah Bapak sebut sendiri, jadi dipakai apa adanya.
+
+ Bila Bapak ingin nama lain, tinggal tulis pada jawaban - nama menu mudah
+ diganti (hanya tulisan pada kartu, isinya tetap sama).
+
+
+==============================================================================
+ 1. PETA CUSTOMER (OpenStreetMap)
+==============================================================================
+
+   Peta gratis tanpa kunci API - memakai OpenStreetMap (plugin flutter_map).
+   Tidak ada biaya bulanan, tidak perlu mendaftar ke Google.
+
+   YANG DITAMPILKAN
+     - Seluruh toko yang menjadi hak user (sesuai Sales District)
+     - Titik kantor (bila Admin sudah mengisi) sebagai titik hitam di tengah
+     - Warna penanda:
+          HIJAU  = sudah dikunjungi hari ini
+          MERAH  = belum dikunjungi
+          BIRU   = customer GSP
+          KUNING = customer memiliki piutang belum lunas
+     - Ketuk penanda -> kartu ringkas: nama toko, kode customer, jarak dari
+       kantor, tombol "Detail" dan "Navigasi"
+
+   FILTER (dua pilihan dari Bapak, ditambah dua yang saya usulkan)
+     - Hari        : Semua / Senin / Selasa / Rabu / Kamis / Jumat / Sabtu
+     - Kunjungan   : Semua / Weekly / Bi-Weekly Ganjil / Bi-Weekly Genap
+     - District    : otomatis sesuai hak user
+                     (ADMIN, ASS, WSS, SMST boleh memilih semua district)
+     - Status      : Semua / Belum dikunjungi / Sudah dikunjungi
+
+   ALUR
+     Login -> district user dibaca -> peta langsung fokus ke titik kantor ->
+     penanda toko dimuat -> user menyaring sesuai kebutuhan -> ketuk penanda
+     -> detail atau navigasi.
+
+
+==============================================================================
+ 2. RADAR KUNJUNGAN (customer terdekat dari lokasi user)
+==============================================================================
+
+   YANG DILAKUKAN
+     - Membaca titik GPS petugas saat itu (tombol "Perbarui Lokasi")
+     - Menampilkan toko terdekat dalam radius pilihan:
+
+          100 m  |  250 m  |  500 m  |  1 km  |  3 km  |  5 km  |  Semua
+
+     - Daftar urut dari paling dekat, lengkap dengan:
+          nama toko, jarak (meter/km), arah mata angin (contoh: 320 derajat
+          / barat laut), status hari kunjungan, dan tombol:
+             [NAVIGASI]  -> langsung membuka Google Maps ke titik toko
+             [KUNJUNGI]  -> menandai toko sudah dikunjungi hari ini
+                            (tersimpan sebagai riwayat kunjungan)
+     - Tampilan tambahan: lingkaran radius di peta dengan titik user di
+       tengah (bentuk radar).
+
+   KEGUNAAN
+     Sales yang sedang berada di jalan dapat langsung melihat "toko mana yang
+     paling dekat dari posisi saya sekarang" - tanpa harus membuka daftar
+     panjang dan menghitung sendiri.
+
+
+==============================================================================
+ 3. RUTE HARIAN (pedoman Sales District - Kunjungan - Hari)
+==============================================================================
+
+   INI FITUR YANG BAPAK GAMBARKAN: urutan toko terdekat dari KANTOR sampai
+   terjauh, sehingga tidak lagi berantakan seperti aplikasi bawaan kantor.
+
+   SUMBER DATA
+     master_toko : sales_district, kunjungan, hari, latitude, longitude
+     rts_kantor  : titik lokasi kantor (baru - diisi Admin)
+
+   ALUR LENGKAP
+     1. Petugas masuk (login)
+     2. Aplikasi membaca Sales District milik petugas
+     3. Petugas memilih HARI  (bawaan: hari ini)
+     4. Petugas memilih FREKUENSI KUNJUNGAN
+             Semua (bawaan) / Weekly / Bi-Weekly Ganjil / Bi-Weekly Genap
+     5. Sistem mengambil seluruh toko yang cocok, lalu MENGHITUNG JARAK
+        dari titik KANTOR (bukan dari lokasi petugas)
+     6. Daftar ditampilkan berurutan: NOMOR 1 = TERDEKAT DARI KANTOR,
+        sampai nomor terakhir = TERJAUH
+     7. Setiap baris menampilkan: nomor urut, nama toko, jarak dari kantor,
+        jarak dari toko sebelumnya, hari & frekuensi kunjungan, tombol
+        [NAVIGASI] dan [SELESAI]
+     8. Toko yang sudah ditandai selesai berubah menjadi hijau dan turun ke
+        bawah daftar (supaya petugas langsung tahu sisa kunjungan)
+     9. Tombol "BUKA RUTE" mengirim seluruh titik ke Google Maps sekaligus
+        (maksimal 10 titik sekali jalan; bila lebih, dibuat beberapa segmen)
+
+   ATURAN MINGGU GANJIL / GENAP
+     Dihitung dari nomor pekan pada kalender. Patokannya dapat disetel Admin
+     pada halaman pengaturan (bawaan: mengikuti nomor pekan kalender).
+     Jadi petugas tidak perlu menghitung sendiri - aplikasi yang memilih.
+
+   TITIK LOKASI KANTOR (Bapak akan menambahkannya - sudah disiapkan)
+     Halaman baru "Lokasi Kantor" (khusus ADMIN):
+        - Nama kantor, alamat, district yang dilayani
+        - Titik lokasi: diambil dari GPS saat Admin berada di kantor
+          (tombol "Ambil Titik dari Lokasi Saya") atau diisi manual
+        - Dapat memuat lebih dari satu kantor (mis. Kantor Medan,
+          Kantor Binjai) - petugas dilayani kantor terdekat
+     Setelah titik kantor ada, Rute Harian langsung bekerja.
+
+
+==============================================================================
+ 4. PIUTANG CUSTOMER (kategori Titip)
+==============================================================================
+
+   YANG DIMINTA BAPAK
+     - Kategori piutang (Titip)
+     - Produk diketik manual, lengkap dengan foto
+     - Status: sudah dibayar atau belum
+
+   USULAN SUSUNAN
+     SATU NOTA dapat berisi BEBERAPA BARANG (lebih praktis daripada satu
+     barang satu catatan). Setiap barang:
+
+        Nama produk  : diketik manual (bebas, tidak perlu master produk)
+        Jumlah       : angka + satuan (pack / batang / pcs / renceng)
+        Harga        : per satuan
+        Subtotal     : dihitung otomatis
+        Foto barang  : dari kamera atau galeri (otomatis berstempel waktu)
+
+     KATEGORI : TITIP (barang dititipkan) / TEMPO (penjualan belum dibayar)
+                / LAIN-LAIN
+
+     STATUS   : BELUM BAYAR  ->  SEBAGIAN  ->  LUNAS
+     Pembayaran dapat dicicil beberapa kali. Setiap pembayaran mencatat:
+        tanggal & jam (sampai detik), jumlah, cara bayar (tunai / transfer /
+        QRIS), foto bukti bila ada, dan siapa yang menerima.
+
+     JATUH TEMPO (usulan tambahan): tanggal jatuh tempo + penanda pada peta
+     (penanda KUNING) + daftar "piutang lewat jatuh tempo" agar mudah ditagih.
+
+   TAMPILAN
+     - Ringkasan di beranda: "Piutang belum lunas: Rp1.250.000 (7 nota)"
+     - Daftar piutang: urut dari terbesar / terbaru / jatuh tempo terdekat
+     - Daftar per customer: tekan nama customer -> seluruh nota miliknya
+     - Tombol "CATAT PEMBAYARAN" langsung dari daftar
+
+   AKHIR ALUR
+     Piutang lunas -> tidak lagi masuk hitungan piutang, tetapi riwayatnya
+     tetap tersimpan dan dapat dilihat pada laporan website.
+
+
+==============================================================================
+ 5. BARANG BAWAAN + KASIR (rokok: Pack dan Batang)
+==============================================================================
+
+   USULAN DUA MENU TERPISAH
+
+     MENU A - BARANG BAWAAN   (3 tab di dalamnya)
+        Tab 1. PRODUK  - daftar produk yang dibawa:
+                 nama produk, barcode, satuan (pack), ISI PER PACK dalam
+                 satuan batang (contoh: 12 / 16 / 20 batang), harga per pack,
+                 harga per batang (dihitung otomatis), foto produk
+        Tab 2. STOK    - jumlah yang dibawa hari ini:
+                 barang yang dimuat (contoh: 10 pack 0 batang),
+                 dapat ditambah, dicatat rusak/kembali ke gudang,
+                 sisa dihitung otomatis setiap ada penjualan
+        Tab 3. RIWAYAT - seluruh perubahan stok beserta jam sampai detik
+
+     MENU B - KASIR   (penjualan + cetak struk bluetooth)
+        - Cari produk: SCAN BARCODE atau ketik nama
+        - Masukkan jumlah: PACK dan/atau BATANG
+             contoh: 2 pack + 3 batang -> total dihitung otomatis
+        - Pilih customer (opsional; ada tombol "Tanpa Customer")
+        - Bayar: tunai (dengan hitung kembalian) atau QRIS
+        - Cetak struk ke printer bluetooth 58 mm (ESC/POS)
+        - Stok bawaan otomatis berkurang
+        - Tercatat: siapa penjual, customer, jam sampai detik
+
+   CARA INPUT BARCODE (dua-duanya disiapkan, Bapak memilih pemakaiannya)
+        a. Kamera HP   - plugin mobile_scanner; arahkan kamera ke barcode
+                         rokok, terbaca otomatis. Gratis, tanpa alat tambahan.
+        b. Alat scanner bluetooth (kolektor) - alat itu mengetik sendiri ke
+                         kolom pencarian, jadi langsung cocok tanpa kode
+                         tambahan.
+
+   PRINTER BLUETOOTH
+        Printer thermal 58 mm ESC/POS (merek umum: RPP02, Xprinter P323B,
+        EPPOS, Mypos, dan sejenisnya). Sesudah printer Bapak diketahui,
+        saya siapkan: pengaturan lebar kertas, tombol "Hubungkan Printer",
+        tombol "Uji Cetak", serta susunan struk sederhana:
+
+               RTS PANEL - BENE
+               -----------------------------
+               No   : KS-20261001-0007
+               Waktu: 01-10-2026 14:22:07
+               Sales: BENES (RTS)
+               Cust : TOKO MAJU JAYA
+               -----------------------------
+               Sampoerna Mild 16
+               2 pack x Rp32.000    Rp64.000
+               Gudang Garam Surya 12
+               3 batang x Rp2.200    Rp6.600
+               -----------------------------
+               TOTAL                Rp70.600
+               TUNAI                Rp100.000
+               KEMBALI              Rp29.400
+               -----------------------------
+               Terima kasih
+
+        Struk memuat tanggal + jam sampai DETIK (permintaan Bapak nomor 6).
+
+
+==============================================================================
+ 6. FOTO BERSTEMPEL TANGGAL DAN JAM SAMPAI DETIK
+==============================================================================
+
+   BERLAKU OTOMATIS untuk SELURUH foto dokumentasi: foto piutang, foto
+   barang, foto bukti pembayaran, foto kunjungan, dan foto produk.
+
+   YANG DICAP PADA GAMBAR (di sudut bawah, huruf putih dengan latar gelap)
+        RTS PANEL - BENE
+        01-10-2026 14:22:07
+        BENES (RTS) - District MEDAN
+        TOKO MAJU JAYA
+        Lat 3.591234, Lng 98.672331 (+-5 m)
+
+   KETERANGAN
+     - Waktu yang dicap = waktu SERVER (jam hosting), supaya tidak dapat
+       dimanipulasi dengan mengubah jam HP. Waktu HP juga tetap dicatat
+       sebagai pembanding pada tabel.
+     - Nama berkas otomatis memuat waktu, contoh:
+            20261001_142207_benes_toko-maju-jaya.jpg
+     - Tersimpan juga pada database: waktu HP, waktu server, titik GPS,
+       petugas, nama toko, ukuran berkas - sehingga dapat ditelusuri kembali.
+     - Gambar diperkecil otomatis supaya hemat kuota (maksimal 1280 titik).
+
+
+==============================================================================
+ RANCANGAN DATABASE TAMBAHAN (usulan)
+==============================================================================
+
+   Tabel                 | Isi
+   ----------------------|----------------------------------------------------
+   rts_kantor            | titik lokasi kantor (nama, alamat, district, lat, lng)
+   rts_kunjungan         | riwayat kunjungan harian (petugas, customer, waktu
+                         |  sampai detik, lat, lng, status, catatan)
+   rts_piutang           | nota piutang (nomor, customer, kategori, total,
+                         |  status, jatuh tempo, dibuat oleh, waktu)
+   rts_piutang_item      | barang pada nota (nama diketik, jumlah, satuan,
+                         |  harga, subtotal, foto)
+   rts_piutang_bayar     | pembayaran/cicilan (jumlah, cara, waktu, bukti)
+   rts_produk            | master produk (barcode, nama, satuan, isi per pack,
+                         |  harga pack, harga batang, foto)
+   rts_stok              | stok bawaan per petugas per produk (pack, batang)
+   rts_stok_gerak        | riwayat perubahan stok (muat, jual, rusak, kembali)
+   rts_kasir             | penjualan (nomor, petugas, customer, total, bayar,
+                         |  kembali, cara, waktu sampai detik)
+   rts_kasir_item        | barang terjual (produk, pack, batang, harga, subtotal)
+   rts_foto              | seluruh dokumentasi foto (waktu HP, waktu server,
+                         |  lat, lng, petugas, nama toko, jenis)
+
+   Seluruh tabel dibuat lewat satu tombol "PERBARUI DATABASE" pada halaman
+   Admin - sama seperti yang sudah Bapak pakai. Tidak ada data lama yang
+   dihapus atau diubah.
+
+
+==============================================================================
+ URUTAN PENGERJAAN YANG SAYA USULKAN
+==============================================================================
+
+   Putaran 8  - FONDASI DATA
+                Tabel kantor + halaman "Lokasi Kantor" (website + aplikasi)
+                Tabel kunjungan + tabel foto + stempel waktu pada foto
+                (fitur nomor 6 selesai di putaran ini)
+
+   Putaran 9  - PETA CUSTOMER + RADAR KUNJUNGAN + RUTE HARIAN
+                Ketiganya memakai fondasi yang sama (titik kantor + koordinat
+                toko), jadi paling cepat dikerjakan bersamaan.
+                (fitur nomor 1, 2, 3 selesai)
+
+   Putaran 10 - PIUTANG CUSTOMER
+                Nota, barang, foto berstempel waktu, cicilan, status bayar
+                (fitur nomor 4 selesai)
+
+   Putaran 11 - BARANG BAWAAN + KASIR
+                Master produk (barcode, pack, batang), stok bawaan,
+                kasir, struk bluetooth
+                (fitur nomor 5 selesai)
+
+   Putaran 12 - LAPORAN DI WEBSITE + PENYEMPURNAAN
+                Laporan piutang, stok bawaan, penjualan kasir, kunjungan
+                untuk Admin; penguncian fitur PRO; pemberitahuan otomatis
+
+   Setiap putaran tetap memakai aturan kita: satu putaran dikerjakan, hasil
+   dilaporkan, Bapak uji, baru lanjut putaran berikutnya.
+
+
+==============================================================================
+ YANG SAYA PERLUKAN DARI BAPAK (5 PERTANYAAN)
+==============================================================================
+
+   1. Nama menu: apakah memakai usulan saya?
+         PETA CUSTOMER, RADAR KUNJUNGAN, RUTE HARIAN, PIUTANG CUSTOMER,
+         BARANG BAWAAN (+KASIR), dan foto berstempel waktu otomatis.
+
+   2. Fitur baru ini untuk akun apa?
+         a. Khusus akun PRO (akun GRATIS melihat menu terkunci dan diarahkan
+            ke halaman Langganan PRO)
+         b. Untuk SEMUA akun (PRO hanya berarti bebas iklan)
+         c. Khusus PRO dulu, dibuka bertahap untuk semua
+
+   3. Cara input barcode rokok:
+         a. Kamera HP (scan langsung - gratis, tanpa alat tambahan)
+         b. Alat scanner bluetooth (kolektor) yang sudah Bapak miliki
+         c. Cukup ketik manual dulu, barcode menyusul
+
+   4. Printer bluetooth untuk struk kasir:
+         a. Belum ada - rencananya beli printer thermal 58 mm
+         b. Sudah ada - sebutkan merek/tipe (mis. RPP02, Xprinter P323B)
+         c. Kasir dulu tanpa cetak, printer menyusul
+
+   5. Titik lokasi kantor diisi dari mana?
+         a. Website (halaman Admin Lokasi Kantor)
+         b. Aplikasi (khusus ADMIN - tombol "Ambil Titik dari Lokasi Saya")
+         c. Dua-duanya (usulan saya: paling praktis)
+
+
+==============================================================================
+ CATATAN PENTING
+==============================================================================
+
+   - Peta memakai OpenStreetMap: GRATIS, tanpa kunci API, tanpa biaya
+     bulanan. Bila suatu saat ingin tampilan seperti Google Maps (citra
+     satelit, lalu lintas), itu berbayar setelah kuota gratis habis -
+     sebaiknya tetap OpenStreetMap kecuali memang diperlukan.
+
+   - Printer thermal bekerja lewat Bluetooth (bukan wifi). Sekali dipasangkan
+     dengan HP petugas, berikutnya tersambung otomatis.
+
+   - Semua fitur baru akan tetap mematuhi aturan hak akses yang sudah ada:
+     RTS/TF hanya district-nya sendiri; WSS/SMST semua district tanpa
+     approve; ADMIN dan ASS penuh.
+
+   - Data customer, pengajuan, dan stok yang sudah ada TIDAK diubah. Seluruh
+     tabel baru hanya MENAMBAH.
+
+   - Aplikasi tetap dapat dipakai selama pengembangan putaran-putaran ini.
+     Setiap putaran menghasilkan versi baru lewat mekanisme pembaruan yang
+     sudah berjalan (app_versi.php + pemberitahuan ke HP).
+
+==============================================================================

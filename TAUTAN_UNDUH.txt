@@ -3,6 +3,21 @@
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.
 ==============================================================================
 
+RILIS SEKARANG (TUTORIAL + LANGKAH BUILD APK)
+---------------------------------------------
+CARA_RELEASE_APK.txt   - 5 langkah merilis APK: bersihkan, build apk --release,
+                         unggah ke app_versi.php (kode versi 3), uji, dan
+                         pengingat keamanan setelah rilis
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/CARA_RELEASE_APK.txt
+
+RENCANA FITUR PRO SETELAH RILIS (6 permintaan Bapak)
+----------------------------------------------------
+RENCANA_FITUR_PRO.txt  - nama menu usulan, alur tiap fitur, rancangan
+                         database, urutan putaran 8-12, dan 5 pertanyaan
+                         yang perlu dijawab Bapak
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RENCANA_FITUR_PRO.txt
+
+
 MULAI DARI SINI - PUTARAN IKLAN + LANGGANAN PRO + FOTO PRIBADI
 --------------------------------------------------------------
 Bila bingung mulai dari mana, cukup pakai DUA tautan ini:
