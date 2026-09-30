@@ -1,0 +1,367 @@
+==============================================================================
+ RTS PANEL BY BENE
+ TUTORIAL PUTARAN INI - IKLAN, LANGGANAN PRO (QRIS), DAN FOTO PRIBADI
+==============================================================================
+
+ Berkas ini adalah SATU-SATUNYA panduan yang perlu Bapak ikuti untuk topik ini.
+ Ikuti dari atas ke bawah. Tidak perlu membaca berkas lain.
+
+ Ada 8 langkah. Langkah 1-2 dikerjakan di website (cPanel), langkah 3-6 di
+ komputer, langkah 7-8 sesudahnya.
+
+
+==============================================================================
+ RINGKASAN: APA YANG KITA KERJAKAN
+==============================================================================
+
+   Iklan          : iklan muncul sekilas saat aplikasi dibuka (app open),
+                    dan iklan native tampil di SELURUH menu
+   Langganan PRO  : halaman baru "Langganan PRO" di aplikasi, pembayaran
+                    dengan QRIS Bapak (Rp5.000), masa berlaku 30 hari
+   Uji coba       : 7 hari gratis, diberikan otomatis satu kali setiap akun
+   Foto pribadi   : setiap petugas dapat memasang fotonya sendiri dari
+                    kamera atau galeri
+
+ Perubahan ini terbagi dua sisi:
+
+   SISI SERVER (website)  -> 8 berkas     (LANGKAH 1 dan 2)
+   SISI APLIKASI (HP)     -> 1 skrip      (LANGKAH 3 sampai 6)
+                             plus 1 gambar QRIS Bapak
+
+
+==============================================================================
+ YANG PERLU BAPAK SIAPKAN DULU
+==============================================================================
+
+   [ ] Gambar QRIS dari WhatsApp (yang berisi Rp5.000 dan NMID
+       ID1026519749489). Simpan ke folder Unduhan di komputer.
+   [ ] Password cPanel (untuk mengunggah berkas website).
+   [ ] HP CPH1937 dalam keadaan tersambung (nirkabel juga boleh).
+
+
+==============================================================================
+ LANGKAH 1 - UNGGAH 8 BERKAS KE HOSTING (cPanel)
+==============================================================================
+
+ Semua berkas ada di dalam folder:  1_SERVER_unggah_ke_hosting
+
+   [ ] 1. Buka cPanel - File Manager - masuk ke public_html
+   [ ] 2. Masuk ke folder  api   (public_html/api)
+   [ ] 3. Unggah (klik Upload) KEENAM berkas ini - bila ada pertanyaan
+          "overwrite?", jawab YA (timpa):
+
+             api/langganan_inti.php      <-- BARU
+             api/langganan.php           <-- BARU
+             api/upload_foto.php         <-- BARU
+             api/siapkan_langganan.php   <-- BARU
+             api/login.php               <-- DIPERBARUI
+             api/session_check.php       <-- DIPERBARUI
+
+   [ ] 4. Kembali ke public_html (naik satu folder), unggah DUA berkas ini:
+
+             langganan_admin.php         <-- BARU
+             RTS_PANEL_LANGGANAN_PRO.sql <-- tidak wajib (hanya cadangan)
+
+   Catatan: berkas pemberitahuan otomatis dari putaran lalu
+   (api/notif_otomatis.php, api/fcm_kirim.php, app_versi.php,
+   upload_customer.php) TIDAK perlu diunggah lagi bila sudah pernah
+   diunggah pada putaran sebelumnya.
+
+
+==============================================================================
+ LANGKAH 2 - PERBARUI DATABASE (SEKALI KLIK, AMAN)
+==============================================================================
+
+   [ ] 1. Buka halaman baru ini di browser:
+
+              Produksi  : https://rts.benedic-s.com/langganan_admin.php
+              Uji coba  : https://coba.benedic-s.com/langganan_admin.php
+
+          (hanya dapat dibuka oleh akun dengan role ADMIN)
+
+   [ ] 2. Tekan tombol besar:  PERBARUI DATABASE
+
+   [ ] 3. Akan muncul daftar keterangan. Yang harus berbunyi "BERHASIL dibuat":
+
+              Kolom akun_pro
+              Kolom foto_profil
+              Kolom pro_mulai
+              Kolom pro_selesai
+              Kolom trial_mulai
+              Kolom trial_selesai
+              Tabel pembayaran_pro
+
+     Catatan: bila tertulis "sudah ada", itu juga tidak masalah.
+     Proses ini TIDAK menghapus data siapa pun dan TIDAK mengubah data
+     customer. Hanya menambah kolom/tabel baru.
+
+   [ ] 4. Selesai. Halaman ini nanti juga dipakai untuk menyetujui pembayaran
+          QRIS dan memberikan masa PRO 30 hari kepada petugas.
+
+
+==============================================================================
+ LANGKAH 3 - EKSTRAK PAKET DI KOMPUTER
+==============================================================================
+
+   [ ] 1. Unduh RTS_PANEL_PUTARAN_7.zip (tautan ada pada berkas
+          TAUTAN_UNDUH.txt atau dari chat).
+   [ ] 2. Klik kanan berkas zip itu - Extract All.
+   [ ] 3. Ekstrak ke Desktop. Hasilnya satu folder bernama:
+
+              RTS_PANEL_PUTARAN_7
+
+     Isinya 4 folder bernomor + berkas BACA_DULU.txt.
+     JANGAN memindahkan berkasnya satu per satu - biarkan apa adanya.
+     Skrip pada LANGKAH 4 yang akan menyalinnya ke tempat yang benar.
+
+   Mengapa tidak langsung menimpa folder proyek?
+     Supaya tidak ada berkas yang salah tempat. Skripnya sudah tahu ke mana
+     setiap berkas harus disalin, dan selalu membuat cadangan berkas lama.
+
+
+==============================================================================
+ LANGKAH 4 - JALANKAN SATU SKRIP (INI YANG PALING PENTING)
+==============================================================================
+
+   Hanya SATU skrip yang perlu dijalankan:  LANGKAH1_PASANG_SEMUA.ps1
+   Letaknya di folder:  3_SKRIP_POWERSHELL  (di dalam folder hasil ekstrak)
+
+   [ ] 1. Buka folder hasil ekstrak (RTS_PANEL_PUTARAN_7), klik kanan pada
+          ruang kosong - "Open in Terminal" (atau "Buka di Terminal").
+   [ ] 2. Ketik lalu tekan Enter:
+
+              .\LANGKAH1_PASANG_SEMUA.ps1
+
+          Bila muncul pesan merah "running scripts is disabled", jalankan
+          dengan cara ini:
+
+              powershell -ExecutionPolicy Bypass -File .\LANGKAH1_PASANG_SEMUA.ps1
+
+   [ ] 3. Skrip akan meminta konfirmasi lalu mengerjakan 7 hal:
+              1. mencari folder proyek D:\Project\rts_panel_app
+              2. menyalin main.dart ke main.dart DAN lib\main.dart
+              3. menyalin pubspec.yaml (image_picker + versi 1.2.0+3)
+              4. menambahkan izin KAMERA pada AndroidManifest.xml
+              5. memasang gambar QRIS ke assets\images\qris_bene_s.jpg
+              6. menjalankan flutter clean dan flutter pub get
+              7. menampilkan perintah terakhir
+
+          Berkas lama TIDAK dihapus - selalu dicadangkan dengan tambahan
+          ".lama_tanggal_jam".
+
+   [ ] 4. Ketika ditanya lokasi gambar QRIS, tulis lokasi gambarnya, contoh:
+
+              C:\Users\Bene\Downloads\qris.jpg
+
+          (bila belum siap, tekan Enter saja - dapat dipasang nanti dengan
+           menjalankan .\PASANG_GAMBAR_QRIS.ps1)
+
+
+==============================================================================
+ LANGKAH 5 - PASANG KE HP
+==============================================================================
+
+   [ ] 1. Pastikan HP tersambung (Penelusuran Nirkabel / kabel).
+   [ ] 2. Di terminal yang sama, ketik:
+
+              cd D:\Project\rts_panel_app
+              flutter devices
+              flutter run -d CPH1937
+
+   [ ] 3. Tunggu sampai aplikasi terbuka di HP. Proses pertama biasanya
+          2 sampai 5 menit.
+
+   Bila nama HP bukan CPH1937, ambil namanya dari hasil "flutter devices"
+   pada baris pertama, lalu ganti tulisan CPH1937 dengan nama itu.
+
+
+==============================================================================
+ LANGKAH 6 - PERIKSA (5 MENIT)
+==============================================================================
+
+   [ ] 1. Aplikasi - menu Pengaturan - cari tulisan penanda kode aplikasi.
+          HARUS berbunyi:   RTS-2026-09-30-6
+          (bila masih -5, berarti lib\main.dart belum terbarui - ulangi
+           LANGKAH 4)
+
+   [ ] 2. Menu Profil - tombol "LANGGANAN PRO" - harus terbuka halaman baru
+          berisi gambar QRIS Bapak, tulisan Rp5.000, dan NMID.
+
+   [ ] 3. Menu Profil - ketuk foto pada kartu merah (ada tanda kamera kecil)
+          - pilih "Pilih dari Galeri" - pilih satu gambar.
+          Foto pada kartu harus langsung berubah.
+          Foto juga tampil pada kartu member di Beranda.
+
+   [ ] 4. Akun baru: keluar dari aplikasi - masuk kembali dengan akun lain.
+          Buka Profil - Rencana Akun. Harus tertulis PRO dan berlaku
+          "sisa 7 hari" (uji coba gratis otomatis).
+
+   [ ] 5. Iklan: dengan akun GRATIS harus tampil banner di beranda dan iklan
+          native pada setiap menu. Saat membuka aplikasi dari awal, iklan
+          layar pembuka muncul sekilas.
+
+   [ ] 6. Uji pembayaran (boleh pakai akun sendiri):
+          - buka halaman Langganan PRO - tekan SAYA SUDAH BAYAR - setuju
+          - buka https://rts.benedic-s.com/langganan_admin.php di komputer
+          - pernyataan pembayaran muncul di bagian atas - tekan
+            "SETUJUI + 30 HARI"
+          - buka ulang aplikasi (keluar - masuk) - iklan hilang, akun PRO
+
+
+==============================================================================
+ LANGKAH 7 - MEMBERI AKSES KEPADA PETUGAS LAIN
+==============================================================================
+
+   Karena pembaruan ini mengubah aturan akun, tidak ada yang perlu Bapak
+   kerjakan khusus. Semua petugas yang masuk setelah LANGKAH 1 dan 2 selesai
+   otomatis mendapat uji coba 7 hari.
+
+   Untuk akun mereka menjadi PRO berbayar:
+     1. Mereka membayar Rp5.000 dengan QRIS (nomor QRIS ada pada aplikasi)
+     2. Mereka menekan SAYA SUDAH BAYAR
+     3. Bapak menekan SETUJUI pada langganan_admin.php
+     4. Akun mereka langsung PRO 30 hari
+
+
+==============================================================================
+ LANGKAH 8 - SETELAH SEMUA SELESAI (KEAMANAN)
+==============================================================================
+
+   [ ] 1. Kembalikan repositori GitHub menjadi Private
+          (Settings - General - Danger Zone - Change visibility)
+
+   [ ] 2. Ganti password database pada cPanel
+          (MySQL Databases - Change Password)
+
+   Keduanya penting karena repositori sedang PUBLIC dan berkas lama pada
+   riwayat repo memuat password database.
+
+
+==============================================================================
+ ISI PAKET RTS_PANEL_PUTARAN_7.zip
+==============================================================================
+
+   BACA_DULU.txt                      panduan ini
+
+   1_SERVER_unggah_ke_hosting\        untuk diunggah ke cPanel (LANGKAH 1)
+      api\langganan_inti.php           aturan langganan (30 hari, uji coba 7)
+      api\langganan.php                API langganan untuk aplikasi
+      api\upload_foto.php              unggah foto pribadi petugas
+      api\siapkan_langganan.php        pembaruan database (khusus ADMIN)
+      api\login.php                    uji coba otomatis + keadaan langganan
+      api\session_check.php            masa berlaku + foto saat aplikasi dibuka
+      langganan_admin.php              halaman Admin: setujui QRIS, +30 hari
+      RTS_PANEL_LANGGANAN_PRO.sql      cadangan bila ingin lewat phpMyAdmin
+
+   2_APLIKASI_copy_ke_proyek\         disalin oleh skrip (LANGKAH 4)
+      main.dart                        kode aplikasi terbaru (13804 baris)
+      pubspec.yaml                     image_picker + versi 1.2.0+3
+      android_manifest_tambahan.xml    daftar izin (lokasi, notifikasi, kamera)
+      assets\images\CATATAN_GAMBAR_QRIS.txt
+
+   3_SKRIP_POWERSHELL\
+      LANGKAH1_PASANG_SEMUA.ps1        SATU skrip yang perlu dijalankan
+      PASANG_GAMBAR_QRIS.ps1           khusus memasang gambar QRIS (bila perlu)
+
+   4_PANDUAN_LENGKAP\
+      IKLAN_LANGGANAN_FOTO.txt         penjelasan rinci (bila ingin lebih tahu)
+
+
+==============================================================================
+ BERKAS .PS1 YANG TIDAK PERLU DIPAKAI LAGI (SUPAYA TIDAK BINGUNG)
+==============================================================================
+
+   Untuk topik ini, cukup SATU skrip: LANGKAH1_PASANG_SEMUA.ps1
+
+   Berkas .ps1 dari paket-paket sebelumnya TIDAK perlu dijalankan lagi:
+
+      PASANG_FITUR_BARU.ps1        hanya bila kode aplikasi AdMob belum ada
+      PASANG_MAIN_DART.ps1         tugasnya sudah dikerjakan skrip baru ini
+      PASANG_CEPAT.ps1             hanya untuk memasang APK ke HP (LANGKAH 5
+                                   sudah memakai flutter run langsung)
+      ADB.ps1                      hanya bila "adb" tidak dikenali
+      TAMBAH_ADB_KE_PATH.ps1       hanya bila perlu adb
+      PERIKSA_KODE_APLIKASI.ps1    hanya untuk memeriksa (tidak wajib)
+      PERBAIKI_PUBSPEC.ps1         tidak perlu - pubspec sudah disiapkan
+      PERBAIKI_ROOT_GRADLE.ps1     tidak perlu
+      PERBAIKI_PLUGIN_FIREBASE.ps1 tidak perlu
+      PERBAIKI_DAN_JALANKAN.ps1    tidak perlu
+      PASANG_NIRKABEL.ps1          hanya bila HP belum tersambung nirkabel
+      PASANG_DI_HP.ps1             tidak perlu (lihat PASANG_CEPAT.ps1)
+      PASANG_LEWAT_KABEL.ps1       tidak perlu (kabel USB rusak)
+      BERSIHKAN_DAN_BUILD.ps1      tidak perlu
+
+
+==============================================================================
+ KALAU ADA MASALAH
+==============================================================================
+
+   Yang terjadi                              | Yang perlu dilakukan
+   ------------------------------------------|------------------------------
+   "running scripts is disabled"             | powershell -ExecutionPolicy
+                                             | Bypass -File .\<namaskrip>.ps1
+   Skrip menulis "folder proyek tidak         | Tulis lokasi folder proyek saat
+   ditemukan"                                | diminta (contoh D:\Project\
+                                             | rts_panel_app)
+   Penanda masih RTS-2026-09-30-5            | lib\main.dart belum terbarui.
+   (di menu Pengaturan)                      | Jalankan ulang LANGKAH 4, lalu
+                                             | flutter clean + flutter run
+   "flutter tidak dikenali"                  | Tutup PowerShell, buka lagi.
+                                             | Bila masih: jalankan flutter
+                                             | lewat pintasan Flutter yang
+                                             | biasa Bapak pakai
+   Tombol LANGGANAN PRO membuka tetapi       | Gambar QRIS belum dipasang.
+   gambar QRIS belum tampil                  | Jalankan .\PASANG_GAMBAR_QRIS.ps1
+   "Fitur langganan.php belum tersedia"      | api\langganan.php belum diunggah
+                                             | (ulangi LANGKAH 1)
+   "Kolom foto_profil belum ada"             | Tekan PERBARUI DATABASE pada
+                                             | langganan_admin.php (LANGKAH 2)
+   Foto gagal diunggah                       | Periksa folder uploads dapat
+                                             | ditulis (izin 755 pada File
+                                             | Manager). Coba foto lebih kecil
+   Iklan layar pembuka tidak muncul          | Pastikan unit iklan 8277624384
+                                             | di AdMob berformat "App open".
+                                             | Unit iklan baru perlu beberapa
+                                             | jam sebelum mulai tampil
+   Iklan native tidak muncul di satu menu    | Bila kuota iklan kosong, kartu
+                                             | iklan memang disembunyikan.
+                                             | Coba lagi beberapa jam kemudian
+   Halaman langganan_admin.php menolak       | Hanya akun role ADMIN. Buka
+   dengan tulisan "Akses ditolak"            | langganan_admin.php?diagnosa=1
+                                             | untuk melihat sebabnya
+   Pesan #1044 information_schema            | Sudah tidak dipakai lagi. Semua
+                                             | pemeriksaan memakai SHOW COLUMNS
+                                             | dan SHOW TABLES
+
+
+==============================================================================
+ PERTANYAAN YANG SERING DITANYAKAN
+==============================================================================
+
+   Apakah data customer saya terhapus?
+     Tidak. Proses LANGKAH 2 hanya MENAMBAH kolom dan satu tabel baru.
+     Data customer, pengajuan, dan stok tidak disentuh sama sekali.
+
+   Bolehkah LANGKAH 1 dan 2 dikerjakan lebih dahulu, aplikasinya nanti?
+     Boleh. Urutan paling aman memang server dulu, aplikasi kemudian.
+     Aplikasi lama tetap dapat dipakai selama server diperbarui.
+
+   Bolehkah LANGKAH 4 dikerjakan dua kali?
+     Boleh, tidak apa-apa. Skrip selalu membuat cadangan lebih dahulu dan
+     hasilnya sama.
+
+   Apakah perlu unggah ulang berkas putaran sebelumnya?
+     Tidak, kecuali belum pernah diunggah. Daftar berkas putaran sebelumnya
+     ada pada NOTIFIKASI_OTOMATIS.txt.
+
+   Apakah uji coba 7 hari langsung diberikan ke semua petugas?
+     Ya, otomatis saat mereka masuk (login) pertama kali setelah
+     LANGKAH 1 dan 2 selesai. Sekali saja untuk setiap akun.
+
+   Bagaimana mengubah harga atau lama langganan?
+     Buka api/langganan_inti.php pada hosting, ubah:
+        rts_lg_harga()  -> 5000   (harga rupiah)
+        rts_lg_durasi() -> 30     (lama PRO dalam hari)
+        rts_lg_trial()  -> 7      (lama uji coba dalam hari)
+
+==============================================================================

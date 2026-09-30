@@ -3,6 +3,26 @@
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.
 ==============================================================================
 
+MULAI DARI SINI - PUTARAN IKLAN + LANGGANAN PRO + FOTO PRIBADI
+--------------------------------------------------------------
+Bila bingung mulai dari mana, cukup pakai DUA tautan ini:
+
+1. BACA_DULU.txt  - tutorial 8 langkah (buka lebih dahulu)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
+
+2. RTS_PANEL_PUTARAN_7.zip  - SATU paket lengkap putaran ini (16 berkas):
+     BACA_DULU.txt
+     1_SERVER_unggah_ke_hosting\  (8 berkas untuk cPanel)
+     2_APLIKASI_copy_ke_proyek\   (main.dart, pubspec.yaml, izin Android)
+     3_SKRIP_POWERSHELL\          (LANGKAH1_PASANG_SEMUA.ps1 - hanya ini)
+     4_PANDUAN_LENGKAP\
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_7.zip
+
+   Cukup satu skrip yang dijalankan: LANGKAH1_PASANG_SEMUA.ps1
+   Daftar skrip .ps1 lama yang TIDAK perlu dipakai ada pada BACA_DULU.txt
+   bagian "BERKAS .PS1 YANG TIDAK PERLU DIPAKAI LAGI".
+
+
 TAUTAN LANGSUNG - REPO PUBLIC (30 September 2026)
 -------------------------------------------------
 Repo sedang PUBLIC, jadi seluruh tautan di bawah dapat diklik langsung tanpa

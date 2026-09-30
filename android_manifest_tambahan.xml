@@ -35,3 +35,41 @@ Catatan:
 <!-- Izin kamera, dipakai saat petugas mengambil foto pribadi dari kamera.
      Memilih foto dari galeri TIDAK memerlukan izin tambahan. -->
 <uses-permission android:name="android.permission.CAMERA" />
+
+<!--
+================================================================================
+KODE APLIKASI ADMOB - CARA PEMASANGANNYA BERBEDA
+================================================================================
+
+Baris di bawah ini BUKAN <uses-permission>, jadi letaknya BUKAN di atas
+<application>, melainkan DI DALAM tag <application> ... </application>.
+
+Contoh susunan yang benar:
+
+    <application
+        android:label="rts_panel_app"
+        android:icon="@mipmap/ic_launcher">
+
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-1905352530630884~8932651962" />
+
+        <activity ...>
+            ...
+        </activity>
+    </application>
+
+Bila baris meta-data itu SUDAH ADA di AndroidManifest.xml Bapak (sejak putaran
+iklan sebelumnya), TIDAK perlu ditambahkan lagi - cukup diperiksa bahwa
+nilainya sama dengan di atas.
+
+Catatan: App ID memakai tanda gelombang (~), sedangkan kode unit iklan memakai
+garis miring (/). Jangan sampai tertukar.
+-->
+
+<!-- Salinan baris siap tempel (letakkan DI DALAM <application>) -->
+<!--
+<meta-data
+    android:name="com.google.android.gms.ads.APPLICATION_ID"
+    android:value="ca-app-pub-1905352530630884~8932651962" />
+-->
