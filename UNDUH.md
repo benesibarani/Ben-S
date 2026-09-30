@@ -37,7 +37,11 @@ Tempel alamat berikut pada peramban (Chrome), lalu tekan Enter:
 
     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_FIREBASE.zip
 
-**Panduan lengkap** (4.700+ baris, semua bagian 1-43):
+**Paket Versi & Unggah APK untuk server** (halaman unggah + API versi + SQL tabel versi):
+
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_VERSI_APK.zip
+
+**Panduan lengkap** (5.000+ baris, semua bagian 1-45):
 
     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PANDUAN_VERSI_TERBARU.md
 
@@ -56,6 +60,10 @@ Tempel alamat berikut pada peramban (Chrome), lalu tekan Enter:
 | PASANG_NIRKABEL.ps1 | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/PASANG_NIRKABEL.ps1 |
 | PERBAIKI_ROOT_GRADLE.ps1 | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/PERBAIKI_ROOT_GRADLE.ps1 |
 | CARA_PASANG_AKUN_PRO.txt | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/CARA_PASANG_AKUN_PRO.txt |
+| CARA_PASANG_VERSI_APK.txt | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/CARA_PASANG_VERSI_APK.txt |
+| RTS_PANEL_APP_VERSI.sql | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/database/migrations/RTS_PANEL_APP_VERSI.sql |
+| app_versi.php (halaman unggah) | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/app_versi.php |
+| api/app_versi.php (API versi) | https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/api/app_versi.php |
 
 ---
 
@@ -79,9 +87,15 @@ dahulu, baru diekstrak di komputer.
 | --- | --- | --- |
 | 1 | `RTS_PANEL_FITUR_BARU.zip` | Ekstrak ke `D:\Project\rts_panel_app` (pilih Timpa) |
 | 2 | `PERBAIKI_PUBSPEC.ps1` | Jalankan pertama: mendaftarkan paket iklan + `flutter pub get` |
-| 3 | `PASANG_FITUR_BARU.ps1` | Jalankan kedua: ikon Android, izin iklan, build, dan pasang ke HP |
+| 3 | `PASANG_FITUR_BARU.ps1` | Jalankan kedua: ikon Android, **izin lokasi + izin iklan**, build, dan pasang ke HP |
 | 4 | `RTS_PANEL_AKUN_PRO.zip` | Ekstrak ke `public_html` pada hosting (uji coba dulu) |
-| 5 | `RTS_PANEL_FIREBASE.zip` | Ekstrak ke `public_html` (bila belum dipasang) |
+| 5 | `RTS_PANEL_VERSI_APK.zip` | Ekstrak ke `public_html`; jalankan dulu `RTS_PANEL_APP_VERSI.sql` |
+| 6 | `RTS_PANEL_FIREBASE.zip` | Ekstrak ke `public_html` (bila belum dipasang) |
+
+Catatan penting untuk paket nomor 3: skrip `PASANG_FITUR_BARU.ps1` sekarang
+menambahkan **izin lokasi** (`ACCESS_FINE_LOCATION` dan `ACCESS_COARSE_LOCATION`)
+ke `AndroidManifest.xml`. Inilah yang membuat laporan cuaca beranda dapat
+tampil. Setelah aplikasi terpasang, izinkan lokasi saat HP bertanya.
 
 ---
 

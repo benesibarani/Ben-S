@@ -16,10 +16,18 @@
  *  1. Admin mengunggah berkas APK dan mengisi versi (misalnya 1.2.0, kode 3)
  *  2. Halaman ini menyimpan APK ke folder   : apk/
  *  3. Halaman ini menulis berkas keterangan : apk/app_versi.json
- *  4. Aplikasi membaca berkas JSON itu setiap kali dibuka:
- *        https://rts.benedic-s.com/apk/app_versi.json
+ *  4. Bila tabel rts_app_versi sudah ada, keterangan yang sama juga DICATAT
+ *     pada database sebagai riwayat, sehingga seluruh unggahan sebelumnya
+ *     tetap terekam
+ *  5. Aplikasi memeriksa pembaruan lewat dua jalur, berurutan:
+ *        a. API  : https://rts.benedic-s.com/api/app_versi.php  (dari database)
+ *        b. berkas : https://rts.benedic-s.com/apk/app_versi.json (cadangan)
  *     Bila kode versi di server lebih besar dari versi di HP, muncul
  *     pemberitahuan pembaruan beserta tombol unduh.
+ *
+ *  Tabel rts_app_versi dibuat dengan menjalankan RTS_PANEL_APP_VERSI.sql.
+ *  Bila tabel itu belum ada, halaman ini tetap bekerja seperti biasa - hanya
+ *  riwayat pada database yang belum terisi.
  *
  *  CATATAN PENTING
  *  ---------------
@@ -111,6 +119,29 @@ function app_tulis_versi(string $jalur, array $data): bool
     }
 
     return @file_put_contents($jalur, $teks . "\n") !== false;
+}
+
+/**
+ * Memeriksa keberadaan sebuah tabel pada database yang aktif.
+ *
+ * Memakai SHOW TABLES, BUKAN information_schema - akun database cPanel tidak
+ * diberi izin membaca information_schema (kesalahan #1044).
+ */
+function app_ada_tabel(mysqli $conn, string $nama): bool
+{
+    if (preg_match('/^[A-Za-z0-9_]+$/', $nama) !== 1) {
+        return false;
+    }
+
+    $hasil = @$conn->query("SHOW TABLES LIKE '" . $conn->real_escape_string($nama) . "'");
+
+    $ada = ($hasil instanceof mysqli_result) && $hasil->num_rows > 0;
+
+    if ($hasil instanceof mysqli_result) {
+        $hasil->free();
+    }
+
+    return $ada;
 }
 
 /**
@@ -207,6 +238,46 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['app_unggah'])
                         . ') berhasil diunggah. Aplikasi seluruh tim akan melihat '
                         . 'pemberitahuan pembaruan pada pembukaan berikutnya.';
 
+                    /* Bila tabel rts_app_versi sudah ada, unggahan ini juga
+                       dicatat ke database sehingga menjadi riwayat yang dapat
+                       dilihat kapan saja (dan dibaca aplikasi lewat API). */
+                    if (app_ada_tabel($conn, 'rts_app_versi')) {
+                        $simpanDb = $conn->prepare(
+                            'INSERT INTO rts_app_versi
+                             (version_code, version_name, wajib, catatan, apk,
+                              ukuran_mb, diunggah_oleh, aktif)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
+                        );
+
+                        if ($simpanDb) {
+                            $kodeDb = $kode_versi;
+                            $namaDb = $nama_versi;
+                            $wajibDb = $wajib ? 1 : 0;
+                            $catatanDb = $catatan;
+                            $apkDb = $data['apk'];
+                            $ukuranDb = $data['ukuran_mb'];
+                            $olehDb = (string) ($_SESSION['email'] ?? '');
+
+                            $simpanDb->bind_param(
+                                'isissds',
+                                $kodeDb,
+                                $namaDb,
+                                $wajibDb,
+                                $catatanDb,
+                                $apkDb,
+                                $ukuranDb,
+                                $olehDb
+                            );
+
+                            if (!$simpanDb->execute()) {
+                                $app_galat = 'APK tersimpan, tetapi riwayat '
+                                    . 'database gagal ditulis: ' . $simpanDb->error;
+                            }
+
+                            $simpanDb->close();
+                        }
+                    }
+
                     /* Catatan riwayat kecil, supaya admin tahu apa yang terakhir
                        diunggah tanpa membuka folder apk/. */
                     @file_put_contents(
@@ -280,6 +351,29 @@ usort($app_daftar_apk, static function (array $a, array $b): int {
 
 $app_alamat_json = app_alamat_dasar() . '/apk/app_versi.json';
 $app_json_siap = is_file($app_berkas_json);
+
+/* Riwayat versi pada database (bila tabelnya sudah ada). */
+$app_tabel_db = app_ada_tabel($conn, 'rts_app_versi');
+
+$app_riwayat_db = [];
+
+if ($app_tabel_db) {
+    $ambilRiwayat = @$conn->query(
+        'SELECT id, version_code, version_name, wajib, apk, ukuran_mb,
+                diunggah_oleh, dibuat_pada
+         FROM rts_app_versi
+         ORDER BY version_code DESC, id DESC
+         LIMIT 15'
+    );
+
+    if ($ambilRiwayat instanceof mysqli_result) {
+        while ($barisRiwayat = $ambilRiwayat->fetch_assoc()) {
+            $app_riwayat_db[] = $barisRiwayat;
+        }
+
+        $ambilRiwayat->free();
+    }
+}
 
 ?>
 
@@ -406,6 +500,66 @@ $app_json_siap = is_file($app_berkas_json);
                         <i class="fa-solid fa-trash"></i>
                       </button>
                     </form>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php endif; ?>
+    </div>
+    <div class="rts-card p-3 mt-3">
+      <h6 class="mb-3">
+        <i class="fa-solid fa-clock-rotate-left text-danger me-2"></i>Riwayat Versi
+      </h6>
+
+      <?php if (!$app_tabel_db): ?>
+        <div class="alert alert-warning mb-0 small">
+          Tabel <code>rts_app_versi</code> belum ada pada database, sehingga
+          riwayat versi belum dapat disimpan. Jalankan
+          <code>RTS_PANEL_APP_VERSI.sql</code> lewat phpMyAdmin (tab SQL) untuk
+          mengaktifkannya. Halaman ini tetap berfungsi seperti biasa sebelum
+          tabelnya dibuat - hanya riwayat ini yang belum terisi.
+        </div>
+      <?php elseif (empty($app_riwayat_db)): ?>
+        <div class="text-muted small">
+          Tabel sudah ada, tetapi belum ada versi yang tercatat. Riwayat akan
+          terisi otomatis setiap kali Anda mengunggah APK pada formulir di atas.
+        </div>
+      <?php else: ?>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Versi</th>
+                <th>Kode</th>
+                <th>Sifat</th>
+                <th class="text-end">Ukuran</th>
+                <th>Diunggah</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($app_riwayat_db as $riwayat): ?>
+                <tr>
+                  <td class="small">
+                    <a href="<?= htmlspecialchars((string)$riwayat['apk']) ?>" target="_blank">
+                      <?= htmlspecialchars((string)$riwayat['version_name']) ?>
+                    </a>
+                  </td>
+                  <td class="small"><?= (int)$riwayat['version_code'] ?></td>
+                  <td class="small">
+                    <?= ((int)$riwayat['wajib'] === 1)
+                        ? '<span class="badge bg-danger">WAJIB</span>'
+                        : '<span class="badge bg-light text-dark border">Pilihan</span>' ?>
+                  </td>
+                  <td class="text-end small">
+                    <?= number_format((float)$riwayat['ukuran_mb'], 1, ',', '.') ?> MB
+                  </td>
+                  <td class="small">
+                    <?= htmlspecialchars((string)$riwayat['dibuat_pada']) ?>
+                    <?php if (!empty($riwayat['diunggah_oleh'])): ?>
+                      <div class="text-muted"><?= htmlspecialchars((string)$riwayat['diunggah_oleh']) ?></div>
+                    <?php endif; ?>
                   </td>
                 </tr>
               <?php endforeach; ?>

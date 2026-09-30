@@ -6,7 +6,8 @@
 #
 #     1. Membuat ikon aplikasi RTS Panel (kotak marun + huruf R putih) untuk
 #        semua ukuran layar, termasuk ikon adaptif Android 8 ke atas
-#     2. Menambahkan izin iklan dan kode aplikasi AdMob pada AndroidManifest.xml
+#     2. Menambahkan izin iklan, izin LOKASI, dan kode aplikasi AdMob pada
+#        AndroidManifest.xml
 #     3. Memeriksa bahwa main.dart dan pubspec.yaml sudah versi terbaru
 #     4. Memasang paket baru (flutter pub get)
 #     5. Membangun dan menjalankan aplikasi
@@ -270,6 +271,27 @@ else {
     Write-Host "   sudah ada: izin INTERNET" -ForegroundColor Gray
 }
 
+# --- Izin lokasi (untuk cuaca beranda dan tombol koordinat "Ganti Alamat") ---
+# PENTING: plugin geolocator TIDAK menambahkan izin ini sendiri. Tanpa dua
+# baris berikut, aplikasi tidak akan pernah mendapat izin lokasi, sehingga:
+#   - laporan cuaca pada beranda tidak muncul
+#   - tombol "Sesuai Koordinat Sekarang" gagal membaca titik GPS
+$daftarIzinLokasi = @(
+    'android.permission.ACCESS_FINE_LOCATION',
+    'android.permission.ACCESS_COARSE_LOCATION'
+)
+
+foreach ($izinLokasi in $daftarIzinLokasi) {
+    if ($isiManifest -notmatch [regex]::Escape($izinLokasi)) {
+        $barisLokasi = '    <uses-permission android:name="' + $izinLokasi + '"/>' + "`r`n"
+        $isiManifest = $isiManifest -replace "(?m)^(<manifest[^>]*>\s*\r?\n)", "`$1$barisLokasi"
+        Write-Host "   DITAMBAH: izin $izinLokasi" -ForegroundColor Green
+    }
+    else {
+        Write-Host "   sudah ada: izin $izinLokasi" -ForegroundColor Gray
+    }
+}
+
 # --- Izin kode iklan (Android 13 ke atas) ---
 if ($isiManifest -notmatch "permission.AD_ID") {
     $barisAdId = '    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>' + "`r`n"
@@ -325,6 +347,8 @@ $isiManifestBaru = Get-Content $jalurManifest -Raw
 TulisHasil ($isiManifestBaru -match "APPLICATION_ID") "kode aplikasi AdMob ada pada manifest"
 TulisHasil ($isiManifestBaru -match "permission.AD_ID") "izin AD_ID ada pada manifest"
 TulisHasil ($isiManifestBaru -match "android.permission.INTERNET") "izin INTERNET ada pada manifest"
+TulisHasil ($isiManifestBaru -match "ACCESS_FINE_LOCATION") "izin lokasi ACCESS_FINE_LOCATION ada pada manifest"
+TulisHasil ($isiManifestBaru -match "ACCESS_COARSE_LOCATION") "izin lokasi ACCESS_COARSE_LOCATION ada pada manifest"
 
 foreach ($nama in $ukuranIkon.Keys) {
     $berkas = Join-Path $folderRes "mipmap-$nama\ic_launcher.png"

@@ -4860,3 +4860,223 @@ information_schema**, sehingga seluruh isinya dapat dijalankan sekaligus:
 | `#1146 Table 'sales_users' doesn't exist` | Database yang dipilih salah - pastikan `benedics_bene_sales` (produksi) atau `benedics_coba` (uji coba) |
 | Halaman `akun_pro.php` masih menampilkan peringatan kolom | Muat ulang dengan **Ctrl+F5**; bila tetap, pastikan yang diunggah adalah berkas dari paket versi 2 |
 
+
+## BAGIAN 45 - CUACA BERANDA BELUM TAMPIL (IZIN LOKASI) + TABEL VERSI APLIKASI DI DATABASE
+
+Bagian ini menjawab dua hal yang Bapak tanyakan:
+
+1. **Kenapa laporan cuaca di samping nama Admin belum tampil**, dan bagaimana
+   cara memperbaikinya.
+2. **Bagaimana caranya mengunggah APK terbaru lewat website** dan menyimpan
+   keterangan versi pada database phpMyAdmin supaya aplikasi dapat memperbarui
+   diri sendiri.
+
+---
+
+### A. SEBAB CUACA BELUM TAMPIL
+
+Ada **dua sebab** yang ditemukan, dan keduanya sudah diperbaiki:
+
+| Nomor | Sebab | Akibat yang terlihat |
+| --- | --- | --- |
+| 1 | Izin lokasi belum ada pada `AndroidManifest.xml` | Android menolak permintaan GPS secara diam-diam - tidak muncul pertanyaan izin sama sekali |
+| 2 | Kode lama hanya **memeriksa** izin, tidak pernah **meminta** izin | Walaupun izin sudah ada, aplikasi tidak pernah meminta sehingga tetap gagal |
+
+Penjelasan singkat:
+
+- Aplikasi ini memakai paket `geolocator` untuk membaca titik GPS. Paket itu
+  **tidak** menambahkan izin lokasi sendiri - izin harus ditulis pada
+  `AndroidManifest.xml` aplikasi.
+- Tanpa izin tersebut, permintaan lokasi langsung gagal tanpa pertanyaan apa
+  pun di layar HP. Itulah sebabnya kotak cuaca tampak kosong atau tidak muncul.
+
+**Perbaikannya sudah dikerjakan lengkap:**
+
+| Nomor | Perbaikan | Berkas |
+| --- | --- | --- |
+| 1 | Kode aplikasi sekarang **meminta izin sendiri**: memeriksa GPS hidup, memeriksa izin, meminta izin, dan menangani penolakan permanen | `main.dart` |
+| 2 | Skrip pemasang sekarang **menambahkan izin lokasi otomatis** ke `AndroidManifest.xml` | `PASANG_FITUR_BARU.ps1` |
+| 3 | Ada **kartu pemeriksa "Cuaca Beranda"** pada halaman Pengaturan untuk melihat sebabnya secara langsung | `main.dart` |
+
+---
+
+### B. CARA MEMASANG PERBAIKAN CUACA
+
+**Langkah 1 - Timpa berkas aplikasi**
+
+Ekstrak `RTS_PANEL_FITUR_BARU.zip` ke `D:\Project\rts_panel_app` lalu pilih
+**Timpa (Replace)**.
+
+**Langkah 2 - Perbaiki pubspec bila perlu**
+
+Jalankan `PERBAIKI_PUBSPEC.ps1`.
+
+**Langkah 3 - Pasang fitur (sekaligus izin lokasi)**
+
+Jalankan `PASANG_FITUR_BARU.ps1`.
+
+Skrip itu sekarang mencetak baris seperti berikut - tanda bahwa izin sudah
+masuk:
+
+```text
+   DITAMBAH: izin android.permission.ACCESS_FINE_LOCATION
+   DITAMBAH: izin android.permission.ACCESS_COARSE_LOCATION
+   ...
+   [ADA] izin lokasi ACCESS_FINE_LOCATION ada pada manifest
+   [ADA] izin lokasi ACCESS_COARSE_LOCATION ada pada manifest
+```
+
+Bila tertulis **sudah ada**, berarti izin memang sudah pernah ditambahkan -
+tidak masalah, tidak akan ditulis dua kali.
+
+**Langkah 4 - Pasang aplikasi ke HP**
+
+Jalankan `PASANG_NIRKABEL.ps1` (kabel USB Bapak rusak - tetap memakai
+penelusuran nirkabel).
+
+**Langkah 5 - Buka aplikasi**
+
+Saat aplikasi dibuka, Android akan menanyakan:
+
+```text
+Izinkan RTS Panel mengakses lokasi perangkat ini?
+```
+
+Pilih **Saat aplikasi digunakan (While using the app)** atau **Izinkan**.
+
+Setelah itu laporan cuaca pada kartu merah akan terisi sendiri, dan titik
+lokasi dipakai juga oleh tombol "Sesuai Koordinat Sekarang" pada form Ganti
+Alamat.
+
+---
+
+### C. CARA MEMERIKSA BILA CUACA MASIH BELUM TAMPIL
+
+Buka menu **Profil - Pengaturan**, lalu lihat bagian **CUACA BERANDA**.
+
+| Tulisan pada baris "Keadaan" | Artinya | Tindakan |
+| --- | --- | --- |
+| `Menyiapkan laporan cuaca...` | Masih mengambil data | Tunggu sebentar, lalu tekan AMBIL LAPORAN CUACA SEKARANG |
+| `Izin lokasi belum diberikan.` | Pertanyaan izin belum dijawab | Tekan AMBIL LAPORAN CUACA SEKARANG - pertanyaan izin akan muncul |
+| `Izin lokasi ditolak. Buka Pengaturan HP...` | Pernah ditolak permanen | Buka Pengaturan HP - Aplikasi - RTS Panel - Izin - Lokasi - Izinkan |
+| `Layanan lokasi HP sedang dimatikan.` | GPS HP mati | Nyalakan GPS (Lokasi) pada HP |
+| `Lokasi belum terbaca.` | GPS belum mendapat titik | Pindah ke tempat terbuka, ulangi sebentar lagi |
+| `Laporan cuaca siap.` | Berhasil | Cuaca seharusnya sudah tampil pada beranda |
+| `Tidak dapat menghubungi layanan cuaca.` | Internet bermasalah atau layanan cuaca sedang gangguan | Periksa koneksi internet HP |
+
+Tombol **AMBIL LAPORAN CUACA SEKARANG** berguna untuk mencoba ulang tanpa
+harus menutup aplikasi.
+
+Catatan: laporan cuaca memakai layanan gratis **Open-Meteo** dan **tidak
+memerlukan kunci API** apa pun, jadi tidak ada yang perlu diatur di website.
+
+---
+
+### D. TABEL VERSI APLIKASI PADA DATABASE (SUMBER KETERANGAN PEMBARUAN)
+
+Sebelumnya keterangan versi hanya disimpan pada berkas `apk/app_versi.json`.
+Sekarang keterangan itu **juga disimpan pada database** supaya:
+
+- seluruh riwayat unggahan APK terekam (versi, tanggal, ukuran, admin yang
+  mengunggah);
+- aplikasi tetap dapat memeriksa pembaruan walaupun berkas JSON terhapus atau
+  gagal ditulis.
+
+**Langkah 1 - Buat tabelnya (sekali saja)**
+
+Buka cPanel - phpMyAdmin - pilih database - tab **SQL** - tempel seluruh isi
+berkas berikut - klik **Kirim**:
+
+```text
+database/migrations/RTS_PANEL_APP_VERSI.sql
+```
+
+Kolom yang dibuat:
+
+| Kolom | Isi |
+| --- | --- |
+| `version_code` | angka sesudah tanda `+` pada `pubspec.yaml`, contoh 3 |
+| `version_name` | angka sebelum tanda `+`, contoh `1.2.0` |
+| `wajib` | `1` bila pembaruan wajib, `0` bila hanya pilihan |
+| `catatan` | catatan pembaruan yang dibaca petugas |
+| `apk` | alamat unduhan berkas APK |
+| `ukuran_mb` | ukuran berkas APK |
+| `diunggah_oleh` | email admin yang mengunggah |
+| `aktif` | `1` = versi yang diumumkan ke seluruh HP |
+| `dibuat_pada` | waktu unggahan |
+
+Berkas SQL ini **tidak memakai `information_schema`**, jadi tidak akan
+menimbulkan kesalahan #1044 seperti yang lalu.
+
+Bila tabelnya belum dibuat, semuanya tetap berjalan seperti biasa - aplikasi
+otomatis memakai berkas `apk/app_versi.json`. Jadi urutan pengerjaannya bebas.
+
+**Langkah 2 - Unggah berkas website**
+
+Unggah isi `RTS_PANEL_VERSI_APK.zip` ke `public_html` (isi terbaru):
+
+| Berkas | Kegunaan |
+| --- | --- |
+| `app_versi.php` | Halaman unggah APK + pengaturan versi (menu website) |
+| `api/app_versi.php` | Halaman API yang dibaca aplikasi |
+| `apk/` | Folder tempat berkas APK dan `app_versi.json` disimpan |
+
+**Langkah 3 - Unggah APK lewat website**
+
+Buka `https://rts.benedic-s.com/app_versi.php`, isi:
+
+| Kolom | Contoh isi |
+| --- | --- |
+| Nama versi | `1.2.0` |
+| Kode versi | `3` |
+| Wajib diperbarui | centang bila seluruh petugas harus memperbarui |
+| Catatan pembaruan | `Perbaikan filter GSP dan tampilan beranda.` |
+| Berkas APK | pilih `app-release.apk` hasil build |
+
+Setelah **Simpan**, halaman itu:
+
+1. menyimpan berkas APK ke `apk/`,
+2. menulis `apk/app_versi.json`,
+3. mencatat baris baru ke tabel `rts_app_versi`,
+4. menampilkan tabel **Riwayat Versi** pada bagian bawah halaman.
+
+**Langkah 4 - Aplikasi memeriksa sendiri**
+
+Setiap kali aplikasi dibuka, aplikasi membaca keterangan versi dari dua jalur
+secara berurutan:
+
+```text
+1. https://rts.benedic-s.com/api/app_versi.php   (dari database - utama)
+2. https://rts.benedic-s.com/apk/app_versi.json  (cadangan)
+```
+
+Bila kode versi di server **lebih besar** daripada versi yang terpasang di HP,
+muncul kotak pemberitahuan pembaruan lengkap dengan tombol unduh dan (bila
+ditandai wajib) tombol itu tidak dapat dilewati.
+
+---
+
+### E. URUTAN PENGERJAAN YANG DISARANKAN
+
+| Nomor | Kegiatan | Tempat |
+| --- | --- | --- |
+| 1 | Jalankan `RTS_PANEL_APP_VERSI.sql` pada database **uji coba** (`benedics_coba`) | phpMyAdmin |
+| 2 | Unggah isi `RTS_PANEL_VERSI_APK.zip` ke `public_html` | cPanel - File Manager |
+| 3 | Buka `https://coba.benedic-s.com/app_versi.php`, unggah satu APK percobaan | Browser |
+| 4 | Pastikan tabel Riwayat Versi terisi dan `apk/app_versi.json` ada | Browser + File Manager |
+| 5 | Timpa `main.dart` dari `RTS_PANEL_FITUR_BARU.zip`, jalankan `PASANG_FITUR_BARU.ps1` | Komputer |
+| 6 | Pasang ke HP dengan `PASANG_NIRKABEL.ps1`, izinkan lokasi saat ditanya | HP |
+| 7 | Setelah semua lancar, ulangi langkah 1-2 pada produksi | cPanel |
+
+---
+
+### F. BILA ADA KENDALA
+
+| Kejadian | Sebab dan penanganan |
+| --- | --- |
+| Halaman `app_versi.php` menampilkan peringatan tabel belum ada | Tabel `rts_app_versi` belum dibuat - jalankan `RTS_PANEL_APP_VERSI.sql` (halaman tetap bisa dipakai) |
+| Unggahan berhasil, tetapi riwayat database kosong | Berkas `app_versi.php` yang diunggah masih versi lama - unggah yang terbaru dari `RTS_PANEL_VERSI_APK.zip` |
+| `#1060 Duplicate column name` | Tidak ada pada berkas ini - hanya berlaku untuk bagian akun PRO |
+| Aplikasi tidak menawarkan pembaruan | Kode versi di server harus **lebih besar** daripada `version` pada `pubspec.yaml`, dan `aktif` harus `1` |
+| Pertanyaan izin lokasi tidak muncul di HP | Buka Pengaturan HP - Aplikasi - RTS Panel - Izin - Lokasi - pilih **Izinkan** |
+| Cuaca tampil, tetapi kotanya tidak sesuai | Titik lokasi murni dari GPS HP - bukan kesalahan aplikasi; kartu cuaca memang mengikuti posisi petugas |

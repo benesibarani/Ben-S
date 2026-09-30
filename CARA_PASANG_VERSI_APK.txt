@@ -1,0 +1,136 @@
+==============================================================================
+ RTS PANEL BY BENE - CARA PASANG: UNGGAH APK + VERSI DI DATABASE
+ Berkas panduan cepat (versi panjang ada di PANDUAN_VERSI_TERBARU.md)
+==============================================================================
+
+APA YANG BERKAS INI SELESAIKAN?
+-------------------------------
+Setelah dipasang, Bapak dapat:
+
+  1. Mengunggah berkas APK terbaru lewat website (bukan lewat File Manager)
+  2. Melihat riwayat seluruh versi yang pernah diunggah
+  3. Membiarkan aplikasi di HP seluruh tim menawarkan pembaruan sendiri
+     setiap kali aplikasi dibuka
+
+
+GAMBARAN JALUR PEMBARUAN
+------------------------
+  HP petugas            Server (rts.benedic-s.com)
+  ----------            ---------------------------
+  Buka aplikasi  --->   api/app_versi.php   (dari tabel rts_app_versi - UTAMA)
+                        apk/app_versi.json  (berkas cadangan)
+       |                        |
+       |<--- ada versi baru ---|
+       |
+  Muncul kotak "Versi baru tersedia" + tombol unduh
+
+
+ISI PAKET RTS_PANEL_VERSI_APK.zip
+---------------------------------
+  app_versi.php                          -> public_html/app_versi.php
+  api/app_versi.php                      -> public_html/api/app_versi.php
+  apk/app_versi.json                     -> public_html/apk/app_versi.json
+  apk/index.html                         -> public_html/apk/index.html
+  database/migrations/RTS_PANEL_APP_VERSI.sql
+                                         -> dijalankan lewat phpMyAdmin
+  CARA_PASANG_VERSI_APK.txt              -> panduan ini (tidak perlu diunggah)
+
+
+LANGKAH 1 - BUAT TABEL VERSI PADA DATABASE (SEKALI SAJA)
+--------------------------------------------------------
+  1. Buka cPanel - phpMyAdmin
+  2. Pilih database:
+       uji coba  : benedics_coba
+       produksi  : benedics_bene_sales
+  3. Klik tab SQL
+  4. Tempel SELURUH isi berkas: database/migrations/RTS_PANEL_APP_VERSI.sql
+  5. Klik Kirim (Go)
+  6. Pastikan muncul satu baris: rts_app_versi
+
+  Saran: kerjakan pada database uji coba lebih dahulu.
+
+  CATATAN: berkas SQL ini tidak memakai information_schema, sehingga tidak
+  akan menimbulkan kesalahan #1044 seperti pada akun PRO yang lalu.
+  Bila tabelnya BELUM dibuat pun aplikasi tetap berjalan - aplikasi otomatis
+  memakai berkas apk/app_versi.json.
+
+
+LANGKAH 2 - UNGGAH BERKAS WEBSITE
+---------------------------------
+  1. Buka cPanel - File Manager - public_html
+  2. Unggah ketiga berkas berikut, dengan susunan folder yang sama:
+       app_versi.php
+       api/app_versi.php
+       apk/index.html
+       apk/app_versi.json
+  3. Bila folder apk/ belum ada, buat dulu lewat File Manager
+     (klik kanan - Create Folder, nama: apk, izin 0755)
+  4. Pastikan izin folder apk/ = 0755 agar berkas APK dapat ditulis
+     (File Manager - klik kanan folder apk - Change Permissions - 0755)
+
+
+LANGKAH 3 - UNGGAH APK LEWAT WEBSITE
+------------------------------------
+  1. Buka: https://rts.benedic-s.com/app_versi.php
+     (hanya dapat dibuka oleh akun berperan ADMIN)
+  2. Isi formulir:
+       Versi aplikasi   : 1.2.0        (angka sebelum tanda + di pubspec.yaml)
+       Kode versi       : 3            (angka sesudah tanda + di pubspec.yaml)
+       Berkas APK       : app-release.apk hasil flutter build apk --release
+       Catatan pembaruan: contoh "Perbaikan filter GSP dan tampilan beranda."
+       Wajib diperbarui : centang bila seluruh petugas wajib memperbarui
+  3. Klik: Unggah & Umumkan Versi Ini
+
+  Halaman akan:
+       - menyimpan APK ke folder apk/
+       - menulis apk/app_versi.json
+       - menambah baris pada tabel rts_app_versi
+       - menampilkan tabel "Riwayat Versi" pada bagian bawah halaman
+
+
+LANGKAH 4 - PERIKSA HASILNYA
+----------------------------
+  a. Buka https://rts.benedic-s.com/api/app_versi.php
+     Harus tampil JSON dengan "success": true dan kode versi terbaru.
+
+  b. Buka https://rts.benedic-s.com/apk/app_versi.json
+     Harus tampil keterangan yang sama.
+
+  c. Buka aplikasi RTS Panel di HP.
+     Karena kode versi di server lebih besar dari versi terpasang,
+     muncul kotak pemberitahuan pembaruan.
+
+
+MASALAH YANG MUNGKIN MUNCUL
+---------------------------
+  Halaman app_versi.php menulis: tabel rts_app_versi belum ada
+       Sebab  : LANGKAH 1 belum dikerjakan
+       Tindakan: jalankan RTS_PANEL_APP_VERSI.sql pada database
+                 (halaman tetap dapat dipakai walau tabel belum ada)
+
+  Unggahan berhasil, tetapi riwayat database kosong
+       Sebab  : berkas app_versi.php di server masih versi lama
+       Tindakan: unggah ulang dari paket ini, lalu muat ulang dengan Ctrl+F5
+
+  Unggahan gagal: "Gagal menyimpan berkas ke folder apk/"
+       Sebab  : izin folder apk/ bukan 0755
+       Tindakan: File Manager - klik kanan folder apk - Change Permissions
+
+  Aplikasi tidak menawarkan pembaruan
+       Periksa: kode versi di server HARUS lebih besar daripada version
+                pada pubspec.yaml saat APK dibangun
+       Periksa: kolom aktif pada baris tersebut bernilai 1
+
+  Pesan: #1044 Access denied ... information_schema
+       Sebab  : berkas SQL versi lama masih dipakai
+       Tindakan: pakai RTS_PANEL_APP_VERSI.sql dari paket ini
+
+
+CATATAN PENTING
+---------------
+  - Angka kode versi WAJIB selalu bertambah (1, 2, 3, ...). Bila tetap sama,
+    aplikasi tidak akan menawarkan pembaruan.
+  - Bila ada beberapa baris berstatus aktif = 1, halaman API memakai baris
+    dengan kode versi TERBESAR.
+  - Halaman app_versi.php tidak mengubah tabel lain pada database.
+==============================================================================
