@@ -4675,3 +4675,94 @@ Keamanan halaman ini:
 | Muncul "Duplicate column name 'akun_pro'" | Kolomnya sudah ada - tidak perlu dikerjakan lagi, tidak ada yang rusak |
 | Ingin mematikan SELURUH iklan sementara | Ubah `static const bool saklarIklan = true;` menjadi `false` pada `class RtsIklan` di `main.dart` |
 
+---
+
+## BAGIAN 43 - MEMPERBAIKI ERROR "Target of URI doesn't exist: google_mobile_ads"
+
+### A. Apa yang terjadi
+
+Setelah `main.dart` versi baru dipasang, VS Code menampilkan **268 masalah** dengan
+keluhan yang berulang-ulang seperti:
+
+```
+Target of URI doesn't exist: 'package:google_mobile_ads/google_mobile_ads.dart'
+Undefined name 'MobileAds'
+Undefined class 'BannerAd'
+Undefined class 'AdSize'
+Undefined class 'NativeAd'
+The method 'AdWidget' isn't defined for the type '_RtsBannerIklanState'
+Undefined name 'TemplateType'
+```
+
+**Semua tulisan itu satu sebab saja:** paket `google_mobile_ads` belum terdaftar
+di `pubspec.yaml` proyek Bapak, sehingga Dart tidak mengenal seluruh nama yang
+berhubungan dengan iklan (MobileAds, BannerAd, NativeAd, AdSize, AdWidget, dan
+seterusnya).
+
+Urutannya begini:
+
+| Nomor | Kejadian |
+| --- | --- |
+| 1 | `main.dart` versi baru sudah masuk proyek (memakai paket iklan dan paket versi) |
+| 2 | `pubspec.yaml` belum ikut diperbarui, sehingga paketnya tidak terdaftar |
+| 3 | `flutter pub get` belum dijalankan, sehingga paketnya belum terpasang |
+| 4 | Dart melaporkan seluruh nama paket sebagai "tidak dikenal" |
+
+### B. Perbaikannya
+
+Simpan **`PERBAIKI_PUBSPEC.ps1`** di `D:\Project\rts_panel_app`, lalu:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\PERBAIKI_PUBSPEC.ps1
+```
+
+Skrip itu **menulis sendiri** bagian yang kurang, jadi tidak ada penyalinan manual:
+
+| Bagian | Tindakan skrip |
+| --- | --- |
+| 1 | Mencadangkan `pubspec.yaml` ke `cadangan_arena\pubspec.yaml.asli` |
+| 2 | Memeriksa apakah `google_mobile_ads` dan `package_info_plus` sudah terdaftar |
+| 3 | Menyisipkan paket yang kurang **pada bagian dependencies**, tanpa menyentuh bagian lain (nama proyek, daftar assets, dan paket Bapak yang lain tetap utuh) |
+| 4 | Memastikan folder `assets/images` terdaftar |
+| 5 | Memastikan `version:` sudah siap untuk pembaruan otomatis (`1.1.0+2`) |
+| 6 | Menjalankan `flutter pub get` |
+| 7 | **Memeriksa hasilnya** pada `.dart_tool/package_config.json` dan `pubspec.lock` |
+
+### C. Menghilangkan tulisan merah di VS Code
+
+Setelah skrip selesai dan menampilkan `SELESAI - PAKET SUDAH TERPASANG`:
+
+| Nomor | Langkah |
+| --- | --- |
+| 1 | Di VS Code tekan **Ctrl + Shift + P** |
+| 2 | Ketik: `Dart: Restart Analysis Server` |
+| 3 | Tekan Enter |
+| 4 | Bila masih ada tulisan merah pada baris impor, tutup lalu buka kembali `main.dart` |
+
+Jumlah masalah pada panel **Problems** akan turun dari 268 menjadi hampir nol.
+
+### D. Bila skrip melaporkan MASALAH
+
+| Pesan | Sebab dan penanganan |
+| --- | --- |
+| `pub get` gagal, tidak ada tulisan error jelas | Periksa sambungan internet komputer |
+| `version solving failed` | Ada paket yang versinya bentrok - kirimkan bagian itu kepada saya |
+| `google_mobile_ads BELUM terpasang` | Jalankan `flutter pub get` sekali lagi, atau kirimkan keluaran lengkapnya |
+| `.dart_tool\package_config.json belum ada` | Pub get belum pernah berhasil dijalankan pada proyek ini |
+
+### E. Mengapa ini tidak terjadi saat build pertama
+
+Build Firebase sebelumnya hanya memerlukan `firebase_core`, `firebase_messaging`,
+`geolocator`, `geocoding`, dan `flutter_local_notifications` - semuanya sudah
+terdaftar pada `pubspec.yaml` waktu itu. Paket **iklan** (`google_mobile_ads`) dan
+paket **versi** (`package_info_plus`) baru ditambahkan pada pembaruan ini, jadi
+keduanya harus didaftarkan lebih dahulu sebelum aplikasi dapat dibangun.
+
+### F. Ringkasan perintah untuk pembaruan ini
+
+| Nomor | Perintah | Gunanya |
+| --- | --- | --- |
+| 1 | `powershell -ExecutionPolicy Bypass -File .\PERBAIKI_PUBSPEC.ps1` | Mendaftarkan paket iklan + menjalankan pub get |
+| 2 | `Ctrl + Shift + P` - `Dart: Restart Analysis Server` | Membersihkan tulisan merah di VS Code |
+| 3 | `powershell -ExecutionPolicy Bypass -File .\PASANG_FITUR_BARU.ps1` | Ikon, izin iklan, lalu membangun dan memasang ke HP |
+
