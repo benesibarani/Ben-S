@@ -295,6 +295,8 @@
       IKLAN_LANGGANAN_FOTO.txt         penjelasan rinci (bila ingin lebih tahu)
       UPDATE_DI_DALAM_APLIKASI.txt     pembaruan diunduh + dipasang LANGSUNG
                                        dari aplikasi (tanpa Chrome)
+      DAFTAR_SALES.txt                 tombol Mendaftar + formulir pendaftaran
+                                       tim Sales (dropdown Sales District)
       MENU_LANGGANAN_PRO.txt           menu baru di sidebar khusus ADMIN: lihat
                                        status PRO/GRATIS tiap user + edit harga
                                        dan durasi PRO (3 berkas server)

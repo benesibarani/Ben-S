@@ -3,6 +3,29 @@
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.
 ==============================================================================
 
+BARU - TOMBOL "MENDAFTAR" UNTUK TIM SALES (DROPDOWN SALES DISTRICT)
+------------------------------------------------------------------
+DAFTAR_SALES.txt - tombol Mendaftar di bawah Masuk, formulir pendaftaran yang
+                   disesuaikan dengan tabel sales_users, dan cara melihat isi
+                   kolom sales_district yang sesungguhnya
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/DAFTAR_SALES.txt
+
+  Empat berkas server (letakkan di public_html):
+    daftar.php            (BARU) - halaman pendaftaran tim Sales
+    district.php          (BARU) - daftar district dari database + 12 bawaan
+    index.php             (DIPERBARUI) - tombol "Mendaftar"
+    periksa_district.php  (BARU, sementara) - melihat isi sales_district
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/daftar.php
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/district.php
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/index.php
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/periksa_district.php
+
+  Sesudah diunggah, buka:
+      https://rts.benedic-s.com/periksa_district.php     <- isi sales_district
+      https://rts.benedic-s.com/daftar.php?periksa=1     <- pemeriksaan berkas
+      https://rts.benedic-s.com/index.php                <- tombol Mendaftar
+
+
 BARU - PEMBARUAN DIUNDUH + DIPASANG LANGSUNG DARI APLIKASI (TANPA CHROME)
 --------------------------------------------------------------------------
 UPDATE_DI_DALAM_APLIKASI.txt - notifikasi UPDATE -> unduh di dalam aplikasi ->

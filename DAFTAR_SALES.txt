@@ -1,0 +1,210 @@
+==============================================================================
+ RTS PANEL BY BENE - TOMBOL "MENDAFTAR" UNTUK TIM SALES
+==============================================================================
+
+ PERMINTAAN BAPAK
+ ----------------
+ "Tolong buatkan tombol Mendaftar di bawah Masuk agar team Sales dapat login.
+  Tolong sesuaikan dengan tabel User Sales. Dan untuk Sales District buat
+  Dropdown - silahkan Anda cek di sales_district di tabel sales_user
+  apa-apa saja isinya."
+
+ SUDAH DIKERJAKAN
+ ----------------
+   1. Tombol "Mendaftar" di bawah tombol "Masuk" pada halaman index.php.
+   2. Halaman pendaftaran baru: daftar.php
+   3. Sales District berupa DROPDOWN, isinya dibaca dari dua sumber:
+        a. DAFTAR SEBENARNYA pada database - SELECT DISTINCT sales_district
+           FROM sales_users  (jadi selalu sama dengan isi tabel Bapak)
+        b. 12 district bawaan yang selama ini dipakai halaman Kelola User
+   4. Halaman pemeriksa periksa_district.php - untuk MELIHAT isi
+      sales_district yang sesungguhnya (jawaban atas pertanyaan Bapak
+      "apa saja isinya"), lengkap dengan jumlah akun per district.
+
+
+==============================================================================
+ BAGIAN 1 - JAWABAN: APA ISINYA KOLOM sales_district?
+==============================================================================
+
+ Saya tidak dapat membaca database Bapak dari sini, jadi daftar itu TIDAK saya
+ karang. Berikut yang saya kerjakan supaya jawabannya PASTI benar:
+
+   [ ] Buka https://rts.benedic-s.com/periksa_district.php
+       Halaman itu menampilkan:
+         1. Nama database yang sedang dipakai
+         2. Daftar nilai sales_district pada sales_users + jumlah akun
+         3. Akun RTS/TF yang districtnya masih KOSONG (perlu dilengkapi)
+         4. Sebaran role dan status akun
+         5. Daftar district pada master_toko + jumlah customer (pembanding)
+         6. Pilihan district yang dipakai formulir pendaftaran
+
+       Halaman itu HANYA MEMBACA - tidak ada data yang diubah atau dihapus.
+
+ Sebagai acuan sementara, 12 district yang selama ini dipakai halaman
+ Kelola User (manage_users.php) adalah:
+
+      1. Medan Amplas          7. Medan Marelan
+      2. Medan Helvetia        8. Medan Selayang
+      3. Medan Johor           9. Hamparan Perak
+      4. Medan Kota           10. Sunggal Deli
+      5. Medan Perjuangan     11. Pancur Batu
+      6. Medan Petisah        12. Modren Trade
+
+ Ke-12 nama itu dijadikan daftar CADANGAN pada dropdown, dan digabung dengan
+ nilai yang benar-benar ada di database. Jadi:
+   - district yang sudah dipakai akun Anda  -> pasti muncul (ada di database)
+   - district bawaan di atas                -> pasti muncul juga
+   - district lain yang nanti ditambahkan Admin lewat Kelola User dan
+     dipakai pada sebuah akun -> otomatis ikut muncul tanpa perlu saya ubah
+     kode lagi
+
+ Perbandingan nama tidak membedakan huruf besar/kecil, sehingga "MEDAN KOTA"
+ pada database dan "Medan Kota" pada daftar bawaan dianggap satu district yang
+ sama (aplikasi Android juga memakai perbandingan UPPER).
+
+
+==============================================================================
+ BAGIAN 2 - BERKAS YANG PERLU DIUNGGAH (4 BERKAS)
+==============================================================================
+
+ Semuanya ke public_html (satu folder dengan index.php dan config.php):
+
+   [ ] 1. daftar.php             -> halaman pendaftaran (BARU)
+   [ ] 2. district.php           -> daftar district + pembacanya (BARU)
+   [ ] 3. index.php              -> tombol "Mendaftar" (DIPERBARUI)
+   [ ] 4. periksa_district.php   -> pemeriksa isi district (BARU, sementara)
+
+ Sesudah diunggah:
+   [ ] Buka https://rts.benedic-s.com/index.php
+       Tombol "Mendaftar" harus tampak di bawah tombol "Masuk".
+   [ ] Buka https://rts.benedic-s.com/daftar.php?periksa=1
+       Harus tertulis SINTAKS/keadaan berkas: district.php ADA, kolom
+       sales_district ADA, dan daftar pilihan district muncul.
+   [ ] Buka https://rts.benedic-s.com/periksa_district.php
+       Lihat jawaban pertanyaan Bapak pada Bagian 1 di atas.
+
+
+==============================================================================
+ BAGIAN 3 - ISI FORMULIR PENDAFTARAN
+==============================================================================
+
+ Kolom yang diisi (disesuaikan dengan tabel sales_users):
+
+   Nama Lengkap       wajib, minimal 3 huruf       -> kolom nama_lengkap
+   Username           wajib, 4-30 karakter         -> kolom username
+                      (huruf, angka, titik, _ , -)
+   Email              wajib, harus berbentuk email -> kolom email
+   Role               dropdown: RTS, TF, SMST, WSS -> kolom role
+   Sales District     dropdown (lihat Bagian 4)    -> kolom sales_district
+   Nama Salesman      opsional -> kolom salesman
+                      (kosong = memakai nama lengkap)
+   Password           minimal 8 karakter           -> kolom password
+   Ulangi Password    harus sama
+
+ Yang TIDAK dapat dipilih: ADMIN dan ASS. Supaya tidak ada orang yang dapat
+ memberi dirinya sendiri hak istimewa lewat formulir ini. Akun ADMIN/ASS tetap
+ dibuat oleh Bapak lewat halaman Kelola User.
+
+ Password disimpan dengan password_hash(PASSWORD_DEFAULT) - sama seperti
+ halaman Kelola User dan halaman masuk, sehingga login langsung cocok.
+
+
+==============================================================================
+ BAGIAN 4 - ATURAN SALES DISTRICT PADA DROPDOWN
+==============================================================================
+
+   Role RTS dan TF   -> Sales District WAJIB dipilih.
+                        Sebab data mereka dibatasi per district (pengaman
+                        salesman + district pada aplikasi). Bila district
+                        kosong, aplikasi tidak menampilkan customer mereka.
+                        Pada formulir, kotak district otomatis bertanda *.
+
+   Role WSS dan SMST -> boleh "-- Semua District --" (artinya seluruh district),
+                        sesuai aturan yang Bapak tetapkan sebelumnya.
+
+ Keterangan per district juga tampil pada halaman periksa_district.php,
+ termasuk daftar akun RTS/TF yang districtnya masih kosong supaya mudah
+ dilengkapi lewat Kelola User.
+
+
+==============================================================================
+ BAGIAN 5 - STATUS AKUN BARU (BISA DIUBAH)
+==============================================================================
+
+ Bawaan: akun baru LANGSUNG AKTIF supaya tim Sales dapat segera masuk
+         (sesuai permintaan Bapak).
+
+ Bila nanti Bapak ingin setiap pendaftar disetujui dulu oleh ADMIN
+ (lebih aman, sebab halaman pendaftaran terbuka untuk umum):
+
+   [ ] Buka daftar.php pada hosting (cPanel - File Manager - Edit)
+   [ ] Cari baris:
+           define('DAFTAR_PERLU_PERSETUJUAN', false);
+   [ ] Ubah false menjadi true, simpan.
+       Akun baru berstatus "Pending" dan belum dapat masuk sampai Bapak
+       mengaktifkannya lewat Kelola User (ubah Status menjadi Aktif).
+
+ Setiap ada pendaftaran baru, ADMIN juga menerima PEMBERITAHUAN di aplikasi
+ ("Pendaftaran Akun Sales Baru") berisi nama, username, role, dan districtnya -
+ jadi Bapak langsung tahu tanpa membuka website.
+
+
+==============================================================================
+ BAGIAN 6 - PENGAMANAN (PENTING UNTUK DIKETAHUI)
+==============================================================================
+
+   1. Halaman pendaftaran terbuka untuk siapa saja yang menemukan alamatnya.
+      Isi formulir tidak dapat membahayakan data (hanya MENAMBAH satu baris
+      pada sales_users), tetapi orang luar dapat membuat akun GRATIS.
+   2. Bila ingin lebih rapat, ada dua pilihan - beri tahu saya bila perlu:
+        a. Aktifkan DAFTAR_PERLU_PERSETUJUAN (Bagian 5) -> ADMIN menyetujui
+           setiap pendaftar.
+        b. Tambahkan KODE UNDANGAN: hanya yang tahu kode rahasia (dibagikan
+           ke tim Sales) yang dapat mendaftar.
+   3. Jangan lupa pengingat yang masih berlaku: ganti password database dan
+      jadikan repo GitHub kembali Private, sebab riwayat repo masih memuat
+      berkas lama (dump database dan password dashboard.php).
+   4. Sesudah selesai memeriksa, berkas periksa_district.php sebaiknya
+      dihapus dari hosting (isinya menampilkan daftar akun dan district).
+
+
+==============================================================================
+ BAGIAN 7 - BILA ADA MASALAH
+==============================================================================
+
+ Muncul "Koneksi database tidak ditemukan"
+   -> daftar.php harus berada di folder yang sama dengan config.php.
+
+ Muncul "Tabel sales_users pada hosting belum lengkap"
+   -> Sebagian kolom wajib tidak ada. Kirimkan hasil
+      https://rts.benedic-s.com/daftar.php?periksa=1 kepada saya.
+
+ Dropdown district kosong
+   -> Pastikan district.php sudah diunggah ke public_html.
+
+ Muncul "Sales District yang dipilih tidak ada pada daftar"
+   -> District itu tidak ada di database maupun daftar bawaan. Buka
+      periksa_district.php, lalu beri tahu saya nama district yang benar
+      supaya dapat saya tambahkan.
+
+ Akun baru tidak dapat masuk
+   -> Periksa halaman Kelola User: Status harus "Aktif".
+   -> Bila Bapak mengubah daftar.php menjadi DAFTAR_PERLU_PERSETUJUAN = true,
+      akun baru memang harus diaktifkan lebih dahulu oleh ADMIN.
+
+ Tombol "Mendaftar" tidak muncul pada halaman masuk
+   -> index.php belum tertimpa. Unggah index.php dari paket ini.
+
+
+==============================================================================
+ RINGKASAN PERUBAHAN BERKAS
+==============================================================================
+
+ index.php              : tombol "Mendaftar" di bawah tombol "Masuk"
+                          + keterangan khusus tim Sales
+ daftar.php             : BARU - formulir pendaftaran tim Sales (439 baris)
+ district.php           : BARU - daftar district dari database + 12 district
+                          bawaan, dipakai bersama halaman lain (239 baris)
+ periksa_district.php   : BARU - pemeriksa isi sales_district (305 baris),
+                          hanya membaca, boleh dihapus sesudah dipakai
+==============================================================================
