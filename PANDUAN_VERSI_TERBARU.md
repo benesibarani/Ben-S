@@ -5923,3 +5923,103 @@ Urutan lengkap beserta cara menguji ada pada berkas **`NOTIFIKASI_OTOMATIS.txt`*
 | 3 | Bila pemberitahuan tidak muncul, periksa keadaan pada aplikasi: **Pengaturan - Pemberitahuan HP**. Bila tertulis "Aktif", seluruh syarat sudah terpenuhi |
 | 4 | Jumlah HP yang berhasil dikirimi dicatat pada halaman `app_versi.php` setelah unggahan berhasil |
 | 5 | Token HP yang sudah tidak berlaku (mis. aplikasi dihapus) otomatis dibuang dari database oleh `api/fcm_kirim.php` |
+
+## BAGIAN 55 - IKLAN APP OPEN, NATIVE SELURUH MENU, LANGGANAN PRO (QRIS), DAN FOTO PRIBADI
+
+Lima permintaan Bapak pada 30 September 2026 - **semuanya BISA** dan sudah
+dikerjakan pada putaran ini:
+
+| Nomor | Permintaan | Jawaban | Kode unit / aturan |
+| --- | --- | --- | --- |
+| 1 | Iklan AdMob saat aplikasi dibuka | **BISA** | App open `ca-app-pub-1905352530630884/8277624384` |
+| 2 | Iklan native di semua menu | **BISA** | Native `ca-app-pub-1905352530630884/9404285058` - kini di **10** tempat |
+| 3 | QRIS untuk pembayaran akun PRO | **BISA** | Halaman **Langganan PRO** di dalam aplikasi + `langganan_admin.php` di website |
+| 4 | Akun PRO 30 hari + uji coba 7 hari | **BISA** | `api/langganan_inti.php` (`rts_lg_harga()` 5000, `rts_lg_durasi()` 30, `rts_lg_trial()` 7) |
+| 5 | Setiap pengguna dapat memasang foto sendiri | **BISA** | `api/upload_foto.php` + kamera/galeri pada halaman Profil |
+
+Panduan lengkap beserta cara mengujinya ada pada berkas
+**`IKLAN_LANGGANAN_FOTO.txt`**.
+
+---
+
+### A. IKLAN
+
+```text
+   Aplikasi dibuka
+        |
+        +--> Iklan LAYAR PEMBUKA (app open)  -> muncul sekilas, boleh ditutup
+        |
+        +--> Beranda   : kartu akun + cuaca + banner + iklan NATIVE
+        +--> 9 menu lain juga memuat iklan NATIVE
+```
+
+Aturan yang dipasang pada aplikasi:
+
+| Nomor | Aturan |
+| --- | --- |
+| 1 | Iklan hanya untuk **akun GRATIS**. Akun PRO (atau sedang uji coba) bebas iklan |
+| 2 | Iklan layar pembuka paling sering **sekali setiap 4 menit** |
+| 3 | Bila iklan belum siap atau gagal dimuat, aplikasi **tetap dibuka normal** |
+| 4 | Iklan native yang kuotanya kosong **tidak menampilkan kotak kosong** - kartunya disembunyikan |
+
+### B. LANGGANAN PRO
+
+```text
+   Petugas login pertama kali  ---> uji coba 7 hari OTOMATIS (bebas iklan)
+   Uji coba habis              ---> kembali GRATIS (iklan tampil)
+   Petugas pindai QRIS Rp5.000 ---> tekan "SAYA SUDAH BAYAR"
+   Admin membuka langganan_admin.php ---> tekan "SETUJUI + 30 HARI"
+   Akun PRO aktif 30 hari      ---> iklan hilang tanpa memasang ulang aplikasi
+```
+
+| Hal | Aturan |
+| --- | --- |
+| Uji coba | 7 hari, **sekali saja** setiap akun, diberikan otomatis saat login |
+| Langganan | 30 hari setiap pembayaran diterima Admin |
+| Harga | Rp5.000 (nominal pada gambar QRIS Bapak) |
+| Perpanjangan | masa lama **ditambahkan**, pembayaran awal tidak hangus |
+| Setelah habis | kembali GRATIS, iklan tampil lagi |
+
+### C. FOTO PRIBADI
+
+| Hal | Keterangan |
+| --- | --- |
+| Cara pakai | Profil - ketuk foto (ada tanda kamera) - Kamera / Galeri / Hapus |
+| Tempat penyimpanan | `uploads/foto_profil/` pada hosting, namanya di `sales_users.foto_profil` |
+| Ukuran paling besar | 2 MB (aplikasi memperkecil otomatis menjadi 900 x 900 titik) |
+| Izin | `android.permission.CAMERA` (sudah ada pada `android_manifest_tambahan.xml`) |
+
+---
+
+### D. YANG DIUNGGAH KE HOSTING
+
+| Berkas | Keadaan |
+| --- | --- |
+| `api/langganan_inti.php` | **BARU** - aturan langganan (30 hari, uji coba 7 hari, QRIS) |
+| `api/langganan.php` | **BARU** - API langganan untuk aplikasi |
+| `api/upload_foto.php` | **BARU** - unggah/hapus foto pribadi |
+| `api/siapkan_langganan.php` | **BARU** - pembaruan database (khusus ADMIN) |
+| `api/login.php` | diperbarui - uji coba otomatis + keadaan langganan + foto |
+| `api/session_check.php` | diperbarui - masa berlaku PRO + foto |
+| `langganan_admin.php` | **BARU** - halaman Admin: setujui QRIS, +30 hari, trial, QRIS |
+
+Setelah semuanya diunggah, buka `langganan_admin.php` lalu tekan tombol
+**PERBARUI DATABASE** (membuat kolom `akun_pro`, `foto_profil`, `pro_mulai`,
+`pro_selesai`, `trial_mulai`, `trial_selesai`, dan tabel `pembayaran_pro`).
+
+### E. GAMBAR QRIS
+
+Gambar QRIS Bapak dipasang dengan cara Bapak sendiri (gambar dikirim lewat
+WhatsApp, bukan berkas proyek):
+
+```text
+   .\PASANG_GAMBAR_QRIS.ps1     -> mencari gambar QRIS di Unduhan/Desktop,
+                                   menyalinnya menjadi
+                                   assets\images\qris_bene_s.jpg
+   flutter clean
+   flutter run -d CPH1937
+```
+
+Nama berkas harus persis **`qris_bene_s.jpg`** pada folder
+`assets\images\`. Selama gambarnya belum ada, halaman Langganan PRO tetap
+terbuka dan menampilkan NMID + nominal beserta pengingat.

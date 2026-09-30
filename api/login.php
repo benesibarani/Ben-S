@@ -25,6 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 require_once dirname(__DIR__) . '/config.php';
 require_once __DIR__ . '/kolom.php';
 
+/* Aturan langganan PRO: uji coba 7 hari + masa berlaku 30 hari. Aman gagal. */
+if (is_file(__DIR__ . '/langganan_inti.php')) {
+    require_once __DIR__ . '/langganan_inti.php';
+}
+
 /**
  * Mencari koneksi database dari config.php.
  * Diperiksa pada $GLOBALS (bila config.php sudah di-include di luar fungsi)
@@ -201,6 +206,51 @@ if (!$tokenStmt->execute()) {
 }
 $tokenStmt->close();
 
+/* Keadaan langganan: akun PRO yang sudah lewat masa berlakunya kembali
+   menjadi GRATIS, dan uji coba 7 hari diberikan otomatis satu kali. */
+$langganan = [
+    'pro' => false,
+    'akun_pro' => 0,
+    'sumber' => 'GRATIS',
+    'label' => 'GRATIS',
+    'trial_tersedia' => false,
+    'trial_baru' => false,
+    'berlaku_sampai' => '',
+    'sisa_hari' => 0,
+];
+
+$fotoProfil = '';
+
+if (function_exists('rts_lg_otomatis')) {
+    try {
+        $langganan = rts_lg_otomatis($conn, [
+            'id' => (int) $user['id'],
+            'email' => (string) $user['email'],
+        ]);
+
+        $barisLangganan = rts_lg_baris($conn, (int) $user['id']);
+
+        if (is_array($barisLangganan)) {
+            $fotoProfil = (string) ($barisLangganan['foto_profil'] ?? '');
+        }
+    } catch (Throwable $galatLangganan) {
+        error_log('RTS login: langganan gagal - ' . $galatLangganan->getMessage());
+    }
+}
+
+$skemaLogin = (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])
+    ? trim(explode(',', (string) $_SERVER['HTTP_X_FORWARDED_PROTO'])[0])
+    : ((!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') ? 'https' : 'http'));
+
+if ($skemaLogin !== 'https') {
+    $skemaLogin = 'http';
+}
+
+if ($fotoProfil !== '' && substr($fotoProfil, 0, 4) !== 'http') {
+    $fotoProfil = $skemaLogin . '://' . (string) ($_SERVER['HTTP_HOST'] ?? 'rts.benedic-s.com')
+        . '/' . ltrim($fotoProfil, '/');
+}
+
 api_response(true, 'Login berhasil.', [
     'token' => $token,
     'expires_at' => $expiresAt,
@@ -213,6 +263,15 @@ api_response(true, 'Login berhasil.', [
         'salesman' => $user['salesman'] ?? '',
         'sales_district' => $user['sales_district'] ?? '',
         'status_aktif' => $user['status_aktif'] ?? 'Aktif',
-        'akun_pro' => rts_api_akun_pro($user),
+        'akun_pro' => (int) ($langganan['akun_pro'] ?? 0),
+        'foto_profil' => $fotoProfil,
+        'pro_selesai' => (string) ($langganan['pro_selesai'] ?? ''),
+        'trial_selesai' => (string) ($langganan['trial_selesai'] ?? ''),
+        'trial_aktif' => (bool) ($langganan['trial_aktif'] ?? false),
+        'trial_tersedia' => (bool) ($langganan['trial_tersedia'] ?? false),
+        'sisa_hari' => (int) ($langganan['sisa_hari'] ?? 0),
+        'sumber_langganan' => (string) ($langganan['sumber'] ?? 'GRATIS'),
+        'berlaku_sampai' => (string) ($langganan['berlaku_sampai'] ?? ''),
     ],
+    'langganan' => $langganan,
 ]);

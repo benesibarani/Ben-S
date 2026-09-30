@@ -31,3 +31,7 @@ Catatan:
 
 <!-- Izin menampilkan pemberitahuan pada layar HP (Android 13 ke atas) -->
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+<!-- Izin kamera, dipakai saat petugas mengambil foto pribadi dari kamera.
+     Memilih foto dari galeri TIDAK memerlukan izin tambahan. -->
+<uses-permission android:name="android.permission.CAMERA" />

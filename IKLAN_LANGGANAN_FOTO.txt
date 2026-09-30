@@ -1,0 +1,267 @@
+==============================================================================
+ RTS PANEL BY BENE - IKLAN, LANGGANAN PRO, DAN FOTO PETUGAS
+ Menjawab lima permintaan Bapak (30 September 2026)
+==============================================================================
+
+ JAWABAN SINGKAT
+ ---------------
+  1. Iklan AdMob saat aplikasi dibuka (layar pembuka)  -> BISA, sudah dipasang
+  2. Iklan native di SELURUH menu                      -> BISA, sudah dipasang
+  3. Pembayaran akun PRO dengan QRIS Bapak             -> BISA, sudah dipasang
+  4. Umur akun PRO 30 hari + uji coba gratis 7 hari    -> BISA, sudah dipasang
+  5. Setiap pengguna dapat memasang foto sendiri       -> BISA, sudah dipasang
+
+
+==============================================================================
+ BAGIAN 1 - IKLAN
+==============================================================================
+
+  A. IKLAN SAAT APLIKASI DIBUKA (APP OPEN)
+     Kode unit dari halaman AdMob Bapak sudah dimasukkan:
+
+        ca-app-pub-1905352530630884/8277624384
+
+     Iklan ini muncul SEKILAS saat aplikasi dibuka (kira-kira 2 detik setelah
+     layar pembuka tampil), lalu dapat ditutup dan aplikasi berjalan seperti
+     biasa.
+
+     Aturan yang sudah dipasang pada aplikasi:
+       - hanya untuk akun GRATIS (akun PRO bebas iklan)
+       - paling sering sekali setiap 4 menit
+       - bila iklan belum siap / gagal dimuat, aplikasi tetap dibuka normal
+         (tidak pernah menahan atau menggagalkan pembukaan aplikasi)
+
+     PENTING DI SISI ADMOB:
+       Pastikan unit iklan 8277624384 di AdMob benar-benar berformat
+       "App open" (layar pembuka aplikasi). Bila formatnya lain, iklan tidak
+       akan tampil walaupun kodenya sudah benar. Kartu unit iklan pada AdMob
+       menampilkan formatnya di bagian atas.
+
+  B. IKLAN NATIVE DI SELURUH MENU
+     Iklan bentuk asli (native) sekarang dipasang pada SEPULUH tempat:
+
+       1. Beranda (di bawah menu)                     <- baru
+       2. Master Customer (daftar customer)           (sudah ada)
+       3. Detail Customer                             <- baru
+       4. Pengajuan (daftar pengajuan)                (sudah ada)
+       5. Detail Pengajuan                            <- baru
+       6. Form Pengajuan Baru                         <- baru
+       7. Pemberitahuan                               (sudah ada)
+       8. Sinkronisasi                                (sudah ada)
+       9. Profil                                      (sudah ada)
+      10. Pengaturan                                  (sudah ada)
+
+     Kode unit native: ca-app-pub-1905352530630884/9404285058
+
+  C. BILA IKLAN BELUM TAMPIL
+     Yang diperiksa                            | Tindakan
+     ------------------------------------------|-----------------------------
+     Kode aplikasi AdMob belum ada pada         | Jalankan .\PASANG_FITUR_BARU.ps1
+     android\app\src\main\AndroidManifest.xml   | lalu flutter clean + flutter run
+     (baris meta-data APPLICATION_ID)           |
+     Aplikasi masih versi lama                  | Pasang APK baru (kode versi 3)
+     Akun masih GRATIS?                         | Halaman Profil - Rencana Akun
+     Iklan baru dibuat beberapa jam lalu        | Unit iklan baru di AdMob perlu
+                                                | beberapa jam sebelum tampil.
+                                                | Coba lagi beberapa jam kemudian
+     Belum ada internet                         | Periksa sambungan HP
+
+     Catatan: pada tampilan aplikasi, iklan native tampil sebagai kartu putih
+     dengan tulisan "Sponsored". Bila kuota iklan sedang kosong, kartu itu
+     tidak ditampilkan sama sekali (aplikasi tetap rapi, tidak ada kotak
+     kosong).
+
+
+==============================================================================
+ BAGIAN 2 - LANGGANAN PRO: QRIS, 30 HARI, UJI COBA 7 HARI
+==============================================================================
+
+  A. ATURAN YANG DIPAKAI
+     Uji coba (TRIAL) : 7 hari, SEKALI saja untuk setiap akun, diberikan
+                        OTOMATIS saat petugas masuk (login) pertama kali
+                        setelah pembaruan ini dipasang. Selama uji coba,
+                        seluruh iklan dimatikan.
+     Langganan (PRO)  : 30 hari setiap kali pembayaran diterima Admin.
+                        Harga  : Rp5.000 (dapat diubah, lihat bagian D)
+                        Nominal pada gambar QRIS Bapak memang Rp5.000.
+     Perpanjangan     : bila masa PRO masih berjalan dan membayar lagi, masa
+                        barunya DITAMBAHKAN dari tanggal berakhir yang lama
+                        (tidak hangus).
+     Setelah masa habis, akun otomatis kembali GRATIS dan iklan muncul lagi.
+
+  B. HALAMAN BARU DI DALAM APLIKASI
+     Letak  : Profil - Rencana Akun - tombol "LANGGANAN PRO"
+              (tombol berubah menjadi "KELOLA LANGGANAN" bila sudah PRO)
+     Isinya : - keadaan langganan + sisa hari
+              - gambar QRIS + nominal + NMID
+              - 5 langkah cara berlangganan
+              - tombol "SAYA SUDAH BAYAR"
+              - kartu uji coba gratis 7 hari
+              - keterangan lengkap
+
+     Alur pembayaran:
+       1. Petugas memindai QRIS dengan aplikasi bank / dompet digital
+       2. Petugas membayar Rp5.000
+       3. Petugas menekan "SAYA SUDAH BAYAR" pada aplikasi
+       4. Pernyataan itu tercatat di database dan mengirim pemberitahuan ke
+          Admin (aplikasi + layar HP)
+       5. Admin membuka halaman langganan_admin.php di website lalu menekan
+          tombol "SETUJUI + 30 HARI"
+       6. Akun PRO petugas langsung aktif 30 hari - iklan hilang tanpa perlu
+          memasang ulang aplikasi
+
+  C. GAMBAR QRIS BAPAK
+     Gambar QRIS TIDAK ikut di dalam paket ini (gambar dikirim lewat WhatsApp,
+     bukan sebagai berkas proyek). Bapak cukup memasangnya sendiri - ada dua
+     cara, pilih salah satu:
+
+     CARA 1 (paling mudah - memakai skrip yang saya sediakan)
+        [ ] 1. Simpan gambar QRIS dari WhatsApp ke HP/komputer (Unduhan)
+        [ ] 2. Buka PowerShell, masuk ke folder proyek:
+                  cd D:\Project\rts_panel_app
+        [ ] 3. Jalankan:
+                  .\PASANG_GAMBAR_QRIS.ps1
+               Skrip mencari gambar QRIS terbaru di folder Unduhan/Desktop,
+               menampilkan pilihannya, lalu menyalinnya dengan nama yang benar
+        [ ] 4. flutter clean
+        [ ] 5. flutter run -d CPH1937
+
+     CARA 2 (manual, sama hasilnya)
+        [ ] 1. Buka folder D:\Project\rts_panel_app\assets\images
+        [ ] 2. Salin gambar QRIS ke folder itu
+        [ ] 3. Ubah namanya menjadi persis:  qris_bene_s.jpg
+        [ ] 4. flutter clean  lalu  flutter run -d CPH1937
+
+     Nama berkas HARUS persis "qris_bene_s.jpg" (huruf kecil, berakhiran .jpg).
+     Selama gambar belum ada, halaman Langganan PRO tetap terbuka dan
+     menampilkan keterangan NMID + nominal, dengan pesan pengingat.
+
+  D. MENGUBAH HARGA / LAMA LANGGANAN (bila perlu nanti)
+     Buka berkas api/langganan_inti.php pada hosting, ubah angka pada:
+        function rts_lg_harga()   -> 5000    (harga rupiah)
+        function rts_lg_durasi()  -> 30      (lama PRO, hari)
+        function rts_lg_trial()   -> 7       (lama uji coba, hari)
+     Satu perubahan itu langsung berlaku pada aplikasi dan website.
+
+  E. HALAMAN PENGELOLAAN UNTUK ADMIN (website)
+     Alamat : https://rts.benedic-s.com/langganan_admin.php
+              (hanya dapat dibuka akun role ADMIN)
+     Isinya : - daftar seluruh akun + keadaan PRO/TRIAL/GRATIS + sisa hari
+              - tombol "+30 HARI", "+90 HARI", "TRIAL 7 HARI", "HENTIKAN"
+              - daftar pernyataan pembayaran QRIS + tombol SETUJUI / TOLAK
+              - tombol "PERBARUI DATABASE" (membuat kolom baru, aman)
+              - tempat menyimpan gambar QRIS untuk website
+              - tautan ?diagnosa=1 untuk memeriksa keadaan halaman
+
+     Halaman akun_pro.php yang lama TETAP dapat dipakai seperti biasa.
+
+
+==============================================================================
+ BAGIAN 3 - FOTO PRIBADI SETIAP PENGGUNA
+==============================================================================
+
+  A. CARA PAKAI DI APLIKASI
+     Profil - foto pada kartu merah (ada tanda kamera kecil) - ketuk
+        -> Ambil dari Kamera
+        -> Pilih dari Galeri
+        -> Hapus Foto
+
+     Foto dipotong dan diperkecil otomatis (maksimal 900 x 900 titik), lalu
+     disimpan ke server pada folder uploads/foto_profil/. Ukuran paling besar
+     2 MB. Foto tampil pada kartu akun di halaman Profil dan Beranda.
+
+  B. YANG PERLU DITAMBAHKAN DI ANDROIDMANIFEST
+     Izin kamera (hanya untuk mengambil foto langsung dari kamera):
+        <uses-permission android:name="android.permission.CAMERA" />
+     Sudah ada pada berkas android_manifest_tambahan.xml paket ini. Memilih
+     foto dari galeri TIDAK memerlukan izin tambahan.
+
+  C. PENGGUNAAN DI WEBSITE
+     Halaman langganan_admin.php menampilkan foto (bulat kecil) di samping
+     nama petugas, sehingga Admin mudah mengenali akun.
+
+
+==============================================================================
+ BAGIAN 4 - YANG PERLU DIKERJAKAN SEKALI SAJA
+==============================================================================
+
+  LANGKAH 1 - UNGGAH BERKAS PHP KE HOSTING (public_html)
+  -----------------------------------------------------
+  [ ] api/langganan_inti.php      <-- BERKAS BARU (aturan langganan)
+  [ ] api/langganan.php           <-- BERKAS BARU (API langganan)
+  [ ] api/upload_foto.php         <-- BERKAS BARU (unggah foto pribadi)
+  [ ] api/siapkan_langganan.php   <-- BERKAS BARU (pembaruan database)
+  [ ] api/login.php               <-- DIPERBARUI (uji coba otomatis + langganan)
+  [ ] api/session_check.php       <-- DIPERBARUI (masa berlaku + foto)
+  [ ] langganan_admin.php         <-- BERKAS BARU (halaman Admin langganan)
+
+  LANGKAH 2 - PERBARUI DATABASE
+  -----------------------------
+  Cara termudah:
+  [ ] 1. Buka https://rts.benedic-s.com/langganan_admin.php (uji coba dulu:
+         https://coba.benedic-s.com/langganan_admin.php)
+  [ ] 2. Tekan tombol "PERBARUI DATABASE"
+  [ ] 3. Harus muncul keterangan "BERHASIL dibuat" untuk kolom:
+         akun_pro, foto_profil, pro_mulai, pro_selesai, trial_mulai,
+         trial_selesai, dan tabel pembayaran_pro
+
+  Cara manual (phpMyAdmin):
+  [ ] Jalankan berkas database/migrations/RTS_PANEL_LANGGANAN_PRO.sql
+      Pesan "#1060 Duplicate column" berarti kolomnya sudah ada - aman.
+
+  LANGKAH 3 - PASANG GAMBAR QRIS (bagian 2 C di atas)
+  ---------------------------------------------------
+  [ ] Simpan gambar QRIS -> assets\images\qris_bene_s.jpg
+  [ ] flutter clean  lalu  flutter run -d CPH1937
+
+  LANGKAH 4 - PERBARUI PUBSPEC DAN IZIN
+  -------------------------------------
+  [ ] Timpa pubspec.yaml dengan pubspec.yaml.updated (memuat image_picker
+      dan nomor versi 1.2.0+3)
+  [ ] Timpa lib\main.dart dengan main.dart dari paket ini
+         (atau cukup jalankan: .\PASANG_MAIN_DART.ps1)
+  [ ] Tambahkan izin CAMERA pada AndroidManifest.xml
+         (lihat android_manifest_tambahan.xml - atau jalankan
+          .\PASANG_FITUR_BARU.ps1 yang mengerjakannya otomatis)
+  [ ] flutter clean
+  [ ] flutter run -d CPH1937
+
+  LANGKAH 5 - PERIKSA
+  -------------------
+  [ ] Pengaturan -> penanda kode aplikasi harus berbunyi: RTS-2026-09-30-6
+  [ ] Profil -> tombol LANGGANAN PRO terbuka dan menampilkan QRIS
+  [ ] Profil -> ketuk foto -> pilih dari galeri -> foto berubah
+  [ ] Beranda -> iklan banner + iklan native tampil (akun GRATIS)
+  [ ] Buka aplikasi dari awal -> iklan layar pembuka muncul sekilas
+  [ ] Setelah Admin menekan SETUJUI, buka ulang aplikasi -> akun menjadi PRO
+      dan seluruh iklan hilang
+
+
+==============================================================================
+ BAGIAN 5 - BILA ADA KENDALA
+==============================================================================
+
+  Kejadian                                   | Sebab dan tindakan
+  -------------------------------------------|-----------------------------
+  "Fitur langganan.php belum tersedia"       | api/langganan.php belum diunggah
+  "Kolom foto_profil belum ada"              | Tekan PERBARUI DATABASE
+  Foto gagal diunggah                        | Periksa folder uploads dapat
+                                             | ditulis (izin 755). Coba lagi
+  Gambar QRIS tidak tampil                   | Nama berkas harus persis
+                                             | qris_bene_s.jpg pada assets/
+                                             | images, lalu flutter clean
+  Tombol SAYA SUDAH BAYAR tidak bekerja      | api/langganan.php belum diunggah
+  Uji coba tidak diberikan otomatis          | api/login.php belum diunggah,
+                                             | atau uji coba sudah pernah dipakai
+  Akun PRO tidak hilang iklannya             | Keluar dari aplikasi lalu masuk
+                                             | kembali (keadaan dibaca saat login)
+  Iklan layar pembuka tidak muncul           | Unit iklan AdMob harus berformat
+                                             | "App open"; unit iklan baru perlu
+                                             | beberapa jam sebelum tampil
+  Halaman langganan_admin.php menolak        | Hanya akun role ADMIN. Periksa
+  dengan tulisan "Akses ditolak"             | dengan membuka ?diagnosa=1
+  Pesan #1044 information_schema             | Tidak dipakai lagi. Semua
+                                             | pemeriksaan memakai SHOW COLUMNS /
+                                             | SHOW TABLES
+
+==============================================================================

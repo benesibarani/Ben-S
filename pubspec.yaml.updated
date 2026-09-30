@@ -4,11 +4,15 @@ publish_to: 'none'
 
 # NOMOR VERSI - PENTING untuk fitur pembaruan otomatis.
 #   angka sebelum tanda + adalah versi yang dilihat pengguna (1.1.0)
-#   angka sesudah tanda + adalah kode versi (2) dan WAJIB selalu bertambah
-#   setiap kali aplikasi baru diunggah ke server, misalnya menjadi 3, 4, dan
+#   angka sesudah tanda + adalah kode versi (3) dan WAJIB selalu bertambah
+#   setiap kali aplikasi baru diunggah ke server, misalnya menjadi 4, 5, dan
 #   seterusnya. Isi kolom "version_code" pada halaman app_versi.php harus sama
 #   dengan angka sesudah tanda + ini.
-version: 1.1.0+2
+#
+#   Kode 3 (1.2.0) memuat: iklan layar pembuka (app open), iklan native di
+#   seluruh menu, halaman Langganan PRO dengan QRIS, masa berlaku 30 hari,
+#   uji coba 7 hari, dan foto pribadi petugas.
+version: 1.2.0+3
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -23,6 +27,8 @@ dependencies:
   # Iklan Google AdMob: banner pada beranda dan iklan bentuk asli (native)
   # pada setiap menu.
   google_mobile_ads: ^9.1.0
+  # Memilih foto pribadi dari kamera atau galeri (foto petugas).
+  image_picker: ^1.1.2
   # Mengubah titik GPS menjadi alamat lengkap (Ganti Alamat dari titik lokasi).
   geocoding: ^4.0.0
   # Membaca titik GPS tempat sales berdiri.

@@ -10,6 +10,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -282,6 +283,10 @@ void main() async {
   unawaited(RtsIklan.siapkan());
 
   runApp(const RtsPanelApp());
+
+  // Iklan layar pembuka: tampil sekilas saat aplikasi dibuka. Hanya untuk
+  // akun GRATIS dan paling sering sekali setiap 4 menit. Kegagalan diabaikan.
+  unawaited(RtsIklanBuka.tampilkanSaatDibuka());
 }
 
 /// Menampilkan keterangan kesalahan pada layar, agar tidak berupa layar kosong.
@@ -402,6 +407,13 @@ class RtsUser {
     required this.salesman,
     required this.salesDistrict,
     this.akunPro = false,
+    this.fotoProfil = '',
+    this.proSelesai = '',
+    this.trialAktif = false,
+    this.trialTersedia = false,
+    this.sisaHari = 0,
+    this.sumberLangganan = 'GRATIS',
+    this.berlakuSampai = '',
   });
 
   final int id;
@@ -416,7 +428,32 @@ class RtsUser {
   /// Nilai ini datang dari server (kolom akun_pro pada tabel sales_users).
   /// Bila kolomnya belum ada di server, nilainya false sehingga seluruh akun
   /// dianggap GRATIS dan iklan tampil seperti biasa.
+  ///
+  /// Mulai 30 September 2026, penanda ini dihitung server dari masa berlaku
+  /// langganan: akun PRO yang sudah lewat masa berlakunya otomatis menjadi
+  /// GRATIS lagi, dan uji coba 7 hari dihitung sebagai PRO.
   final bool akunPro;
+
+  /// Alamat gambar foto pribadi petugas (kosong bila belum memasang foto).
+  final String fotoProfil;
+
+  /// Tanggal berakhir langganan PRO (kosong bila tanpa batas waktu).
+  final String proSelesai;
+
+  /// True bila akun sedang memakai uji coba gratis 7 hari.
+  final bool trialAktif;
+
+  /// True bila uji coba gratis masih tersedia (belum pernah dipakai).
+  final bool trialTersedia;
+
+  /// Sisa hari langganan PRO.
+  final int sisaHari;
+
+  /// Sumber langganan: PRO, TRIAL, atau GRATIS.
+  final String sumberLangganan;
+
+  /// Tanggal berakhir langganan dalam bentuk 30-09-2026.
+  final String berlakuSampai;
 
   factory RtsUser.fromJson(Map<String, dynamic> json) {
     return RtsUser(
@@ -427,6 +464,43 @@ class RtsUser {
       salesman: (json['salesman'] ?? '').toString(),
       salesDistrict: (json['sales_district'] ?? '').toString(),
       akunPro: rtsBenar(json['akun_pro']),
+      fotoProfil: (json['foto_profil'] ?? '').toString(),
+      proSelesai: (json['pro_selesai'] ?? '').toString(),
+      trialAktif: rtsBenar(json['trial_aktif']),
+      trialTersedia: rtsBenar(json['trial_tersedia']),
+      sisaHari: int.tryParse('${json['sisa_hari'] ?? 0}') ?? 0,
+      sumberLangganan:
+          (json['sumber_langganan'] ?? 'GRATIS').toString().toUpperCase(),
+      berlakuSampai: (json['berlaku_sampai'] ?? '').toString(),
+    );
+  }
+
+  /// Menyalin data akun dengan beberapa bagian diganti.
+  RtsUser copyWith({
+    bool? akunPro,
+    String? fotoProfil,
+    String? proSelesai,
+    bool? trialAktif,
+    bool? trialTersedia,
+    int? sisaHari,
+    String? sumberLangganan,
+    String? berlakuSampai,
+  }) {
+    return RtsUser(
+      id: id,
+      username: username,
+      namaLengkap: namaLengkap,
+      role: role,
+      salesman: salesman,
+      salesDistrict: salesDistrict,
+      akunPro: akunPro ?? this.akunPro,
+      fotoProfil: fotoProfil ?? this.fotoProfil,
+      proSelesai: proSelesai ?? this.proSelesai,
+      trialAktif: trialAktif ?? this.trialAktif,
+      trialTersedia: trialTersedia ?? this.trialTersedia,
+      sisaHari: sisaHari ?? this.sisaHari,
+      sumberLangganan: sumberLangganan ?? this.sumberLangganan,
+      berlakuSampai: berlakuSampai ?? this.berlakuSampai,
     );
   }
 
@@ -439,6 +513,13 @@ class RtsUser {
       'salesman': salesman,
       'sales_district': salesDistrict,
       'akun_pro': akunPro,
+      'foto_profil': fotoProfil,
+      'pro_selesai': proSelesai,
+      'trial_aktif': trialAktif,
+      'trial_tersedia': trialTersedia,
+      'sisa_hari': sisaHari,
+      'sumber_langganan': sumberLangganan,
+      'berlaku_sampai': berlakuSampai,
     };
   }
 
@@ -1012,6 +1093,10 @@ class _SplashPageState extends State<SplashPage> {
         ((data['user'] as Map?) ?? const {}).cast<String, dynamic>(),
       );
 
+      // Keadaan langganan terbaru: masa PRO yang sudah berakhir langsung
+      // terlihat dan iklan kembali tampil.
+      RtsLangganan.sekarang = RtsLangganan.dariBalasan(data);
+
       // Data akun diperbarui, misalnya bila role atau district berubah.
       await RtsSesi.simpan(token, userTerbaru);
 
@@ -1278,10 +1363,19 @@ class _LoginPageState extends State<LoginPage> {
         );
         final String token = (data['token'] ?? '').toString();
 
+        // Keadaan langganan (masa berlaku PRO + uji coba gratis) dari server.
+        RtsLangganan.sekarang = RtsLangganan.dariBalasan(data);
+
         if (rememberMe) {
           await RtsSesi.simpan(token, user);
         } else {
-          await RtsSesi.hapus();
+          // Tanpa "Ingat saya", sesi tidak disimpan di HP. Data akun tetap
+          // dipegang selama aplikasi terbuka supaya keadaan langganan PRO,
+          // foto profil, dan pendaftaran HP untuk pemberitahuan tetap bekerja.
+          RtsSesi.token = token;
+          RtsSesi.user = user;
+
+          unawaited(RtsPushFcm.daftarkanToken());
         }
 
         if (!mounted) return;
@@ -1679,7 +1773,8 @@ class _DashboardPageState extends State<DashboardPage> {
                       const RtsSectionTitle('Menu Utama'),
                       const SizedBox(height: 10),
                       _buildMenuGrid(context),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 18),
+                      const RtsIklanAsli(),
                       _buildFooterInfo(),
                     ],
                   ),
@@ -3158,6 +3253,8 @@ class _CustomerDetailPageState extends State<CustomerDetailPage> {
         const SizedBox(height: 11),
         _buildLocationCard(data),
         const SizedBox(height: 22),
+        const RtsIklanAsli(),
+        const SizedBox(height: 18),
         _buildAjukanButton(data),
         if (loading) ...[
           const SizedBox(height: 18),
@@ -4411,26 +4508,12 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Row(
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    _inisial,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
+              const RtsFotoProfil(
+                ukuran: 56,
+                bolehGanti: true,
+                latarBelakang: Color(0x2effffff),
+                garisTepi: Color(0x4dffffff),
+                warnaHuruf: Colors.white,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -7332,6 +7415,8 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
       children: [
         _buildHeaderCard(),
         const SizedBox(height: 18),
+        const RtsIklanAsli(),
+        const SizedBox(height: 18),
         const RtsSectionTitle('Data Pengajuan'),
         const SizedBox(height: 11),
         RtsCard(
@@ -9188,6 +9273,8 @@ class _RequestFormPageState extends State<RequestFormPage> {
                       const RtsSectionTitle('Keterangan'),
                       const SizedBox(height: 11),
                       _buildKeteranganCard(),
+                      const SizedBox(height: 18),
+                      const RtsIklanAsli(),
                       const SizedBox(height: 20),
                       _buildTombolKirim(),
                       if (RtsConfig.produksi) ...[
@@ -10709,6 +10796,14 @@ class RtsIklan {
   /// Dipakai pada         : keenam menu (Master Customer, Pengajuan,
   ///                        Notifikasi, Sinkronisasi, Profil, Pengaturan)
   static const String nativeIklan = 'ca-app-pub-1905352530630884/9404285058';
+
+  /// Kode unit iklan APP OPEN - iklan yang tampil sekilas saat aplikasi
+  /// dibuka (layar pembuka).
+  ///
+  /// Nama unit pada AdMob : "RTS Panel Buka Aplikasi"
+  /// Format pada AdMob    : App open
+  /// Dipakai pada         : saat aplikasi dibuka, hanya untuk akun GRATIS
+  static const String appOpenIklan = 'ca-app-pub-1905352530630884/8277624384';
 
   /// Saklar utama. Setel false bila ingin mematikan SELURUH iklan aplikasi,
   /// tanpa memandang tingkat akun.
@@ -12310,13 +12405,35 @@ class _RtsKartuRencanaAkunState extends State<RtsKartuRencanaAkun> {
             ),
           ),
           const SizedBox(height: 13),
-          const Text(
-            'Akun PRO (berbayar) akan tersedia pada pembaruan berikutnya, '
-            'berisi menu tambahan khusus pelanggan PRO.',
-            style: TextStyle(
-              color: rtsTextSecondary,
-              fontSize: 11.5,
-              height: 1.45,
+          RtsInfoRow('Masa berlaku', RtsLangganan.sekarang.keteranganMasa),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: pro ? rtsGreen : rtsMaroon,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+              ),
+              onPressed: () => Navigator.of(context)
+                  .push(
+                    MaterialPageRoute(
+                      builder: (_) => LanggananProPage(
+                        user: widget.user,
+                        token: RtsSesi.token,
+                      ),
+                    ),
+                  )
+                  .then((_) {
+                    if (mounted) setState(() {});
+                  }),
+              child: Text(
+                pro
+                    ? 'KELOLA LANGGANAN'
+                    : 'LANGGANAN PRO - ${rtsRupiah(RtsLangganan.sekarang.harga)} / '
+                        '${RtsLangganan.sekarang.durasiHari} HARI',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
+              ),
             ),
           ),
           if (RtsTingkatAkun.bolehUji && !dariServer) ...[
@@ -12444,6 +12561,1237 @@ class _RtsKartuPembaruanState extends State<RtsKartuPembaruan> {
                   color: rtsMaroon,
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ========================================================================= */
+/* IKLAN LAYAR PEMBUKA (APP OPEN)                                            */
+/* ========================================================================= */
+
+/// Iklan layar pembuka: tampil sekilas setiap aplikasi dibuka.
+///
+/// Kode unit iklan disimpan pada RtsIklan.appOpenIklan. Iklan hanya dipakai
+/// akun GRATIS - akun PRO bebas iklan. Bila iklan belum siap, gagal dimuat,
+/// atau baru saja ditampilkan (kurang dari 4 menit), aplikasi tetap berjalan
+/// seperti biasa tanpa hambatan apa pun.
+class RtsIklanBuka {
+  const RtsIklanBuka._();
+
+  static const String _kunciWaktu = 'rts_iklan_buka_waktu';
+
+  /// Jeda paling sedikit antar iklan layar pembuka.
+  static const Duration jedaMinimal = Duration(minutes: 4);
+
+  static AppOpenAd? _iklan;
+  static DateTime? _dimuat;
+  static bool _sedangMemuat = false;
+  static bool _sudahDicoba = false;
+
+  /// Menyiapkan lalu menampilkan iklan layar pembuka. Dipanggil dari main().
+  static Future<void> tampilkanSaatDibuka() async {
+    if (!RtsIklan.aktif || _sudahDicoba) return;
+
+    _sudahDicoba = true;
+
+    try {
+      if (await _baruSajaTampil()) return;
+
+      await RtsIklan.siapkan();
+
+      if (!RtsIklan.siap) return;
+
+      await _muat();
+
+      // Memberi kesempatan layar pembuka aplikasi tampil lebih dahulu,
+      // supaya iklan tidak menutupi proses pemeriksaan sesi.
+      await Future<void>.delayed(const Duration(milliseconds: 1800));
+
+      await _tampilkan();
+    } catch (_) {
+      // Diabaikan: iklan tidak boleh mengganggu jalannya aplikasi.
+    }
+  }
+
+  static Future<bool> _baruSajaTampil() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final int terakhir = prefs.getInt(_kunciWaktu) ?? 0;
+
+      if (terakhir <= 0) return false;
+
+      return DateTime.now()
+              .difference(DateTime.fromMillisecondsSinceEpoch(terakhir)) <
+          jedaMinimal;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<void> _catatWaktu() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      await prefs.setInt(_kunciWaktu, DateTime.now().millisecondsSinceEpoch);
+    } catch (_) {
+      // Diabaikan.
+    }
+  }
+
+  static Future<void> _muat() async {
+    if (_sedangMemuat) return;
+
+    if (_iklan != null &&
+        _dimuat != null &&
+        DateTime.now().difference(_dimuat!) < const Duration(hours: 4)) {
+      return;
+    }
+
+    _sedangMemuat = true;
+
+    final Completer<void> selesai = Completer<void>();
+
+    void tandaiSelesai() {
+      if (!selesai.isCompleted) selesai.complete();
+    }
+
+    try {
+      await AppOpenAd.load(
+        adUnitId: RtsIklan.appOpenIklan,
+        request: const AdRequest(),
+        adLoadCallback: AppOpenAdLoadCallback(
+          onAdLoaded: (AppOpenAd iklanBaru) {
+            _iklan?.dispose();
+            _iklan = iklanBaru;
+            _dimuat = DateTime.now();
+            tandaiSelesai();
+          },
+          onAdFailedToLoad: (LoadAdError galat) {
+            _iklan = null;
+            tandaiSelesai();
+          },
+        ),
+      );
+    } catch (_) {
+      _iklan = null;
+      tandaiSelesai();
+    }
+
+    try {
+      await selesai.future.timeout(const Duration(seconds: 12));
+    } catch (_) {
+      // Waktu habis: iklan dilewati supaya aplikasi tidak tertahan.
+    }
+
+    _sedangMemuat = false;
+  }
+
+  static Future<void> _tampilkan() async {
+    final AppOpenAd? iklan = _iklan;
+
+    if (iklan == null) return;
+
+    _iklan = null;
+
+    iklan.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (AppOpenAd ad) {
+        ad.dispose();
+      },
+      onAdFailedToShowFullScreenContent: (AppOpenAd ad, AdError galat) {
+        ad.dispose();
+      },
+    );
+
+    try {
+      await iklan.show();
+      await _catatWaktu();
+    } catch (_) {
+      iklan.dispose();
+    }
+  }
+}
+
+/* ========================================================================= */
+/* LANGGANAN PRO: masa berlaku 30 hari + uji coba 7 hari                     */
+/* ========================================================================= */
+
+/// Menulis angka menjadi rupiah, contoh: 5000 -> Rp5.000.
+String rtsRupiah(int angka) {
+  final String teks = angka.abs().toString();
+  final StringBuffer hasil = StringBuffer();
+
+  for (int i = 0; i < teks.length; i++) {
+    if (i > 0 && (teks.length - i) % 3 == 0) hasil.write('.');
+    hasil.write(teks[i]);
+  }
+
+  return 'Rp${hasil.toString()}';
+}
+
+/// Keterangan langganan PRO yang dibaca dari server (api/langganan.php).
+class RtsLangganan {
+  const RtsLangganan({
+    this.pro = false,
+    this.proAktif = false,
+    this.trialAktif = false,
+    this.trialTersedia = false,
+    this.trialPernahDipakai = false,
+    this.sisaHari = 0,
+    this.sisaTrialHari = 0,
+    this.berlakuSampai = '',
+    this.sumber = 'GRATIS',
+    this.harga = 5000,
+    this.durasiHari = 30,
+    this.trialHari = 7,
+    this.nmid = 'ID1026519749489',
+    this.namaMerchant = 'BENE-S',
+    this.catatan = '',
+  });
+
+  /// Membaca balasan server. Balasan berisi dua bagian: `langganan` dan `qris`.
+  factory RtsLangganan.dariBalasan(Map<String, dynamic> balasan) {
+    final Map<String, dynamic> langganan =
+        ((balasan['langganan'] as Map?) ?? const {}).cast<String, dynamic>();
+
+    final Map<String, dynamic> qris =
+        ((balasan['qris'] as Map?) ?? const {}).cast<String, dynamic>();
+
+    return RtsLangganan(
+      pro: rtsBenar(langganan['pro']),
+      proAktif: rtsBenar(langganan['pro_aktif']),
+      trialAktif: rtsBenar(langganan['trial_aktif']),
+      trialTersedia: rtsBenar(langganan['trial_tersedia']),
+      trialPernahDipakai: rtsBenar(langganan['trial_pernah_dipakai']),
+      sisaHari: int.tryParse('${langganan['sisa_hari'] ?? 0}') ?? 0,
+      sisaTrialHari: int.tryParse('${langganan['sisa_trial_hari'] ?? 0}') ?? 0,
+      berlakuSampai: (langganan['berlaku_sampai'] ?? '').toString(),
+      sumber: (langganan['sumber'] ?? 'GRATIS').toString().toUpperCase(),
+      harga: int.tryParse('${qris['harga'] ?? 5000}') ?? 5000,
+      durasiHari: int.tryParse('${qris['durasi_hari'] ?? 30}') ?? 30,
+      trialHari: int.tryParse('${qris['trial_hari'] ?? 7}') ?? 7,
+      nmid: (qris['nmid'] ?? 'ID1026519749489').toString(),
+      namaMerchant: (qris['nama'] ?? 'BENE-S').toString(),
+      catatan: (qris['catatan'] ?? '').toString(),
+    );
+  }
+
+  /// Keadaan langganan terakhir yang diketahui aplikasi.
+  static RtsLangganan sekarang = const RtsLangganan();
+
+  /// Letak gambar QRIS di dalam proyek Flutter.
+  ///
+  /// Nama berkasnya HARUS persis seperti ini. Bapak cukup menyalin gambar QRIS
+  /// milik Bapak ke folder `assets/images/` dengan nama `qris_bene_s.jpg`.
+  static const String gambarQris = 'assets/images/qris_bene_s.jpg';
+
+  final bool pro;
+  final bool proAktif;
+  final bool trialAktif;
+  final bool trialTersedia;
+  final bool trialPernahDipakai;
+  final int sisaHari;
+  final int sisaTrialHari;
+  final String berlakuSampai;
+  final String sumber;
+  final int harga;
+  final int durasiHari;
+  final int trialHari;
+  final String nmid;
+  final String namaMerchant;
+  final String catatan;
+
+  String get label {
+    if (proAktif) return 'PRO';
+    if (trialAktif) return 'PRO (UJI COBA)';
+    return 'GRATIS';
+  }
+
+  String get keteranganMasa {
+    if (proAktif) {
+      if (berlakuSampai.isEmpty) return 'Berlaku tanpa batas waktu.';
+      return 'Berlaku sampai $berlakuSampai (sisa $sisaHari hari).';
+    }
+
+    if (trialAktif) {
+      return 'Uji coba gratis, sisa $sisaTrialHari hari.';
+    }
+
+    if (trialTersedia) {
+      return 'Uji coba gratis $trialHari hari BELUM dipakai - tekan tombol '
+          'uji coba di bawah.';
+    }
+
+    return 'Masa langganan sudah berakhir. Aktifkan kembali untuk bebas iklan.';
+  }
+
+  /// Menyimpan keadaan langganan terakhir + memperbarui data akun pada sesi,
+  /// supaya iklan langsung berhenti/berjalan sesuai keadaan terbaru.
+  static Future<void> simpanKeSesi(RtsLangganan baru) async {
+    sekarang = baru;
+
+    final RtsUser? user = RtsSesi.user;
+
+    if (user == null) return;
+
+    final RtsUser terbaru = user.copyWith(
+      akunPro: baru.pro,
+      proSelesai: baru.proAktif ? baru.berlakuSampai : '',
+      trialAktif: baru.trialAktif,
+      trialTersedia: baru.trialTersedia,
+      sisaHari: baru.sisaHari,
+      sumberLangganan: baru.sumber,
+      berlakuSampai: baru.berlakuSampai,
+    );
+
+    await RtsSesi.simpan(RtsSesi.token, terbaru);
+  }
+}
+
+/* ========================================================================= */
+/* FOTO PRIBADI PETUGAS                                                      */
+/* ========================================================================= */
+
+/// Mengunggah dan menghapus foto pribadi ke server (api/upload_foto.php).
+class RtsFotoUnggah {
+  const RtsFotoUnggah._();
+
+  /// Mengirim berkas foto. [aksi] diisi 'hapus' untuk menghapus foto.
+  static Future<String> kirim({
+    required String token,
+    XFile? berkas,
+    String aksi = '',
+  }) async {
+    final Uri alamat = Uri.parse('${RtsConfig.baseUrl}/upload_foto.php');
+
+    final http.MultipartRequest permintaan = http.MultipartRequest('POST', alamat);
+
+    permintaan.headers['Accept'] = 'application/json';
+    permintaan.headers['Authorization'] = 'Bearer $token';
+
+    if (aksi.isNotEmpty) {
+      permintaan.fields['aksi'] = aksi;
+    }
+
+    if (aksi.isEmpty) {
+      if (berkas == null) {
+        throw ApiException('Belum ada foto yang dipilih.');
+      }
+
+      permintaan.files.add(
+        await http.MultipartFile.fromPath('foto', berkas.path, filename: 'foto.jpg'),
+      );
+    }
+
+    final http.StreamedResponse aliran =
+        await permintaan.send().timeout(const Duration(seconds: 90));
+
+    final String isi = await aliran.stream.bytesToString();
+
+    Map<String, dynamic> balasan = <String, dynamic>{};
+
+    if (isi.trim().isNotEmpty) {
+      try {
+        final dynamic urai = jsonDecode(isi);
+
+        if (urai is Map) balasan = urai.cast<String, dynamic>();
+      } catch (_) {
+        // Balasan bukan JSON: dipakai keterangan bawaan di bawah.
+      }
+    }
+
+    if (aliran.statusCode < 200 || aliran.statusCode >= 300) {
+      throw ApiException(
+        (balasan['message'] ??
+                'Foto gagal diunggah (kode ${aliran.statusCode}).')
+            .toString(),
+        statusCode: aliran.statusCode,
+      );
+    }
+
+    return (balasan['foto_url'] ?? '').toString();
+  }
+
+  /// Menyimpan alamat foto terbaru pada sesi sehingga seluruh halaman berubah.
+  static Future<void> simpanKeSesi(String alamatFoto) async {
+    final RtsUser? user = RtsSesi.user;
+
+    if (user == null) return;
+
+    await RtsSesi.simpan(RtsSesi.token, user.copyWith(fotoProfil: alamatFoto));
+  }
+}
+
+/// Foto pribadi petugas. Bila belum ada foto, ditampilkan huruf awal nama.
+class RtsFotoProfil extends StatelessWidget {
+  const RtsFotoProfil({
+    super.key,
+    this.ukuran = 56,
+    this.bolehGanti = false,
+    this.latarBelakang = Colors.white,
+    this.garisTepi,
+    this.warnaHuruf = rtsMaroon,
+  });
+
+  final double ukuran;
+  final bool bolehGanti;
+  final Color latarBelakang;
+  final Color? garisTepi;
+  final Color warnaHuruf;
+
+  String _inisial(RtsUser? user) {
+    final String nama = (user?.displayName ?? '').trim();
+
+    if (nama.isEmpty) return 'R';
+
+    return nama.substring(0, 1).toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final RtsUser? user = RtsSesi.user;
+    final String alamat = (user?.fotoProfil ?? '').trim();
+    final double lengkung = ukuran * 0.32;
+
+    final TextStyle gayaHuruf = TextStyle(
+      color: warnaHuruf,
+      fontSize: ukuran * 0.42,
+      fontWeight: FontWeight.w800,
+    );
+
+    Widget isi;
+
+    if (alamat.isEmpty) {
+      isi = Center(child: Text(_inisial(user), style: gayaHuruf));
+    } else {
+      isi = Image.network(
+        alamat,
+        width: ukuran,
+        height: ukuran,
+        fit: BoxFit.cover,
+        errorBuilder: (context, galat, tumpukan) =>
+            Center(child: Text(_inisial(user), style: gayaHuruf)),
+        loadingBuilder: (context, anak, kemajuan) {
+          if (kemajuan == null) return anak;
+
+          return Center(
+            child: SizedBox(
+              width: ukuran * 0.34,
+              height: ukuran * 0.34,
+              child: const CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
+      );
+    }
+
+    final Widget kotak = Container(
+      width: ukuran,
+      height: ukuran,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: latarBelakang,
+        borderRadius: BorderRadius.circular(lengkung),
+        border: garisTepi == null ? null : Border.all(color: garisTepi!),
+      ),
+      child: isi,
+    );
+
+    if (!bolehGanti) return kotak;
+
+    return GestureDetector(
+      onTap: () => RtsFotoProfilPilih.tampilkan(context),
+      child: Stack(
+        children: [
+          kotak,
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: rtsMaroon,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.6),
+              ),
+              child: Icon(
+                Icons.photo_camera_rounded,
+                size: ukuran * 0.24,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pilihan mengganti foto pribadi: dari kamera, dari galeri, atau dihapus.
+class RtsFotoProfilPilih {
+  const RtsFotoProfilPilih._();
+
+  static Future<void> tampilkan(BuildContext context) async {
+    final String token = RtsSesi.token;
+
+    if (token.isEmpty) {
+      rtsShowMessage(context, 'Sesi tidak ditemukan. Silakan masuk kembali.');
+      return;
+    }
+
+    final String? pilihan = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                color: rtsCardBorder,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Foto Pribadi',
+              style: TextStyle(
+                color: rtsTextPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Foto ini tampil pada kartu akun di beranda dan profil.',
+              style: TextStyle(color: rtsTextSecondary, fontSize: 11.5),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_rounded, color: rtsMaroon),
+              title: const Text('Ambil dari Kamera'),
+              onTap: () => Navigator.of(sheetContext).pop('kamera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded, color: rtsMaroon),
+              title: const Text('Pilih dari Galeri'),
+              onTap: () => Navigator.of(sheetContext).pop('galeri'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded, color: rtsTextSecondary),
+              title: const Text('Hapus Foto'),
+              onTap: () => Navigator.of(sheetContext).pop('hapus'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (pilihan == null) return;
+
+    if (pilihan == 'hapus') {
+      await _kirim(context, token: token, aksi: 'hapus');
+
+      return;
+    }
+
+    try {
+      final ImagePicker pemilih = ImagePicker();
+
+      final XFile? berkas = await pemilih.pickImage(
+        source: pilihan == 'kamera' ? ImageSource.camera : ImageSource.gallery,
+        maxWidth: 900,
+        maxHeight: 900,
+        imageQuality: 85,
+      );
+
+      if (berkas == null) return;
+
+      await _kirim(context, token: token, berkas: berkas);
+    } catch (_) {
+      if (!context.mounted) return;
+
+      rtsShowMessage(
+        context,
+        'Tidak dapat membuka kamera/galeri. Periksa izin aplikasi pada '
+        'Pengaturan HP.',
+      );
+    }
+  }
+
+  static Future<void> _kirim(
+    BuildContext context, {
+    required String token,
+    XFile? berkas,
+    String aksi = '',
+  }) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 26,
+                  height: 26,
+                  child: CircularProgressIndicator(strokeWidth: 2.4),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Mengunggah foto...',
+                  style: TextStyle(color: rtsTextPrimary, fontSize: 12.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final String alamat = await RtsFotoUnggah.kirim(
+        token: token,
+        berkas: berkas,
+        aksi: aksi,
+      );
+
+      await RtsFotoUnggah.simpanKeSesi(alamat);
+
+      if (!context.mounted) return;
+
+      Navigator.of(context, rootNavigator: true).pop();
+
+      rtsShowMessage(
+        context,
+        aksi == 'hapus'
+            ? 'Foto pribadi berhasil dihapus.'
+            : 'Foto pribadi berhasil diganti.',
+        success: true,
+      );
+    } on ApiException catch (error) {
+      if (!context.mounted) return;
+
+      Navigator.of(context, rootNavigator: true).pop();
+
+      rtsShowMessage(context, error.message);
+    } catch (_) {
+      if (!context.mounted) return;
+
+      Navigator.of(context, rootNavigator: true).pop();
+
+      rtsShowMessage(context, 'Terjadi gangguan saat mengunggah foto.');
+    }
+  }
+}
+
+/* ========================================================================= */
+/* HALAMAN LANGGANAN PRO                                                     */
+/* ========================================================================= */
+
+/// Halaman Langganan PRO: keadaan langganan, pembayaran QRIS, dan uji coba.
+class LanggananProPage extends StatefulWidget {
+  const LanggananProPage({super.key, required this.user, required this.token});
+
+  final RtsUser user;
+  final String token;
+
+  @override
+  State<LanggananProPage> createState() => _LanggananProPageState();
+}
+
+class _LanggananProPageState extends State<LanggananProPage> {
+  late final ApiClient api = ApiClient(token: widget.token);
+
+  RtsLangganan data = RtsLangganan.sekarang;
+  bool memuat = true;
+  bool sedangProses = false;
+  String pesanGalat = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    if (mounted) {
+      setState(() {
+        memuat = true;
+        pesanGalat = '';
+      });
+    }
+
+    try {
+      final Map<String, dynamic> balasan = await api.get('langganan.php');
+      final RtsLangganan baru = RtsLangganan.dariBalasan(balasan);
+
+      await RtsLangganan.simpanKeSesi(baru);
+
+      if (!mounted) return;
+
+      setState(() {
+        data = baru;
+        memuat = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        memuat = false;
+        pesanGalat = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        memuat = false;
+        pesanGalat = 'Tidak dapat membaca keadaan langganan dari server.';
+      });
+    }
+  }
+
+  Future<void> _jalan(String aksi) async {
+    if (sedangProses) return;
+
+    setState(() => sedangProses = true);
+
+    try {
+      final Map<String, dynamic> balasan = await api.post(
+        'langganan.php',
+        <String, dynamic>{'aksi': aksi},
+      );
+
+      final RtsLangganan baru = RtsLangganan.dariBalasan(balasan);
+
+      await RtsLangganan.simpanKeSesi(baru);
+
+      if (!mounted) return;
+
+      setState(() {
+        data = baru;
+        sedangProses = false;
+      });
+
+      rtsShowMessage(
+        context,
+        (balasan['message'] ?? 'Selesai.').toString(),
+        success: true,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+
+      setState(() => sedangProses = false);
+
+      rtsShowMessage(context, error.message);
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() => sedangProses = false);
+
+      rtsShowMessage(context, 'Terjadi gangguan saat menghubungi server.');
+    }
+  }
+
+  Future<void> _sudahBayar() async {
+    final bool? lanjut = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Konfirmasi Pembayaran',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          'Pastikan pembayaran ${rtsRupiah(data.harga)} sudah berhasil dikirim '
+          'melalui QRIS. Setelah ditekan, Admin akan memeriksa pembayaran Anda '
+          'lalu mengaktifkan Akun PRO selama ${data.durasiHari} hari.',
+          style: const TextStyle(fontSize: 12.5, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(
+              'BATAL',
+              style: TextStyle(color: rtsTextSecondary),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: rtsMaroon),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('YA, SAYA SUDAH BAYAR'),
+          ),
+        ],
+      ),
+    );
+
+    if (lanjut == true) await _jalan('klaim');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          const RtsBackground(overlayOpacity: 0.93),
+          SafeArea(
+            child: Column(
+              children: [
+                _topBar(),
+                Expanded(
+                  child: RefreshIndicator(
+                    color: rtsMaroon,
+                    onRefresh: _muat,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+                      children: [
+                        _kartuKeadaan(),
+                        if (memuat) ...[
+                          const SizedBox(height: 14),
+                          const Center(
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2.2),
+                            ),
+                          ),
+                        ],
+                        if (pesanGalat.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          RtsCard(
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline_rounded,
+                                    color: rtsMaroon, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    pesanGalat,
+                                    style: const TextStyle(
+                                      color: rtsTextSecondary,
+                                      fontSize: 12,
+                                      height: 1.45,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 18),
+                        const RtsSectionTitle('Pembayaran QRIS'),
+                        const SizedBox(height: 11),
+                        _kartuQris(),
+                        const SizedBox(height: 18),
+                        const RtsSectionTitle('Uji Coba Gratis'),
+                        const SizedBox(height: 11),
+                        _kartuUjiCoba(),
+                        if (!data.pro) ...[
+                          const SizedBox(height: 18),
+                          const RtsIklanAsli(),
+                        ],
+                        const SizedBox(height: 18),
+                        const RtsSectionTitle('Keterangan'),
+                        const SizedBox(height: 11),
+                        _kartuKeterangan(),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _topBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 16, 6),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.arrow_back_rounded, color: rtsTextPrimary),
+          ),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Langganan PRO',
+                  style: TextStyle(
+                    color: rtsTextPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  'Masa berlaku dan pembayaran',
+                  style: TextStyle(color: rtsTextSecondary, fontSize: 11.5),
+                ),
+              ],
+            ),
+          ),
+          if (sedangProses)
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _kartuKeadaan() {
+    final bool bebasIklan = data.pro;
+
+    return RtsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: bebasIklan
+                      ? const Color(0xffe8f5ec)
+                      : const Color(0xfffaecee),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  bebasIklan
+                      ? Icons.workspace_premium_rounded
+                      : Icons.workspace_premium_outlined,
+                  color: bebasIklan ? rtsGreen : rtsMaroon,
+                  size: 23,
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Akun ${RtsTingkatAkun.label}',
+                      style: const TextStyle(
+                        color: rtsTextPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      RtsTingkatAkun.keterangan,
+                      style: const TextStyle(
+                        color: rtsTextSecondary,
+                        fontSize: 11.5,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              RtsBadge(
+                data.label,
+                background: bebasIklan
+                    ? const Color(0xffe8f5ec)
+                    : const Color(0xfffaecee),
+                foreground: bebasIklan ? rtsGreen : rtsMaroon,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const RtsDivider(),
+          RtsInfoRow('Masa berlaku', data.keteranganMasa),
+          const RtsDivider(),
+          RtsInfoRow(
+            'Harga langganan',
+            '${rtsRupiah(data.harga)} / ${data.durasiHari} hari',
+          ),
+          const RtsDivider(),
+          RtsInfoRow('Uji coba gratis', '${data.trialHari} hari (sekali saja)'),
+        ],
+      ),
+    );
+  }
+
+  Widget _kartuQris() {
+    return RtsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _gambarQris(),
+          const SizedBox(height: 14),
+          Center(
+            child: Text(
+              rtsRupiah(data.harga),
+              style: const TextStyle(
+                color: rtsTextPrimary,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Center(
+            child: Text(
+              'untuk ${data.durasiHari} hari bebas iklan',
+              style: const TextStyle(color: rtsTextSecondary, fontSize: 12),
+            ),
+          ),
+          const SizedBox(height: 12),
+          RtsInfoRow('Nama usaha', data.namaMerchant),
+          const RtsDivider(),
+          RtsInfoRow('NMID QRIS', data.nmid),
+          const SizedBox(height: 14),
+          const Text(
+            'Cara berlangganan:',
+            style: TextStyle(
+              color: rtsTextPrimary,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '1. Buka aplikasi bank atau dompet digital, pilih Bayar QRIS.\n'
+            '2. Pindai gambar QRIS di atas.\n'
+            '3. Bayar sesuai nominal yang tertera.\n'
+            '4. Tekan tombol SAYA SUDAH BAYAR di bawah.\n'
+            '5. Admin memeriksa pembayaran, lalu Akun PRO aktif selama '
+            '${data.durasiHari} hari.',
+            style: const TextStyle(
+              color: rtsTextSecondary,
+              fontSize: 11.5,
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 14),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: rtsMaroon,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            onPressed: sedangProses ? null : _sudahBayar,
+            child: const Text(
+              'SAYA SUDAH BAYAR',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Bila sudah pernah menekan tombol ini, pernyataan pembayaran Anda '
+            'sedang diperiksa Admin. Mohon ditunggu.',
+            style: TextStyle(
+              color: rtsTextSecondary,
+              fontSize: 10.5,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _gambarQris() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.asset(
+        RtsLangganan.gambarQris,
+        width: double.infinity,
+        fit: BoxFit.contain,
+        errorBuilder: (context, galat, tumpukan) => Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: rtsSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: rtsCardBorder),
+          ),
+          child: const Column(
+            children: [
+              Icon(Icons.qr_code_2_rounded, size: 46, color: rtsMaroon),
+              SizedBox(height: 8),
+              Text(
+                'Gambar QRIS belum dipasang',
+                style: TextStyle(
+                  color: rtsTextPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 5),
+              Text(
+                'Salin gambar QRIS Bapak ke folder assets/images dengan nama '
+                'qris_bene_s.jpg, lalu jalankan flutter clean dan flutter run.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: rtsTextSecondary,
+                  fontSize: 11.5,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _kartuUjiCoba() {
+    if (data.proAktif) {
+      return RtsCard(
+        child: Row(
+          children: [
+            const Icon(Icons.verified_rounded, color: rtsGreen, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                data.berlakuSampai.isEmpty
+                    ? 'Akun PRO Anda aktif tanpa batas waktu. Terima kasih.'
+                    : 'Akun PRO Anda aktif sampai ${data.berlakuSampai}. '
+                        'Terima kasih.',
+                style: const TextStyle(
+                  color: rtsTextSecondary,
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (data.trialAktif) {
+      return RtsCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.timelapse_rounded, color: rtsAmber, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Uji coba gratis sedang berjalan - sisa '
+                    '${data.sisaTrialHari} hari. Seluruh iklan dimatikan '
+                    'selama uji coba.',
+                    style: const TextStyle(
+                      color: rtsTextSecondary,
+                      fontSize: 12,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: rtsMaroon,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+              ),
+              onPressed: sedangProses ? null : () => _jalan('klaim'),
+              child: const Text(
+                'LANJUT BERLANGGANAN',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (data.trialTersedia) {
+      return RtsCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Coba seluruh kelebihan Akun PRO (bebas iklan) selama '
+              '7 hari tanpa biaya. Uji coba hanya dapat dipakai sekali.',
+              style: TextStyle(
+                color: rtsTextSecondary,
+                fontSize: 12,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: rtsGreen,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+              ),
+              onPressed: sedangProses ? null : () => _jalan('trial'),
+              child: Text(
+                'COBA GRATIS ${data.trialHari} HARI',
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RtsCard(
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, color: rtsTextSecondary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              data.trialPernahDipakai
+                  ? 'Uji coba gratis sudah pernah dipakai akun ini. Silakan '
+                      'aktifkan langganan melalui pembayaran QRIS di atas.'
+                  : 'Uji coba gratis belum tersedia untuk akun ini. Silakan '
+                      'aktifkan langganan melalui pembayaran QRIS di atas.',
+              style: const TextStyle(
+                color: rtsTextSecondary,
+                fontSize: 12,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _kartuKeterangan() {
+    return RtsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Akun GRATIS: iklan tampil pada beranda dan pada setiap menu.\n'
+            'Akun PRO: bebas iklan selama masa berlaku.\n\n'
+            'Masa langganan yang masih berjalan akan DITAMBAHKAN, jadi '
+            'pembayaran yang lebih awal tidak hangus.\n\n'
+            'Pembayaran hanya melalui QRIS di atas. Aplikasi tidak menyimpan '
+            'data rekening atau kartu siapa pun.',
+            style: TextStyle(
+              color: rtsTextSecondary,
+              fontSize: 11.5,
+              height: 1.7,
             ),
           ),
         ],

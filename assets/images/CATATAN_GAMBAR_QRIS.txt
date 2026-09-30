@@ -1,0 +1,20 @@
+CATATAN GAMBAR QRIS
+===================
+
+Letakkan gambar QRIS milik Bapak pada folder ini dengan nama berkas:
+
+    qris_bene_s.jpg
+
+Nama berkas harus PERSIS seperti itu (huruf kecil semua, berakhiran .jpg),
+karena nama itulah yang dipanggil aplikasi pada halaman Langganan PRO.
+
+Cara cepat: jalankan berkas PASANG_GAMBAR_QRIS.ps1 dari folder proyek
+(D:\Project\rts_panel_app). Skrip itu mencari gambar QRIS terbaru di folder
+Unduhan/Desktop, lalu menyalinnya ke sini dengan nama yang benar.
+
+Setelah gambar disalin, jalankan:
+    flutter clean
+    flutter run -d CPH1937
+
+Selama gambar belum ada, halaman Langganan PRO tetap dapat dibuka dan
+menampilkan keterangan NMID QRIS beserta nominalnya.

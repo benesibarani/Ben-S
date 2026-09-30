@@ -10,8 +10,15 @@ login. Cukup klik, berkasnya langsung terunduh.
 
 PANDUAN LANGKAH DEMI LANGKAH
 ----------------------------
-MULAI_DARI_SINI.txt        - urutan 5 putaran
-PUTARAN_2_DAN_3.txt        - langkah rinci Putaran 2 & 3 (2A-2C, 3A-3E)
+MULAI_DARI_SINI.txt          - urutan putaran pekerjaan
+PUTARAN_2_DAN_3.txt          - langkah rinci Putaran 2 & 3 (2A-2C, 3A-3E)
+NOTIFIKASI_OTOMATIS.txt      - pemberitahuan otomatis ke layar HP
+                               (versi baru, aktivitas Admin, tombol UPDATE)
+IKLAN_LANGGANAN_FOTO.txt     - iklan app open + native semua menu, langganan
+                               PRO dengan QRIS (30 hari + uji coba 7 hari),
+                               dan foto pribadi setiap pengguna
+CUACA_BELUM_TAMPIL.txt       - perbaikan kotak cuaca (dua main.dart)
+INSTAL_LEWAT_TERMINAL.txt    - perintah pemasangan ke HP lewat terminal
 
 PENGINGAT KEAMANAN
 ------------------
@@ -26,13 +33,16 @@ Berkas dashboard.php lama yang memuat password sudah dihapus dari repo.
  1. PAKET APLIKASI ANDROID (diekstrak ke D:\Project\rts_panel_app)
 ------------------------------------------------------------------
 
-RTS_PANEL_FITUR_BARU.zip   (13 berkas - kini memuat lib\main.dart)
-    (lib/main.dart + main.dart + pubspec.yaml + PASANG_MAIN_DART.ps1
-     + PASANG_FITUR_BARU.ps1 + PASANG_CEPAT.ps1
+RTS_PANEL_FITUR_BARU.zip   (17 berkas - PAKET APLIKASI TERBARU)
+    (lib/main.dart + main.dart (2.576 baris baru) + pubspec.yaml (1.2.0+3)
+     + PASANG_MAIN_DART.ps1 + PASANG_FITUR_BARU.ps1 + PASANG_CEPAT.ps1
+     + PASANG_GAMBAR_QRIS.ps1  <-- BARU (memasang gambar QRIS)
      + ADB.ps1 + TAMBAH_ADB_KE_PATH.ps1 + PERBAIKI_PUBSPEC.ps1
      + PERIKSA_KODE_APLIKASI.ps1 + android_manifest_tambahan.xml
      + CUACA_BELUM_TAMPIL.txt + INSTAL_LEWAT_TERMINAL.txt
-     - sudah termasuk IZIN LOKASI untuk cuaca)
+     + NOTIFIKASI_OTOMATIS.txt + IKLAN_LANGGANAN_FOTO.txt
+     + assets/images/CATATAN_GAMBAR_QRIS.txt
+     - sudah termasuk izin LOKASI (cuaca) dan izin KAMERA (foto petugas))
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_FITUR_BARU.zip
 
 
@@ -58,6 +68,31 @@ RTS_PANEL_VERSI_APK.zip
 RTS_PANEL_AKUN_PRO.zip
     (akun_pro.php + api/ + SQL - akun GRATIS melihat iklan, akun PRO bebas iklan)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_AKUN_PRO.zip
+
+RTS_PANEL_LANGGANAN_PRO.zip   <-- BARU (10 berkas: langganan PRO, QRIS, foto petugas)
+    (api/langganan_inti.php + api/langganan.php + api/upload_foto.php
+     + api/siapkan_langganan.php + api/login.php + api/session_check.php
+     + langganan_admin.php + RTS_PANEL_LANGGANAN_PRO.sql
+     + IKLAN_LANGGANAN_FOTO.txt)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_LANGGANAN_PRO.zip
+
+IKLAN_LANGGANAN_FOTO.txt   (panduan iklan, langganan QRIS, foto petugas)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/IKLAN_LANGGANAN_FOTO.txt
+
+PASANG_GAMBAR_QRIS.ps1   (menyalin gambar QRIS ke assets\images dengan nama benar)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PASANG_GAMBAR_QRIS.ps1
+
+langganan_admin.php   (halaman Admin: setujui pembayaran QRIS, +30 hari, trial)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/langganan_admin.php
+
+api/langganan_inti.php   (aturan langganan: 30 hari, uji coba 7 hari)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/langganan_inti.php
+
+api/langganan.php   (API langganan untuk aplikasi)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/langganan.php
+
+api/upload_foto.php   (unggah foto pribadi pengguna)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/upload_foto.php
 
 RTS_PANEL_FIREBASE.zip   (11 berkas - PEMBERITAHUAN OTOMATIS ke layar HP)
     (api/notif_otomatis.php BARU + api/fcm_kirim.php + app_versi.php +
@@ -186,3 +221,13 @@ Seluruh isi cabang kerja dalam satu zip:
   Langkah 6  RTS_PANEL_APP_VERSI.sql   -> jalankan lewat phpMyAdmin (tab SQL)
   Langkah 7  app_versi.php             -> unggah APK terbaru lewat menu baru
 ==============================================================================
+
+
+------------------------------------------------------------------
+ 5. BAGIAN PANDUAN DALAM PANDUAN_VERSI_TERBARU.md
+------------------------------------------------------------------
+BAGIAN 54  - pemberitahuan otomatis ke layar HP
+BAGIAN 55  - iklan app open, native seluruh menu, langganan PRO (QRIS,
+             30 hari + uji coba 7 hari), dan foto pribadi pengguna
+
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PANDUAN_VERSI_TERBARU.md
