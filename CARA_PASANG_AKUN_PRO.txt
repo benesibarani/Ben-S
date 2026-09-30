@@ -1,0 +1,49 @@
+===============================================================================
+ RTS PANEL BY BENE - AKUN PRO (IKLAN HANYA UNTUK AKUN GRATIS)
+ Paket: RTS_PANEL_AKUN_PRO.zip
+===============================================================================
+
+ATURAN YANG DITERAPKAN (pilihan Bapak - pilihan b)
+   Akun GRATIS : iklan tampil (banner beranda + iklan bentuk asli di 6 menu)
+   Akun PRO    : iklan TIDAK tampil sama sekali
+
+ISI PAKET (ekstrak ke public_html)
+   akun_pro.php                     halaman ADMIN untuk menandai akun PRO
+   api/kolom.php                    berkas BARU  - pemeriksaan kolom database
+   api/login.php                    diperbarui   - mengirim penanda akun_pro
+   api/session_check.php            diperbarui   - mengirim penanda akun_pro
+   api/api_bootstrap.php            diperbarui   - membaca kolom akun_pro
+   RTS_PANEL_AKUN_PRO.sql           perintah menambah kolom akun_pro
+
+URUTAN PEMASANGAN
+   1. Jalankan RTS_PANEL_AKUN_PRO.sql pada database UJI COBA (benedics_coba)
+      lewat phpMyAdmin - tab SQL - tempel isi berkas - Go
+   2. Unggah seluruh berkas pada paket ini ke public_html
+      (berkas di dalam folder api/ masuk ke folder api/ di server)
+   3. Uji di staging: buka https://coba.benedic-s.com/akun_pro.php
+      - halaman harus menampilkan daftar akun
+      - tekan "Jadikan PRO" pada satu akun uji
+      - buka aplikasi memakai akun itu - iklan harus hilang
+   4. Setelah staging berhasil DAN database produksi sudah di-backup:
+      ulangi langkah 1 dan 2 pada produksi (rts.benedic-s.com)
+
+YANG PENTING DIKETAHUI
+   - Selama kolom akun_pro belum ada, seluruh akun dianggap GRATIS.
+     Jadi memasang berkas PHP ini lebih dahulu TIDAK merusak apa pun.
+   - Perintah SQL-nya hanya MENAMBAH satu kolom; tidak ada data akun,
+     password, atau penjualan yang diubah.
+   - Aplikasi membaca status ini saat LOGIN. Setelah status diubah, pengguna
+     perlu login kembali (atau membuka aplikasi lagi) agar terlihat.
+   - Halaman akun_pro.php hanya dapat dibuka oleh role ADMIN.
+   - Akun ADMIN sendiri tidak dapat diubah menjadi GRATIS, agar tidak
+     terkunci dari halaman ini.
+   - Pembayaran/langganan belum ditangani; halaman ini hanya menandai akun.
+
+UJI COBA TANPA MENGUBAH DATABASE
+   Pada aplikasi: menu Profil - nyalakan "Uji coba Akun PRO" (khusus ADMIN).
+   Berguna untuk melihat tampilan bebas iklan sebelum kolom database dibuat.
+
+CARA CEPAT MEMERIKSA APAKAH BERHASIL
+   Akun PRO    -> tidak ada kotak iklan di beranda maupun pada keenam menu
+   Akun GRATIS -> iklan tampil seperti biasa
+===============================================================================
