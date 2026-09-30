@@ -4483,3 +4483,83 @@ selalu digantikan dengan kode pada skrip.
 | 4 | Periksa di HP: ikon RTS Panel, kotak cuaca, kotak iklan banner di beranda, iklan di keenam menu |
 | 5 | Buat unit iklan **Native** di AdMob, lalu kirimkan kodenya kepada saya untuk dipasang pada pembaruan berikutnya |
 
+---
+
+## BAGIAN 41 - SELURUH KODE IKLAN ADMOB SUDAH LENGKAP DAN TERPASANG
+
+### A. Tiga unit iklan pada akun Bapak
+
+Akun AdMob: **ca-app-pub-1905352530630884**
+
+| Nomor | Nama unit di AdMob | Format | Kode unit | Keadaan pada aplikasi |
+| --- | --- | --- | --- | --- |
+| 1 | (kode aplikasi) | - | `ca-app-pub-1905352530630884~8932651962` | Terpasang pada AndroidManifest |
+| 2 | **BANNER RTS** | Banner | `ca-app-pub-1905352530630884/6675189094` | Terpasang - beranda (bawah kotak merah) |
+| 3 | **RTS Panel Native** | Native advanced | `ca-app-pub-1905352530630884/9404285058` | Terpasang - keenam menu |
+| 4 | RTS Pop | Pembukaan aplikasi | `ca-app-pub-1905352530630884/3880022875` | Belum dipakai (cadangan) |
+
+**Kode uji Google sudah tidak dipakai lagi.** Seluruh iklan kini memakai akun
+Bapak sendiri, jadi tampilan "Test Ad" akan hilang dan digantikan iklan asli.
+
+### B. Tentang unit "Native advanced"
+
+Format ini **tepat** untuk iklan bentuk asli pada Flutter, karena memberi akses
+penuh terhadap aset iklan (gambar, judul, isi, tombol) sehingga tampilannya
+dapat disesuaikan dengan gaya aplikasi. Inilah sebabnya iklan pada keenam menu
+dapat menyatu dengan tampilan RTS Panel, bukan berupa kotak iklan biasa.
+
+### C. Tentang unit "RTS Pop" (belum dipakai)
+
+Unit ini berformat **Pembukaan aplikasi** (App open ad): iklan menutupi seluruh
+layar sesaat setelah aplikasi dibuka. Penghasilannya paling besar di antara
+ketiga bentuk, tetapi **paling mengganggu** - untuk aplikasi kerja biasanya
+tidak disarankan, karena petugas membuka aplikasi berkali-kali sehari.
+
+Unit ini **tidak dipakai** untuk sekarang. Bila nanti ingin dipakai, cukup beri
+tahu saya - penambahannya memerlukan satu bagian kode baru pada saat aplikasi
+dibuka.
+
+### D. Pembagian iklan per akun - menunggu keputusan Bapak
+
+Keadaan sekarang: **iklan tampil untuk semua akun, termasuk ADMIN.**
+
+Bila nanti ingin diatur, pilihannya:
+
+| Pilihan | Keterangan |
+| --- | --- |
+| a | Iklan tetap tampil untuk semua akun (seperti sekarang) |
+| b | Iklan hanya untuk akun GRATIS; Akun PRO (berbayar) bebas iklan |
+| c | Iklan hanya untuk tingkat akses tertentu |
+
+Saya **belum** mengubah apa pun untuk hal ini, karena Bapak belum memutuskan.
+
+### E. Yang berubah pada berkas
+
+| Berkas | Perubahan |
+| --- | --- |
+| `main.dart` | `nativeIklan` diisi kode Bapak; keterangan modul iklan diperbarui; kode uji Google dibuang seluruhnya |
+| `KODE_ADMOB.txt` | Catatan ketiga unit iklan, cara mematikan iklan, dan pilihan pembagian iklan |
+| `RTS_PANEL_FITUR_BARU.zip` | Dibuat ulang memuat semua perubahan di atas |
+
+### F. Yang perlu diperiksa setelah aplikasi terpasang
+
+| Nomor | Pemeriksaan | Hasil yang diharapkan |
+| --- | --- | --- |
+| 1 | Buka beranda | Kotak iklan di bawah kotak merah akun |
+| 2 | Buka menu Pengajuan / Master Customer | Kartu iklan bentuk asli di paling atas daftar |
+| 3 | Buka menu Profil / Pengaturan / Sinkronisasi / Notifikasi | Kartu iklan bentuk asli tampil |
+| 4 | Teks "Test Ad" | Sudah tidak muncul lagi (kode uji sudah dibuang) |
+
+Catatan: unit iklan baru biasanya perlu waktu **paling lama satu jam** sebelum
+mulai menampilkan iklan. Selama menunggu, kotak iklan tidak muncul dan aplikasi
+berjalan normal - bukan kesalahan.
+
+### G. Bila iklan tidak muncul
+
+| Keadaan | Sebab yang mungkin dan penanganan |
+| --- | --- |
+| Kosong sama sekali selama beberapa jam | Periksa "Kontrol pemblokiran" pada AdMob - pastikan aplikasi tidak dibatasi |
+| Muncul kadang-kadang | Wajar - ketersediaan iklan bergantung pada permintaan pengiklan pada saat itu |
+| Tidak muncul pada satu menu saja | Periksa keluaran `flutter run` - cari tulisan `onAdFailedToLoad` beserta kodenya, lalu kirimkan ke saya |
+| Muncul di beranda tetapi tidak pada menu | Kemungkinan unit Native advanced belum melayani permintaan - tunggu satu jam, lalu coba lagi |
+

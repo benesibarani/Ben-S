@@ -1,53 +1,66 @@
 ===============================================================================
  RTS PANEL BY BENE - KODE IKLAN ADMOB (CATATAN CEPAT)
- Diperbarui: 30 September 2026
+ Diperbarui: 30 September 2026  |  Keadaan: SELURUH KODE SUDAH TERPASANG
 ===============================================================================
 
 AKUN ADMOB BAPAK
    Penerbit (publisher) : ca-app-pub-1905352530630884
 
 TIGA KODE YANG DIPAKAI
-   (+/- dipakai untuk menandai kode aplikasi, / dipakai untuk kode unit iklan)
+   (tanda ~ = kode aplikasi, tanda / = kode unit iklan)
 
    1. Kode APLIKASI            ca-app-pub-1905352530630884~8932651962
       Letaknya : android/app/src/main/AndroidManifest.xml
-      Siapa yang menulis : skrip PASANG_FITUR_BARU.ps1 (otomatis)
+      Ditulis oleh : skrip PASANG_FITUR_BARU.ps1 (otomatis)
       Keadaan  : SUDAH DIPASANG
 
-   2. Kode unit iklan BANNER   ca-app-pub-1905352530630884/6675189094
+   2. Unit iklan BANNER        ca-app-pub-1905352530630884/6675189094
+      Nama di AdMob : "BANNER RTS"  (format: Banner)
       Letaknya : main.dart - class RtsIklan - baris bannerIklan
-      Tampil di: beranda, kotak di bawah kotak merah akun
+      Tampil di : beranda, kotak di bawah kotak merah akun
       Keadaan  : SUDAH DIPASANG
 
-   3. Kode unit iklan NATIVE   BELUM ADA (masih menunggu dibuat)
+   3. Unit iklan NATIVE        ca-app-pub-1905352530630884/9404285058
+      Nama di AdMob : "RTS Panel Native"  (format: Native advanced)
       Letaknya : main.dart - class RtsIklan - baris nativeIklan
-      Tampil di: keenam menu (Master Customer, Pengajuan, Notifikasi,
-                 Sinkronisasi, Profil, Pengaturan)
-      Keadaan  : sementara memakai kode UJI resmi Google
-                 ca-app-pub-3940256099942544/2247696110
+      Tampil di : keenam menu (Master Customer, Pengajuan, Notifikasi,
+                  Sinkronisasi, Profil, Pengaturan)
+      Keadaan  : SUDAH DIPASANG
 
-CARA MEMBUAT UNIT IKLAN "NATIVE" (satu kali saja, sekitar 2 menit)
-   1. Buka https://admob.google.com
-   2. Menu kiri: Apps  - pilih aplikasi "RTS Panel"
-   3. Menu kiri: Ad units  - tekan tombol ADD AD UNIT
-   4. Pilih format: NATIVE  - tekan Continue
-   5. Isi nama, contoh: "RTS Panel Native"  - tekan Save
-   6. Akan muncul kotak "Ad unit created" berisi dua kode:
-         - kode APLIKASI  (tanda ~)  -> jangan dipakai, sudah ada
-         - kode UNIT IKLAN (tanda /) -> INI YANG DIBUTUHKAN
-   7. Kirimkan kode yang bertanda / itu kepada saya (bentuknya seperti:
-         ca-app-pub-1905352530630884/1234567890)
+UNIT IKLAN CADANGAN (belum dipakai)
+   4. "RTS Pop"               ca-app-pub-1905352530630884/3880022875
+      Format di AdMob : Pembukaan aplikasi (App open ad)
+      Keadaan : BELUM DIPAKAI aplikasi
 
-   Setelah kode itu dipasang, seluruh pekerjaan iklan selesai.
+      Bentuk iklan ini menutupi seluruh layar sesaat setelah aplikasi dibuka.
+      Penghasilannya paling besar di antara ketiga bentuk di atas, tetapi
+      paling mengganggu petugas - untuk aplikasi kerja biasanya tidak
+      disarankan. Bila nanti ingin dipakai, beri tahu saya: penambahannya
+      memerlukan satu bagian kode baru pada pembukaan aplikasi.
 
 CATATAN PENTING
    - Unit iklan baru biasanya perlu waktu paling lama satu jam sebelum mulai
      menampilkan iklan. Selama menunggu, kotak iklan tidak muncul dan aplikasi
      tetap berjalan normal - ini bukan kesalahan.
    - Jangan menekan iklan sendiri berulang kali, karena dapat dianggap
-     pelanggaran oleh Google. Untuk mencoba, cukup satu-dua kali.
-   - Bila iklan tidak muncul sama sekali padahal sudah lewat satu jam, kirimkan
+     pelanggaran oleh Google. Cukup satu-dua kali untuk mencoba.
+   - Cara mematikan seluruh iklan sementara: ubah "static const bool aktif = true;"
+     menjadi "false" pada class RtsIklan di main.dart, lalu jalankan
+     PASANG_FITUR_BARU.ps1 lagi.
+   - Bila iklan tetap tidak muncul setelah lebih dari satu jam, kirimkan
      keluaran aplikasi (flutter run) ke saya untuk diperiksa.
-   - Untuk mematikan iklan sementara: ubah "static const bool aktif = true;"
-     menjadi "false" pada class RtsIklan di main.dart.
+
+CATATAN TENTANG PEMBAGIAN IKLAN (menunggu keputusan Bapak)
+   Keadaan sekarang : iklan tampil untuk SEMUA akun, termasuk ADMIN.
+
+   Pilihan yang tersedia bila nanti ingin diatur:
+     a) Iklan tetap tampil untuk semua akun (seperti sekarang)
+     b) Iklan hanya untuk akun GRATIS; Akun PRO (berbayar) bebas iklan
+     c) Iklan hanya untuk akun dengan tingkat akses tertentu
+
+   Saya belum mengubah apa pun untuk pembagian ini - beri tahu saya pilihan
+   mana yang Bapak inginkan, dan saya sesuaikan.
+
+   Untuk melihat penghasilan iklan: AdMob - Laporan - lihat perkiraan
+   pendapatan, jumlah tampilan, dan tingkat klik.
 ===============================================================================
