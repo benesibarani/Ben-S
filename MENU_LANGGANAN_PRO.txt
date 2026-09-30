@@ -1,0 +1,177 @@
+==============================================================================
+ RTS PANEL BY BENE - MENU "LANGGANAN PRO" PADA SIDEBAR (KHUSUS ADMIN)
+==============================================================================
+
+ PERMINTAAN BAPAK
+ ----------------
+ "Pada menu sidebar untuk role Admin tidak ada menu untuk melihat status Pro
+  atau gratis User. Mengedit Harga Pro dan durasinya. Tolong buatkan menunya."
+
+ SUDAH DIKERJAKAN
+ ----------------
+ Kini pada sidebar bagian ADMINISTRASI ada menu baru:
+
+        Kelola User
+        Langganan PRO        <-- MENU BARU (mahkota)
+        Versi Aplikasi
+
+ Menu ini HANYA tampil untuk role ADMIN. Halaman yang dibuka adalah
+ langganan_admin.php, yang isinya:
+
+   1. Ringkasan jumlah akun:  PRO AKTIF | UJI COBA | GRATIS | PERNAH PRO KINI
+      GRATIS | BAYAR MENUNGGU
+   2. Daftar seluruh pengguna + lencana status PRO / GRATIS, tanggal berlaku,
+      sisa hari, dan tombol tindakan:  +30 HARI | +90 HARI | TRIAL | HENTIKAN
+   3. Kotak pencarian (nama / username / role / email) + penyaring status
+      (Semua status / Hanya PRO / Hanya uji coba / Hanya GRATIS)
+   4. Pernyataan pembayaran QRIS dari aplikasi: tombol SETUJUI / TOLAK
+   5. KARTU BARU: Pengaturan Harga & Durasi Langganan PRO
+   6. Unggah gambar QRIS + tombol PERBARUI DATABASE
+
+ Lencana merah pada menu sidebar = jumlah pernyataan "SAYA SUDAH BAYAR" yang
+ belum Bapak periksa. Jadi Bapak langsung tahu ada pembayaran menunggu tanpa
+ harus membuka halaman Akun PRO.
+
+
+==============================================================================
+ BAGIAN 1 - BERKAS YANG PERLU DIUNGGAH KE HOSTING (3 BERKAS)
+==============================================================================
+
+ Unggah ketiganya ke public_html (satu folder dengan dashboard.php):
+
+   [ ] 1. sidebar.php                 -> bagian menu (menu baru muncul di sini)
+                                     (sidebar_updated.php isinya sama, tidak
+                                      wajib diunggah)
+   [ ] 2. langganan_admin.php         -> halaman Langganan PRO versi 2
+                                     (kartu pengaturan harga & durasi)
+   [ ] 3. api/langganan_inti.php      -> aturan harga/durasi (versi 2);
+                                     WAJIB, sebab halaman versi 2 memanggil
+                                     fungsi baru dari berkas ini
+
+ Setelah diunggah:
+   [ ] Buka https://rts.benedic-s.com/langganan_admin.php?diagnosa=1
+       Pastikan tertulis:
+           Berkas inti     : ADA
+           Versi inti      : 2
+           Harga           : Rp5.000
+           Lama PRO        : 30 hari
+           Uji coba        : 7 hari
+           Tabel pengaturan: ADA   (BELUM ADA pun tidak masalah - dibuat otomatis
+                                    saat Bapak menekan SIMPAN PENGATURAN)
+
+   [ ] Buka https://rts.benedic-s.com/dashboard.php
+       Menu "Langganan PRO" harus tampak pada bagian ADMINISTRASI.
+
+ Bila menu TIDAK muncul: sidebar.php belum tertimpa (pastikan diunggah ke
+ public_html, bukan ke dalam folder api/).
+
+
+==============================================================================
+ BAGIAN 2 - CARA MELIHAT STATUS PRO / GRATIS SETIAP USER
+==============================================================================
+
+   [ ] 1. Masuk sebagai ADMIN
+   [ ] 2. Klik menu "Langganan PRO" pada sidebar
+   [ ] 3. Kartu "Ringkasan Status Akun" menampilkan jumlahnya sekilas
+   [ ] 4. Kartu "Daftar Akun - Status PRO / GRATIS" menampilkan tiap pengguna:
+
+           PRO      (hijau)  - bebas iklan, masih berlaku
+           PRO      (hijau)  - bila tanpa batas waktu: "tanpa batas waktu"
+           UJI COBA (kuning) - masih memakai masa uji coba
+           GRATIS   (merah)  - melihat iklan
+
+         Kolom "Berlaku sampai" dan "Sisa" menunjukkan tanggal & sisa harinya.
+
+   [ ] 5. Ingin cepat? Isi kotak cari (misalnya nama petugas) lalu tekan CARI,
+          atau pilih "Hanya PRO" / "Hanya GRATIS" pada pilihan status.
+
+ Mengubah status langsung dari halaman ini (tanpa perlu membuka aplikasi HP):
+   +30 HARI   -> menambah masa PRO (angka 30 mengikuti pengaturan di Bagian 3)
+   +90 HARI   -> menambah masa PRO 3 bulan
+   TRIAL      -> memulai/memulihkan uji coba (hanya muncul bila masih tersedia)
+   HENTIKAN   -> akun kembali GRATIS, iklan tampil lagi
+
+
+==============================================================================
+ BAGIAN 3 - CARA MENGEDIT HARGA PRO DAN DURASINYA
+==============================================================================
+
+   [ ] 1. Buka halaman "Langganan PRO"
+   [ ] 2. Cari kartu "Pengaturan Harga & Durasi Langganan PRO"
+   [ ] 3. Isi ketiga angka:
+
+           Harga langganan (rupiah) : 1000 - 1.000.000   (contoh: 5000)
+           Lama masa PRO (hari)     : 1 - 365            (contoh: 30)
+           Lama uji coba (hari)     : 0 - 90             (0 = dimatikan)
+
+   [ ] 4. Tekan "SIMPAN PENGATURAN"
+   [ ] 5. Muncul tulisan hijau: "Pengaturan tersimpan. Harga Rp5.000 - masa
+          PRO 30 hari - uji coba 7 hari. Aplikasi dan website langsung memakai
+          nilai baru ini."
+
+ Tombol "KEMBALIKAN KE BAWAAN" mengembalikan: Rp5.000 / 30 hari / 7 hari.
+
+ NILAI BARU LANGSUNG DIPAKAI DI MANA SAJA
+   - Harga      : tampil pada halaman Langganan PRO di aplikasi HP
+   - Lama PRO   : tombol "+N HARI", penyetujuan pembayaran QRIS, dan
+                  pemberian masa PRO dari aplikasi ADMIN
+   - Uji coba   : lama masa uji coba untuk petugas yang baru masuk
+
+ PENTING - aplikasi TIDAK perlu dibangun ulang (tidak perlu build APK baru)
+ bila harga/durasi berubah, sebab aplikasi membaca angka ini dari server
+ setiap kali halaman Langganan PRO dibuka. Jadi Bapak bebas mengubah harga
+ kapan pun.
+
+ Catatan: pembayaran yang SUDAH menunggu (status MENUNGGU) memakai lama hari
+ yang tercatat saat petugas menekan "SAYA SUDAH BAYAR". Pembayaran baru
+ mengikuti angka terbaru.
+
+ Tempat penyimpanan: tabel baru rts_lg_pengaturan pada database (kolom kunci,
+ nilai, diperbarui). Tabel dibuat otomatis saat pertama kali menekan SIMPAN
+ PENGATURAN, atau lewat tombol PERBARUI DATABASE. Tidak perlu phpMyAdmin.
+
+
+==============================================================================
+ BAGIAN 4 - BILA ADA MASALAH
+==============================================================================
+
+ Menu "Langganan PRO" tidak tampak
+   -> sidebar.php belum diunggah, atau diunggah ke folder yang salah
+      (harus di public_html, satu folder dengan dashboard.php).
+   -> Pastikan role akun Bapak ADMIN (tertulis di kiri atas sidebar).
+
+ Muncul tulisan "Berkas api/langganan_inti.php di hosting belum versi terbaru"
+   -> Unggah api/langganan_inti.php versi 2, lalu ulangi menyimpan.
+
+ Muncul "Akses ditolak ... hanya dapat dibuka oleh akun ADMIN"
+   -> Benar, halaman ini memang khusus ADMIN.
+
+ Harga masih Rp5.000 di aplikasi walaupun sudah diubah
+   -> Pastikan pengaturan benar-benar tersimpan (tulisan hijau tampil).
+   -> Tutup dan buka kembali halaman Langganan PRO di aplikasi HP
+      (aplikasi membaca ulang dari server saat halaman dibuka).
+   -> Periksa https://rts.benedic-s.com/langganan_admin.php?diagnosa=1
+      pada bagian Harga.
+
+ Tombol +30 HARI berubah menjadi +N HARI
+   -> Memang begitu: angka pada tombol mengikuti "Lama masa PRO" yang Bapak
+      isi. Jadi tidak ada yang rusak.
+
+ Halaman lain menjadi rusak setelah sidebar.php diunggah
+   -> Kembalikan berkas sidebar.php lama dari cadangan, lalu beri tahu saya.
+      Berkas ini hanya membaca jumlah pembayaran menunggu (aman gagal: bila
+      tabel pembayaran_pro belum ada, lencana tidak ditampilkan).
+
+
+==============================================================================
+ RINGKASAN PERUBAHAN BERKAS
+==============================================================================
+
+ sidebar.php            : menu "Langganan PRO" + lencana pembayaran menunggu
+                          (tampil hanya untuk ADMIN)
+ langganan_admin.php    : versi 2 - kartu pengaturan harga & durasi, ringkasan
+                          status akun, pencarian & penyaringan
+ api/langganan_inti.php : versi 2 - harga, lama PRO, lama uji coba dibaca dari
+                          database (tabel rts_lg_pengaturan) dengan nilai
+                          bawaan Rp5.000 / 30 hari / 7 hari
+==============================================================================

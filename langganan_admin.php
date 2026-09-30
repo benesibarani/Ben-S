@@ -33,9 +33,13 @@
  */
 
 /* --------------------------------------------------------------------------
- * VERSI BERKAS: 1  (30 September 2026 - 23:55)
+ * VERSI BERKAS: 2  (30 September 2026 - 23:58)
+ *   - Kartu PENGATURAN HARGA & DURASI (harga, lama PRO, lama uji coba)
+ *   - Ringkasan jumlah akun PRO / TRIAL / GRATIS
+ *   - Pencarian & penyaringan daftar akun
+ *   - Menu "Langganan PRO" pada sidebar (lihat sidebar.php)
  * ------------------------------------------------------------------------ */
-define('LG_VERSI_BERKAS', 1);
+define('LG_VERSI_BERKAS', 2);
 
 require_once __DIR__ . '/config.php';
 
@@ -58,6 +62,12 @@ if (isset($_GET['diagnosa'])) {
     echo 'PHP            : ' . PHP_VERSION . "\n";
     echo 'Koneksi DB     : ' . (isset($conn) && $conn instanceof mysqli ? 'ADA' : 'TIDAK ADA') . "\n";
     echo 'Berkas inti    : ' . (function_exists('rts_lg_status') ? 'ADA' : 'TIDAK ADA') . "\n";
+    echo 'Versi inti     : ' . (defined('LG_INTI_VERSI_BERKAS') ? LG_INTI_VERSI_BERKAS : '-') . "\n";
+    echo 'Harga          : Rp' . number_format((float) rts_lg_harga(), 0, ',', '.') . "\n";
+    echo 'Lama PRO       : ' . rts_lg_durasi() . " hari\n";
+    echo 'Uji coba       : ' . rts_lg_trial() . " hari\n";
+    echo 'Tabel pengaturan: ' . ((isset($conn) && $conn instanceof mysqli
+        && function_exists('rts_lg_ada_tabel') && rts_lg_ada_tabel($conn, 'rts_lg_pengaturan')) ? 'ADA' : 'BELUM ADA') . "\n";
     echo 'Session aktif  : ' . (session_status() === PHP_SESSION_ACTIVE ? 'YA' : 'TIDAK') . "\n";
     echo 'Kunci session  : ' . implode(', ', array_keys($_SESSION)) . "\n";
 
@@ -140,7 +150,26 @@ $lg_kabar_jenis = 'ok';
 $lg_aksi = trim((string) ($_POST['aksi'] ?? $_GET['aksi'] ?? ''));
 
 if ($lg_aksi !== '') {
-    if ($lg_aksi === 'perbarui_database') {
+    if ($lg_aksi === 'simpan_pengaturan' || $lg_aksi === 'kembalikan_pengaturan') {
+        if (!function_exists('rts_lg_pengaturan_simpan')) {
+            $lg_kabar = ['Berkas api/langganan_inti.php di hosting belum versi terbaru. '
+                . 'Unggah dulu berkas itu, lalu coba lagi.'];
+            $lg_kabar_jenis = 'galat';
+        } else {
+            $lg_bawaan_aksi = rts_lg_bawaan();
+
+            $lg_set_harga = $lg_aksi === 'kembalikan_pengaturan'
+                ? (int) $lg_bawaan_aksi['harga'] : (int) ($_POST['harga'] ?? 0);
+            $lg_set_durasi = $lg_aksi === 'kembalikan_pengaturan'
+                ? (int) $lg_bawaan_aksi['durasi'] : (int) ($_POST['durasi'] ?? 0);
+            $lg_set_trial = $lg_aksi === 'kembalikan_pengaturan'
+                ? (int) $lg_bawaan_aksi['trial'] : (int) ($_POST['trial'] ?? 0);
+
+            $lg_hasil_set = rts_lg_pengaturan_simpan($conn, $lg_set_harga, $lg_set_durasi, $lg_set_trial);
+            $lg_kabar = [(string) $lg_hasil_set['pesan']];
+            $lg_kabar_jenis = !empty($lg_hasil_set['berhasil']) ? 'ok' : 'galat';
+        }
+    } elseif ($lg_aksi === 'perbarui_database') {
         if (function_exists('rts_lg_siapkan_database')) {
             $lg_kabar = rts_lg_siapkan_database($conn);
         } else {
@@ -329,6 +358,79 @@ $lg_rupiah = static function ($angka): string {
     return 'Rp' . number_format((float) $angka, 0, ',', '.');
 };
 
+/* -------------------------------------- pengaturan harga & durasi langganan */
+$lg_set = function_exists('rts_lg_pengaturan_baca')
+    ? rts_lg_pengaturan_baca(true, $conn)
+    : ['harga' => rts_lg_harga(), 'durasi' => rts_lg_durasi(), 'trial' => rts_lg_trial()];
+
+$lg_bawaan_nilai = function_exists('rts_lg_bawaan')
+    ? rts_lg_bawaan()
+    : ['harga' => 5000, 'durasi' => 30, 'trial' => 7];
+
+$lg_pengaturan_tabel = function_exists('rts_lg_ada_tabel')
+    ? rts_lg_ada_tabel($conn, 'rts_lg_pengaturan')
+    : false;
+
+/* -------------------------------------------------------- ringkasan keadaan */
+$lg_ringkas = ['total' => count($lg_daftar), 'pro' => 0, 'trial' => 0, 'gratis' => 0, 'kadaluarsa' => 0];
+
+foreach ($lg_daftar as $lg_u_ringkas) {
+    $lg_s_ringkas = $lg_u_ringkas['status'];
+
+    if ($lg_s_ringkas['pro_aktif']) {
+        $lg_ringkas['pro']++;
+    } elseif ($lg_s_ringkas['trial_aktif']) {
+        $lg_ringkas['trial']++;
+    } else {
+        $lg_ringkas['gratis']++;
+
+        if (!empty($lg_s_ringkas['kadaluarsa'])) {
+            $lg_ringkas['kadaluarsa']++;
+        }
+    }
+}
+
+/* --------------------------------------------------- pencarian & penyaringan */
+$lg_cari = trim((string) ($_GET['cari'] ?? ''));
+$lg_saring = strtoupper(trim((string) ($_GET['saring'] ?? 'SEMUA')));
+
+if (!in_array($lg_saring, ['SEMUA', 'PRO', 'TRIAL', 'GRATIS'], true)) {
+    $lg_saring = 'SEMUA';
+}
+
+$lg_tampil = [];
+
+foreach ($lg_daftar as $lg_u_tampil) {
+    $lg_s_tampil = $lg_u_tampil['status'];
+
+    if ($lg_saring === 'PRO' && !$lg_s_tampil['pro_aktif']) {
+        continue;
+    }
+
+    if ($lg_saring === 'TRIAL' && ($lg_s_tampil['pro_aktif'] || !$lg_s_tampil['trial_aktif'])) {
+        continue;
+    }
+
+    if ($lg_saring === 'GRATIS' && ($lg_s_tampil['pro_aktif'] || $lg_s_tampil['trial_aktif'])) {
+        continue;
+    }
+
+    if ($lg_cari !== '') {
+        $lg_teks_cari = strtolower(
+            (string) ($lg_u_tampil['nama_lengkap'] ?? '') . ' '
+            . (string) ($lg_u_tampil['username'] ?? '') . ' '
+            . (string) ($lg_u_tampil['role'] ?? '') . ' '
+            . (string) ($lg_u_tampil['email'] ?? '')
+        );
+
+        if (strpos($lg_teks_cari, strtolower($lg_cari)) === false) {
+            continue;
+        }
+    }
+
+    $lg_tampil[] = $lg_u_tampil;
+}
+
 $lg_qris_ada = is_file(__DIR__ . '/uploads/qris_bene_s.jpg');
 ?>
 <!doctype html>
@@ -402,7 +504,9 @@ $lg_qris_ada = is_file(__DIR__ . '/uploads/qris_bene_s.jpg');
 
 <div class="top">
   <h1>Langganan PRO - RTS Panel By Bene</h1>
-  <p>Masa berlaku 30 hari &middot; uji coba gratis 7 hari &middot; pembayaran QRIS <?php echo $lg_rupiah(rts_lg_harga()); ?></p>
+  <p>Masa berlaku <?php echo (int) $lg_set['durasi']; ?> hari &middot; uji coba gratis
+     <?php echo (int) $lg_set['trial'] > 0 ? (int) $lg_set['trial'] : 0; ?> hari &middot;
+     pembayaran QRIS <?php echo $lg_rupiah($lg_set['harga']); ?></p>
 </div>
 
 <div class="bungkus">
@@ -428,6 +532,92 @@ $lg_qris_ada = is_file(__DIR__ . '/uploads/qris_bene_s.jpg');
     </form>
   </div>
 <?php } ?>
+
+<div class="kartu">
+  <h2>Pengaturan Harga &amp; Durasi Langganan PRO</h2>
+  <div class="kotak-info">
+    Angka di bawah ini dipakai <b>bersamaan</b> oleh website dan aplikasi Android:
+    harga yang tampil pada halaman <b>Langganan PRO</b> di HP, lama masa PRO setiap
+    pembayaran disetujui, dan lama uji coba untuk petugas baru. Jadi bila harga
+    berubah, cukup ubah di sini - tidak perlu menyunting berkas PHP.
+    <?php if (!$lg_pengaturan_tabel) { ?>
+      <br><br><b>Catatan:</b> tabel penyimpanan belum ada di database. Menekan
+      SIMPAN PENGATURAN akan membuatnya otomatis (atau tekan PERBARUI DATABASE
+      di atas). Selama belum ada, nilai bawaan yang dipakai.
+    <?php } ?>
+  </div>
+
+  <form method="post" style="margin-top:14px">
+    <input type="hidden" name="aksi" value="simpan_pengaturan">
+    <div class="baris">
+      <div>
+        <label class="kecil-teks" for="lg_harga"><b>Harga langganan (rupiah)</b></label>
+        <input type="number" id="lg_harga" name="harga" min="1000" max="1000000" step="500"
+               value="<?php echo (int) $lg_set['harga']; ?>"
+               style="width:100%;margin-top:6px;padding:10px;border:1px solid #ded6d1;border-radius:10px">
+        <p class="kecil-teks">Sekarang <b><?php echo $lg_rupiah($lg_set['harga']); ?></b>
+          &middot; bawaan <?php echo $lg_rupiah($lg_bawaan_nilai['harga']); ?></p>
+      </div>
+      <div>
+        <label class="kecil-teks" for="lg_durasi"><b>Lama masa PRO (hari)</b></label>
+        <input type="number" id="lg_durasi" name="durasi" min="1" max="365"
+               value="<?php echo (int) $lg_set['durasi']; ?>"
+               style="width:100%;margin-top:6px;padding:10px;border:1px solid #ded6d1;border-radius:10px">
+        <p class="kecil-teks">Tombol <b>+<?php echo (int) $lg_set['durasi']; ?> HARI</b> dan
+          penyetujuan pembayaran QRIS memakai angka ini.</p>
+      </div>
+      <div>
+        <label class="kecil-teks" for="lg_trial"><b>Lama uji coba (hari)</b></label>
+        <input type="number" id="lg_trial" name="trial" min="0" max="90"
+               value="<?php echo (int) $lg_set['trial']; ?>"
+               style="width:100%;margin-top:6px;padding:10px;border:1px solid #ded6d1;border-radius:10px">
+        <p class="kecil-teks">Isi <b>0</b> bila uji coba ingin dimatikan.</p>
+      </div>
+    </div>
+    <button class="tombol" type="submit">SIMPAN PENGATURAN</button>
+    <button class="tombol abu" type="submit" name="aksi" value="kembalikan_pengaturan" formnovalidate
+            onclick="return confirm('Kembalikan ke bawaan: Rp5.000, masa PRO 30 hari, uji coba 7 hari?')">
+      KEMBALIKAN KE BAWAAN
+    </button>
+  </form>
+
+  <p class="kecil-teks" style="margin-top:12px">
+    Harga baru langsung terlihat pada halaman Langganan PRO di aplikasi begitu
+    petugas membuka halaman itu (aplikasi membaca harga dari server, bukan dari
+    di dalam APK). Jadi tidak perlu membangun ulang APK bila harga berubah.
+  </p>
+</div>
+
+<div class="kartu">
+  <h2>Ringkasan Status Akun (<?php echo (int) $lg_ringkas['total']; ?> pengguna)</h2>
+  <div class="baris">
+    <div class="kotak-info" style="text-align:center">
+      <div class="kecil-teks">PRO AKTIF</div>
+      <div style="font-size:26px;font-weight:700;color:#1d7a45"><?php echo (int) $lg_ringkas['pro']; ?></div>
+      <div class="kecil-teks">bebas iklan</div>
+    </div>
+    <div class="kotak-info" style="text-align:center">
+      <div class="kecil-teks">UJI COBA</div>
+      <div style="font-size:26px;font-weight:700;color:#9a6206"><?php echo (int) $lg_ringkas['trial']; ?></div>
+      <div class="kecil-teks">belum membayar</div>
+    </div>
+    <div class="kotak-info" style="text-align:center">
+      <div class="kecil-teks">GRATIS</div>
+      <div style="font-size:26px;font-weight:700;color:#8c1c25"><?php echo (int) $lg_ringkas['gratis']; ?></div>
+      <div class="kecil-teks">melihat iklan</div>
+    </div>
+    <div class="kotak-info" style="text-align:center">
+      <div class="kecil-teks">PERNAH PRO, KINI GRATIS</div>
+      <div style="font-size:26px;font-weight:700;color:#6f625d"><?php echo (int) $lg_ringkas['kadaluarsa']; ?></div>
+      <div class="kecil-teks">masa berlaku habis</div>
+    </div>
+    <div class="kotak-info" style="text-align:center">
+      <div class="kecil-teks">BAYAR MENUNGGU</div>
+      <div style="font-size:26px;font-weight:700;color:#a52430"><?php echo (int) $lg_jumlah_menunggu; ?></div>
+      <div class="kecil-teks">perlu diperiksa</div>
+    </div>
+  </div>
+</div>
 
 <div class="kartu">
   <h2>Pernyataan Pembayaran QRIS <?php echo $lg_jumlah_menunggu > 0 ? '(' . $lg_jumlah_menunggu . ' menunggu diperiksa)' : ''; ?></h2>
@@ -482,13 +672,37 @@ $lg_qris_ada = is_file(__DIR__ . '/uploads/qris_bene_s.jpg');
 </div>
 
 <div class="kartu">
-  <h2>Daftar Akun (<?php echo count($lg_daftar); ?> pengguna)</h2>
+  <h2>Daftar Akun - Status PRO / GRATIS
+    (<?php echo count($lg_tampil); ?> dari <?php echo count($lg_daftar); ?> pengguna)</h2>
+
+  <form method="get" style="margin:0 0 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <input type="text" name="cari" placeholder="Cari nama, username, role, atau email"
+           value="<?php echo htmlspecialchars($lg_cari); ?>"
+           style="flex:1 1 240px;padding:10px;border:1px solid #ded6d1;border-radius:10px">
+    <select name="saring" style="padding:10px;border:1px solid #ded6d1;border-radius:10px">
+      <?php foreach (['SEMUA' => 'Semua status', 'PRO' => 'Hanya PRO', 'TRIAL' => 'Hanya uji coba', 'GRATIS' => 'Hanya GRATIS'] as $lg_kunci_saring => $lg_label_saring) { ?>
+        <option value="<?php echo $lg_kunci_saring; ?>"<?php echo $lg_saring === $lg_kunci_saring ? ' selected' : ''; ?>>
+          <?php echo $lg_label_saring; ?>
+        </option>
+      <?php } ?>
+    </select>
+    <button class="tombol biru kecil" type="submit">CARI</button>
+    <a class="tombol abu kecil" href="langganan_admin.php">BERSIHKAN</a>
+  </form>
+
+  <?php if (!$lg_tampil) { ?>
+    <div class="kotak-info">
+      Tidak ada akun yang cocok dengan pencarian / saringan di atas.
+      Tekan BERSIHKAN untuk menampilkan seluruh akun.
+    </div>
+  <?php } ?>
+
   <table>
     <tr>
       <th>Foto</th><th>Petugas</th><th>Keadaan</th><th>Berlaku sampai</th>
-      <th>Sisa</th><th>Tindakan</th>
+      <th>Sisa</th><th>Tindakan (ubah langsung)</th>
     </tr>
-    <?php foreach ($lg_daftar as $lg_u) {
+    <?php foreach ($lg_tampil as $lg_u) {
         $lg_s = $lg_u['status'];
         $lg_kelas_status = $lg_s['pro_aktif'] ? 'pro' : ($lg_s['trial_aktif'] ? 'trial' : 'gratis');
     ?>
@@ -592,10 +806,17 @@ $lg_qris_ada = is_file(__DIR__ . '/uploads/qris_bene_s.jpg');
   <h2>Keterangan</h2>
   <div class="kotak-info">
     <b>Akun GRATIS</b> : iklan tampil pada beranda dan pada setiap menu.<br>
-    <b>Akun PRO</b> : bebas iklan selama masa berlaku (<?php echo rts_lg_durasi(); ?> hari setiap pembayaran).<br>
-    <b>Uji coba</b> : <?php echo rts_lg_trial(); ?> hari, diberikan otomatis satu kali saat petugas
-    masuk ke aplikasi untuk pertama kali setelah fitur ini dipasang.<br><br>
-    Masa langganan yang masih berjalan <b>ditambahkan</b>, jadi pembayaran yang lebih awal tidak hangus.
+    <b>Akun PRO</b> : bebas iklan selama masa berlaku (<?php echo (int) $lg_set['durasi']; ?> hari
+    setiap pembayaran &middot; harga <?php echo $lg_rupiah($lg_set['harga']); ?>).<br>
+    <b>Akun GRATIS</b> : melihat iklan pada beranda dan pada setiap menu.<br>
+    <b>Uji coba</b> : <?php echo (int) $lg_set['trial'] > 0
+        ? (int) $lg_set['trial'] . ' hari, diberikan otomatis satu kali saat petugas masuk ke aplikasi'
+        : 'sedang DIMATIKAN (lama uji coba = 0)'; ?>
+    untuk pertama kali setelah fitur ini dipasang.<br><br>
+    Masa langganan yang masih berjalan <b>ditambahkan</b>, jadi pembayaran yang lebih awal tidak hangus.<br>
+    Menekan <b>+<?php echo (int) $lg_set['durasi']; ?> HARI</b> / <b>+90 HARI</b> / <b>TRIAL</b> /
+    <b>HENTIKAN</b> pada tabel di atas langsung mengubah status akun petugas.<br>
+    Harga &amp; durasi diubah pada kartu <b>Pengaturan Harga &amp; Durasi</b> di atas.
   </div>
 </div>
 
@@ -603,6 +824,7 @@ $lg_qris_ada = is_file(__DIR__ . '/uploads/qris_bene_s.jpg');
   Versi halaman <?php echo LG_VERSI_BERKAS; ?> &middot;
   <a href="?diagnosa=1">periksa halaman</a> &middot;
   <a href="akun_pro.php">halaman Akun PRO lama</a> &middot;
+  <a href="sidebar.php">berkas sidebar (menu)</a> &middot;
   <a href="index.php">beranda</a>
 </p>
 

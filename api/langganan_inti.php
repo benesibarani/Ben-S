@@ -12,6 +12,14 @@
  *     - api/langganan.php       (halaman Langganan di dalam aplikasi)
  *     - langganan_admin.php     (halaman pengelolaan di website)
  *
+ *  PENGATURAN HARGA & DURASI
+ *  -------------------------
+ *  Harga langganan, lama masa PRO, dan lama uji coba dapat diubah oleh ADMIN
+ *  langsung dari halaman langganan_admin.php (menu "Langganan PRO" pada
+ *  sidebar). Nilainya disimpan pada tabel rts_lg_pengaturan, sehingga tidak
+ *  perlu menyunting berkas PHP. Bila tabel belum ada, seluruh fungsi di bawah
+ *  memakai nilai bawaan.
+ *
  *  ATURAN LANGGANAN
  *  ----------------
  *      Uji coba (TRIAL) : 7 hari, diberikan SEKALI untuk setiap akun, otomatis
@@ -36,33 +44,214 @@
  * ============================================================================
  */
 
+if (!defined('LG_INTI_VERSI_BERKAS')) {
+    /* Ditampilkan pada ?diagnosa=1 di halaman langganan_admin.php */
+    define('LG_INTI_VERSI_BERKAS', 2);
+}
+
+/* ==========================================================================
+ *  HARGA, DURASI, DAN UJI COBA (DAPAT DIUBAH ADMIN DARI HALAMAN WEB)
+ * ========================================================================== */
+
+if (!function_exists('rts_lg_bawaan')) {
+    /**
+     * Nilai bawaan bila tabel pengaturan belum ada / belum diisi.
+     *
+     * @return array<string,int>
+     */
+    function rts_lg_bawaan(): array
+    {
+        return ['harga' => 5000, 'durasi' => 30, 'trial' => 7];
+    }
+}
+
+if (!function_exists('rts_lg_pengaturan_baca')) {
+    /**
+     * Membaca pengaturan harga/durasi dari tabel rts_lg_pengaturan.
+     *
+     * Aman gagal: bila tabel belum ada, koneksi tidak tersedia, atau nilai di
+     * database tidak masuk akal, nilai bawaan yang dipakai. Hasilnya disimpan
+     * di memori (static) sehingga hanya satu kali membaca per permintaan.
+     *
+     * @param bool $paksa paksa membaca ulang dari database
+     *
+     * @return array<string,int> kunci: harga, durasi, trial
+     */
+    function rts_lg_pengaturan_baca(bool $paksa = false, ?mysqli $conn = null): array
+    {
+        static $simpan = null;
+
+        if ($simpan !== null && !$paksa) {
+            return $simpan;
+        }
+
+        $nilai = rts_lg_bawaan();
+
+        if (!$conn instanceof mysqli) {
+            $calon = $GLOBALS['conn'] ?? null;
+
+            if ($calon instanceof mysqli) {
+                $conn = $calon;
+            } elseif (function_exists('rts_api_db')) {
+                $calon = rts_api_db();
+
+                if ($calon instanceof mysqli) {
+                    $conn = $calon;
+                }
+            }
+        }
+
+        if ($conn instanceof mysqli && rts_lg_ada_tabel($conn, 'rts_lg_pengaturan')) {
+            $hasil = @$conn->query('SELECT kunci, nilai FROM rts_lg_pengaturan');
+
+            if ($hasil instanceof mysqli_result) {
+                while ($baris = $hasil->fetch_assoc()) {
+                    $kunci = strtolower(trim((string) ($baris['kunci'] ?? '')));
+                    $angka = (int) ($baris['nilai'] ?? 0);
+
+                    if ($kunci === 'harga' && $angka >= 1000 && $angka <= 1000000) {
+                        $nilai['harga'] = $angka;
+                    } elseif ($kunci === 'durasi' && $angka >= 1 && $angka <= 365) {
+                        $nilai['durasi'] = $angka;
+                    } elseif ($kunci === 'trial' && $angka >= 0 && $angka <= 90) {
+                        $nilai['trial'] = $angka;
+                    }
+                }
+
+                $hasil->free();
+            }
+        }
+
+        $simpan = $nilai;
+
+        return $simpan;
+    }
+}
+
+if (!function_exists('rts_lg_pengaturan_siapkan')) {
+    /**
+     * Membuat tabel rts_lg_pengaturan bila belum ada.
+     */
+    function rts_lg_pengaturan_siapkan(mysqli $conn): bool
+    {
+        if (rts_lg_ada_tabel($conn, 'rts_lg_pengaturan')) {
+            return true;
+        }
+
+        $sql = 'CREATE TABLE IF NOT EXISTS rts_lg_pengaturan (
+            kunci VARCHAR(40) NOT NULL PRIMARY KEY,
+            nilai VARCHAR(190) NOT NULL DEFAULT '',
+            diperbarui DATETIME NULL DEFAULT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+
+        return (bool) @$conn->query($sql);
+    }
+}
+
+if (!function_exists('rts_lg_pengaturan_simpan')) {
+    /**
+     * Menyimpan harga, lama masa PRO, dan lama uji coba.
+     *
+     * @return array<string,mixed> berhasil / pesan / pengaturan
+     */
+    function rts_lg_pengaturan_simpan(mysqli $conn, int $harga, int $durasi, int $trial): array
+    {
+        if ($harga < 1000 || $harga > 1000000) {
+            return ['berhasil' => false, 'pesan' => 'Harga harus antara Rp1.000 sampai Rp1.000.000.'];
+        }
+
+        if ($durasi < 1 || $durasi > 365) {
+            return ['berhasil' => false, 'pesan' => 'Lama langganan PRO harus antara 1 sampai 365 hari.'];
+        }
+
+        if ($trial < 0 || $trial > 90) {
+            return ['berhasil' => false, 'pesan' => 'Lama uji coba harus antara 0 sampai 90 hari (0 = dimatikan).'];
+        }
+
+        if (!rts_lg_pengaturan_siapkan($conn)) {
+            return ['berhasil' => false, 'pesan' => 'Tabel pengaturan gagal dibuat: ' . $conn->error];
+        }
+
+        $stmt = $conn->prepare(
+            'INSERT INTO rts_lg_pengaturan (kunci, nilai, diperbarui) VALUES (?, ?, NOW())
+             ON DUPLICATE KEY UPDATE nilai = ?, diperbarui = NOW()'
+        );
+
+        if (!$stmt) {
+            return ['berhasil' => false, 'pesan' => 'Gagal menyiapkan penyimpanan pengaturan.'];
+        }
+
+        $gagal = '';
+
+        foreach (['harga' => $harga, 'durasi' => $durasi, 'trial' => $trial] as $kunci => $angka) {
+            $teks = (string) $angka;
+
+            $stmt->bind_param('sis', $kunci, $teks, $teks);
+
+            if (!$stmt->execute()) {
+                $gagal = $kunci . ' (' . $conn->error . ')';
+                break;
+            }
+        }
+
+        $stmt->close();
+
+        if ($gagal !== '') {
+            return ['berhasil' => false, 'pesan' => 'Gagal menyimpan ' . $gagal];
+        }
+
+        $pengaturan = rts_lg_pengaturan_baca(true, $conn);
+
+        return [
+            'berhasil' => true,
+            'pesan' => 'Pengaturan tersimpan. Harga Rp' . number_format($pengaturan['harga'], 0, ',', '.')
+                . ' - masa PRO ' . $pengaturan['durasi'] . ' hari - uji coba '
+                . ($pengaturan['trial'] > 0 ? $pengaturan['trial'] . ' hari' : 'dimatikan')
+                . '. Aplikasi dan website langsung memakai nilai baru ini.',
+            'pengaturan' => $pengaturan,
+        ];
+    }
+}
+
 if (!function_exists('rts_lg_harga')) {
     /**
-     * Harga langganan PRO dalam rupiah. Ubah di sini bila harga berubah.
+     * Harga langganan PRO dalam rupiah.
+     *
+     * Diubah oleh ADMIN dari halaman Langganan PRO (tersimpan di database).
      */
     function rts_lg_harga(): int
     {
-        return 5000;
+        $pengaturan = rts_lg_pengaturan_baca();
+
+        return (int) ($pengaturan['harga'] ?? 5000);
     }
 }
 
 if (!function_exists('rts_lg_durasi')) {
     /**
      * Lama langganan PRO (hari) setiap kali pembayaran diterima.
+     *
+     * Diubah oleh ADMIN dari halaman Langganan PRO (tersimpan di database).
      */
     function rts_lg_durasi(): int
     {
-        return 30;
+        $pengaturan = rts_lg_pengaturan_baca();
+
+        return (int) ($pengaturan['durasi'] ?? 30);
     }
 }
 
 if (!function_exists('rts_lg_trial')) {
     /**
-     * Lama uji coba (hari) untuk setiap akun baru.
+     * Lama uji coba (hari) untuk setiap akun baru. 0 = uji coba dimatikan.
+     *
+     * Diubah oleh ADMIN dari halaman Langganan PRO (tersimpan di database).
      */
     function rts_lg_trial(): int
     {
-        return 7;
+        $pengaturan = rts_lg_pengaturan_baca();
+
+        return (int) ($pengaturan['trial'] ?? 7);
     }
 }
 
@@ -675,6 +864,12 @@ if (!function_exists('rts_lg_siapkan_database')) {
             } else {
                 $catatan[] = 'Tabel pembayaran_pro: GAGAL - ' . $conn->error;
             }
+        }
+
+        if (rts_lg_pengaturan_siapkan($conn)) {
+            $catatan[] = 'Tabel rts_lg_pengaturan (harga & durasi): siap.';
+        } else {
+            $catatan[] = 'Tabel rts_lg_pengaturan: GAGAL - ' . $conn->error;
         }
 
         return $catatan;

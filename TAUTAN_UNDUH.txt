@@ -3,6 +3,25 @@
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.
 ==============================================================================
 
+BARU - MENU "LANGGANAN PRO" PADA SIDEBAR (KHUSUS ADMIN)
+-------------------------------------------------------
+MENU_LANGGANAN_PRO.txt - menu baru di sidebar bagian ADMINISTRASI untuk
+                         melihat status PRO / GRATIS setiap user dan mengedit
+                         HARGA + DURASI langganan PRO (tanpa menyunting PHP)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/MENU_LANGGANAN_PRO.txt
+
+  Tiga berkas server yang perlu diunggah (ada di dalam RTS_PANEL_PUTARAN_7.zip):
+     sidebar.php            -> menu baru
+     langganan_admin.php    -> halaman Langganan PRO versi 2
+     api/langganan_inti.php -> versi 2 (harga & durasi dari database)
+     https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/sidebar.php
+     https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/langganan_admin.php
+     https://github.com/benesibarani/Ben-S/blob/arena/01a0beb2-ben-s/api/langganan_inti.php
+
+  Setelah diunggah, periksa:
+     https://rts.benedic-s.com/langganan_admin.php?diagnosa=1
+
+
 RILIS SEKARANG (TUTORIAL + LANGKAH BUILD APK)
 ---------------------------------------------
 CARA_RELEASE_APK.txt   - 5 langkah merilis APK: bersihkan, build apk --release,
@@ -25,12 +44,14 @@ Bila bingung mulai dari mana, cukup pakai DUA tautan ini:
 1. BACA_DULU.txt  - tutorial 8 langkah (buka lebih dahulu)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
 
-2. RTS_PANEL_PUTARAN_7.zip  - SATU paket lengkap putaran ini (16 berkas):
+2. RTS_PANEL_PUTARAN_7.zip  - SATU paket lengkap putaran ini (22 berkas):
      BACA_DULU.txt
-     1_SERVER_unggah_ke_hosting\  (8 berkas untuk cPanel)
+     1_SERVER_unggah_ke_hosting\  (12 berkas untuk cPanel, termasuk
+                                    sidebar.php + langganan_admin.php)
      2_APLIKASI_copy_ke_proyek\   (main.dart, pubspec.yaml, izin Android)
      3_SKRIP_POWERSHELL\          (LANGKAH1_PASANG_SEMUA.ps1 - hanya ini)
-     4_PANDUAN_LENGKAP\
+     4_PANDUAN_LENGKAP\           (+ MENU_LANGGANAN_PRO.txt,
+                                     APK_BESAR_CARA_UNGGAH.txt)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_7.zip
 
    Cukup satu skrip yang dijalankan: LANGKAH1_PASANG_SEMUA.ps1
@@ -104,7 +125,9 @@ RTS_PANEL_AKUN_PRO.zip
     (akun_pro.php + api/ + SQL - akun GRATIS melihat iklan, akun PRO bebas iklan)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_AKUN_PRO.zip
 
-RTS_PANEL_LANGGANAN_PRO.zip   <-- BARU (10 berkas: langganan PRO, QRIS, foto petugas)
+RTS_PANEL_LANGGANAN_PRO.zip   <-- DIPERBARUI (13 berkas: langganan PRO versi 2
+                                  dengan pengaturan harga & durasi, QRIS,
+                                  sidebar.php menu Langganan PRO, foto petugas)
     (api/langganan_inti.php + api/langganan.php + api/upload_foto.php
      + api/siapkan_langganan.php + api/login.php + api/session_check.php
      + langganan_admin.php + RTS_PANEL_LANGGANAN_PRO.sql

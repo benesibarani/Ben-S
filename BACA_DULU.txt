@@ -293,6 +293,9 @@
 
    4_PANDUAN_LENGKAP\
       IKLAN_LANGGANAN_FOTO.txt         penjelasan rinci (bila ingin lebih tahu)
+      MENU_LANGGANAN_PRO.txt           menu baru di sidebar khusus ADMIN: lihat
+                                       status PRO/GRATIS tiap user + edit harga
+                                       dan durasi PRO (3 berkas server)
 
 
 ==============================================================================
