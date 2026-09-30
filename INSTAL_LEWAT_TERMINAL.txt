@@ -1,0 +1,175 @@
+==============================================================================
+ RTS PANEL BY BENE - PERINTAH TERMINAL UNTUK INSTAL LANGSUNG KE HP (NIRKABEL)
+ Lembar contekan: salin-tempel pada PowerShell
+==============================================================================
+
+ Letak menjalankan: buka PowerShell DI DALAM folder D:\Project\rts_panel_app
+ Caranya: buka foldernya - tekan Shift + klik kanan pada ruang kosong -
+          pilih "Open PowerShell window here" / "Open in Terminal"
+
+
+------------------------------------------------------------------
+ 0. MEMERIKSA HP TERHUBUNG ATAU TIDAK
+------------------------------------------------------------------
+
+   flutter devices
+
+   Bila HP muncul dengan tanda (wireless) dan alamat IP - berarti siap.
+   Bila tidak muncul, lanjut ke nomor 1.
+
+   Cara lain (keterangan lebih rinci):
+
+   adb devices
+
+   Yang diharapkan tertulis "device", BUKAN "offline" atau "unauthorized".
+   Bila tertulis "offline", lanjut ke nomor 2.
+
+
+------------------------------------------------------------------
+ 1. MENYAMBUNG ULANG NIRKABEL (Android 11 ke atas)
+------------------------------------------------------------------
+
+   Di HP: Pengaturan - Sistem - Opsi Pengembang - Penelusuran nirkabel (ON).
+   HP menampilkan IP address & Port, contoh:  192.168.1.10:37000
+   Port BERUBAH setiap kali Penelusuran nirkabel dimatikan/dihidupkan.
+
+   a. Bila HP belum pernah dipasangkan ke komputer ini (atau pernah
+      "Forget"/lupa), PASANGKAN lebih dahulu:
+      Di HP tekan: "Pair device with pairing code"
+      Muncul kode 6 angka + IP:PORT KHUSUS PEMASANGAN (berbeda dari nomor a)
+
+         adb pair 192.168.1.10:37001
+         (lalu ketik kode 6 angka, tekan Enter)
+
+   b. Sambungkan:
+
+         adb connect 192.168.1.10:37000
+
+      Harus muncul: connected to 192.168.1.10:37000
+
+   c. Periksa:
+
+         adb devices
+
+
+------------------------------------------------------------------
+ 2. KONEKSI SERING TERPUTUS - PERINTAH PERBAIKAN
+------------------------------------------------------------------
+
+   a. Bersihkan sambungan lalu sambung ulang (urutan ini paling ampuh):
+
+         adb disconnect
+         adb kill-server
+         adb start-server
+         adb connect 192.168.1.10:37000
+
+   b. Bila HP tertulis "offline" terus, di HP matikan lalu hidupkan lagi
+      "Penelusuran nirkabel", catat IP:PORT yang BARU, lalu ulangi (a).
+
+   c. Bila tertulis "unauthorized": di layar HP muncul pertanyaan
+      "Allow USB debugging?" - tekan Allow / Izinkan.
+      Bila tidak muncul, di HP: Opsi Pengembang - "Revoke USB debugging
+      authorizations" - lalu sambungkan ulang.
+
+   Catatan penting agar tidak terputus lagi:
+      - HP dan komputer harus pada jaringan Wi-Fi yang SAMA
+      - Di HP: Opsi Pengembang - nyalakan "Stay awake / Tetap terjaga"
+      - Matikan penghemat baterai untuk aplikasi ini di HP
+      - Jangan biarkan HP terkunci lama saat pemasangan
+
+
+------------------------------------------------------------------
+ 3. CARA 1 - PALING MUDAH: BUILD + INSTAL + LANGSUNG JALAN
+------------------------------------------------------------------
+
+   flutter run -d 192.168.1.10:37000
+
+   Perintah ini: membangun versi debug, memasang ke HP, lalu membukanya.
+   Setelah aplikasi jalan, pada jendela PowerShell:
+
+         r   = muat ulang cepat (hot reload) setelah kode diubah
+         R   = mulai ulang aplikasi (hot restart)
+         q   = keluar (aplikasi tetap terpasang di HP)
+
+   Bila ada lebih dari satu HP terhubung dan ingin memilih sendiri:
+   jalankan tanpa -d, lalu tekan angka HP yang diinginkan.
+
+
+------------------------------------------------------------------
+ 4. CARA 2: PASANG BERKAS APK YANG SUDAH DIBUAT
+------------------------------------------------------------------
+
+   a. Membuat berkas debug:
+
+         flutter build apk --debug
+         Hasil: build\app\outputs\flutter-apk\app-debug.apk
+
+   b. Memasangnya ke HP:
+
+         adb install -r build\app\outputs\flutter-apk\app-debug.apk
+
+      Keterangan: -r = timpa yang sudah ada tanpa menghapus data.
+
+   c. Memasang versi release (lebih ringan, untuk dibagikan ke tim):
+
+         flutter build apk --release
+         adb install -r build\app\outputs\flutter-apk\app-release.apk
+
+
+------------------------------------------------------------------
+ 5. BILA LEBIH DARI SATU HP / HP TERTENTU SAJA
+------------------------------------------------------------------
+
+   adb -s 192.168.1.10:37000 install -r build\app\outputs\flutter-apk\app-debug.apk
+
+
+------------------------------------------------------------------
+ 6. MEMBUKA APLIKASI SETELAH DIPASANG
+------------------------------------------------------------------
+
+   adb shell am start -n com.example.rts_panel_app/.MainActivity
+
+   Bila gagal, pakai cara cadangan:
+
+   adb shell monkey -p com.example.rts_panel_app -c android.intent.category.LAUNCHER 1
+
+
+------------------------------------------------------------------
+ 7. MELIHAT CATATAN APLIKASI (UNTUK MENCARI SEBAB CUACA TIDAK TAMPIL)
+------------------------------------------------------------------
+
+   adb logcat | findstr /i "rts cuaca lokasi location flutter"
+
+   Hentikan dengan Ctrl+C.
+
+
+------------------------------------------------------------------
+ 8. BILA PEMASANGAN GAGAL
+------------------------------------------------------------------
+
+   Tulisan galat                          | Tindakan
+   ---------------------------------------|--------------------------------
+   device offline / device not found      | Ulangi nomor 2 (a), lalu pasang lagi
+   INSTALL_FAILED_UPDATE_INCOMPATIBLE     | Tanda tangan aplikasi berbeda.
+                                          | Hapus aplikasi lama lebih dahulu:
+                                          |   adb uninstall com.example.rts_panel_app
+   INSTALL_FAILED_VERSION_DOWNGRADE       | Versi terpasang lebih baru.
+                                          |   adb install -r -d <berkas apk>
+                                          | (tanda -d = izinkan turun versi)
+   INSTALL_FAILED_INSUFFICIENT_STORAGE    | Ruang HP hampir penuh - kosongkan
+   no devices/emulators found             | HP belum tersambung - ulangi nomor 1
+   more than one device/emulator          | Pakai tanda -s seperti nomor 5
+
+
+------------------------------------------------------------------
+ 9. RINGKASAN CEPAT (URUTAN BILA TERPUTUS DI TENGAH)
+------------------------------------------------------------------
+
+   adb disconnect
+   adb connect 192.168.1.10:37000
+   adb devices
+   adb install -r build\app\outputs\flutter-apk\app-debug.apk
+   adb shell am start -n com.example.rts_panel_app/.MainActivity
+
+   Ganti 192.168.1.10:37000 dengan IP:PORT HP Bapak yang sedang aktif.
+==============================================================================

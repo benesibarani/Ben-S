@@ -106,6 +106,20 @@ BUKTI CEPAT APAKAH BUILD DI HP MASIH LAMA
          (skrip ini memeriksa sendiri dan mencetak KODE APLIKASI - cocokkan
           dengan nilai pada LANGKAH 1B)
 
+  BILA SAMBUNGAN KE HP TERPUTUS DI TENGAH PEMASANGAN:
+  jalankan skrip pendek yang mengulang sendiri sampai berhasil:
+
+         .\PASANG_CEPAT.ps1
+         (akan menanyakan IP:PORT HP - lihat Opsi Pengembang - Penelusuran
+          nirkabel pada HP)
+
+  atau langsung dengan alamatnya:
+
+         .\PASANG_CEPAT.ps1 192.168.1.10:37000
+
+  Daftar perintah terminal lengkap (sambung ulang, memasang APK, membuka
+  aplikasi, melihat catatan aplikasi) ada pada berkas INSTAL_LEWAT_TERMINAL.txt
+
   [ ] 2. Perhatikan bagian "1. Memeriksa berkas aplikasi versi baru".
          Harus muncul tulisan seperti ini (semua [ADA]):
 

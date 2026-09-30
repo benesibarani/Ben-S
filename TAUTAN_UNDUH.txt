@@ -26,10 +26,11 @@ Berkas dashboard.php lama yang memuat password sudah dihapus dari repo.
  1. PAKET APLIKASI ANDROID (diekstrak ke D:\Project\rts_panel_app)
 ------------------------------------------------------------------
 
-RTS_PANEL_FITUR_BARU.zip   (7 berkas)
-    (main.dart + pubspec.yaml + PASANG_FITUR_BARU.ps1 + PERBAIKI_PUBSPEC.ps1
-     + PERIKSA_KODE_APLIKASI.ps1 + android_manifest_tambahan.xml
-     + CUACA_BELUM_TAMPIL.txt - sudah termasuk IZIN LOKASI untuk cuaca)
+RTS_PANEL_FITUR_BARU.zip   (9 berkas)
+    (main.dart + pubspec.yaml + PASANG_FITUR_BARU.ps1 + PASANG_CEPAT.ps1
+     + PERBAIKI_PUBSPEC.ps1 + PERIKSA_KODE_APLIKASI.ps1
+     + android_manifest_tambahan.xml + CUACA_BELUM_TAMPIL.txt
+     + INSTAL_LEWAT_TERMINAL.txt - sudah termasuk IZIN LOKASI untuk cuaca)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_FITUR_BARU.zip
 
 
@@ -67,6 +68,13 @@ RTS_PANEL_FIREBASE.zip
 
 CUACA_BELUM_TAMPIL.txt  (panduan cuaca: 5 langkah + tabel sebab & tindakan)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/CUACA_BELUM_TAMPIL.txt
+
+INSTAL_LEWAT_TERMINAL.txt  (lembar perintah terminal: sambung nirkabel,
+                            memasang APK, membuka aplikasi, melihat catatan)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/INSTAL_LEWAT_TERMINAL.txt
+
+PASANG_CEPAT.ps1  (memasang APK ke HP dengan ulangan otomatis bila terputus)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PASANG_CEPAT.ps1
 
 PERIKSA_KODE_APLIKASI.ps1  (pemeriksa isi folder proyek - tidak mengubah apa pun)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERIKSA_KODE_APLIKASI.ps1
