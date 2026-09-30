@@ -66,9 +66,13 @@
              https://rts.benedic-s.com/cek_session.php
          Akan muncul tulisan panjang. SALIN SEMUA, kirimkan kepada saya.
   [ ] 5. Buka juga: https://rts.benedic-s.com/app_versi.php?diagnosa=1
-         Tulisan pertamanya harus: VERSI BERKAS : 3
-         (bila yang muncul "versi berkas 1" berarti unggahan belum berhasil)
+         Tulisan pertamanya harus: VERSI BERKAS  : 4
+         Pada bagian bawah akan tertulis:
+             HASIL: penjaga LOLOS - halaman tidak mengalihkan pengunjung.
   [ ] 6. Buka dashboard, klik menu "Versi Aplikasi"
+
+  Bila bagian bawah berbunyi "pengunjung akan dialihkan", kirimkan seluruh
+  tulisan itu kepada saya - sebabnya sudah disebutkan di situ.
 
   Catatan: berkas cek_session.php hanya untuk memeriksa. Setelah masalahnya
   selesai, berkas itu dihapus (lihat catatan di akhir PUTARAN 1B).

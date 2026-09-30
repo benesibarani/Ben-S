@@ -5389,3 +5389,87 @@ sehari-hari.
 | `cek_session.php` | 144 baris - berkas pemeriksa baru |
 | `RTS_PANEL_PERIKSA_SESSION.zip` | paket kecil: `cek_session.php` + `app_versi.php` saja |
 | `RTS_PANEL_VERSI_APK.zip` | paket lengkap 9 berkas |
+
+## BAGIAN 49 - HASIL PEMERIKSAAN SERVER: SEMUA SEHAT + ALAT PEMERIKSA DIPERBAIKI (VERSI 4)
+
+### A. HASIL PEMERIKSAAN BAPAK (30 September 2026, 05:54)
+
+Kedua laporan Bapak menunjukkan keadaan server yang **sehat**. Ringkasannya:
+
+| Nomor | Yang diperiksa | Hasil | Arti |
+| --- | --- | --- | --- |
+| 1 | Session | 8 kunci tersimpan: `user_id`, `username`, `nama`, `email`, `role`, `salesman`, `sales_district`, `is_logged_in` | Sesi login **lengkap** |
+| 2 | Peran | `ADM***N (5 huruf)` = **ADMIN** | Peran **benar** - memang Admin |
+| 3 | Cookie | `PHPSESSID` diterima server | Cookie session **terkirim** dengan benar |
+| 4 | Berkas | `config.php`, `auth.php`, `header.php`, `footer.php`, `sidebar.php`, `dashboard.php`, `index.php`, `app_versi.php`, `api/app_versi.php`, `apk/`, `apk/app_versi.json` | **Semua ADA** |
+| 5 | Versi berkas | `app_versi.php` = **versi berkas 3**, diubah 30-09-2026 05:53:15 | Berkas baru **sudah terunggah** |
+
+**Kesimpulan:** seluruh syarat agar halaman Versi Aplikasi terbuka sudah terpenuhi.
+Penjaga halaman sekarang **lolos**: sesi lengkap, perannya ADMIN. Jadi halaman itu
+harusnya sudah dapat dibuka. Silakan dicoba kembali - bila masih kembali ke
+dashboard, lanjutkan ke bagian C di bawah.
+
+### B. SATU KEKELIRUAN PADA ALAT PEMERIKSA - SUDAH DIPERBAIKI
+
+Pada laporan Bapak, bagian DATABASE berbunyi:
+
+```text
+DATABASE
+  koneksi      : conn
+  status       : tidak ada koneksi database di halaman ini
+```
+
+Kalimat itu **keliru menilai** (bukan tanda server bermasalah). Sebabnya: blok
+pemeriksa dijalankan **sebelum** bagian pencarian koneksi database, sehingga
+laporan membaca variabel yang belum diisi. Pada berkas **versi 4**:
+
+| Nomor | Perbaikan |
+| --- | --- |
+| 1 | Pencarian koneksi database **dipindah ke atas**, sebelum blok pemeriksa dan penjaga halaman |
+| 2 | Laporan DATABASE kini membaca koneksi yang benar-benar ditemukan (pada server Bapak: variabel **`conn`**), dan menampilkan peran akun dari database |
+| 3 | Bagian **KESIMPULAN** diganti menjadi **SIMULASI PENJAGA HALAMAN** - menjawab langsung apakah halaman akan mengalihkan pengunjung atau tidak |
+
+Contoh isi bagian baru itu:
+
+```text
+SIMULASI PENJAGA HALAMAN
+  (menjawab langsung: apakah halaman ini akan mengalihkan pengunjung)
+
+  penanda login dipakai : is_logged_in
+  peran dari session    : ADMIN
+  peran setelah disamakan: ADMIN
+
+  HASIL: penjaga LOLOS - halaman tidak mengalihkan pengunjung.
+  Halaman ini akan menampilkan formulir unggah APK seperti biasa.
+```
+
+Bila yang muncul adalah `HASIL: pengunjung akan dialihkan ...`, sebabnya akan
+disebutkan langsung beserta tindakannya.
+
+### C. LANGKAH YANG DISARANKAN
+
+| Nomor | Kegiatan |
+| --- | --- |
+| 1 | Klik menu **Versi Aplikasi** pada dashboard. Karena sesi lengkap dan peran ADMIN, halaman harus terbuka |
+| 2 | Bila sudah terbuka, selesai - lanjutkan PUTARAN 2 (unggah APK nanti setelah aplikasi dibangun) |
+| 3 | Bila masih kembali ke dashboard: unggah `app_versi.php` **versi 4**, lalu buka `app_versi.php?diagnosa=1` dan kirimkan bagian **SIMULASI PENJAGA HALAMAN** |
+| 4 | Setelah semuanya lancar, hapus `cek_session.php` dari `public_html` |
+
+### D. BILA PENJAGA SUDAH LOLOS TETAPI MENU MASIH KEMBALI KE DASHBOARD
+
+Bila laporan berbunyi "penjaga LOLOS" namun menu tetap kembali ke dashboard,
+berarti pengalihannya berasal dari **halaman lain**, bukan dari `app_versi.php`.
+Kemungkinan yang perlu diperiksa:
+
+| Nomor | Kemungkinan | Cara memeriksa |
+| --- | --- | --- |
+| 1 | Aturan pengalihan pada `.htaccess` | Buka cPanel - File Manager - tampilkan berkas tersembunyi - periksa `.htaccess` di dalam `rts.benedic-s.com` |
+| 2 | `config.php` memuat penjaga tambahan | Kirimkan cuplikan bagian atas `config.php` (jangan kirimkan bagian password - hapus dulu) |
+| 3 | `header.php` memuat penjaga tambahan | Sama seperti nomor 2 |
+| 4 | Tampilan lama masih tersimpan di browser | Tekan **Ctrl+F5**, atau coba pada mode penyamaran (Ctrl+Shift+N) |
+
+Cara tercepat memastikan: setelah menekan menu, perhatikan **alamat pada bar**
+browser. Bila alamat berakhir `app_versi.php` tetapi isinya dashboard, berarti
+memang ada pengalihan dari dalam halaman. Bila alamatnya berubah menjadi
+`dashboard.php`, sebabnya ada pada berkas yang dijalankan lebih dahulu
+(`config.php` atau `header.php`).

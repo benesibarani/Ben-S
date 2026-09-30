@@ -40,12 +40,12 @@
  */
 
 /* --------------------------------------------------------------------------
- * VERSI BERKAS: 3  (30 September 2026 - 15:00)
+ * VERSI BERKAS: 4  (30 September 2026 - 16:00)
  *
- * Bila halaman pemeriksa ?diagnosa=1 menampilkan tulisan "VERSI BERKAS: 3",
+ * Bila halaman pemeriksa ?diagnosa=1 menampilkan tulisan "VERSI BERKAS  : 4",
  * berarti berkas ini sudah terunggah dengan benar.
  * ------------------------------------------------------------------------ */
-define('APP_VERSI_BERKAS', 3);
+define('APP_VERSI_BERKAS', 4);
 
 require_once __DIR__ . '/config.php';
 
@@ -64,6 +64,34 @@ require_once __DIR__ . '/config.php';
  * ------------------------------------------------------------------------ */
 if (session_status() !== PHP_SESSION_ACTIVE) {
     @session_start();
+}
+
+/* --------------------------------------------------------------------------
+ * KONEKSI DATABASE
+ *
+ * Berkas config.php pada server dapat memakai nama variabel yang berbeda-beda
+ * untuk koneksi database. Di sini dicari salah satunya - dipakai oleh penjaga
+ * halaman (membaca peran dari tabel sales_users bila session tidak menyimpan
+ * peran) dan oleh riwayat versi.
+ *
+ * Bila tidak ada koneksi, halaman TETAP bekerja - hanya riwayat versi pada
+ * database yang belum terisi.
+ * ------------------------------------------------------------------------ */
+$app_conn = null;
+$app_nama_koneksi_ditemukan = '(tidak ditemukan)';
+
+foreach (['conn', 'mysqli', 'koneksi', 'db', 'link'] as $app_nama_koneksi) {
+    if (isset($GLOBALS[$app_nama_koneksi]) && $GLOBALS[$app_nama_koneksi] instanceof mysqli) {
+        $app_conn = $GLOBALS[$app_nama_koneksi];
+        $app_nama_koneksi_ditemukan = $app_nama_koneksi;
+        break;
+    }
+
+    if (isset($$app_nama_koneksi) && $$app_nama_koneksi instanceof mysqli) {
+        $app_conn = $$app_nama_koneksi;
+        $app_nama_koneksi_ditemukan = $app_nama_koneksi;
+        break;
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -135,19 +163,9 @@ if (isset($_GET['diagnosa'])) {
     /* --- Koneksi database --- */
     echo "\nDATABASE\n";
 
-    $app_nama_koneksi_ditemukan = '(tidak ditemukan)';
-
-    foreach (['conn', 'mysqli', 'koneksi', 'db', 'link'] as $app_nama_cek) {
-        if ((isset($GLOBALS[$app_nama_cek]) && $GLOBALS[$app_nama_cek] instanceof mysqli)
-            || (isset($$app_nama_cek) && $$app_nama_cek instanceof mysqli)) {
-            $app_nama_koneksi_ditemukan = $app_nama_cek;
-            break;
-        }
-    }
-
     echo '  koneksi      : ' . $app_nama_koneksi_ditemukan . "\n";
 
-    if (isset($app_conn) && $app_conn instanceof mysqli && !$app_conn->connect_errno) {
+    if ($app_conn instanceof mysqli && !$app_conn->connect_errno) {
         echo '  status       : terhubung' . "\n";
 
         $app_user_db = '';
@@ -198,28 +216,51 @@ if (isset($_GET['diagnosa'])) {
             . (file_exists(__DIR__ . '/' . $app_cek_berkas) ? 'ADA' : 'TIDAK ADA') . "\n";
     }
 
-    /* --- Kesimpulan --- */
-    echo "\nKESIMPULAN\n";
+    /* --- Simulasi penjaga halaman --------------------------------------- */
+    echo "\nSIMULASI PENJAGA HALAMAN\n";
+    echo "  (menjawab langsung: apakah halaman ini akan mengalihkan pengunjung)\n\n";
 
-    $app_penanda_ada = false;
+    $app_uji_penanda = ['is_logged_in', 'user_id', 'username', 'nama', 'email'];
+    $app_uji_login = false;
+    $app_uji_login_kunci = '-';
 
-    foreach (['is_logged_in', 'user_id', 'username', 'nama', 'email'] as $app_penanda) {
-        if (!empty($_SESSION[$app_penanda])) {
-            $app_penanda_ada = true;
+    foreach ($app_uji_penanda as $app_uji_satu) {
+        if (!empty($_SESSION[$app_uji_satu])) {
+            $app_uji_login = true;
+            $app_uji_login_kunci = $app_uji_satu;
             break;
         }
     }
 
-    if (empty($_SESSION)) {
-        echo "  Session kosong. Kemungkinan besar cookie session tidak terkirim\n";
-        echo "  pada halaman ini (mis. cookie_path berbeda), atau session memang\n";
-        echo "  belum dibuat karena belum login pada browser ini.\n";
-    } elseif (!$app_penanda_ada) {
-        echo "  Session ada, tetapi tidak satu pun penanda login terisi.\n";
-        echo "  Kirimkan kunci session di atas kepada pengembang.\n";
+    echo '  penanda login dipakai : ' . $app_uji_login_kunci . "\n";
+
+    $app_uji_role = '';
+
+    foreach (['role', 'user_role'] as $app_uji_kunci_role) {
+        $app_uji_nilai = strtoupper(trim((string) ($_SESSION[$app_uji_kunci_role] ?? '')));
+
+        if ($app_uji_nilai !== '') {
+            $app_uji_role = $app_uji_nilai;
+            break;
+        }
+    }
+
+    echo '  peran dari session    : ' . ($app_uji_role === '' ? '(kosong)' : $app_uji_role) . "\n";
+
+    if (str_replace([' ', '_'], '', $app_uji_role) === 'SUPERADMIN') {
+        $app_uji_role = 'ADMIN';
+    }
+
+    echo '  peran setelah disamakan: ' . ($app_uji_role === '' ? '(kosong)' : $app_uji_role) . "\n\n";
+
+    if (!$app_uji_login) {
+        echo "  HASIL: pengunjung akan dialihkan ke index.php (belum login).\n";
+    } elseif ($app_uji_role !== 'ADMIN') {
+        echo "  HASIL: pengunjung akan dialihkan ke dashboard.php (peran bukan ADMIN).\n";
+        echo "  Tindakan: isi kolom role akun ini dengan ADMIN pada tabel sales_users.\n";
     } else {
-        echo "  Session lengkap. Bila halaman tetap mengalihkan, kirimkan\n";
-        echo "  seluruh tulisan ini kepada pengembang.\n";
+        echo "  HASIL: penjaga LOLOS - halaman tidak mengalihkan pengunjung.\n";
+        echo "  Halaman ini akan menampilkan formulir unggah APK seperti biasa.\n";
     }
 
     echo "\nHalaman ini tidak mengubah data apa pun.\n";
@@ -325,28 +366,6 @@ if ($app_role !== 'ADMIN') {
 }
 
 require_once __DIR__ . '/header.php';
-
-/* --------------------------------------------------------------------------
- * KONEKSI DATABASE
- *
- * Berkas config.php pada server dapat memakai nama variabel yang berbeda-beda
- * untuk koneksi database. Di sini dicari salah satunya; bila tidak ada,
- * halaman tetap bekerja seperti biasa - hanya riwayat versi pada database
- * yang belum terisi. Halaman TIDAK berhenti hanya karena koneksi tidak ada.
- * -------------------------------------------------------------------------- */
-$app_conn = null;
-
-foreach (['conn', 'mysqli', 'koneksi', 'db', 'link'] as $app_nama_koneksi) {
-    if (isset($GLOBALS[$app_nama_koneksi]) && $GLOBALS[$app_nama_koneksi] instanceof mysqli) {
-        $app_conn = $GLOBALS[$app_nama_koneksi];
-        break;
-    }
-
-    if (isset($$app_nama_koneksi) && $$app_nama_koneksi instanceof mysqli) {
-        $app_conn = $$app_nama_koneksi;
-        break;
-    }
-}
 
 /* --------------------------------------------------------------------------
  * PERSIAPAN FOLDER
