@@ -87,6 +87,14 @@ dahulu, baru diekstrak di komputer.
 
 ## BILA DIMINTA LOGIN
 
-Repo ini bersifat **pribadi** (private), sehingga GitHub meminta login lebih
+Repo ini bersifat **pribadi** (Private), sehingga GitHub meminta login lebih
 dahulu. Gunakan akun GitHub Bapak (**benesibarani**) - setelah login, seluruh
 tautan di atas langsung berjalan.
+
+Bila muncul halaman **404 / Page not found** padahal sudah login, periksa apakah
+akun yang dipakai benar akun `benesibarani` (bukan akun GitHub yang lain).
+
+Catatan: sejak 30 September 2026 repo ini berstatus Private, setelah sebelumnya
+sempat publik. Berkas dump database produksi (`benedics_benes_sales.sql`) sudah
+dihapus dari cabang `main`. Penjelasan lengkap ada pada berkas
+`BERSIHKAN_REPO.md`.
