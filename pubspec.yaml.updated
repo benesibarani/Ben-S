@@ -4,7 +4,7 @@ publish_to: 'none'
 
 # NOMOR VERSI - PENTING untuk fitur pembaruan otomatis.
 #   angka sebelum tanda + adalah versi yang dilihat pengguna (1.1.0)
-#   angka sesudah tanda + adalah kode versi (3) dan WAJIB selalu bertambah
+#   angka sesudah tanda + adalah kode versi (4) dan WAJIB selalu bertambah
 #   setiap kali aplikasi baru diunggah ke server, misalnya menjadi 4, 5, dan
 #   seterusnya. Isi kolom "version_code" pada halaman app_versi.php harus sama
 #   dengan angka sesudah tanda + ini.
@@ -12,7 +12,10 @@ publish_to: 'none'
 #   Kode 3 (1.2.0) memuat: iklan layar pembuka (app open), iklan native di
 #   seluruh menu, halaman Langganan PRO dengan QRIS, masa berlaku 30 hari,
 #   uji coba 7 hari, dan foto pribadi petugas.
-version: 1.2.0+3
+#   Kode 4 (1.2.1) memuat: nama aplikasi pada layar HP menjadi "RTS Panel",
+#   dan halaman Kelola Akun PRO untuk ADMIN (setujui/tolak pembayaran QRIS
+#   serta mengatur masa PRO langsung dari HP).
+version: 1.2.1+4
 
 environment:
   sdk: '>=3.5.0 <4.0.0'

@@ -4,15 +4,17 @@
 #
 #  SATU-SATUNYA SKRIP YANG PERLU DIJALANKAN UNTUK TOPIK INI.
 #
-#  APA YANG DIKERJAKAN SKRIP INI (7 langkah, semuanya dicadangkan lebih dahulu)
+#  APA YANG DIKERJAKAN SKRIP INI (8 langkah, semuanya dicadangkan lebih dahulu)
 #     1. Memastikan folder proyek Flutter ditemukan
 #     2. Menyalin main.dart  ->  D:\Project\rts_panel_app\main.dart
 #                                D:\Project\rts_panel_app\lib\main.dart
-#     3. Menyalin pubspec.yaml (memuat image_picker + nomor versi 1.2.0+3)
+#     3. Menyalin pubspec.yaml (memuat image_picker + nomor versi 1.2.1+4)
 #     4. Menambahkan izin KAMERA pada AndroidManifest.xml (bila belum ada)
-#     5. Memasang gambar QRIS Bapak -> assets\images\qris_bene_s.jpg
-#     6. Menjalankan flutter clean dan flutter pub get
-#     7. Menampilkan perintah terakhir yang perlu diketik
+#     5. Mengubah NAMA APLIKASI pada layar HP menjadi "RTS Panel"
+#        (sebelumnya tertulis rts_panel_app)
+#     6. Memasang gambar QRIS Bapak -> assets\images\qris_bene_s.jpg
+#     7. Menjalankan flutter clean dan flutter pub get
+#     8. Menampilkan perintah terakhir yang perlu diketik
 #
 #  Skrip ini TIDAK menghapus berkas apa pun. Berkas lama selalu dicadangkan
 #  dengan tambahan ".lama_tanggal_jam".
@@ -262,10 +264,49 @@ if (-not (Test-Path $jalurManifest)) {
 }
 
 # =============================================================================
-# 5. GAMBAR QRIS
+# 5. NAMA APLIKASI PADA LAYAR HP  ->  "RTS Panel"
 # =============================================================================
 
-Judul '5. Memasang gambar QRIS'
+Judul '5. Mengubah nama aplikasi pada layar HP menjadi "RTS Panel"'
+
+$namaBaru = 'RTS Panel'
+
+if (-not (Test-Path $jalurManifest)) {
+    Awas 'AndroidManifest.xml tidak ditemukan - nama aplikasi tidak diubah.'
+} else {
+    $isiNama = Get-Content $jalurManifest -Raw
+
+    if ($isiNama -match ('android:label="' + [regex]::Escape($namaBaru) + '"')) {
+        Baik 'Nama aplikasi sudah "RTS Panel". Tidak diubah lagi.'
+    } elseif ($isiNama -match 'android:label="[^"]*"') {
+        $namaLama = [regex]::Match($isiNama, 'android:label="([^"]*)"').Groups[1].Value
+
+        $cadanganNama = $jalurManifest + '.lama_' + (Get-Date -Format 'ddMM-yyyy_HHmmss')
+        Copy-Item -Path $jalurManifest -Destination $cadanganNama -Force
+        Info ('cadangan lama : ' + (Split-Path $cadanganNama -Leaf))
+
+        $isiNamaBaru = [regex]::Replace($isiNama, 'android:label="[^"]*"', ('android:label="' + $namaBaru + '"'))
+        Simpan-TanpaBom $jalurManifest $isiNamaBaru
+
+        $cekNama = Get-Content $jalurManifest -Raw
+
+        if ($cekNama -match ('android:label="' + [regex]::Escape($namaBaru) + '"')) {
+            Baik ('Nama aplikasi diubah dari "' + $namaLama + '" menjadi "' + $namaBaru + '".')
+            Info 'Nama baru terlihat pada layar HP setelah aplikasi dipasang ulang.'
+        } else {
+            Awas 'Nama aplikasi belum berhasil diubah.'
+        }
+    } else {
+        Awas 'Baris android:label tidak ditemukan pada AndroidManifest.xml.'
+        Info 'Tambahkan sendiri pada tag <application>: android:label="RTS Panel"'
+    }
+}
+
+# =============================================================================
+# 6. GAMBAR QRIS
+# =============================================================================
+
+Judul '6. Memasang gambar QRIS'
 
 $folderGambar = Join-Path $folderProyek 'assets\images'
 
@@ -328,7 +369,7 @@ if (Test-Path $tujuanQris) {
 # 6. flutter clean + flutter pub get
 # =============================================================================
 
-Judul '6. Menjalankan flutter clean dan flutter pub get'
+Judul '7. Menjalankan flutter clean dan flutter pub get'
 
 $flutter = Get-Command flutter -ErrorAction SilentlyContinue
 
@@ -363,7 +404,7 @@ if (-not $flutter) {
 # 7. RINGKASAN
 # =============================================================================
 
-Judul '7. SELESAI - LANGKAH BERIKUTNYA'
+Judul '8. SELESAI - LANGKAH BERIKUTNYA'
 
 Write-Host ' Di komputer (sekarang):' -ForegroundColor White
 Write-Host '     cd ' $folderProyek -ForegroundColor Gray
@@ -377,7 +418,8 @@ Write-Host '     2. Buka https://rts.benedic-s.com/langganan_admin.php' -Foregro
 Write-Host '     3. Tekan tombol PERBARUI DATABASE' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Periksa di aplikasi:' -ForegroundColor White
-Write-Host '     Pengaturan  : penanda harus RTS-2026-09-30-6' -ForegroundColor Gray
+Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-09-30-7' -ForegroundColor Gray
 Write-Host '     Profil      : tombol LANGGANAN PRO tampil + gambar QRIS tampil' -ForegroundColor Gray
 Write-Host '     Profil      : ketuk foto -> pilih dari galeri -> foto berubah' -ForegroundColor Gray
 Write-Host '     Beranda     : iklan banner + iklan native tampil (akun GRATIS)' -ForegroundColor Gray

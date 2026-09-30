@@ -24,9 +24,15 @@
 
  Perubahan ini terbagi dua sisi:
 
-   SISI SERVER (website)  -> 8 berkas     (LANGKAH 1 dan 2)
+   SISI SERVER (website)  -> 9 berkas     (LANGKAH 1 dan 2)
    SISI APLIKASI (HP)     -> 1 skrip      (LANGKAH 3 sampai 6)
                              plus 1 gambar QRIS Bapak
+
+ Dua tambahan pada putaran ini (permintaan Bapak sebelum rilis):
+   - NAMA aplikasi pada layar HP diubah dari "rts_panel_app"
+     menjadi "RTS Panel" (dikerjakan otomatis oleh skrip LANGKAH 4)
+   - Halaman baru "KELOLA AKUN PRO" untuk ADMIN di dalam aplikasi:
+     setujui / tolak pembayaran QRIS dan atur masa PRO langsung dari HP
 
 
 ==============================================================================
@@ -52,6 +58,7 @@
 
              api/langganan_inti.php      <-- BARU
              api/langganan.php           <-- BARU
+             api/kelola_pro.php          <-- BARU (setujui pembayaran dari HP)
              api/upload_foto.php         <-- BARU
              api/siapkan_langganan.php   <-- BARU
              api/login.php               <-- DIPERBARUI
@@ -140,11 +147,12 @@
    [ ] 3. Skrip akan meminta konfirmasi lalu mengerjakan 7 hal:
               1. mencari folder proyek D:\Project\rts_panel_app
               2. menyalin main.dart ke main.dart DAN lib\main.dart
-              3. menyalin pubspec.yaml (image_picker + versi 1.2.0+3)
+              3. menyalin pubspec.yaml (image_picker + versi 1.2.1+4)
               4. menambahkan izin KAMERA pada AndroidManifest.xml
-              5. memasang gambar QRIS ke assets\images\qris_bene_s.jpg
-              6. menjalankan flutter clean dan flutter pub get
-              7. menampilkan perintah terakhir
+              5. mengubah NAMA APLIKASI pada layar HP menjadi "RTS Panel"
+              6. memasang gambar QRIS ke assets\images\qris_bene_s.jpg
+              7. menjalankan flutter clean dan flutter pub get
+              8. menampilkan perintah terakhir
 
           Berkas lama TIDAK dihapus - selalu dicadangkan dengan tambahan
           ".lama_tanggal_jam".
@@ -179,9 +187,9 @@
  LANGKAH 6 - PERIKSA (5 MENIT)
 ==============================================================================
 
-   [ ] 1. Aplikasi - menu Pengaturan - cari tulisan penanda kode aplikasi.
-          HARUS berbunyi:   RTS-2026-09-30-6
-          (bila masih -5, berarti lib\main.dart belum terbarui - ulangi
+   [ ] 1. Layar HP: nama aplikasi harus "RTS Panel" (bukan rts_panel_app).
+          Menu Pengaturan: penanda kode aplikasi harus RTS-2026-09-30-7.
+          (bila masih -6, berarti lib\main.dart belum terbarui - ulangi
            LANGKAH 4)
 
    [ ] 2. Menu Profil - tombol "LANGGANAN PRO" - harus terbuka halaman baru
@@ -201,11 +209,15 @@
           layar pembuka muncul sekilas.
 
    [ ] 6. Uji pembayaran (boleh pakai akun sendiri):
-          - buka halaman Langganan PRO - tekan SAYA SUDAH BAYAR - setuju
-          - buka https://rts.benedic-s.com/langganan_admin.php di komputer
-          - pernyataan pembayaran muncul di bagian atas - tekan
-            "SETUJUI + 30 HARI"
-          - buka ulang aplikasi (keluar - masuk) - iklan hilang, akun PRO
+          - akun GRATIS: buka Langganan PRO - tekan SAYA SUDAH BAYAR - setuju
+          - masuk dengan akun ADMIN pada HP: buka Profil - Rencana Akun -
+            tekan "KELOLA AKUN PRO (ADMIN)". Pernyataan pembayaran itu muncul
+            di bagian atas - tekan "SETUJUI + 30 HARI"
+          - petugas yang membayar menerima pemberitahuan "Pembayaran Diterima"
+          - buka ulang aplikasi petugas (keluar - masuk) - iklan hilang, PRO
+
+          Halaman yang sama juga dapat dibuka dari komputer:
+          https://rts.benedic-s.com/langganan_admin.php
 
 
 ==============================================================================
@@ -349,6 +361,13 @@
    Bolehkah LANGKAH 4 dikerjakan dua kali?
      Boleh, tidak apa-apa. Skrip selalu membuat cadangan lebih dahulu dan
      hasilnya sama.
+
+   Bagaimana menyetujui pembayaran petugas dari HP?
+     Masuk memakai akun ADMIN - buka Profil - Rencana Akun - tekan
+     "KELOLA AKUN PRO (ADMIN)". Di sana ada daftar pembayaran yang menunggu
+     (tombol SETUJUI / TOLAK) dan daftar seluruh akun (tombol +30 HARI,
+     +90 HARI, TRIAL 7 HARI, HENTIKAN). Pemberitahuan pembayaran yang masuk
+     ke HP Admin juga langsung membuka halaman ini bila ditekan.
 
    Apakah perlu unggah ulang berkas putaran sebelumnya?
      Tidak, kecuali belum pernah diunggah. Daftar berkas putaran sebelumnya

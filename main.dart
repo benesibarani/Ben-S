@@ -962,7 +962,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-09-30-6';
+const String rtsKodeAplikasi = 'RTS-2026-09-30-7';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -3818,6 +3818,10 @@ class RtsPushFcm {
         id: (kunci.isEmpty ? judul.hashCode : kunci.hashCode) & 0x7fffffff,
         judul: judul,
         pesan: isi.isEmpty ? 'Ada pemberitahuan baru dari RTS Panel.' : isi,
+        // Tipe dikirim sebagai payload, supaya saat pemberitahuan ditekan
+        // aplikasi tahu halaman mana yang harus dibuka (mis. pembayaran
+        // Akun PRO -> halaman Kelola Akun PRO untuk ADMIN).
+        payload: tipe.toLowerCase(),
       );
     } catch (_) {
       // Diabaikan.
@@ -4049,6 +4053,43 @@ class RtsLayananNotif {
         }
 
         await RtsPembaruan.periksaManual(konteks);
+      });
+
+      return;
+    }
+
+    // Pemberitahuan pembayaran Akun PRO: ADMIN langsung dibawa ke halaman
+    // Kelola Akun PRO supaya dapat menekan SETUJUI atau TOLAK.
+    if (payload == 'pembayaran' && (RtsSesi.user?.role ?? '') == 'ADMIN') {
+      Future<void>.delayed(const Duration(milliseconds: 900), () {
+        final RtsUser? user = RtsSesi.user;
+        final String token = RtsSesi.token;
+
+        if (user == null || token.isEmpty) return;
+
+        rtsNavigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (_) => KelolaProPage(user: user, token: token),
+          ),
+        );
+      });
+
+      return;
+    }
+
+    // Pemberitahuan langganan: dibuka halaman Langganan PRO.
+    if (payload == 'langganan' || payload == 'pembayaran') {
+      Future<void>.delayed(const Duration(milliseconds: 900), () {
+        final RtsUser? user = RtsSesi.user;
+        final String token = RtsSesi.token;
+
+        if (user == null || token.isEmpty) return;
+
+        rtsNavigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (_) => LanggananProPage(user: user, token: token),
+          ),
+        );
       });
 
       return;
@@ -12422,6 +12463,46 @@ class _RtsKartuRencanaAkunState extends State<RtsKartuRencanaAkun> {
               ),
             ),
           ),
+          if ((RtsSesi.user?.role ?? '') == 'ADMIN') ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: rtsMaroon,
+                  side: const BorderSide(color: rtsMaroon),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () => Navigator.of(context)
+                    .push(
+                      MaterialPageRoute(
+                        builder: (_) => KelolaProPage(
+                          user: widget.user,
+                          token: RtsSesi.token,
+                        ),
+                      ),
+                    )
+                    .then((_) {
+                      if (mounted) setState(() {});
+                    }),
+                icon: const Icon(Icons.groups_rounded, size: 18),
+                label: const Text(
+                  'KELOLA AKUN PRO (ADMIN)',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Setujui pembayaran QRIS petugas dan atur masa PRO langsung dari HP.',
+              style: TextStyle(
+                color: rtsTextSecondary,
+                fontSize: 10.5,
+                height: 1.4,
+              ),
+            ),
+          ],
           if (RtsTingkatAkun.bolehUji && !dariServer) ...[
             const SizedBox(height: 6),
             const RtsDivider(),
@@ -12924,6 +13005,8 @@ class RtsFotoProfil extends StatefulWidget {
     this.latarBelakang = Colors.white,
     this.garisTepi,
     this.warnaHuruf = rtsMaroon,
+    this.alamatPaksa,
+    this.inisialPaksa,
   });
 
   final double ukuran;
@@ -12932,13 +13015,20 @@ class RtsFotoProfil extends StatefulWidget {
   final Color? garisTepi;
   final Color warnaHuruf;
 
+  /// Alamat foto milik ORANG LAIN (dipakai halaman Kelola Akun PRO oleh Admin).
+  /// Bila kosong, dipakai foto pengguna yang sedang masuk.
+  final String? alamatPaksa;
+
+  /// Huruf awal milik ORANG LAIN, dipakai bila fotonya belum ada.
+  final String? inisialPaksa;
+
   @override
   State<RtsFotoProfil> createState() => _RtsFotoProfilState();
 }
 
 class _RtsFotoProfilState extends State<RtsFotoProfil> {
   String _inisial(RtsUser? user) {
-    final String nama = (user?.displayName ?? '').trim();
+    final String nama = (widget.inisialPaksa ?? user?.displayName ?? '').trim();
 
     if (nama.isEmpty) return 'R';
 
@@ -12954,7 +13044,8 @@ class _RtsFotoProfilState extends State<RtsFotoProfil> {
   @override
   Widget build(BuildContext context) {
     final RtsUser? user = RtsSesi.user;
-    final String alamat = (user?.fotoProfil ?? '').trim();
+    final String alamat =
+        (widget.alamatPaksa ?? user?.fotoProfil ?? '').trim();
     final double lengkung = widget.ukuran * 0.32;
 
     final TextStyle gayaHuruf = TextStyle(
@@ -13798,6 +13889,801 @@ class _LanggananProPageState extends State<LanggananProPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/* ========================================================================= */
+/* KELOLA AKUN PRO - KHUSUS ADMIN (di dalam aplikasi)                        */
+/* ========================================================================= */
+
+/// Satu akun pada daftar Kelola Akun PRO.
+class RtsAkunPro {
+  const RtsAkunPro({
+    required this.id,
+    required this.username,
+    required this.namaLengkap,
+    required this.role,
+    required this.fotoProfil,
+    required this.label,
+    required this.berlakuSampai,
+    required this.sumber,
+    required this.proAktif,
+    required this.trialAktif,
+    required this.trialTersedia,
+    required this.sisaHari,
+    required this.sisaTrialHari,
+  });
+
+  factory RtsAkunPro.dariJson(Map<String, dynamic> json) {
+    return RtsAkunPro(
+      id: int.tryParse('${json['id'] ?? 0}') ?? 0,
+      username: (json['username'] ?? '').toString(),
+      namaLengkap: (json['nama_lengkap'] ?? '').toString(),
+      role: (json['role'] ?? '').toString().toUpperCase(),
+      fotoProfil: (json['foto_profil'] ?? '').toString(),
+      label: (json['label'] ?? 'GRATIS').toString(),
+      berlakuSampai: (json['berlaku_sampai'] ?? '').toString(),
+      sumber: (json['sumber'] ?? 'GRATIS').toString().toUpperCase(),
+      proAktif: rtsBenar(json['pro_aktif']),
+      trialAktif: rtsBenar(json['trial_aktif']),
+      trialTersedia: rtsBenar(json['trial_tersedia']),
+      sisaHari: int.tryParse('${json['sisa_hari'] ?? 0}') ?? 0,
+      sisaTrialHari: int.tryParse('${json['sisa_trial_hari'] ?? 0}') ?? 0,
+    );
+  }
+
+  final int id;
+  final String username;
+  final String namaLengkap;
+  final String role;
+  final String fotoProfil;
+  final String label;
+  final String berlakuSampai;
+  final String sumber;
+  final bool proAktif;
+  final bool trialAktif;
+  final bool trialTersedia;
+  final int sisaHari;
+  final int sisaTrialHari;
+
+  String get namaTampil =>
+      namaLengkap.trim().isNotEmpty ? namaLengkap.trim() : username;
+
+  String get keteranganMasa {
+    if (proAktif) {
+      if (berlakuSampai.isEmpty) return 'PRO tanpa batas waktu';
+      return 'PRO sampai $berlakuSampai (sisa $sisaHari hari)';
+    }
+    if (trialAktif) return 'Uji coba, sisa $sisaTrialHari hari';
+    if (trialTersedia) return 'Belum pernah uji coba';
+    return 'GRATIS';
+  }
+}
+
+/// Satu pernyataan pembayaran QRIS dari petugas.
+class RtsBayarPro {
+  const RtsBayarPro({
+    required this.id,
+    required this.userId,
+    required this.namaLengkap,
+    required this.username,
+    required this.role,
+    required this.jumlah,
+    required this.hari,
+    required this.catatan,
+    required this.status,
+    required this.dibuat,
+    required this.diprosesPada,
+  });
+
+  factory RtsBayarPro.dariJson(Map<String, dynamic> json) {
+    return RtsBayarPro(
+      id: int.tryParse('${json['id'] ?? 0}') ?? 0,
+      userId: int.tryParse('${json['user_id'] ?? 0}') ?? 0,
+      namaLengkap: (json['nama_lengkap'] ?? '').toString(),
+      username: (json['username'] ?? '').toString(),
+      role: (json['role'] ?? '').toString().toUpperCase(),
+      jumlah: int.tryParse('${json['jumlah'] ?? 0}') ?? 0,
+      hari: int.tryParse('${json['hari'] ?? 30}') ?? 30,
+      catatan: (json['catatan'] ?? '').toString(),
+      status: (json['status'] ?? '').toString().toUpperCase(),
+      dibuat: (json['dibuat'] ?? '').toString(),
+      diprosesPada: (json['diproses_pada'] ?? '').toString(),
+    );
+  }
+
+  final int id;
+  final int userId;
+  final String namaLengkap;
+  final String username;
+  final String role;
+  final int jumlah;
+  final int hari;
+  final String catatan;
+  final String status;
+  final String dibuat;
+  final String diprosesPada;
+
+  bool get menunggu => status == 'MENUNGGU';
+
+  String get namaTampil =>
+      namaLengkap.trim().isNotEmpty ? namaLengkap.trim() : username;
+}
+
+/// Halaman Kelola Akun PRO - hanya untuk ADMIN.
+///
+/// Di sinilah ADMIN menyetujui pembayaran QRIS petugas dan memberikan atau
+/// menghentikan masa langganan PRO - LANGSUNG DARI HP, tanpa membuka komputer.
+class KelolaProPage extends StatefulWidget {
+  const KelolaProPage({super.key, required this.user, required this.token});
+
+  final RtsUser user;
+  final String token;
+
+  @override
+  State<KelolaProPage> createState() => _KelolaProPageState();
+}
+
+class _KelolaProPageState extends State<KelolaProPage> {
+  late final ApiClient api = ApiClient(token: widget.token);
+
+  List<RtsAkunPro> daftar = <RtsAkunPro>[];
+  List<RtsBayarPro> bayar = <RtsBayarPro>[];
+  Map<String, bool> kolom = <String, bool>{};
+  bool tabelPembayaran = true;
+
+  bool memuat = true;
+  bool sedangProses = false;
+  String pesanGalat = '';
+  String cari = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    if (mounted) {
+      setState(() {
+        memuat = true;
+        pesanGalat = '';
+      });
+    }
+
+    try {
+      final Map<String, dynamic> balasan = await api.get('kelola_pro.php');
+
+      if (!mounted) return;
+
+      setState(() {
+        memuat = false;
+        _bacaDaftar(balasan);
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        memuat = false;
+        pesanGalat = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        memuat = false;
+        pesanGalat = 'Tidak dapat membaca daftar akun dari server.';
+      });
+    }
+  }
+
+  void _bacaDaftar(Map<String, dynamic> balasan) {
+    daftar = ((balasan['daftar'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((Map satu) => RtsAkunPro.dariJson(satu.cast<String, dynamic>()))
+        .toList();
+
+    bayar = ((balasan['bayar'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((Map satu) => RtsBayarPro.dariJson(satu.cast<String, dynamic>()))
+        .toList();
+
+    final Map<String, dynamic> kolomBalasan =
+        ((balasan['kolom'] as Map?) ?? const {}).cast<String, dynamic>();
+
+    kolom = kolomBalasan.map(
+      (String kunci, dynamic nilai) => MapEntry<String, bool>(kunci, rtsBenar(nilai)),
+    );
+
+    tabelPembayaran = rtsBenar(balasan['tabel_pembayaran']);
+  }
+
+  Future<void> _aksi(
+    Map<String, dynamic> kiriman,
+    String pesanBerhasil, {
+    bool konfirmasi = false,
+    String tanya = '',
+  }) async {
+    if (sedangProses) return;
+
+    if (konfirmasi) {
+      final bool? lanjut = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text(
+            'Konfirmasi',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+          content: Text(
+            tanya,
+            style: const TextStyle(fontSize: 12.5, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text(
+                'BATAL',
+                style: TextStyle(color: rtsTextSecondary),
+              ),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: rtsMaroon),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('LANJUTKAN'),
+            ),
+          ],
+        ),
+      );
+
+      if (lanjut != true) return;
+    }
+
+    setState(() => sedangProses = true);
+
+    try {
+      final Map<String, dynamic> balasan = await api.post('kelola_pro.php', kiriman);
+
+      if (!mounted) return;
+
+      setState(() {
+        sedangProses = false;
+        _bacaDaftar(balasan);
+      });
+
+      rtsShowMessage(
+        context,
+        (balasan['message'] ?? pesanBerhasil).toString(),
+        success: true,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+
+      setState(() => sedangProses = false);
+
+      rtsShowMessage(context, error.message);
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() => sedangProses = false);
+
+      rtsShowMessage(context, 'Terjadi gangguan saat menghubungi server.');
+    }
+  }
+
+  bool get _kolomLengkap =>
+      kolom.isNotEmpty && kolom.values.every((bool ada) => ada) && tabelPembayaran;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<RtsBayarPro> menunggu =
+        bayar.where((RtsBayarPro satu) => satu.menunggu).toList();
+
+    final String kunciCari = cari.trim().toLowerCase();
+
+    final List<RtsAkunPro> tampil = kunciCari.isEmpty
+        ? daftar
+        : daftar
+            .where((RtsAkunPro satu) =>
+                satu.namaTampil.toLowerCase().contains(kunciCari) ||
+                satu.username.toLowerCase().contains(kunciCari) ||
+                satu.role.toLowerCase().contains(kunciCari))
+            .toList();
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          const RtsBackground(overlayOpacity: 0.93),
+          SafeArea(
+            child: Column(
+              children: [
+                _topBar(menunggu.length),
+                Expanded(
+                  child: RefreshIndicator(
+                    color: rtsMaroon,
+                    onRefresh: _muat,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+                      children: [
+                        if (!_kolomLengkap && !memuat) ...[
+                          RtsCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const Text(
+                                  'Kolom/tabel langganan belum lengkap di database. '
+                                  'Tekan tombol di bawah sekali saja - proses ini '
+                                  'hanya MENAMBAH yang belum ada.',
+                                  style: TextStyle(
+                                    color: rtsTextSecondary,
+                                    fontSize: 12,
+                                    height: 1.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                FilledButton(
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: rtsMaroon,
+                                    padding: const EdgeInsets.symmetric(vertical: 13),
+                                  ),
+                                  onPressed: sedangProses
+                                      ? null
+                                      : () => _aksi(
+                                            <String, dynamic>{
+                                              'aksi': 'perbarui_database',
+                                            },
+                                            'Database diperbarui.',
+                                          ),
+                                  child: const Text(
+                                    'PERBARUI DATABASE',
+                                    style: TextStyle(fontWeight: FontWeight.w800),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                        ],
+                        if (memuat) ...[
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 30),
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(strokeWidth: 2.2),
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (pesanGalat.isNotEmpty) ...[
+                          RtsCard(
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline_rounded,
+                                    color: rtsMaroon, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    pesanGalat,
+                                    style: const TextStyle(
+                                      color: rtsTextSecondary,
+                                      fontSize: 12,
+                                      height: 1.45,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                        ],
+                        RtsSectionTitle(
+                          menunggu.isEmpty
+                              ? 'Pembayaran Menunggu'
+                              : 'Pembayaran Menunggu (${menunggu.length})',
+                        ),
+                        const SizedBox(height: 11),
+                        if (menunggu.isEmpty)
+                          RtsCard(
+                            child: Text(
+                              'Belum ada pernyataan pembayaran. Petugas menekan '
+                              '"SAYA SUDAH BAYAR" pada halaman Langganan PRO di '
+                              'HP-nya, lalu pernyataannya muncul di sini.',
+                              style: TextStyle(
+                                color: rtsTextSecondary,
+                                fontSize: 12,
+                                height: 1.5,
+                              ),
+                            ),
+                          )
+                        else
+                          ...menunggu.map(_kartuBayar),
+                        const SizedBox(height: 18),
+                        const RtsSectionTitle('Daftar Akun'),
+                        const SizedBox(height: 11),
+                        TextField(
+                          onChanged: (String nilai) => setState(() => cari = nilai),
+                          decoration: InputDecoration(
+                            hintText: 'Cari nama / username / role',
+                            hintStyle: const TextStyle(
+                              color: rtsTextSecondary,
+                              fontSize: 12.5,
+                            ),
+                            prefixIcon: const Icon(Icons.search_rounded,
+                                size: 20, color: rtsTextSecondary),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding:
+                                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: rtsCardBorder),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: const BorderSide(color: rtsCardBorder),
+                            ),
+                          ),
+                          style: const TextStyle(
+                            color: rtsTextPrimary,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (!memuat && tampil.isEmpty)
+                          const RtsCard(
+                            child: Text(
+                              'Tidak ada akun yang cocok.',
+                              style: TextStyle(color: rtsTextSecondary, fontSize: 12),
+                            ),
+                          )
+                        else
+                          ...tampil.map(_kartuAkun),
+                        const SizedBox(height: 18),
+                        const RtsIklanAsli(),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _topBar(int jumlahMenunggu) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.arrow_back_rounded, color: rtsTextPrimary),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Kelola Akun PRO',
+                  style: TextStyle(
+                    color: rtsTextPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  jumlahMenunggu > 0
+                      ? '$jumlahMenunggu pembayaran menunggu diperiksa'
+                      : 'Setujui pembayaran dan atur masa PRO',
+                  style: const TextStyle(color: rtsTextSecondary, fontSize: 11.5),
+                ),
+              ],
+            ),
+          ),
+          if (sedangProses)
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          IconButton(
+            onPressed: memuat ? null : _muat,
+            icon: const Icon(Icons.refresh_rounded, color: rtsTextSecondary),
+            tooltip: 'Muat ulang',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _kartuBayar(RtsBayarPro satu) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: RtsCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xfffff4e0),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.receipt_long_rounded,
+                      color: rtsAmber, size: 20),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        satu.namaTampil,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: rtsTextPrimary,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${satu.username} - ${satu.role} - ${rtsRupiah(satu.jumlah)} '
+                        '(${satu.hari} hari)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: rtsTextSecondary,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (satu.dibuat.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Dinyatakan: ${satu.dibuat}',
+                style: const TextStyle(color: rtsTextSecondary, fontSize: 11),
+              ),
+            ],
+            if (satu.catatan.trim().isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Catatan: ${satu.catatan}',
+                style: const TextStyle(color: rtsTextSecondary, fontSize: 11),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: rtsGreen,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: sedangProses
+                        ? null
+                        : () => _aksi(
+                              <String, dynamic>{
+                                'aksi': 'setujui',
+                                'bayar_id': satu.id,
+                              },
+                              'Pembayaran disetujui.',
+                              konfirmasi: true,
+                              tanya: 'Setujui pembayaran ${satu.namaTampil} sebesar '
+                                  '${rtsRupiah(satu.jumlah)}?\n\nAkun PRO akan aktif '
+                                  '${satu.hari} hari ke depan dan seluruh iklan '
+                                  'dimatikan. Petugas juga menerima pemberitahuan.',
+                            ),
+                    child: Text(
+                      'SETUJUI + ${satu.hari} HARI',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: rtsTextSecondary,
+                      side: const BorderSide(color: rtsCardBorder),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: sedangProses
+                        ? null
+                        : () => _aksi(
+                              <String, dynamic>{
+                                'aksi': 'tolak',
+                                'bayar_id': satu.id,
+                              },
+                              'Pernyataan pembayaran ditolak.',
+                              konfirmasi: true,
+                              tanya: 'Tolak pernyataan pembayaran '
+                                  '${satu.namaTampil}?\n\nPetugas tetap GRATIS '
+                                  'sampai pembayaran diterima.',
+                            ),
+                    child: const Text(
+                      'TOLAK',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _kartuAkun(RtsAkunPro satu) {
+    final bool pro = satu.proAktif;
+    final bool trial = satu.trialAktif;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: RtsCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                RtsFotoProfil(
+                  ukuran: 42,
+                  alamatPaksa: satu.fotoProfil,
+                  inisialPaksa: satu.namaTampil,
+                  latarBelakang: const Color(0xfffaf7f5),
+                  garisTepi: rtsCardBorder,
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        satu.namaTampil,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: rtsTextPrimary,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${satu.username} - ${satu.role}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: rtsTextSecondary,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        satu.keteranganMasa,
+                        style: const TextStyle(
+                          color: rtsTextSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                RtsBadge(
+                  satu.label,
+                  background: pro
+                      ? const Color(0xffe8f5ec)
+                      : (trial ? const Color(0xfffff4e0) : const Color(0xfffaecee)),
+                  foreground: pro ? rtsGreen : (trial ? rtsAmber : rtsMaroon),
+                ),
+              ],
+            ),
+            const SizedBox(height: 11),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _tombol(
+                  '+${RtsLangganan.sekarang.durasiHari} HARI',
+                  rtsGreen,
+                  () => _aksi(
+                    <String, dynamic>{
+                      'aksi': 'aktifkan',
+                      'user_id': satu.id,
+                      'hari': RtsLangganan.sekarang.durasiHari,
+                    },
+                    'Masa PRO ditambahkan.',
+                    konfirmasi: true,
+                    tanya: 'Tambahkan ${RtsLangganan.sekarang.durasiHari} hari PRO '
+                        'untuk ${satu.namaTampil}?\n\nBila masa PRO masih berjalan, '
+                        'hari barunya DITAMBAHKAN dari tanggal berakhir yang lama.',
+                  ),
+                ),
+                _tombol(
+                  '+90 HARI',
+                  const Color(0xff1b4d8f),
+                  () => _aksi(
+                    <String, dynamic>{
+                      'aksi': 'aktifkan',
+                      'user_id': satu.id,
+                      'hari': 90,
+                    },
+                    'Masa PRO 90 hari ditambahkan.',
+                    konfirmasi: true,
+                    tanya: 'Tambahkan 90 hari PRO untuk ${satu.namaTampil}?',
+                  ),
+                ),
+                if (satu.trialTersedia)
+                  _tombol(
+                    'TRIAL ${RtsLangganan.sekarang.trialHari} HARI',
+                    rtsAmber,
+                    () => _aksi(
+                      <String, dynamic>{'aksi': 'trial', 'user_id': satu.id},
+                      'Uji coba dimulai.',
+                      konfirmasi: true,
+                      tanya: 'Mulai uji coba ${RtsLangganan.sekarang.trialHari} hari '
+                          'untuk ${satu.namaTampil}? Uji coba hanya dapat dipakai '
+                          'sekali untuk setiap akun.',
+                    ),
+                  ),
+                if (pro || trial)
+                  _tombol(
+                    'HENTIKAN',
+                    rtsTextSecondary,
+                    () => _aksi(
+                      <String, dynamic>{'aksi': 'hentikan', 'user_id': satu.id},
+                      'Langganan dihentikan.',
+                      konfirmasi: true,
+                      tanya: 'Hentikan langganan ${satu.namaTampil}?\n\nAkun akan '
+                          'kembali GRATIS dan iklan tampil kembali.',
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tombol(String tulisan, Color warna, VoidCallback aksi) {
+    return FilledButton(
+      style: FilledButton.styleFrom(
+        backgroundColor: warna,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      onPressed: sedangProses ? null : aksi,
+      child: Text(
+        tulisan,
+        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800),
       ),
     );
   }

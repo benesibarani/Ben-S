@@ -21,7 +21,7 @@
 
    [ ] 2. Aplikasi sudah versi terbaru di komputer:
           buka menu Pengaturan pada aplikasi - penanda harus berbunyi
-          RTS-2026-09-30-6
+          RTS-2026-09-30-7
           (bila masih -5: jalankan .\LANGKAH1_PASANG_SEMUA.ps1 lebih dahulu)
 
    [ ] 3. Gambar QRIS sudah terpasang:
@@ -30,7 +30,7 @@
 
    [ ] 4. Nomor versi pada pubspec.yaml sudah benar - harus berbunyi:
 
-              version: 1.2.0+3
+              version: 1.2.1+4
 
           Amannya: berkas pubspec.yaml dari paket RTS_PANEL_PUTARAN_7 sudah
           memuat angka itu.
@@ -38,8 +38,9 @@
    [ ] 5. AndroidManifest.xml sudah memuat:
           - izin LOKASI, NOTIFIKASI, dan KAMERA
           - baris meta-data com.google.android.gms.ads.APPLICATION_ID
-          (LANGKAH1_PASANG_SEMUA.ps1 memeriksa ketiganya dan memberi tahu
-           bila ada yang belum)
+          - NAMA aplikasi pada layar HP: android:label="RTS Panel"
+          (LANGKAH1_PASANG_SEMUA.ps1 memeriksa keempatnya dan mengerjakan
+           nama aplikasi serta izin KAMERA secara otomatis)
 
 
 ==============================================================================
@@ -99,11 +100,14 @@
 
    [ ] 2. Isi kolomnya seperti ini:
 
-              Versi aplikasi      : 1.2.0
-              Kode versi          : 3
+              Versi aplikasi      : 1.2.1
+              Kode versi          : 4
               Berkas APK          : pilih app-release.apk dari Langkah B
-              Catatan pembaruan   : Iklan layar pembuka + iklan native di
-                                    seluruh menu; halaman Langganan PRO
+              Catatan pembaruan   : Nama aplikasi menjadi RTS Panel; halaman
+                                    Kelola Akun PRO untuk ADMIN (setujui /
+                                    tolak pembayaran QRIS dan atur masa PRO
+                                    langsung dari HP); iklan layar pembuka +
+                                    iklan native seluruh menu; Langganan PRO
                                     dengan QRIS (30 hari + uji coba 7 hari);
                                     foto pribadi petugas.
               Pembaruan wajib     : TIDAK (jangan dicentang)
@@ -130,9 +134,10 @@
 
    [ ] 1. Pemberitahuan "Versi Baru" masuk ke layar HP (aplikasi tertutup)
    [ ] 2. Tombol UPDATE pada pemberitahuan membuka kotak pembaruan
-   [ ] 3. Aplikasi terpasang dan dapat dibuka
+   [ ] 3. Aplikasi terpasang, dapat dibuka, dan NAMA pada layar HP sudah
+          berbunyi "RTS Panel" (bukan rts_panel_app)
    [ ] 4. Masuk (login) berhasil, kartu akun tampil rapi
-   [ ] 5. Menu Pengaturan: penanda RTS-2026-09-30-6
+   [ ] 5. Menu Pengaturan: penanda RTS-2026-09-30-7
    [ ] 6. Profil - LANGGANAN PRO: gambar QRIS tampil + nominal Rp5.000
    [ ] 7. Profil - ketuk foto - pilih dari galeri: foto langsung berubah
    [ ] 8. Akun baru: kartu Rencana Akun berbunyi PRO (uji coba 7 hari)
@@ -141,6 +146,9 @@
    [ ] 10. Akun PRO (setelah Admin menyetujui pembayaran): seluruh iklan hilang
    [ ] 11. Kotak cuaca tampil dan dapat diketuk
    [ ] 12. Notifikasi "Data Customer Diperbarui" masuk saat Admin mengunggah CSV
+   [ ] 13. Masuk memakai akun ADMIN - Profil - Rencana Akun -
+           tombol "KELOLA AKUN PRO (ADMIN)" terbuka, daftar akun tampil, dan
+           tombol SETUJUI / TOLAK bekerja
 
    Bila salah satu gagal, kirimkan tulisan galatnya apa adanya kepada saya.
 

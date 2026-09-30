@@ -189,6 +189,7 @@
   -----------------------------------------------------
   [ ] api/langganan_inti.php      <-- BERKAS BARU (aturan langganan)
   [ ] api/langganan.php           <-- BERKAS BARU (API langganan)
+  [ ] api/kelola_pro.php          <-- BERKAS BARU (setujui pembayaran dari HP)
   [ ] api/upload_foto.php         <-- BERKAS BARU (unggah foto pribadi)
   [ ] api/siapkan_langganan.php   <-- BERKAS BARU (pembaruan database)
   [ ] api/login.php               <-- DIPERBARUI (uji coba otomatis + langganan)
@@ -228,7 +229,7 @@
 
   LANGKAH 5 - PERIKSA
   -------------------
-  [ ] Pengaturan -> penanda kode aplikasi harus berbunyi: RTS-2026-09-30-6
+  [ ] Pengaturan -> penanda kode aplikasi harus berbunyi: RTS-2026-09-30-7
   [ ] Profil -> tombol LANGGANAN PRO terbuka dan menampilkan QRIS
   [ ] Profil -> ketuk foto -> pilih dari galeri -> foto berubah
   [ ] Beranda -> iklan banner + iklan native tampil (akun GRATIS)
@@ -265,3 +266,83 @@
                                              | SHOW TABLES
 
 ==============================================================================
+
+==============================================================================
+ BAGIAN 6 - MENYETUJUI PEMBAYARAN LANGSUNG DARI HP (KHUSUS ADMIN)
+==============================================================================
+
+ Permintaan Bapak (sebelum rilis):
+   "Role Admin tidak ada mengubah status PRO atau GRATIS dari member.
+    Padahal member sudah bayar dan notifikasinya sudah masuk."
+
+ SEKARANG SUDAH ADA. Halaman baru di dalam aplikasi: KELOLA AKUN PRO.
+
+  A. CARA MEMBUKANYA
+     Profil - Rencana Akun - tombol "KELOLA AKUN PRO (ADMIN)"
+     (tombol itu hanya tampil bila akun yang masuk berperan ADMIN)
+
+     Cara kedua: ketuk pemberitahuan "Pembayaran Akun PRO" yang masuk ke HP
+     Admin - aplikasi langsung membuka halaman ini.
+
+  B. ISI HALAMANNYA
+     Bagian atas - PEMBAYARAN MENUNGGU
+        Setiap pernyataan pembayaran dari petugas berupa satu kartu:
+           nama petugas, username, role, nominal, lama hari, waktu dinyatakan
+           tombol  [SETUJUI + 30 HARI]   [TOLAK]
+        Menekan SETUJUI:
+           - masa PRO 30 hari langsung diberikan kepada petugas itu
+           - pernyataan pembayarannya ditandai DIBAYAR
+           - petugas menerima pemberitahuan "Pembayaran Diterima - Akun PRO
+             Aktif" di layar HP-nya
+
+     Bagian bawah - DAFTAR AKUN
+        Seluruh akun beserta foto, role, dan keadaan langganannya:
+           PRO            : hijau
+           UJI COBA       : kuning
+           GRATIS         : merah
+        Tombol pada setiap akun:
+           [+30 HARI]   menambah 30 hari (masa lama DITAMBAHKAN, tidak hangus)
+           [+90 HARI]   menambah 90 hari
+           [TRIAL 7 HARI] hanya tampil bila akun itu belum pernah uji coba
+           [HENTIKAN]   akun kembali GRATIS, iklan tampil kembali
+        Ada juga kolom pencarian nama / username / role.
+
+     Bila kolom database belum lengkap, di bagian atas muncul kartu dengan
+     tombol "PERBARUI DATABASE" - tekan sekali saja, sama seperti pada website.
+
+  C. SETELAH ADMIN MENYETUJUI
+     Petugas tidak perlu memasang ulang aplikasi dan tidak perlu keluar-masuk
+     berkali-kali. Keadaan PRO dibaca setiap aplikasi dibuka, jadi begitu
+     aplikasi dibuka (atau sesi diperbarui), iklan langsung hilang.
+
+  D. HUBUNGAN DENGAN HALAMAN WEBSITE
+     Halaman website langganan_admin.php TETAP ADA dan tetap dapat dipakai
+     bila Bapak sedang memakai komputer. Keduanya memakai aturan yang sama
+     (api/langganan_inti.php), sehingga hasilnya selalu seragam.
+
+
+==============================================================================
+ BAGIAN 7 - NAMA APLIKASI PADA LAYAR HP
+==============================================================================
+
+ Permintaan Bapak: nama aplikasi di HP sebelumnya "rts_panel_app" - kurang
+ enak dilihat. Sekarang menjadi:   RTS Panel
+
+ Cara mengubahnya TIDAK perlu manual: skrip LANGKAH1_PASANG_SEMUA.ps1
+ mengerjakannya otomatis (langkah 5 dari 8). Skrip itu:
+   1. membaca AndroidManifest.xml
+   2. membuat cadangan berkasnya
+   3. mengganti tulisan android:label="rts_panel_app"  menjadi
+      android:label="RTS Panel"
+   4. memastikan hasilnya
+
+ Yang TIDAK berubah: nama paket aplikasi (com.example.rts_panel_app) dan
+ applicationId-nya. Ini DISENGAJA, supaya aplikasi baru dapat menimpa
+ aplikasi lama tanpa menghapus - setelan, sesi login, dan data di HP tetap
+ aman. Bila nama paket diubah, seluruh HP harus menghapus aplikasi lama
+ terlebih dahulu (dan itu merepotkan banyak orang).
+
+ Nama baru terlihat di:
+   - daftar aplikasi pada layar HP
+   - judul pada daftar aplikasi terbaru (recent apps)
+   - halaman Pengaturan - Aplikasi - RTS Panel
