@@ -26,9 +26,10 @@ Berkas dashboard.php lama yang memuat password sudah dihapus dari repo.
  1. PAKET APLIKASI ANDROID (diekstrak ke D:\Project\rts_panel_app)
 ------------------------------------------------------------------
 
-RTS_PANEL_FITUR_BARU.zip
+RTS_PANEL_FITUR_BARU.zip   (7 berkas)
     (main.dart + pubspec.yaml + PASANG_FITUR_BARU.ps1 + PERBAIKI_PUBSPEC.ps1
-     + android_manifest_tambahan.xml - sudah termasuk IZIN LOKASI untuk cuaca)
+     + PERIKSA_KODE_APLIKASI.ps1 + android_manifest_tambahan.xml
+     + CUACA_BELUM_TAMPIL.txt - sudah termasuk IZIN LOKASI untuk cuaca)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_FITUR_BARU.zip
 
 
@@ -63,6 +64,12 @@ RTS_PANEL_FIREBASE.zip
 ------------------------------------------------------------------
  3. PANDUAN DAN CATATAN
 ------------------------------------------------------------------
+
+CUACA_BELUM_TAMPIL.txt  (panduan cuaca: 5 langkah + tabel sebab & tindakan)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/CUACA_BELUM_TAMPIL.txt
+
+PERIKSA_KODE_APLIKASI.ps1  (pemeriksa isi folder proyek - tidak mengubah apa pun)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERIKSA_KODE_APLIKASI.ps1
 
 PUTARAN_2_DAN_3.txt  (panduan rinci Putaran 2 & 3: 2A-2C, 3A-3E)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PUTARAN_2_DAN_3.txt

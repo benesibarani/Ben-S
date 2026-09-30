@@ -49,19 +49,53 @@ BUKTI CEPAT APAKAH BUILD DI HP MASIH LAMA
 
   Berkas ini harus berisi main.dart berukuran sekitar 384.000 bita.
 
-  TIPS: sebelum mengekstrak, HAPUS dulu folder:
-            D:\Project\rts_panel_app
-        lalu ekstrak ulang dari nol ke D:\Project. Dengan cara ini dijamin
-        tidak ada berkas lama yang tertinggal.
+  PENTING - JANGAN MENGHAPUS FOLDER PROYEK:
+
+     Paket zip hanya memuat 6 berkas (main.dart, pubspec.yaml, dua skrip,
+     android_manifest_tambahan.xml, dan panduan ini). Folder android, assets,
+     dan lib TIDAK ada di dalamnya. Jadi bila folder D:\Project\rts_panel_app
+     dihapus, yang hilang adalah:
+         - android\app\google-services.json  (penghubung Firebase)
+         - assets\images\...                 (gambar latar login & beranda)
+         - susunan Gradle yang sudah benar
+     Akibatnya build akan GAGAL.
+
+     Cara yang benar: cukup TIMPA berkas dari paket, lalu bersihkan hasil
+     build lama dengan perintah "flutter clean" (lihat LANGKAH 2 nomor 4).
+
+  SEBELUM mengekstrak, periksa dulu keadaan folder dengan skrip
+  PERIKSA_KODE_APLIKASI.ps1 (lihat LANGKAH 1B). Skrip itu:
+     - tidak menghapus atau mengubah apa pun
+     - memberi tahu apakah main.dart sudah versi baru
+     - memeriksa izin lokasi, paket pubspec, google-services.json, dan assets
 
 
 ==============================================================================
- LANGKAH 2 - PERBAIKI PUBSPEC
+ LANGKAH 1B - PERIKSA DULU ISI FOLDER (TANPA MENGUBAH APA PUN)
 ==============================================================================
 
   [ ] 1. Buka PowerShell di folder D:\Project\rts_panel_app
-  [ ] 2. Jalankan:  .\PERBAIKI_PUBSPEC.ps1
-  [ ] 3. Di VS Code: Ctrl+Shift+P - "Dart: Restart Analysis Server"
+         (buka foldernya - tekan Shift + klik kanan pada ruang kosong -
+          pilih "Open PowerShell window here" / "Open in Terminal")
+  [ ] 2. Jalankan:  .\PERIKSA_KODE_APLIKASI.ps1
+  [ ] 3. Baca hasilnya:
+             semua [ADA] dan
+             "KODE APLIKASI : RTS-2026-09-30-5"
+         berarti folder sudah benar - lanjut LANGKAH 2.
+         Bila ada [BELUM] - ekstrak RTS_PANEL_FITUR_BARU.zip ke folder ini
+         dengan pilihan TIMPA / Replace, lalu jalankan skrip ini lagi.
+
+
+==============================================================================
+ LANGKAH 2 - PERBAIKI PUBSPEC DAN BERSIHKAN HASIL BUILD LAMA
+==============================================================================
+
+  [ ] 1. Buka PowerShell di folder D:\Project\rts_panel_app
+  [ ] 2. Jalankan:  flutter clean
+         (menghapus hasil build lama supaya build baru benar-benar dari nol -
+          ini pengganti "menghapus folder", tanpa kehilangan berkas penting)
+  [ ] 3. Jalankan:  .\PERBAIKI_PUBSPEC.ps1
+  [ ] 4. Di VS Code: Ctrl+Shift+P - "Dart: Restart Analysis Server"
 
 
 ==============================================================================
@@ -69,6 +103,8 @@ BUKTI CEPAT APAKAH BUILD DI HP MASIH LAMA
 ==============================================================================
 
   [ ] 1. Jalankan:  .\PASANG_FITUR_BARU.ps1
+         (skrip ini memeriksa sendiri dan mencetak KODE APLIKASI - cocokkan
+          dengan nilai pada LANGKAH 1B)
 
   [ ] 2. Perhatikan bagian "1. Memeriksa berkas aplikasi versi baru".
          Harus muncul tulisan seperti ini (semua [ADA]):

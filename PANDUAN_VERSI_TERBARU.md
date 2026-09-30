@@ -5545,3 +5545,90 @@ yang pernah tercatat; bila belum pernah ada, laporan tidak dapat diambil.
 
 Laporan cuaca memakai layanan gratis **Open-Meteo** yang tidak memerlukan
 kunci API, sehingga tidak ada yang perlu diatur pada website.
+
+## BAGIAN 51 - KOREKSI PENTING: JANGAN MENGHAPUS FOLDER PROYEK
+
+### A. KOREKSI ATAS SARAN SEBELUMNYA
+
+Pada BAGIAN 50 saya menyarankan menghapus folder `D:\Project\rts_panel_app`
+lalu mengekstrak ulang dari nol. **Saran itu keliru dan sudah dibatalkan.**
+Bapak benar untuk bertanya lebih dahulu.
+
+**Sebabnya:** paket `RTS_PANEL_FITUR_BARU.zip` hanya memuat **6 berkas**:
+
+```text
+main.dart                      (kode aplikasi)
+pubspec.yaml                   (daftar paket + nomor versi)
+PASANG_FITUR_BARU.ps1          (skrip pemasang)
+PERBAIKI_PUBSPEC.ps1           (skrip pubspec)
+android_manifest_tambahan.xml  (catatan izin)
+CUACA_BELUM_TAMPIL.txt         (panduan cuaca)
+```
+
+Folder `android`, `assets`, dan `lib` **TIDAK ADA** di dalam paket. Jadi bila
+folder proyek dihapus, yang hilang adalah:
+
+| Nomor | Berkas yang hilang | Akibatnya |
+| --- | --- | --- |
+| 1 | `android\app\google-services.json` | Aplikasi tidak dapat memakai Firebase (pemberitahuan HP) |
+| 2 | `assets\images\...` | Gambar latar login dan beranda hilang |
+| 3 | `android\` (susunan Gradle yang sudah benar) | Build gagal - harus menyusun Gradle dari awal |
+| 4 | `lib\` | Susunan program hilang |
+
+**Cara yang benar: TIMPA berkas dari paket, lalu jalankan `flutter clean`.**
+
+Perintah `flutter clean` menghapus **hasil build lama** (`build/` dan
+`.dart_tool/`) tanpa menyentuh berkas penting - jadi hasilnya sama bersihnya
+dengan "ekstrak dari nol", tetapi tanpa kehilangan apa pun.
+
+### B. SKRIP PEMERIKSA BARU: `PERIKSA_KODE_APLIKASI.ps1`
+
+Skrip ini menjawab pertanyaan "apakah folder proyek saya sudah berisi kode
+terbaru?" **tanpa mengubah apa pun** - tidak menghapus, tidak memindahkan.
+
+| Nomor | Yang diperiksa | Kegunaan |
+| --- | --- | --- |
+| 0 | Letak folder: `pubspec.yaml`, `main.dart`, folder `android` | Memastikan dijalankan pada folder yang benar |
+| 1 | **Kode aplikasi** pada `main.dart` | Harus `RTS-2026-09-30-5`; bila beda, berkas baru belum ditimpa |
+| 2 | 10 bagian penting di dalam `main.dart` | Cuaca, kotak cuaca baru, kartu pemeriksa, tombol salin, permintaan izin, pesan pembaruan, iklan, dan lain-lain |
+| 3 | 9 paket pada `pubspec.yaml` | geolocator, geocoding, iklan, Firebase, dan lain-lain |
+| 4 | 6 izin pada `AndroidManifest.xml` | Termasuk lokasi, pemberitahuan, dan kode AdMob |
+| 5 | `google-services.json`, `assets`, `lib` | Berkas yang TIDAK ada di dalam paket zip |
+
+Contoh hasil bila semuanya benar:
+
+```text
+   [ADA]   main.dart
+   [ADA]   folder android (WAJIB - tidak ada di dalam paket zip)
+
+   KODE APLIKASI : RTS-2026-09-30-5
+   DIHARAPKAN    : RTS-2026-09-30-5
+
+   [BENAR] main.dart sudah versi terbaru.
+
+   SEMUA BENAR. Folder proyek sudah memuat kode terbaru.
+
+   Langkah berikutnya:
+     1. flutter clean
+     2. .\PERBAIKI_PUBSPEC.ps1
+     3. .\PASANG_FITUR_BARU.ps1
+```
+
+Bila ada yang kurang, skrip menyebutkan langkah perbaikannya sekaligus
+peringatan agar **tidak menghapus folder proyek**.
+
+### C. URUTAN YANG BENAR (PENGGANTI LANGKAH LAMA)
+
+| Nomor | Perintah | Kegunaan |
+| --- | --- | --- |
+| 1 | Ekstrak `RTS_PANEL_FITUR_BARU.zip` ke `D:\Project\rts_panel_app`, pilih **TIMPA / Replace** | Memperbarui 6 berkas - berkas lain tidak disentuh |
+| 2 | `\.PERIKSA_KODE_APLIKASI.ps1` | Memastikan semua sudah benar sebelum membangun |
+| 3 | `flutter clean` | Membersihkan hasil build lama |
+| 4 | `.\PERBAIKI_PUBSPEC.ps1` | Mendaftarkan paket |
+| 5 | `.\PASANG_FITUR_BARU.ps1` | Membangun dan memasang ke HP |
+
+Bila ingin cadangan tambahan tanpa risiko: **ubah nama** foldernya terlebih
+dahulu (misalnya menjadi `rts_panel_app_lama`), lalu ekstrak paket ke folder
+baru `rts_panel_app`. Dengan begitu folder lama tetap utuh sebagai cadangan -
+tetapi cara ini memerlukan penyalinan `android\`, `assets\`, dan `lib\` dari
+folder lama, sehingga **cara menimpa (nomor 1) tetap yang paling mudah**.
