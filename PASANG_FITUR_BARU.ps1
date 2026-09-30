@@ -360,7 +360,11 @@ Write-Host ""
 $keluaran = flutter devices
 $keluaran
 
-$perangkat = @()
+# Perangkat KABEL diutamakan; bila tidak ada (kabel rusak), dipakai
+# perangkat NIRKABEL yang sedang tersambung.
+$perangkatKabel = @()
+$perangkatNirkabel = @()
+
 $mesin = (flutter devices --machine) -join "`n"
 
 try {
@@ -368,17 +372,34 @@ try {
     if ($daftar -isnot [array]) { $daftar = @($daftar) }
 
     foreach ($satu in $daftar) {
-        if ($satu.targetPlatform -match "^android" -and $satu.id -notmatch "_adb-tls-connect") {
-            $perangkat += $satu.id
+        if ($satu.targetPlatform -notmatch "^android") { continue }
+
+        if ($satu.id -match "_adb-tls-connect" -or $satu.id -match ":\d+$") {
+            $perangkatNirkabel += $satu.id
+        }
+        else {
+            $perangkatKabel += $satu.id
         }
     }
 }
 catch {
     foreach ($baris in $keluaran) {
-        if ($baris -match "adb-\S+" -and $baris -notmatch "_adb-tls-connect") {
-            $perangkat += $Matches[0]
+        if ($baris -match "adb-\S+") {
+            if ($baris -match "_adb-tls-connect") { $perangkatNirkabel += $Matches[0] }
+            else { $perangkatKabel += $Matches[0] }
         }
     }
+}
+
+$perangkat = @()
+
+if ($perangkatKabel.Count -ge 1) {
+    $perangkat = $perangkatKabel
+    Write-Host "   Perangkat KABEL terdeteksi." -ForegroundColor Green
+}
+elseif ($perangkatNirkabel.Count -ge 1) {
+    $perangkat = $perangkatNirkabel
+    Write-Host "   Perangkat NIRKABEL terdeteksi (kabel tidak dipakai)." -ForegroundColor Green
 }
 
 if ($perangkat.Count -ge 1) {
@@ -386,9 +407,10 @@ if ($perangkat.Count -ge 1) {
     flutter run -d $perangkat[0]
 }
 else {
-    Write-Host "   Perangkat kabel tidak terdeteksi." -ForegroundColor Yellow
-    Write-Host "   Bila memakai nirkabel, jalankan: PASANG_NIRKABEL.ps1" -ForegroundColor Yellow
-    Write-Host "   Atau jalankan 'flutter run' lalu pilih perangkat HP Anda." -ForegroundColor Yellow
+    Write-Host "   Belum ada HP yang tersambung." -ForegroundColor Yellow
+    Write-Host "   Karena kabel USB rusak, sambungkan lewat nirkabel lebih dahulu:" -ForegroundColor Yellow
+    Write-Host "       powershell -ExecutionPolicy Bypass -File .\PASANG_NIRKABEL.ps1" -ForegroundColor Cyan
+    Write-Host "   Setelah tersambung, jalankan lagi skrip ini." -ForegroundColor Yellow
 }
 
 TulisJudul "Selesai"
