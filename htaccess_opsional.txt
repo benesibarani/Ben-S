@@ -1,0 +1,40 @@
+# ============================================================================
+#  RTS PANEL BY BENE - ATURAN OPSIONAL: ALAMAT TANPA AKHIRAN .php
+#  Berkas : htaccess_opsional.txt
+#
+#  CARA PAKAI (lihat penjelasan lengkap pada ALAMAT_TANPA_PHP.txt)
+#    1. CADANGKAN berkas .htaccess yang sudah ada di public_html
+#       (copy menjadi htaccess_lama.txt)
+#    2. Buka .htaccess dengan Edit, lalu SALIN SELURUH ISI BERKAS INI
+#       dan tempelkan pada BAGIAN PALING BAWAH.
+#       (Jangan menghapus isi yang sudah ada.)
+#    3. Simpan, lalu uji:
+#          https://rts.benedic-s.com/inbox       -> harus terbuka
+#          https://rts.benedic-s.com/dashboard   -> harus terbuka
+#
+#  BILA ADA MASALAH: kembalikan .htaccess seperti semula (timpa dengan
+#  salinan cadangan, atau hapus bagian yang Bapak tempel).
+#
+#  AMAN: aturan ini hanya bekerja bila berkas .php dengan nama itu
+#  benar-benar ada. Bila tidak ada, jawabannya tetap 404 seperti biasa.
+#  Tidak ada data database yang disentuh.
+# ============================================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Bila diakses lewat subfolder, sesuaikan baris di bawah.
+    # Untuk domain utama (rts.benedic-s.com) biarkan seperti ini.
+    RewriteBase /
+
+    # Jangan sentuh berkas dan folder yang memang ada.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # /inbox        -> inbox.php
+    # /dashboard    -> dashboard.php
+    # /daftar       -> daftar.php      (dan seterusnya)
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.*?)/?$ $1.php [L,QSA]
+</IfModule>

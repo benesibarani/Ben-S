@@ -3,6 +3,18 @@
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.
 ==============================================================================
 
+SOAL ALAMAT HALAMAN (/.php ATAU TANPA .php)
+-----------------------------------------
+ALAMAT_TANPA_PHP.txt - kenapa https://rts.benedic-s.com/inbox menjawab 404
+                        dan cara membuat alamat tanpa .php bila diinginkan
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/ALAMAT_TANPA_PHP.txt
+
+  Alamat yang benar : https://rts.benedic-s.com/inbox.php
+  Aturan opsional   : htaccess_opsional.txt (tempelkan di bagian bawah
+                      .htaccess public_html, setelah dicadangkan lebih dahulu)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/htaccess_opsional.txt
+
+
 BARU - TOMBOL "MENDAFTAR" UNTUK TIM SALES (DROPDOWN SALES DISTRICT)
 ------------------------------------------------------------------
 DAFTAR_SALES.txt - tombol Mendaftar di bawah Masuk, formulir pendaftaran yang

@@ -1,0 +1,104 @@
+==============================================================================
+ RTS PANEL BY BENE - ALAMAT HALAMAN: /.php DAN ALAMAT TANPA .php
+==============================================================================
+
+ PERTANYAAN BAPAK
+ ----------------
+ "Kenapa menu https://rts.benedic-s.com/inbox ... ?"
+
+ JAWABAN SINGKAT
+ --------------
+   Alamat itu MEMANG tidak ada, sebab berkasnya bernama inbox.php.
+
+   https://rts.benedic-s.com/inbox        -> 404 Not Found  (tanpa .php, tidak ada)
+   https://rts.benedic-s.com/inbox.php    -> BENAR, berjalan normal
+
+ Saya sudah menguji keduanya ke hosting Bapak:
+   - /inbox   -> LiteSpeed menjawab "404 Not Found"
+   - /inbox.php -> berjalan, lalu dialihkan ke halaman masuk (index.php)
+                   karena belum login. Itu memang perilakunya yang benar.
+
+ Jadi TIDAK ada yang rusak. Menu "Inbox" pada sidebar juga sudah benar:
+ tautannya menuju inbox.php, bukan /inbox.
+
+ CATATAN: seluruh halaman RTS Panel memakai akhiran .php -
+   dashboard.php, master_customer.php, pengajuan_toko.php, gsp.php,
+   inbox.php, notifications.php, manage_users.php, app_versi.php,
+   langganan_admin.php, akun.php, dan seterusnya.
+
+
+==============================================================================
+ BAGIAN 1 - KALAU INGIN ALAMAT TANPA .php TETAP BISA DIBUKA (OPSIONAL)
+==============================================================================
+
+ Bila Bapak ingin https://rts.benedic-s.com/inbox (tanpa .php) juga dapat
+ dibuka, caranya menambahkan aturan pada berkas .htaccess di public_html.
+
+ Berkas itu membuat aturan: "bila ada permintaan /inbox, carikan berkas
+ inbox.php". Hanya berlaku bila berkas .php-nya memang ada, sehingga tidak
+ mengganggu halaman lain.
+
+ CARA MEMASANG (hati-hati, sekali saja)
+
+   [ ] 1. CADANGKAN lebih dahulu berkas .htaccess yang lama:
+             cPanel - File Manager - aktifkan "Show Hidden Files (dotfiles)"
+             - klik kanan .htaccess - Copy - beri nama  htaccess_lama.txt
+   [ ] 2. Buka .htaccess dengan Edit, lalu TAMBAHKAN isi berkas
+          htaccess_opsional.txt pada BAGIAN PALING BAWAH.
+          (Jangan menghapus isi yang sudah ada - biasanya hanya berisi
+           pengaturan php_value dari cPanel.)
+   [ ] 3. Simpan.
+   [ ] 4. Uji:
+             https://rts.benedic-s.com/inbox        -> harus terbuka
+             https://rts.benedic-s.com/dashboard    -> harus terbuka
+             https://rts.benedic-s.com/kelola_user  -> bila namanya tidak
+                                                      ada, 404 (wajar)
+
+ BILA SESUATU MENJADI SALAH (misalnya halaman menjadi 500)
+   Bila hal itu terjadi, kembalikan berkas .htaccess seperti semula:
+   timpa dengan salinan cadangan tadi (htaccess_lama.txt), atau hapus seluruh
+   isi tambahan yang Bapak tempel. Aturan ini TIDAK mengubah data apa pun,
+   jadi tidak ada risiko pada database.
+
+ KELEBIHAN cara ini
+   - Alamat menjadi lebih pendek dan mudah diingat: /inbox, /dashboard
+ KEKURANGANNYA
+   - Berkas .htaccess berlaku untuk SELURUH website (bukan hanya RTS Panel),
+     jadi harus diuji sesudah dipasang. Bila Bapak lebih suka aman, cukup
+     gunakan alamat dengan .php - semuanya sudah berjalan normal.
+
+
+==============================================================================
+ BAGIAN 2 - BILA MASALAHNYA BUKAN 404
+==============================================================================
+
+ Bila yang Bapak maksud bukan "alamat tidak ditemukan", melainkan halaman
+ Inbox-nya bermasalah SETELAH MASUK (misalnya tampil kosong, isi tidak muncul,
+ atau muncul tulisan galat), tolong kirimkan kepada saya:
+
+   [ ] 1. Tangkapan layar halaman itu (seperti Bapak kirim sebelumnya)
+   [ ] 2. Tulisan galat yang tampak (bila ada)
+   [ ] 3. Apakah terjadi pada semua akun atau hanya akun tertentu
+
+ Halaman Inbox membaca tiga hal:
+   - pengajuan_sales   (pengajuan toko dari tim Sales)
+   - pengajuan_gsp     (pengajuan GSP)
+   - hak persetujuan sesuai role (ADMIN & ASS yang menyetujui;
+     WSS & SMST melihat semua district; RTS & TF sesuai district/salesman)
+ Jadi bila isinya kosong, biasanya memang belum ada pengajuan yang sesuai
+ cakupan akun tersebut - bukan kerusakan.
+
+ Pengingat kecil: halaman Inbox juga menjalankan pembersihan otomatis berkas
+ pengajuan yang sudah diproses lebih dari 30 hari (foto KTP/luar/dalam ikut
+ dihapus). Itu sudah ada sejak awal dan memang disengaja.
+
+
+==============================================================================
+ RINGKASAN
+==============================================================================
+
+ 1. Alamat yang benar  : https://rts.benedic-s.com/inbox.php
+ 2. Menu sidebar       : sudah benar (inbox.php)
+ 3. Alamat tanpa .php  : opsional, memakai htaccess_opsional.txt
+ 4. Bila bermasalah setelah masuk: kirimkan tangkapan layarnya kepada saya
+==============================================================================
