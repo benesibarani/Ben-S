@@ -70,11 +70,19 @@ dependencies:
   # ---- PENYIMPANAN DI DALAM HP (aplikasi berjalan tanpa internet) ----
   # sqflite : database SQLite di dalam HP untuk stok, penjualan, piutang,
   #           dan template struk.
-  sqflite: ^2.4.4
   # path : menyusun alamat berkas database dan berkas cadangan.
-  path: ^1.9.0
   # path_provider : menemukan folder aplikasi di HP (tempat berkas cadangan).
-  path_provider: ^2.1.5
+  #
+  # CATATAN PENTING - kenapa angkanya ditulis mulai dari versi rendah:
+  #   Tanda ^ artinya "versi ini atau yang lebih baru". Dengan menuliskan
+  #   angka awal yang rendah, flutter pub get akan MEMILIH SENDIRI versi
+  #   paling baru yang cocok dengan versi Flutter di komputer Bapak.
+  #   Jadi paket-paket ini tetap dapat dipasang baik pada Flutter lama
+  #   maupun Flutter yang paling baru - tidak akan muncul pesan
+  #   "requires SDK version" yang menghentikan pemasangan.
+  sqflite: ^2.0.0
+  path: ^1.8.0
+  path_provider: ^2.0.0
 
 dev_dependencies:
   flutter_test:

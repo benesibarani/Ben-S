@@ -307,9 +307,12 @@
     android_manifest_tambahan.xml  (TIDAK BERUBAH - cukup disalin apa adanya)
 
  Paket baru yang dipasang (sudah dituliskan di pubspec.yaml):
-    sqflite          ^2.4.4  -> database SQLite di dalam HP
-    path             ^1.9.0  -> menyusun alamat berkas
-    path_provider    ^2.1.5  -> menemukan folder aplikasi di HP
+    sqflite          ^2.0.0  -> database SQLite di dalam HP
+    path             ^1.8.0  -> menyusun alamat berkas
+    path_provider    ^2.0.0  -> menemukan folder aplikasi di HP
+    (angka ^2.0.0 artinya "versi ini atau lebih baru": flutter pub get
+     memilih sendiri versi paling baru yang cocok dengan Flutter Bapak,
+     jadi tidak akan muncul pesan "requires SDK version")
 
  Paket dari putaran lalu yang tetap dipakai:
     mobile_scanner ^7.4.2, esc_pos_utils_plus ^2.0.4,
