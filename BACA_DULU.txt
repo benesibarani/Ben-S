@@ -36,6 +36,19 @@
   dan foto pribadi), lanjutkan saja membaca berkas ini dari atas ke bawah -
   caranya tidak berubah.
 
+  CATATAN PERBAIKAN GALAT (2 Oktober 2026):
+     1. lib\kasir.dart sudah diperbaiki - nama pendek "ms" untuk pemindai
+        kamera (tidak lagi bentrok dengan kelas Barcode paket printer) dan
+        barcode nomor nota kini dikirim sebagai daftar karakter.
+     2. PERBAIKI_COMPILE_SDK.ps1 sudah dijalankan otomatis oleh LANGKAH1
+        (compileSdk 37), sehingga pesan permission_handler tidak lagi
+        menghentikan pembangunan.
+     3. Bila pernah muncul pesan "Expected to find ')'", artinya berkas
+        lib\kasir.dart di komputer Bapak tidak lengkap (isinya ditempel
+        sebagian). Jalankan .\PERIKSA_KODE_APLIKASI.ps1 untuk memeriksanya
+        - skrip itu menunjukkan apakah kurungnya sudah berpasangan, tanpa
+        perlu membangun aplikasi. Ukuran yang benar: 4.738 baris.
+
 ==============================================================================
 
  Berkas ini adalah SATU-SATUNYA panduan yang perlu Bapak ikuti untuk topik ini.

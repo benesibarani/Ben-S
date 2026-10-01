@@ -18,8 +18,11 @@ KASIR_BARANG_BAWAAN.txt - panduan lengkap versi terbaru: seluruh data kasir
   Berkas APLIKASI terbaru (dipasang dengan LANGKAH1_PASANG_SEMUA.ps1):
     2_APLIKASI_copy_ke_proyek/kasir_lokal.dart  (BARU, 82.393 B) - MESIN KASIR
         DI DALAM HP: 10 tabel SQLite, seluruh perintah kasir, cadangan data
-    2_APLIKASI_copy_ke_proyek/kasir.dart        (DIPERBARUI, 159.576 B) -
-        memakai mesin lokal + halaman "Server & Cadangan"
+    2_APLIKASI_copy_ke_proyek/kasir.dart        (DIPERBARUI, 160.698 B /
+        4.738 baris) - memakai mesin lokal + halaman "Server & Cadangan" +
+        PERBAIKAN GALAT: pemindai kamera memakai nama pendek ms. (tidak lagi
+        bentrok dengan kelas Barcode paket printer) dan barcode nomor nota
+        kini dikirim sebagai daftar karakter sesuai aturan paket printer
     2_APLIKASI_copy_ke_proyek/main.dart         (DIPERBARUI) - Beranda dapat
         dibuka tanpa internet + tombol LANJUT TANPA INTERNET
     2_APLIKASI_copy_ke_proyek/pubspec.yaml      (DIPERBARUI) - versi 1.2.3+6 +
@@ -48,8 +51,15 @@ KASIR_BARANG_BAWAAN.txt - panduan lengkap versi terbaru: seluruh data kasir
     LANGKAH1_PASANG_SEMUA.ps1
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/LANGKAH1_PASANG_SEMUA.ps1
     PERBAIKI_COMPILE_SDK.ps1   (jalankan SEKALI - memperbaiki compileSdk = 37
-                                pada android\app\build.gradle.kts)
+                                pada android\app\build.gradle.kts; sudah
+                                dijalankan otomatis oleh LANGKAH1 pada paket
+                                PUTARAN_10 terbaru)
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERBAIKI_COMPILE_SDK.ps1
+    PERIKSA_KODE_APLIKASI.ps1   (DIPERBARUI - memeriksa keseimbangan kurung
+                                lib\kasir.dart & lib\kasir_lokal.dart,
+                                paket sqflite, dan angka compileSdk SEBELUM
+                                membangun; tidak mengubah apa pun)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERIKSA_KODE_APLIKASI.ps1
 
   Catatan: tabel kasir di server kini TIDAK WAJIB. Bila Bapak ingin daftar
   produk dipakai bersama seluruh sales, unggah berkas API + buat tabelnya,

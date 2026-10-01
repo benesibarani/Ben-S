@@ -295,7 +295,10 @@
 
     lib/kasir_lokal.dart           (BARU)      - mesin kasir SQLite di HP
     lib/kasir.dart                 (DIPERBARUI) - memakai mesin lokal,
-                                                  tombol Server & Cadangan
+                                                  tombol Server & Cadangan,
+                                                  perbaikan nama pendek ms.
+                                                  dan barcode nota
+                                                  (4.738 baris, 160.698 B)
     main.dart & lib/main.dart      (DIPERBARUI) - Beranda dapat dibuka
                                                   tanpa internet + penanda
                                                   RTS-2026-10-01-10
@@ -434,6 +437,80 @@
  3. Bila ada sales yang statusnya masih GRATIS, mereka akan melihat layar
     "FITUR PRO". Untuk masa percobaan seluruh tim, ADMIN dapat mengubah
     setelan mode_akses menjadi SEMUA (lihat Bagian 3).
+
+
+==============================================================================
+ BAGIAN 12 - CATATAN PERBAIKAN GALAT PEMBANGUNAN (2 OKTOBER 2026)
+==============================================================================
+
+ Tiga pesan muncul saat membangun aplikasi di komputer Bapak. Dua di antaranya
+ sudah saya perbaiki; yang ketiga hanya pemberitahuan (bukan galat).
+
+ 1. TERPOTONG SEBELUM SELESAI (galat nyata) - SUDAH DIPERBAIKI
+    Pesan:
+        'Barcode' is imported from both
+        'package:esc_pos_utils_plus/src/barcode.dart' and
+        'package:mobile_scanner/src/objects/barcode.dart'
+
+    Sebab: paket printer dan paket pemindai kamera SAMA-SAMA memiliki kelas
+    bernama "Barcode", sehingga Flutter bingung memilih yang mana.
+
+    Perbaikan: paket pemindai diimpor memakai NAMA PENDEK:
+        import 'package:mobile_scanner/mobile_scanner.dart' as ms;
+    dan seluruh pemakaiannya ditulis ms.MobileScannerController,
+    ms.BarcodeCapture, ms.Barcode, ms.MobileScanner.
+
+ 2. GALAT KEDUA PADA BARIS BARCODE NOTA - SUDAH DIPERBAIKI
+    Pesan:
+        The argument type 'String' can't be assigned to the parameter type
+        'List<dynamic>'.
+
+    Sebab: paket printer (esc_pos_utils_plus) menuntut isi barcode berupa
+    DAFTAR KARAKTER, bukan tulisan biasa, dan WAJIB diawali penanda jenis
+    huruf:
+        {A = huruf besar/angka    {B = huruf biasa    {C = angka saja
+
+    Perbaikan: nomor nota kini disusun menjadi "{BKS-20261001-0001" lalu
+    dipecah menjadi huruf satu per satu:
+        final String isiBarcode = '{B$nomorNota';
+        bytes.addAll(g.barcode(Barcode.code128(isiBarcode.split(''))));
+
+ 3. "Expected to find ')'" PADA BARIS AKHIR BERKAS
+    Pesan itu muncul bila berkas lib\kasir.dart di komputer Bapak TIDAK
+    SAMA dengan berkas dari paket - biasanya karena isinya ditempel sebagian
+    atau disambung, sehingga ada kurung yang tidak berpasangan.
+
+    Cara memastikannya (tanpa membangun aplikasi):
+        1. Ekstrak RTS_PANEL_PUTARAN_10.zip (versi terbaru)
+        2. Jalankan .\LANGKAH1_PASANG_SEMUA.ps1  -> berkas ditimpa UTUH
+        3. Jalankan .\PERIKSA_KODE_APLIKASI.ps1
+           Skrip itu memeriksa sendiri keseimbangan kurung serta isi berkas.
+           Semua harus [ADA]/[BENAR].
+
+    Ukuran berkas yang benar (untuk membandingkan):
+        lib\kasir.dart        4.738 baris, 160.698 byte
+        lib\kasir_lokal.dart  2.680 baris,  82.393 byte
+
+    PENTING: jangan menyunting lib\kasir.dart dengan tangan dan jangan
+    menempelkan sebagian isinya. Berkas itu harus ditimpa UTUH.
+
+ 4. TANDA KUNING LAIN PADA VS CODE (bukan galat)
+    Bila VS Code masih menampilkan tanda kuning pada baris 1 lib\kasir.dart
+    ("Dangling library doc comment"), hal itu sudah saya hilangkan pada
+    berkas versi terbaru (penjelasan kepala berkas kini memakai //).
+    Tanda kuning lain seperti "FITUR: Unknown word (cSPell)" berasal dari
+    pemeriksa ejaan bahasa Inggris VS Code, bukan dari Dart - tidak
+    memengaruhi pembangunan aplikasi.
+
+ 5. PEMBERITAHUAN - TIDAK PERLU DIKERJAKAN SEKARANG
+    Pesan:
+        permission_handler_android compiles against Android SDK 37 ...
+        applies the Kotlin Gradle Plugin ... (firebase_core)
+
+    Bagian compileSdk 37 sudah diperbaiki oleh PERBAIKI_COMPILE_SDK.ps1
+    (dijalankan otomatis oleh LANGKAH1_PASANG_SEMUA.ps1 pada paket terbaru).
+    Pemberitahuan Kotlin/Gradle itu hanya pesan untuk versi Flutter MENDATANG
+    - bukan penyebab pembangunan gagal, dan tidak perlu dikerjakan sekarang.
 
 
 ==============================================================================

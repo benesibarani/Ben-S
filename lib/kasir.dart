@@ -1,30 +1,30 @@
-/// ============================================================================
-///  RTS PANEL BY BENE - FITUR PRO : BARANG BAWAAN & KASIR
-///  Berkas : lib/kasir.dart
-///  Versi  : 1   (1 Oktober 2026)
-///
-///  ISI BERKAS INI (semua tampilan kasir, dipisah dari main.dart supaya
-///  pembaruan berikutnya cukup mengganti satu berkas):
-///
-///     1. RtsBarangBawaanPage  - 3 tab: PRODUK, STOK, RIWAYAT
-///     2. RtsKasirPage         - kasir: scan barcode, keranjang, bayar
-///                               CASH / UTANG / TITIP, simpan nota
-///     3. RtsNotaPage          - riwayat nota + cetak ulang + batalkan
-///     4. RtsPiutangPage       - daftar utang & titip, angsuran sampai lunas
-///     5. RtsPrinterPage       - hubungkan printer Bluetooth, UJI CETAK,
-///                               dan template struk yang dapat diedit bebas
-///     6. RtsPilihBarcodePage  - pemindai barcode memakai kamera HP
-///     7. RtsPilihCustomerPage - memilih toko dari Master Customer
-///
-///  CATATAN PENTING
-///  ---------------
-///  - Berkas ini TIDAK memanggil berkas lain di dalam proyek (hanya paket
-///    Flutter), supaya tidak ada lingkaran impor dengan main.dart.
-///    Alamat server dan token dikirim dari main.dart saat halaman dibuka.
-///  - Seluruh nama dan pesan memakai Bahasa Indonesia yang mudah dibaca sales.
-///  - Printer yang didukung: thermal 58 mm / 80 mm berbahasa ESC/POS melalui
-///    Bluetooth (RPP02, Xprinter P323B, EPPOS, Mypos, dan sejenisnya).
-/// ============================================================================
+// ============================================================================
+//  RTS PANEL BY BENE - FITUR PRO : BARANG BAWAAN & KASIR
+//  Berkas : lib/kasir.dart
+//  Versi  : 1   (1 Oktober 2026)
+//
+//  ISI BERKAS INI (semua tampilan kasir, dipisah dari main.dart supaya
+//  pembaruan berikutnya cukup mengganti satu berkas):
+//
+//     1. RtsBarangBawaanPage  - 3 tab: PRODUK, STOK, RIWAYAT
+//     2. RtsKasirPage         - kasir: scan barcode, keranjang, bayar
+//                               CASH / UTANG / TITIP, simpan nota
+//     3. RtsNotaPage          - riwayat nota + cetak ulang + batalkan
+//     4. RtsPiutangPage       - daftar utang & titip, angsuran sampai lunas
+//     5. RtsPrinterPage       - hubungkan printer Bluetooth, UJI CETAK,
+//                               dan template struk yang dapat diedit bebas
+//     6. RtsPilihBarcodePage  - pemindai barcode memakai kamera HP
+//     7. RtsPilihCustomerPage - memilih toko dari Master Customer
+//
+//  CATATAN PENTING
+//  ---------------
+//  - Berkas ini TIDAK memanggil berkas lain di dalam proyek (hanya paket
+//    Flutter), supaya tidak ada lingkaran impor dengan main.dart.
+//    Alamat server dan token dikirim dari main.dart saat halaman dibuka.
+//  - Seluruh nama dan pesan memakai Bahasa Indonesia yang mudah dibaca sales.
+//  - Printer yang didukung: thermal 58 mm / 80 mm berbahasa ESC/POS melalui
+//    Bluetooth (RPP02, Xprinter P323B, EPPOS, Mypos, dan sejenisnya).
+// ============================================================================
 
 import 'dart:async';
 import 'dart:convert';
@@ -573,12 +573,28 @@ class RtsStruk {
       }
     }
 
-    // Barcode nomor nota (bila printer mendukung)
+    // Barcode nomor nota (bila printer mendukung).
+    //
+    // CATATAN PENTING dari paket printer (esc_pos_utils_plus):
+    //   Isi barcode HARUS berupa DAFTAR KARAKTER, bukan tulisan biasa, dan
+    //   WAJIB diawali penanda jenis huruf:
+    //       {A = huruf besar/angka, {B = huruf biasa, {C = angka saja
+    //   Karena itu nomor nota disusun menjadi "{BKS-20261001-0001" lalu
+    //   dipecah menjadi huruf satu per satu sebelum dikirim ke printer.
+    //   (Kode lama mengirim tulisan biasa sehingga Flutter menampilkan galat
+    //    "The argument type 'String' can't be assigned to the parameter type
+    //    'List<dynamic>'".)
     if (template['tampilkan_barcode'] != 0) {
       bytes.addAll(g.feed(1));
 
       try {
-        bytes.addAll(g.barcode(Barcode.code128('${nota['nomor'] ?? ''}')));
+        final String nomorNota = '${nota['nomor'] ?? ''}'.trim();
+
+        if (nomorNota.length >= 2) {
+          final String isiBarcode = '{B$nomorNota';
+
+          bytes.addAll(g.barcode(Barcode.code128(isiBarcode.split(''))));
+        }
       } catch (_) {
         // printer tidak mendukung barcode: bagian ini dilewati
       }
