@@ -331,17 +331,26 @@
           lebih dahulu dengan tambahan .lama_tanggal_jam).
    [ ] 3. Tambahkan izin pada AndroidManifest.xml bila belum pernah -
           panduannya ada di berkas android_manifest_tambahan.xml.
-          Kubah putaran ini TIDAK menambah izin baru (tidak ada izin
+          Putaran ini TIDAK menambah izin baru (tidak ada izin
           penyimpanan) - jadi bila putaran lalu sudah dipasang, lewati saja.
-   [ ] 4. Jalankan berturut-turut:
+   [ ] 4. Jalankan SEKALI SAJA:
+              .\PERBAIKI_COMPILE_SDK.ps1
+          Skrip itu mengubah satu baris pada android\app\build.gradle.kts
+          menjadi compileSdk = 37, karena paket permission_handler yang baru
+          dibangun memakai Android SDK 37. Angka yang lebih tinggi selalu
+          boleh dipakai untuk yang lebih rendah (mundur kompatibel).
+          Bila muncul pesan "Failed to find target with hash string
+          android-37", buka Android Studio - SDK Manager - SDK Platforms -
+          centang "Android API 37" - Apply, lalu ulangi langkah ini.
+   [ ] 5. Jalankan berturut-turut:
               flutter clean
               flutter pub get
               flutter run -d CPH1937
-   [ ] 5. Di HP: buka menu Barang Bawaan - tekan SINKRON PRODUK bila ingin
+   [ ] 6. Di HP: buka menu Barang Bawaan - tekan SINKRON PRODUK bila ingin
           mengambil daftar produk dari server (boleh dilewati; produk juga
           dapat ditambahkan langsung dari HP).
-   [ ] 6. Tambahkan produk + barcode, isi stok MASUK, lalu coba menu Kasir.
-   [ ] 7. Pasangkan printer Bluetooth di Pengaturan HP, lalu buka
+   [ ] 7. Tambahkan produk + barcode, isi stok MASUK, lalu coba menu Kasir.
+   [ ] 8. Pasangkan printer Bluetooth di Pengaturan HP, lalu buka
           menu Printer & Struk - tekan SAMBUNG - tekan UJI CETAK.
 
  CATATAN: bila "flutter pub get" menampilkan pesan, kirimkan tangkapan

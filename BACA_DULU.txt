@@ -17,9 +17,15 @@
   Yang perlu Bapak lakukan untuk perubahan ini:
      1. Jalankan .\LANGKAH1_PASANG_SEMUA.ps1 dari paket RTS_PANEL_PUTARAN_10.zip
         (skrip itu kini ikut menyalin berkas baru lib\kasir_lokal.dart)
-     2. flutter clean  ->  flutter pub get  ->  flutter run -d CPH1937
-     3. Uji: matikan internet HP, lalu buat satu nota. Harus tetap berhasil.
-     4. Tekan CADANGKAN SEKARANG, lalu KIRIM berkasnya ke Google Drive.
+     2. Jalankan .\PERBAIKI_COMPILE_SDK.ps1 SEKALI SAJA. Skrip ini mengubah
+        satu baris pada android\app\build.gradle.kts menjadi compileSdk = 37.
+        Diperlukan karena paket permission_handler yang baru dibangun memakai
+        Android SDK 37 (angka lebih tinggi selalu boleh - mundur kompatibel).
+        Tanpa langkah ini, pembangunan dapat berhenti dengan pesan
+        "permission_handler_android compiles against Android SDK 37".
+     3. flutter clean  ->  flutter pub get  ->  flutter run -d CPH1937
+     4. Uji: matikan internet HP, lalu buat satu nota. Harus tetap berhasil.
+     5. Tekan CADANGKAN SEKARANG, lalu KIRIM berkasnya ke Google Drive.
 
   Penjelasan lengkap perubahan ini ada di berkas KASIR_BARANG_BAWAAN.txt
   (bagian 6 sampai 11). Tautan unduhnya ada di TAUTAN_UNDUH.txt.

@@ -47,6 +47,9 @@ KASIR_BARANG_BAWAAN.txt - panduan lengkap versi terbaru: seluruh data kasir
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/android_MainActivity.kt
     LANGKAH1_PASANG_SEMUA.ps1
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/LANGKAH1_PASANG_SEMUA.ps1
+    PERBAIKI_COMPILE_SDK.ps1   (jalankan SEKALI - memperbaiki compileSdk = 37
+                                pada android\app\build.gradle.kts)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERBAIKI_COMPILE_SDK.ps1
 
   Catatan: tabel kasir di server kini TIDAK WAJIB. Bila Bapak ingin daftar
   produk dipakai bersama seluruh sales, unggah berkas API + buat tabelnya,

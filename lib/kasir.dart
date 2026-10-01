@@ -33,7 +33,12 @@ import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:mobile_scanner/mobile_scanner.dart';
+// mobile_scanner diberi nama pendek "ms" karena paket ini juga memuat
+// kelas bernama Barcode - sama dengan nama kelas pada paket printer
+// (esc_pos_utils_plus). Bila keduanya diimpor tanpa nama pendek, Flutter
+// melaporkan galat "'Barcode' is imported from both ...". Dengan "ms",
+// semua nama dari paket pemindai ditulis ms.Nama sehingga tidak bentrok.
+import 'package:mobile_scanner/mobile_scanner.dart' as ms;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1564,9 +1569,9 @@ class RtsPilihBarcodePage extends StatefulWidget {
 }
 
 class _RtsPilihBarcodePageState extends State<RtsPilihBarcodePage> {
-  final MobileScannerController _kamera = MobileScannerController(
-    detectionSpeed: DetectionSpeed.normal,
-    facing: CameraFacing.back,
+  final ms.MobileScannerController _kamera = ms.MobileScannerController(
+    detectionSpeed: ms.DetectionSpeed.normal,
+    facing: ms.CameraFacing.back,
   );
 
   bool _sudahDapat = false;
@@ -1578,12 +1583,12 @@ class _RtsPilihBarcodePageState extends State<RtsPilihBarcodePage> {
     super.dispose();
   }
 
-  void _dapat(BarcodeCapture tangkap) {
+  void _dapat(ms.BarcodeCapture tangkap) {
     if (_sudahDapat) return;
 
-    final List<Barcode> kode = tangkap.barcodes;
+    final List<ms.Barcode> kode = tangkap.barcodes;
 
-    for (final Barcode b in kode) {
+    for (final ms.Barcode b in kode) {
       final String? nilai = b.rawValue;
 
       if (nilai != null && nilai.trim().isNotEmpty) {
@@ -1626,7 +1631,7 @@ class _RtsPilihBarcodePageState extends State<RtsPilihBarcodePage> {
             )
           : Stack(
               children: <Widget>[
-                MobileScanner(
+                ms.MobileScanner(
                   controller: _kamera,
                   onDetect: _dapat,
                 ),
