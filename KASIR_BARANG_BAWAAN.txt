@@ -1,0 +1,222 @@
+==============================================================================
+ RTS PANEL BY BENE - FITUR PRO : BARANG BAWAAN & KASIR SALES CANVASSER
+ Panduan lengkap + jawaban pertanyaan Bapak (1 Oktober 2026)
+==============================================================================
+
+ JAWABAN SINGKAT:  BISA. KETIGA-TIGANYA BISA DIKERJAKAN.
+ -------------------------------------------------------
+   1. Menu Input Stok Barang Bawaan + barcode ....................... BISA
+   2. Aplikasi Kasir dengan bayar CASH / UTANG / TITIP ............. BISA
+      (utang & titip dapat diperbarui sampai lunas)
+   3. Cetak struk ke printer Bluetooth + template bisa diedit ...... BISA
+
+   Putaran ini saya kerjakan BAGIAN SERVERNYA lebih dahulu (susunan database
+   + seluruh perintah yang dipakai aplikasi). Bagian tampilan di dalam
+   aplikasi (layar) dikerjakan pada putaran berikutnya, supaya tidak ada
+   yang setengah jadi.
+
+
+==============================================================================
+ BAGIAN 1 - RANCANGAN YANG SAYA BANGUN
+==============================================================================
+
+ 1. PRODUK (barang yang dibawa)
+
+    Setiap produk menyimpan:
+       - Nama produk            (contoh: Sampoerna Mild 16)
+       - Merek                  (opsional, contoh: Sampoerna)
+       - Barcode PACK           (hasil scan kemasan)
+       - Barcode BATANG         (bila ada; boleh dikosongkan)
+       - Isi per pack           (12 / 16 / 20 batang)
+       - Harga per pack         (contoh Rp32.000)
+       - Harga per batang       (otomatis dihitung dari harga pack, dapat diubah)
+       - Foto produk            (opsional)
+       - Keterangan aktif/tidak
+
+    Cara kerja barcode:
+       - Barcode pack dan barcode batang BISA BERBEDA. Jadi bila sales
+         men-scan bungkus -> otomatis terisi "PACK"; bila men-scan batang
+         (yang punya barcode) -> otomatis terisi "BATANG". Aplikasi sudah
+         tahu bedanya tanpa sales memilih manual.
+       - Satu barcode tidak boleh dipakai dua produk (ditolak dengan pesan
+         yang jelas, menyebut nama produk yang memakainya).
+
+    Harga khusus per sales (sudah disiapkan):
+       - Bila harga di district tertentu berbeda, sales dapat menetapkan
+         harga khusus untuk dirinya sendiri. Bila tidak diisi, dipakai
+         harga umum produk.
+
+ 2. STOK BARANG BAWAAN (dihitung seperti cara sales menghitung di tas)
+
+    - Saldo disimpan sebagai PACK + BATANG, contoh: "10 pack 3 batang".
+    - Barang masuk (memuat barang pagi hari) dicatat di menu ini.
+    - Bila barang dijual per batang sedangkan batang eceran habis, sistem
+      OTOMATIS membuka 1 pack menjadi 16 batang (sesuai isi per pack) dan
+      hal itu ditulis pada riwayat - jadi angka di buku tetap masuk akal.
+    - Setiap perubahan dicatat: MASUK, JUAL, RUSAK, KEMBALI (kembali ke
+      gudang), KOREKSI, OPNAME (menghitung ulang fisik), BATAL.
+    - Riwayat memuat jam sampai detik, saldo sesudah perubahan, dan nomor
+      nota sebagai bukti.
+
+ 3. KASIR
+
+    - Mencari barang: SCAN BARCODE, ketik nama, atau pilih dari daftar.
+    - Jumlah: PACK dan/atau BATANG (contoh 2 pack + 3 batang, dihitung
+      otomatis).
+    - Customer boleh dipilih dari Master Customer, boleh juga "Tanpa
+      Customer" (untuk penjualan eceran di jalan).
+    - Empat pilihan pembayaran disiapkan:
+         CASH       : tunai, ada hitung kembalian
+         UTANG      : barang dibawa, dibayar kemudian (dapat diangsur)
+         TITIP      : barang dititipkan di toko, uang menyusul saat laku
+         (QRIS menyusul bila Bapak ingin mencatat pembayaran QRIS)
+    - Nota tidak dapat tersimpan setengah jalan: bila stok kurang, seluruh
+      transaksi dibatalkan dan stok tidak berubah sama sekali.
+    - Nota yang salah dapat DIBATALKAN; stok otomatis dikembalikan.
+
+ 4. PIUTANG (UTANG & TITIP) - dapat diperbarui
+
+    - Setiap utang/titip punya nomor sendiri, contoh PT-20261001-0007.
+    - Menyimpan: nama toko, ID customer, nomor HP, rincian barang yang
+      diutangkan, jatuh tempo, total, sudah dibayar, sisa, status.
+    - Pembayaran dapat dicicil berkali-kali (angsuran). Setiap angsuran
+      tercatat siapa penerimanya + jam sampai detik + sisa sesudahnya.
+    - Status otomatis berubah: BELUM -> SEBAGIAN -> LUNAS.
+    - Ada penanda TERLAMBAT bila sudah melewati jatuh tempo.
+    - Bawaan jatuh tempo: UTANG 7 hari, TITIP 30 hari (dapat diubah saat
+      membuat nota).
+
+ 5. STRUK / PRINTER BLUETOOTH
+
+    - Printer yang didukung: printer thermal 58 mm dan 80 mm yang memakai
+      bahasa ESC/POS lewat Bluetooth (merek umum: RPP02, Xprinter P323B,
+      EPPOS, Mypos, dan sejenisnya).
+    - Template struk dapat DIUBAH BEBAS oleh setiap sales, dan tersimpan
+      pada akun masing-masing:
+         judul, 3 baris alamat/telepon, 3 baris penutup
+         lebar kertas (58 / 80), ukuran huruf (kecil/sedang/besar)
+         tampilkan barcode, tampilkan metode bayar, tampilkan tanda tangan
+         jumlah salinan (1-3 lembar), bentuk garis pemisah
+    - Di aplikasi nanti ada: tombol "Hubungkan Printer", "UJI CETAK",
+      "Simpan Template", dan contoh tampilan struk sebelum dicetak.
+    - Nota yang sudah dicetak tetap tersimpan; dapat dicetak ulang
+      (misalnya pelanggan minta salinan).
+
+
+==============================================================================
+ BAGIAN 2 - APA YANG SUDAH JADI PADA PUTARAN INI (SISI SERVER)
+==============================================================================
+
+ Berkas baru:
+
+   1. api/kasir_inti.php   (91.195 B) - seluruh aturan kasir & stok
+   2. api/kasir.php        (23.835 B) - pintu masuk perintah dari aplikasi
+   3. database/migrations/RTS_PANEL_KASIR.sql - susunan 11 tabel
+
+ Tabel yang dibuat (semuanya berawalan rts_ks_ agar mudah dikenali):
+
+   No | Nama tabel               | Isi
+   ---|--------------------------|------------------------------------------
+    1 | rts_ks_produk            | daftar produk + barcode + harga
+    2 | rts_ks_harga             | harga khusus per sales (opsional)
+    3 | rts_ks_stok              | saldo stok bawaan (pack + batang)
+    4 | rts_ks_stok_gerak        | riwayat setiap perubahan stok
+    5 | rts_ks_penjualan         | nota kasir (CASH / UTANG / TITIP)
+    6 | rts_ks_penjualan_item    | barang pada setiap nota
+    7 | rts_ks_piutang           | utang & titip yang dapat diperbarui
+    8 | rts_ks_piutang_bayar     | angsuran / pelunasan
+    9 | rts_ks_struk             | template struk per sales
+   10 | rts_ks_setelan           | setelan umum (mis. masa perkenalan)
+   11 | rts_ks_penomoran         | nomor nota harian (KS-.../PT-...)
+
+ 28 perintah aplikasi sudah siap di server, antara lain:
+    produk_daftar, produk_barcode (hasil scan), produk_simpan, stok_daftar,
+    stok_gerak, kasir_simpan, kasir_daftar, kasir_batal, piutang_daftar,
+    piutang_bayar, struk_baca, struk_simpan, struk_contoh, laporan.
+
+ Kedua berkas PHP sudah diperiksa dengan pengurai PHP sungguhan:
+    api/kasir_inti.php   -> SINTAKS OK (2.908 baris)
+    api/kasir.php        -> SINTAKS OK (757 baris)
+
+
+==============================================================================
+ BAGIAN 3 - FITUR INI UNTUK AKUN PRO (dan masa perkenalan)
+==============================================================================
+
+ Fitur ini termasuk FITUR PRO (sesuai permintaan Bapak). Artinya:
+
+   - Akun GRATIS   : melihat penjelasan, lalu diarahkan ke menu Langganan PRO
+   - Masa uji coba : 7 hari gratis (otomatis untuk akun yang belum pernah)
+   - Akun PRO      : Rp5.000 / 30 hari (QRIS BENE-S, NMID ID1026519749489)
+   - ADMIN & ASS   : selalu boleh memakai (untuk mengelola & menguji)
+
+ TERSEDIA MASA PERKENALAN (supaya tim dapat langsung mencoba):
+   Setelan "mode_akses":
+       PRO    = hanya Akun PRO yang dapat memakai  (bawaan)
+       SEMUA  = SELURUH akun sales dapat memakai tanpa membayar
+   ADMIN dapat mengubahnya dari aplikasi (menu Barang Bawaan -> Setelan),
+   dan dapat dikembalikan ke PRO kapan saja tanpa menyentuh database.
+
+
+==============================================================================
+ BAGIAN 4 - YANG PERLU BAPAK LAKUKAN SEKARANG (4 langkah, 5 menit)
+==============================================================================
+
+ LANGKAH 1 - Unggah 2 berkas API ke folder api
+    cPanel - File Manager - masuk ke public_html/api
+    Tekan Upload, unggah:
+        [ ] api/kasir_inti.php   (91.195 B)
+        [ ] api/kasir.php        (23.835 B)
+    (Tidak ada berkas lama yang perlu ditimpa - ini berkas baru.)
+
+ LANGKAH 2 - Siapkan tabel database (PILIH SALAH SATU)
+
+    CARA A (disarankan, tanpa phpMyAdmin):
+        Buka aplikasi - menu Barang Bawaan - tekan "SIAPKAN DATA KASIR".
+        (Bila menu belum ada, gunakan Cara B dulu.)
+
+    CARA B (phpMyAdmin):
+        cPanel - phpMyAdmin - pilih database benedics_bene_sales -
+        tab Import - pilih berkas RTS_PANEL_KASIR.sql - Go.
+
+ LANGKAH 3 - Periksa berhasil
+    Buka di browser:
+        https://rts.benedic-s.com/api/kasir.php?aksi=diagnosa
+    Akan muncul keterangan berisi daftar tabel yang sudah ada.
+
+ LANGKAH 4 - Bagian tampilan di aplikasi
+    Menyusul pada putaran berikutnya: layar Barang Bawaan, Kasir, Piutang,
+    serta Pengaturan Printer & Template Struk (termasuk tombol Uji Cetak).
+    Saya kabari begitu siap - tidak ada yang perlu Bapak lakukan untuk ini.
+
+
+==============================================================================
+ BAGIAN 5 - YANG MASIH PERLU SAYA TAHU DARI BAPAK (4 pertanyaan)
+==============================================================================
+
+  1. PRINTER BLUETOOTH yang dipakai Sales merek/tipe apa?
+        (RPP02 / Xprinter P323B / EPPOS / Mypos / merek lain / belum tahu)
+     Bila belum tahu: tidak masalah - akan saya sediakan tombol UJI CETAK
+     supaya Bapak dapat mencoba beberapa pilihan lebar kertas.
+
+  2. DAFTAR PRODUK diisi siapa?
+        a. Satu daftar bersama, siapa pun boleh menambah  (yang saya bangun)
+        b. Hanya ADMIN yang mengisi, sales hanya memakai
+        c. Tiap sales punya daftar produk sendiri-sendiri
+
+  3. Saat men-scan barcode: memakai KAMERA HP atau ALAT SCANNER Bluetooth?
+        (Keduanya akan didukung. Untuk kamera perlu izin kamera pada HP.)
+
+  4. Harga jual: sama untuk semua sales, atau boleh berbeda per district?
+        (Saat ini saya sediakan: harga umum + harga khusus per sales.)
+
+
+==============================================================================
+ CATATAN KEAMANAN
+==============================================================================
+ - Tidak ada satu pun data asli (customer/petugas/penjualan) di dalam berkas
+   yang saya buat. Berkas .sql hanya berisi susunan tabel.
+ - Jangan lupa: repo GitHub masih PUBLIC dan riwayat lama masih memuat
+   salinan dashboard.php berisi password database. SEGERA ganti password
+   database dan jadikan repo Private.
+==============================================================================

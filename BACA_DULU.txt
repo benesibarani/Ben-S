@@ -119,12 +119,12 @@
  LANGKAH 3 - EKSTRAK PAKET DI KOMPUTER
 ==============================================================================
 
-   [ ] 1. Unduh RTS_PANEL_PUTARAN_7.zip (tautan ada pada berkas
+   [ ] 1. Unduh RTS_PANEL_PUTARAN_8.zip (tautan ada pada berkas
           TAUTAN_UNDUH.txt atau dari chat).
    [ ] 2. Klik kanan berkas zip itu - Extract All.
    [ ] 3. Ekstrak ke Desktop. Hasilnya satu folder bernama:
 
-              RTS_PANEL_PUTARAN_7
+              RTS_PANEL_PUTARAN_8
 
      Isinya 4 folder bernomor + berkas BACA_DULU.txt.
      JANGAN memindahkan berkasnya satu per satu - biarkan apa adanya.
@@ -259,7 +259,7 @@
 
 
 ==============================================================================
- ISI PAKET RTS_PANEL_PUTARAN_7.zip
+ ISI PAKET RTS_PANEL_PUTARAN_8.zip (42 berkas)
 ==============================================================================
 
    BACA_DULU.txt                      panduan ini

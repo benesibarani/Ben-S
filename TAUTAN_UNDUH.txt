@@ -26,6 +26,29 @@ ALAMAT_TANPA_PHP.txt - kenapa /inbox dan /gsp menjawab 404 (hasil pengujian:
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_ALAMAT_DAN_LOGIN.zip
 
 
+FITUR PRO BARU - BARANG BAWAAN & KASIR SALES CANVASSER
+-----------------------------------------------------
+KASIR_BARANG_BAWAAN.txt - rancangan lengkap: produk + barcode (pack & batang),
+                          stok bawaan (pack + batang, buka pack otomatis),
+                          kasir dengan bayar CASH / UTANG / TITIP, piutang yang
+                          dapat dicicil, struk printer Bluetooth yang templatenya
+                          dapat diedit sales, dan 4 pertanyaan untuk Bapak
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/KASIR_BARANG_BAWAAN.txt
+
+  Berkas server yang perlu diunggah (letakkan di public_html/api):
+    1_SERVER_unggah_ke_hosting/api/kasir_inti.php  (BARU, 91.195 B)
+    1_SERVER_unggah_ke_hosting/api/kasir.php       (BARU, 23.835 B)
+
+  Susunan tabel database (cara phpMyAdmin, pilihan):
+    1_SERVER_unggah_ke_hosting/RTS_PANEL_KASIR.sql (11 tabel rts_ks_*)
+
+  Periksa sesudah diunggah:
+    https://rts.benedic-s.com/api/kasir.php?aksi=diagnosa
+
+  Paket khusus topik ini : RTS_PANEL_KASIR.zip
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_KASIR.zip
+
+
 BARU - TOMBOL "MENDAFTAR" UNTUK TIM SALES (DROPDOWN SALES DISTRICT)
 ------------------------------------------------------------------
 DAFTAR_SALES.txt - tombol Mendaftar di bawah Masuk, formulir pendaftaran yang
@@ -67,7 +90,7 @@ UPDATE_DI_DALAM_APLIKASI.txt - notifikasi UPDATE -> unduh di dalam aplikasi ->
   5. main.dart (penanda RTS-2026-10-01-9)
      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
 
-  Paling mudah: jalankan LANGKAH1_PASANG_SEMUA.ps1 dari RTS_PANEL_PUTARAN_7.zip
+  Paling mudah: jalankan LANGKAH1_PASANG_SEMUA.ps1 dari RTS_PANEL_PUTARAN_8.zip
   (langkah 4b memasang seluruh berkas di atas secara otomatis).
 
 
@@ -78,7 +101,7 @@ MENU_LANGGANAN_PRO.txt - menu baru di sidebar bagian ADMINISTRASI untuk
                          HARGA + DURASI langganan PRO (tanpa menyunting PHP)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/MENU_LANGGANAN_PRO.txt
 
-  Tiga berkas server yang perlu diunggah (ada di dalam RTS_PANEL_PUTARAN_7.zip):
+  Tiga berkas server yang perlu diunggah (ada di dalam RTS_PANEL_PUTARAN_8.zip):
      sidebar.php            -> menu baru
      langganan_admin.php    -> halaman Langganan PRO versi 2
      api/langganan_inti.php -> versi 2 (harga & durasi dari database)
@@ -112,7 +135,8 @@ Bila bingung mulai dari mana, cukup pakai DUA tautan ini:
 1. BACA_DULU.txt  - tutorial 8 langkah (buka lebih dahulu)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
 
-2. RTS_PANEL_PUTARAN_7.zip  - SATU paket lengkap putaran ini (22 berkas):
+2. RTS_PANEL_PUTARAN_8.zip  - SATU paket lengkap putaran ini (42 berkas,
+     termasuk api/kasir.php, api/kasir_inti.php, dan RTS_PANEL_KASIR.sql):
      BACA_DULU.txt
      1_SERVER_unggah_ke_hosting\  (12 berkas untuk cPanel, termasuk
                                     sidebar.php + langganan_admin.php)
@@ -120,7 +144,7 @@ Bila bingung mulai dari mana, cukup pakai DUA tautan ini:
      3_SKRIP_POWERSHELL\          (LANGKAH1_PASANG_SEMUA.ps1 - hanya ini)
      4_PANDUAN_LENGKAP\           (+ MENU_LANGGANAN_PRO.txt,
                                      APK_BESAR_CARA_UNGGAH.txt)
-  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_7.zip
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_8.zip
 
    Cukup satu skrip yang dijalankan: LANGKAH1_PASANG_SEMUA.ps1
    Daftar skrip .ps1 lama yang TIDAK perlu dipakai ada pada BACA_DULU.txt
