@@ -963,7 +963,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-01-9';
+const String rtsKodeAplikasi = 'RTS-2026-10-01-10';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -1141,6 +1141,26 @@ class _SplashPageState extends State<SplashPage> {
     }
   }
 
+  /// Membuka aplikasi memakai sesi tersimpan TANPA memeriksa ke server.
+  ///
+  /// Dipakai saat HP tidak ada internet. Seluruh data kasir tersimpan di
+  /// dalam HP, sehingga sales tetap dapat mencatat penjualan dan piutang.
+  void _lanjutTanpaInternet() {
+    final RtsUser? pengguna = RtsSesi.user;
+    final String tokenSimpan = RtsSesi.token;
+
+    if (pengguna == null || tokenSimpan.isEmpty) {
+      _keLogin();
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => DashboardPage(user: pengguna, token: tokenSimpan),
+      ),
+    );
+  }
+
   void _keLogin() {
     if (!mounted) return;
 
@@ -1284,6 +1304,45 @@ class _SplashPageState extends State<SplashPage> {
                         ),
                       ),
                       const SizedBox(height: 10),
+                      SizedBox(
+                        width: 230,
+                        height: 50,
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: rtsMaroon,
+                            side: const BorderSide(color: rtsMaroon),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                          onPressed: _lanjutTanpaInternet,
+                          icon: const Icon(Icons.cloud_off_rounded, size: 18),
+                          label: const Text(
+                            'LANJUT TANPA INTERNET',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.7,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          'Data barang, kasir, dan piutang tersimpan di dalam HP. '
+                          'Bila tidak ada internet, Bapak tetap dapat bekerja '
+                          'memakai menu Barang Bawaan, Kasir, dan Piutang.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: rtsTextSecondary,
+                            fontSize: 11.5,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       TextButton(
                         onPressed: () async {
                           await RtsSesi.hapus();
@@ -2251,6 +2310,7 @@ class _DashboardPageState extends State<DashboardPage> {
           builder: (_) => RtsPrinterPage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
+            pengguna: user.toJson(),
           ),
         ),
       );

@@ -38,6 +38,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'kasir_lokal.dart';
+
 /* ------------------------------------------------------------------------- */
 /* WARNA - sama dengan halaman lain supaya tampilannya seragam               */
 /* ------------------------------------------------------------------------- */
@@ -164,21 +166,35 @@ void rtsKsPesan(BuildContext context, String teks, {bool galat = false}) {
 /* API KASIR                                                                 */
 /* ------------------------------------------------------------------------- */
 
-/// Kesalahan yang membawa keterangan tambahan (perlu PRO / server belum siap).
-class RtsKasirGalat implements Exception {
-  RtsKasirGalat(this.pesan, {this.perluPro = false, this.perluSiap = false});
+/// Catatan: kelas kesalahan RtsKasirGalat kini berada pada berkas
+/// kasir_lokal.dart, sebab mesin lokal (SQLite di dalam HP) yang memakainya.
+/// Berkas ini memakainya lewat impor di atas.
 
-  final String pesan;
-  final bool perluPro;
-  final bool perluSiap;
-
-  @override
-  String toString() => pesan;
-}
-
-/// Penghubung ke api/kasir.php.
+/// Penghubung halaman kasir ke MESIN LOKAL.
+///
+/// Sejak 1 Oktober 2026 seluruh data kasir (stok, penjualan, piutang,
+/// template struk) disimpan DI DALAM HP memakai SQLite. Karena itu kelas ini
+/// kini hanya meneruskan perintah ke RtsKasirLokal - seluruh halaman kasir
+/// tidak perlu diubah dan tetap bekerja seperti sebelumnya.
+///
+/// Internet hanya dipakai untuk: masuk (login), memeriksa status Akun PRO
+/// (hasilnya disimpan untuk pemakaian luring), dan Sinkron Produk.
 class RtsKasirApi {
-  RtsKasirApi({required this.baseUrl, required this.token});
+  RtsKasirApi({
+    required this.baseUrl,
+    required this.token,
+    Map<String, dynamic>? pengguna,
+  }) {
+    // Keterangan akun langsung disimpan (tidak ditunggu) supaya setiap
+    // perintah berikutnya sudah mengenal pemilik datanya.
+    unawaited(
+      RtsKasirLokal.aku.atur(
+        baseUrl: baseUrl,
+        token: token,
+        pengguna: pengguna,
+      ),
+    );
+  }
 
   final String baseUrl;
   final String token;
@@ -186,55 +202,8 @@ class RtsKasirApi {
   Future<Map<String, dynamic>> kirim(
     String aksi, [
     Map<String, dynamic> data = const <String, dynamic>{},
-  ]) async {
-    final Uri uri = Uri.parse('$baseUrl/kasir.php');
-
-    try {
-      final http.Response jawab = await http
-          .post(
-            uri,
-            headers: <String, String>{
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode(<String, dynamic>{'aksi': aksi, ...data}),
-          )
-          .timeout(const Duration(seconds: 45));
-
-      final dynamic urai = jsonDecode(jawab.body);
-
-      if (urai is! Map) {
-        throw RtsKasirGalat('Jawaban server tidak dikenali.');
-      }
-
-      final Map<String, dynamic> peta = urai.cast<String, dynamic>();
-      final String pesan = '${peta['message'] ?? 'Permintaan gagal.'}';
-
-      if (peta['perlu_pro'] == true || jawab.statusCode == 403) {
-        throw RtsKasirGalat(pesan, perluPro: true);
-      }
-
-      if (peta['perlu_siap'] == true || jawab.statusCode == 409) {
-        throw RtsKasirGalat(pesan, perluSiap: true);
-      }
-
-      if (jawab.statusCode == 401) {
-        throw RtsKasirGalat('Sesi berakhir. Silakan masuk kembali.');
-      }
-
-      if (peta['success'] != true) {
-        throw RtsKasirGalat(pesan);
-      }
-
-      return peta;
-    } on RtsKasirGalat {
-      rethrow;
-    } catch (_) {
-      throw RtsKasirGalat(
-        'Tidak dapat terhubung ke server. Periksa sambungan internet Anda.',
-      );
-    }
+  ]) {
+    return RtsKasirLokal.aku.kirim(aksi, data);
   }
 }
 
@@ -705,7 +674,7 @@ class RtsBarangBawaanPage extends StatefulWidget {
 class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
     with SingleTickerProviderStateMixin {
   late final RtsKasirApi _api =
-      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token);
+      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token, pengguna: widget.pengguna);
   late final TabController _tab = TabController(length: 3, vsync: this);
 
   List<RtsProduk> _produk = <RtsProduk>[];
@@ -955,6 +924,21 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
         backgroundColor: rtsKsMaroon,
         foregroundColor: Colors.white,
         title: const Text('Barang Bawaan'),
+        actions: <Widget>[
+          IconButton(
+            tooltip: 'Server & Cadangan',
+            icon: const Icon(Icons.cloud_sync_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => RtsCadanganPage(
+                  baseUrl: widget.baseUrl,
+                  token: widget.token,
+                  pengguna: widget.pengguna,
+                ),
+              ),
+            ),
+          ),
+        ],
         bottom: TabBar(
           controller: _tab,
           indicatorColor: Colors.white,
@@ -1690,7 +1674,7 @@ class RtsKasirPage extends StatefulWidget {
 
 class _RtsKasirPageState extends State<RtsKasirPage> {
   late final RtsKasirApi _api =
-      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token);
+      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token, pengguna: widget.pengguna);
   final TextEditingController _cari = TextEditingController();
   final TextEditingController _namaToko = TextEditingController();
   final TextEditingController _idToko = TextEditingController();
@@ -2629,7 +2613,7 @@ class RtsNotaPage extends StatefulWidget {
 
 class _RtsNotaPageState extends State<RtsNotaPage> {
   late final RtsKasirApi _api =
-      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token);
+      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token, pengguna: widget.pengguna);
 
   List<Map<String, dynamic>> _nota = <Map<String, dynamic>>[];
   Map<String, dynamic> _ringkas = <String, dynamic>{};
@@ -2789,7 +2773,7 @@ class RtsNotaDetailPage extends StatefulWidget {
 
 class _RtsNotaDetailPageState extends State<RtsNotaDetailPage> {
   late final RtsKasirApi _api =
-      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token);
+      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token, pengguna: widget.pengguna);
 
   Map<String, dynamic> _nota = <String, dynamic>{};
   bool _memuat = true;
@@ -3039,7 +3023,7 @@ class RtsPiutangPage extends StatefulWidget {
 
 class _RtsPiutangPageState extends State<RtsPiutangPage> {
   late final RtsKasirApi _api =
-      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token);
+      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token, pengguna: widget.pengguna);
 
   final TextEditingController _cari = TextEditingController();
 
@@ -3630,10 +3614,12 @@ class RtsPrinterPage extends StatefulWidget {
     super.key,
     required this.baseUrl,
     required this.token,
+    this.pengguna = const <String, dynamic>{},
   });
 
   final String baseUrl;
   final String token;
+  final Map<String, dynamic> pengguna;
 
   @override
   State<RtsPrinterPage> createState() => _RtsPrinterPageState();
@@ -3641,7 +3627,7 @@ class RtsPrinterPage extends StatefulWidget {
 
 class _RtsPrinterPageState extends State<RtsPrinterPage> {
   late final RtsKasirApi _api =
-      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token);
+      RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token, pengguna: widget.pengguna);
 
   List<BluetoothInfo> _perangkat = <BluetoothInfo>[];
   String _terhubung = '';
@@ -4209,6 +4195,494 @@ class _RtsPrinterPageState extends State<RtsPrinterPage> {
             ),
           ),
           const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _kartu({required String judul, required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: rtsKsGaris),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            judul,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: rtsKsMaroon,
+              fontSize: 13,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+
+/* ------------------------------------------------------------------------- */
+/* SERVER & CADANGAN (Sinkron Produk + Cadangkan/Pulihkan data kasir)        */
+/* ------------------------------------------------------------------------- */
+
+/// Halaman pengelolaan data kasir yang tersimpan di dalam HP:
+///   - SINKRON PRODUK : mengirim produk baru ke server dan mengunduh
+///     daftar SKU + harga yang ditetapkan di server.
+///   - CADANGKAN      : menyalin seluruh database kasir ke sebuah berkas.
+///   - PULIHKAN       : mengembalikan data dari berkas cadangan.
+class RtsCadanganPage extends StatefulWidget {
+  const RtsCadanganPage({
+    super.key,
+    required this.baseUrl,
+    required this.token,
+    this.pengguna = const <String, dynamic>{},
+  });
+
+  final String baseUrl;
+  final String token;
+  final Map<String, dynamic> pengguna;
+
+  @override
+  State<RtsCadanganPage> createState() => _RtsCadanganPageState();
+}
+
+class _RtsCadanganPageState extends State<RtsCadanganPage> {
+  late final RtsKasirApi _api = RtsKasirApi(
+    baseUrl: widget.baseUrl,
+    token: widget.token,
+    pengguna: widget.pengguna,
+  );
+
+  Map<String, dynamic> _info = <String, dynamic>{};
+  List<Map<String, dynamic>> _berkas = <Map<String, dynamic>>[];
+  bool _memuat = true;
+  bool _kerja = false;
+  String _galat = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    setState(() {
+      _memuat = true;
+      _galat = '';
+    });
+
+    try {
+      final Map<String, dynamic> hasil = await _api.kirim('cadangan_info');
+
+      final List<dynamic> berkas =
+          (hasil['berkas'] is List) ? hasil['berkas'] as List<dynamic> : <dynamic>[];
+
+      if (!mounted) return;
+
+      setState(() {
+        _info = hasil;
+        _berkas = berkas
+            .whereType<Map>()
+            .map((Map<dynamic, dynamic> e) => e.cast<String, dynamic>())
+            .toList();
+        _memuat = false;
+      });
+    } on RtsKasirGalat catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _memuat = false;
+        _galat = e.pesan;
+      });
+    }
+  }
+
+  Future<void> _sinkron() async {
+    setState(() => _kerja = true);
+
+    try {
+      final Map<String, dynamic> hasil = await _api.kirim('sinkron_produk');
+
+      if (!mounted) return;
+
+      setState(() => _kerja = false);
+      rtsKsPesan(context, '${hasil['message'] ?? 'Sinkron selesai.'}');
+      _muat();
+    } on RtsKasirGalat catch (e) {
+      if (!mounted) return;
+
+      setState(() => _kerja = false);
+      rtsKsPesan(context, e.pesan, galat: true);
+    }
+  }
+
+  Future<void> _cadangkan() async {
+    setState(() => _kerja = true);
+
+    try {
+      final Map<String, dynamic> hasil = await _api.kirim('cadangkan');
+
+      if (!mounted) return;
+
+      setState(() => _kerja = false);
+
+      await showDialog<void>(
+        context: context,
+        builder: (BuildContext ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Row(
+            children: <Widget>[
+              Icon(Icons.check_circle_rounded, color: rtsKsHijau),
+              SizedBox(width: 8),
+              Text('Cadangan Dibuat', style: TextStyle(fontWeight: FontWeight.w800)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text('Berkas: ${hasil['nama'] ?? '-'}'),
+              const SizedBox(height: 8),
+              const Text(
+                'Berkas cadangan disimpan pada folder aplikasi di HP. Supaya '
+                'aman bila HP hilang atau rusak, salin berkas itu ke Google '
+                'Drive / WhatsApp dengan cara:',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '1. Buka aplikasi "Files" / "File Manager" pada HP.\n'
+                '2. Cari folder Android/data/com.example.rts_panel_app/files/cadangan\n'
+                '3. Tekan lama berkas cadangan, pilih Bagikan, kirim ke\n'
+                '   WhatsApp (diri sendiri) atau unggah ke Google Drive.',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Lokasi: ${hasil['jalur'] ?? hasil['folder'] ?? ''}',
+                style: const TextStyle(fontSize: 11, color: rtsKsTeks2),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+
+                _kirim(<String, dynamic>{
+                  'nama': hasil['nama'],
+                  'jalur': hasil['jalur'],
+                });
+              },
+              child: const Text('KIRIM SEKARANG'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('MENGERTI'),
+            ),
+          ],
+        ),
+      );
+
+      _muat();
+    } on RtsKasirGalat catch (e) {
+      if (!mounted) return;
+
+      setState(() => _kerja = false);
+      rtsKsPesan(context, e.pesan, galat: true);
+    }
+  }
+
+  /// Membuka layar "Bagikan" Android supaya berkas cadangan dapat dikirim ke
+  /// WhatsApp (diri sendiri) atau diunggah ke Google Drive.
+  ///
+  /// Bila bagian Android (MainActivity.kt) belum diperbarui, aplikasi tidak
+  /// mengalami galat - petugas hanya menerima petunjuk menyalin berkas manual.
+  Future<void> _kirim(Map<String, dynamic> berkas) async {
+    final String jalur = '${berkas['jalur'] ?? ''}';
+
+    if (jalur.isEmpty) {
+      rtsKsPesan(
+        context,
+        'Berkas ${berkas['nama'] ?? ''} tidak dapat dikirim dari aplikasi. '
+        'Salin berkasnya melalui aplikasi Files.',
+        galat: true,
+      );
+      return;
+    }
+
+    try {
+      await const MethodChannel('rts/pembaruan').invokeMethod<dynamic>(
+        'bagikan',
+        <String, dynamic>{
+          'path': jalur,
+          'judul': 'Kirim Cadangan RTS Panel',
+          'teks': 'Cadangan data kasir RTS Panel (${berkas['nama'] ?? ''}). '
+              'Simpan berkas ini di Google Drive atau kirim ke diri sendiri.',
+        },
+      );
+    } on MissingPluginException {
+      if (!mounted) return;
+
+      _petunjukSalinManual('${berkas['nama'] ?? ''}');
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+
+      rtsKsPesan(context, e.message ?? 'Cadangan tidak dapat dikirim.', galat: true);
+    }
+  }
+
+  void _petunjukSalinManual(String nama) {
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Kirim Cadangan',
+            style: TextStyle(fontWeight: FontWeight.w800)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Text(
+              'Aplikasi di HP ini belum memuat bagian pengiriman berkas. '
+              'Salin berkas cadangan dengan cara berikut:',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '1. Buka aplikasi Files / File Manager.\n'
+              '2. Cari folder Android/data/com.example.rts_panel_app/files/cadangan\n'
+              '3. Tekan lama berkas $nama, pilih Bagikan, lalu kirim ke '
+              'WhatsApp (diri sendiri) atau unggah ke Google Drive.',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Lokasi folder: ${_info['folder'] ?? ''}',
+              style: const TextStyle(fontSize: 11, color: rtsKsTeks2),
+            ),
+          ],
+        ),
+        actions: <Widget>[
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('MENGERTI'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pulihkan(Map<String, dynamic> berkas) async {
+    final bool? setuju = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Pulihkan Data?', style: TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          'Seluruh data kasir di HP ini akan diganti dengan isi berkas '
+          '${berkas['nama']}. Data yang sekarang tetap disimpan sebagai '
+          'berkas .sebelum bila diperlukan.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('BATAL', style: TextStyle(color: rtsKsTeks2)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('PULIHKAN'),
+          ),
+        ],
+      ),
+    );
+
+    if (setuju != true) return;
+
+    setState(() => _kerja = true);
+
+    try {
+      final Map<String, dynamic> hasil = await _api.kirim(
+        'pulihkan',
+        <String, dynamic>{'berkas': berkas['nama']},
+      );
+
+      if (!mounted) return;
+
+      setState(() => _kerja = false);
+      rtsKsPesan(context, '${hasil['message'] ?? 'Data dipulihkan.'}');
+      _muat();
+    } on RtsKasirGalat catch (e) {
+      if (!mounted) return;
+
+      setState(() => _kerja = false);
+      rtsKsPesan(context, e.pesan, galat: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: rtsKsLatar,
+      appBar: AppBar(
+        backgroundColor: rtsKsMaroon,
+        foregroundColor: Colors.white,
+        title: const Text('Server & Cadangan'),
+      ),
+      body: _memuat
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(14),
+              children: <Widget>[
+                _kartu(
+                  judul: 'DATA DI DALAM HP INI',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      _baris('Jumlah produk', '${_info['jumlah_produk'] ?? 0}'),
+                      _baris('Jumlah nota', '${_info['jumlah_nota'] ?? 0}'),
+                      _baris('Jumlah piutang', '${_info['jumlah_piutang'] ?? 0}'),
+                      _baris(
+                        'Sinkron terakhir',
+                        '${_info['sinkron_terakhir'] ?? ''}'.trim().isEmpty
+                            ? 'belum pernah'
+                            : '${_info['sinkron_terakhir']}',
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Seluruh stok, penjualan, piutang, dan template struk '
+                        'tersimpan di dalam HP ini. Aplikasi tetap dapat '
+                        'dipakai tanpa internet.',
+                        style: TextStyle(fontSize: 12, color: rtsKsTeks2),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _kartu(
+                  judul: 'PRODUK DARI SERVER (SKU & HARGA)',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      const Text(
+                        'Server menyimpan daftar produk (nama, barcode, isi per '
+                        'pack) beserta harganya. Tekan tombol di bawah untuk '
+                        'mengunduh daftar terbaru dan mengirim produk baru yang '
+                        'Bapak tambahkan dari HP. Perlu internet sesekali saja.',
+                        style: TextStyle(fontSize: 12, color: rtsKsTeks2),
+                      ),
+                      const SizedBox(height: 10),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: rtsKsMaroon,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                        ),
+                        onPressed: _kerja ? null : _sinkron,
+                        icon: const Icon(Icons.cloud_download_outlined),
+                        label: const Text('SINKRON PRODUK'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _kartu(
+                  judul: 'CADANGAN DATA (PENTING)',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      const Text(
+                        'Data kasir hanya ada di HP. Bila HP hilang, rusak, '
+                        'atau aplikasi dihapus, datanya ikut hilang. Lakukan '
+                        'cadangan sekurangnya sekali seminggu, lalu tekan '
+                        'KIRIM supaya salinannya tersimpan di Google Drive '
+                        'atau WhatsApp.',
+                        style: TextStyle(fontSize: 12, color: rtsKsTeks2),
+                      ),
+                      const SizedBox(height: 10),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: rtsKsHijau,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                        ),
+                        onPressed: _kerja ? null : _cadangkan,
+                        icon: const Icon(Icons.save_alt_rounded),
+                        label: const Text('CADANGKAN SEKARANG'),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_berkas.isEmpty)
+                        const Text(
+                          'Belum ada berkas cadangan.',
+                          style: TextStyle(fontSize: 12, color: rtsKsTeks2),
+                        ),
+                      for (final Map<String, dynamic> b in _berkas)
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.description_outlined,
+                              color: rtsKsMaroon),
+                          title: Text(
+                            '${b['nama']}',
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          subtitle: Text(
+                            '${b['waktu']} - ${b['ukuran_teks']}',
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              OutlinedButton(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: rtsKsHijau,
+                                  side: const BorderSide(color: rtsKsHijau),
+                                ),
+                                onPressed: _kerja ? null : () => _kirim(b),
+                                child: const Text('KIRIM'),
+                              ),
+                              const SizedBox(width: 6),
+                              OutlinedButton(
+                                onPressed: _kerja ? null : () => _pulihkan(b),
+                                child: const Text('PULIHKAN'),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (_galat.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(_galat, style: const TextStyle(color: rtsKsMerah)),
+                  ),
+                const SizedBox(height: 24),
+              ],
+            ),
+    );
+  }
+
+  Widget _baris(String judul, String nilai) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: <Widget>[
+          SizedBox(
+            width: 130,
+            child: Text(judul, style: const TextStyle(color: rtsKsTeks2, fontSize: 13)),
+          ),
+          Expanded(
+            child: Text(nilai, style: const TextStyle(fontWeight: FontWeight.w700)),
+          ),
         ],
       ),
     );

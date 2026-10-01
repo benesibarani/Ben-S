@@ -3,6 +3,56 @@
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.
 ==============================================================================
 
+PALING BARU - KASIR OFFLINE (SEMUA DATA DI DALAM HP, PAKAI SQLITE)
+------------------------------------------------------------------
+KASIR_BARANG_BAWAAN.txt - panduan lengkap versi terbaru: seluruh data kasir
+                          (produk, stok, penjualan, piutang, struk, template)
+                          DISIMPAN DI DALAM HP memakai SQLite, sehingga kasir
+                          tetap berjalan TANPA INTERNET. Server hanya
+                          menyimpan daftar produk (SKU) + harganya.
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/KASIR_BARANG_BAWAAN.txt
+
+  Paket lengkap putaran ini : RTS_PANEL_PUTARAN_10.zip
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_10.zip
+
+  Berkas APLIKASI terbaru (dipasang dengan LANGKAH1_PASANG_SEMUA.ps1):
+    2_APLIKASI_copy_ke_proyek/kasir_lokal.dart  (BARU, 82.393 B) - MESIN KASIR
+        DI DALAM HP: 10 tabel SQLite, seluruh perintah kasir, cadangan data
+    2_APLIKASI_copy_ke_proyek/kasir.dart        (DIPERBARUI, 159.576 B) -
+        memakai mesin lokal + halaman "Server & Cadangan"
+    2_APLIKASI_copy_ke_proyek/main.dart         (DIPERBARUI) - Beranda dapat
+        dibuka tanpa internet + tombol LANJUT TANPA INTERNET
+    2_APLIKASI_copy_ke_proyek/pubspec.yaml      (DIPERBARUI) - versi 1.2.3+6 +
+        sqflite, path_provider, path (+ 4 paket putaran lalu)
+    2_APLIKASI_copy_ke_proyek/MainActivity.kt   (DIPERBARUI) - tombol KIRIM
+        berkas cadangan ke WhatsApp / Google Drive
+    2_APLIKASI_copy_ke_proyek/file_paths.xml    (tidak berubah - cukup disalin)
+    2_APLIKASI_copy_ke_proyek/android_manifest_tambahan.xml (tidak berubah)
+
+  Berkas SERVER (kini OPSIONAL - hanya untuk daftar produk / SKU + harga):
+    1_SERVER_unggah_ke_hosting/api/kasir_inti.php  (91.195 B)
+    1_SERVER_unggah_ke_hosting/api/kasir.php       (23.835 B)
+    1_SERVER_unggah_ke_hosting/RTS_PANEL_KASIR.sql (11 tabel, tidak wajib)
+
+  Unduh berkas aplikasi satu per satu (bila tidak memakai zip):
+    2_APLIKASI_copy_ke_proyek/kasir_lokal.dart
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
+    2_APLIKASI_copy_ke_proyek/kasir.dart
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir.dart
+    2_APLIKASI_copy_ke_proyek/main.dart
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+    2_APLIKASI_copy_ke_proyek/pubspec.yaml
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+    2_APLIKASI_copy_ke_proyek/MainActivity.kt
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/android_MainActivity.kt
+    LANGKAH1_PASANG_SEMUA.ps1
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/LANGKAH1_PASANG_SEMUA.ps1
+
+  Catatan: tabel kasir di server kini TIDAK WAJIB. Bila Bapak ingin daftar
+  produk dipakai bersama seluruh sales, unggah berkas API + buat tabelnya,
+  lalu tekan SINKRON PRODUK di menu Barang Bawaan - Server & Cadangan.
+
+
 ALAMAT PENDEK (/inbox, /gsp) + PENGAMAN LOGIN 4 HALAMAN
 -------------------------------------------------------
 ALAMAT_TANPA_PHP.txt - kenapa /inbox dan /gsp menjawab 404 (hasil pengujian:
@@ -32,16 +82,21 @@ KASIR_BARANG_BAWAAN.txt - rancangan lengkap: produk + barcode (pack & batang),
                           stok bawaan (pack + batang, buka pack otomatis),
                           kasir dengan bayar CASH / UTANG / TITIP, piutang yang
                           dapat dicicil, struk printer Bluetooth yang templatenya
-                          dapat diedit sales, dan 4 pertanyaan untuk Bapak
+                          dapat diedit sales. VERSI TERBARU: seluruh data kasir
+                          disimpan DI DALAM HP (SQLite) dan berjalan TANPA
+                          INTERNET.
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/KASIR_BARANG_BAWAAN.txt
 
-  Berkas server yang perlu diunggah (letakkan di public_html/api):
+  Berkas server yang perlu diunggah (letakkan di public_html/api) - OPSIONAL,
+  karena seluruh data kasir kini tersimpan di dalam HP:
     1_SERVER_unggah_ke_hosting/api/kasir_inti.php  (BARU, 91.195 B)
     1_SERVER_unggah_ke_hosting/api/kasir.php       (BARU, 23.835 B)
 
   Berkas APLIKASI (dipasang dengan LANGKAH1_PASANG_SEMUA.ps1):
-    2_APLIKASI_copy_ke_proyek/kasir.dart   (BARU, 142.041 B) - seluruh halaman
-        Barang Bawaan, Kasir, Piutang, Printer & Template Struk
+    2_APLIKASI_copy_ke_proyek/kasir_lokal.dart (BARU, 82.393 B) - mesin kasir
+        SQLite di dalam HP (wajib ada)
+    2_APLIKASI_copy_ke_proyek/kasir.dart   (DIPERBARUI, 159.576 B) - seluruh
+        halaman Barang Bawaan, Kasir, Piutang, Printer & Template Struk
     2_APLIKASI_copy_ke_proyek/main.dart    (DIPERBARUI) - 4 menu baru
     2_APLIKASI_copy_ke_proyek/pubspec.yaml (DIPERBARUI) - versi 1.2.2+5 +
         mobile_scanner, esc_pos_utils_plus, print_bluetooth_thermal,

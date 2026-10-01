@@ -1,0 +1,2680 @@
+/// ============================================================================
+///  RTS PANEL BY BENE - MESIN KASIR OFFLINE (SQLite di dalam HP)
+///  Berkas : lib/kasir_lokal.dart
+///  Versi  : 1   (1 Oktober 2026)
+///
+///  CARA KERJA
+///  ---------
+///  SELURUH data kasir disimpan DI DALAM HP memakai SQLite:
+///     produk (salinan dari server), stok bawaan, riwayat stok, nota penjualan,
+///     barang terjual, piutang utang/titip, pembayaran/angsuran, dan template
+///     struk. Jadi sales dapat bekerja TANPA INTERNET sama sekali.
+///
+///  SERVER hanya menyimpan: SKU PRODUK (nama, barcode, isi per pack) dan
+///  HARGANYA. Aplikasi mengunduhnya lewat tombol "SINKRON PRODUK" dan
+///  menyimpan salinannya di HP. Sebelum disinkronkan pun, aplikasi sudah
+///  dapat dipakai (produk diisi langsung di HP).
+///
+///  YANG MASIH PERLU INTERNET (hanya sesekali):
+///     1. Masuk pertama kali (login).
+///     2. Memeriksa status Akun PRO (hasilnya disimpan; berlaku luring
+///        sampai 30 hari sejak pemeriksaan terakhir).
+///     3. Sinkron produk dari/ke server (opsional, dianjurkan sekali sehari).
+///
+///  BERKAS CADANGAN
+///  ---------------
+///  Data hanya ada di HP. Bila HP hilang/rusak, data ikut hilang. Karena itu
+///  tersedia tombol CADANGKAN yang menyalin seluruh database ke berkas
+///  rts_panel_cadangan_YYYYMMDD_HHMMSS.db, dan tombol PULIHKAN untuk
+///  mengembalikannya. Anjurkan sales mencadangkan setiap hari/minggu.
+///
+///  BERKAS INI TIDAK MEMANGGIL kasir.dart (supaya tidak ada lingkaran impor).
+/// ============================================================================
+
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart';
+
+/* ------------------------------------------------------------------------- */
+/* KESALAHAN                                                                 */
+/* ------------------------------------------------------------------------- */
+
+/// Kesalahan pada fitur kasir yang membawa keterangan tambahan.
+class RtsKasirGalat implements Exception {
+  RtsKasirGalat(this.pesan, {this.perluPro = false, this.perluSiap = false});
+
+  final String pesan;
+  final bool perluPro;
+  final bool perluSiap;
+
+  @override
+  String toString() => pesan;
+}
+
+/* ------------------------------------------------------------------------- */
+/* MESIN LOKAL                                                               */
+/* ------------------------------------------------------------------------- */
+
+class RtsKasirLokal {
+  RtsKasirLokal._();
+
+  /// Satu mesin dipakai bersama seluruh halaman.
+  static final RtsKasirLokal aku = RtsKasirLokal._();
+
+  /// Nama berkas database di dalam HP.
+  static const String namaBerkas = 'rts_panel_kasir.db';
+
+  /// Lama hasil pemeriksaan PRO boleh dipakai saat HP tidak ada internet.
+  static const int batasLuringHari = 30;
+
+  /// Lama hasil pemeriksaan PRO dianggap masih segar (tidak diperiksa ulang).
+  static const int segarJam = 6;
+
+  Database? _db;
+  String baseUrl = '';
+  String token = '';
+  Map<String, dynamic> pengguna = <String, dynamic>{};
+
+  Map<String, dynamic> _aksesSimpan = <String, dynamic>{};
+  DateTime? _aksesDiperiksa;
+
+  /* ------------------------------------------------------------------ akun */
+
+  String get idSales {
+    final String nama = '${pengguna['username'] ?? ''}'.trim();
+
+    return nama.isEmpty ? 'tanpa-nama' : nama;
+  }
+
+  String get namaSales {
+    final String lengkap = '${pengguna['nama_lengkap'] ?? ''}'.trim();
+
+    return lengkap.isEmpty ? idSales : lengkap;
+  }
+
+  String get role => '${pengguna['role'] ?? ''}'.toUpperCase();
+
+  bool get pengelola => role == 'ADMIN' || role == 'ASS';
+
+  /// Mengisi keterangan akun. Dipanggil setiap halaman kasir dibuka.
+  Future<void> atur({
+    String? baseUrl,
+    String? token,
+    Map<String, dynamic>? pengguna,
+  }) async {
+    if (baseUrl != null && baseUrl.isNotEmpty) this.baseUrl = baseUrl;
+    if (token != null && token.isNotEmpty) this.token = token;
+
+    if (pengguna != null && pengguna.isNotEmpty) {
+      this.pengguna = pengguna;
+
+      // Disimpan supaya halaman lain (misalnya Printer & Struk) yang dibuka
+      // langsung dari Beranda tetap mengenal siapa pemilik datanya.
+      await _setelanTulis('pengguna', jsonEncode(pengguna));
+    } else if (this.pengguna.isEmpty) {
+      final String simpan = await _setelanBaca('pengguna', '');
+
+      if (simpan.isNotEmpty) {
+        try {
+          final dynamic urai = jsonDecode(simpan);
+
+          if (urai is Map) {
+            this.pengguna = urai.cast<String, dynamic>();
+          }
+        } catch (_) {
+          // keterangan akun tidak terbaca: data tetap dapat dipakai
+        }
+      }
+    }
+
+    await siapkanTabel();
+  }
+
+  /* ------------------------------------------------------------- database */
+
+  Future<Database> get db async {
+    if (_db != null && _db!.isOpen) return _db!;
+
+    final String tempat = await getDatabasesPath();
+    final String jalur = p.join(tempat, namaBerkas);
+
+    _db = await openDatabase(
+      jalur,
+      version: 1,
+      onCreate: (Database d, int v) async {
+        for (final String sql in _perintahTabel()) {
+          await d.execute(sql);
+        }
+      },
+      onConfigure: (Database d) async {
+        await d.execute('PRAGMA foreign_keys = ON');
+      },
+    );
+
+    return _db!;
+  }
+
+  /// Alamat berkas database (dipakai untuk mencadangkan).
+  Future<String> jalurDatabase() async {
+    final String tempat = await getDatabasesPath();
+
+    return p.join(tempat, namaBerkas);
+  }
+
+  List<String> _perintahTabel() {
+    return <String>[
+      '''CREATE TABLE IF NOT EXISTS produk (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_server INTEGER NOT NULL DEFAULT 0,
+        barcode_pack TEXT NOT NULL DEFAULT '',
+        barcode_batang TEXT NOT NULL DEFAULT '',
+        nama TEXT NOT NULL,
+        merek TEXT NOT NULL DEFAULT '',
+        isi_per_pack INTEGER NOT NULL DEFAULT 0,
+        harga_pack REAL NOT NULL DEFAULT 0,
+        harga_batang REAL NOT NULL DEFAULT 0,
+        catatan TEXT NOT NULL DEFAULT '',
+        aktif INTEGER NOT NULL DEFAULT 1,
+        dari_server INTEGER NOT NULL DEFAULT 0,
+        diubah_pada TEXT NOT NULL DEFAULT ''
+      )''',
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_produk_barcode_pack ON produk(barcode_pack)'
+      ' WHERE barcode_pack <> \'\'',
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_produk_barcode_batang ON produk(barcode_batang)'
+      ' WHERE barcode_batang <> \'\'',
+      'CREATE INDEX IF NOT EXISTS idx_produk_nama ON produk(nama)',
+      '''CREATE TABLE IF NOT EXISTS stok (
+        id_sales TEXT NOT NULL,
+        produk_id INTEGER NOT NULL,
+        pack INTEGER NOT NULL DEFAULT 0,
+        batang INTEGER NOT NULL DEFAULT 0,
+        diubah TEXT NOT NULL DEFAULT '',
+        PRIMARY KEY (id_sales, produk_id)
+      )''',
+      '''CREATE TABLE IF NOT EXISTS stok_gerak (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tanggal TEXT NOT NULL,
+        id_sales TEXT NOT NULL DEFAULT '',
+        nama_sales TEXT NOT NULL DEFAULT '',
+        produk_id INTEGER NOT NULL DEFAULT 0,
+        nama_produk TEXT NOT NULL DEFAULT '',
+        jenis TEXT NOT NULL DEFAULT 'MASUK',
+        pack_delta INTEGER NOT NULL DEFAULT 0,
+        batang_delta INTEGER NOT NULL DEFAULT 0,
+        saldo_pack INTEGER NOT NULL DEFAULT 0,
+        saldo_batang INTEGER NOT NULL DEFAULT 0,
+        keterangan TEXT NOT NULL DEFAULT '',
+        ref_tipe TEXT NOT NULL DEFAULT '',
+        ref_id INTEGER NOT NULL DEFAULT 0
+      )''',
+      'CREATE INDEX IF NOT EXISTS idx_gerak_sales ON stok_gerak(id_sales, id)',
+      '''CREATE TABLE IF NOT EXISTS penjualan (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nomor TEXT NOT NULL UNIQUE,
+        tanggal TEXT NOT NULL,
+        id_sales TEXT NOT NULL DEFAULT '',
+        nama_sales TEXT NOT NULL DEFAULT '',
+        district TEXT NOT NULL DEFAULT '',
+        jenis_customer TEXT NOT NULL DEFAULT 'REGULER',
+        customer_id TEXT NOT NULL DEFAULT '',
+        nama_customer TEXT NOT NULL DEFAULT '',
+        hp_customer TEXT NOT NULL DEFAULT '',
+        alamat_customer TEXT NOT NULL DEFAULT '',
+        metode TEXT NOT NULL DEFAULT 'CASH',
+        total REAL NOT NULL DEFAULT 0,
+        bayar REAL NOT NULL DEFAULT 0,
+        kembali REAL NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'LUNAS',
+        jumlah_item INTEGER NOT NULL DEFAULT 0,
+        catatan TEXT NOT NULL DEFAULT '',
+        dicetak INTEGER NOT NULL DEFAULT 0,
+        cetak_terakhir TEXT NOT NULL DEFAULT '',
+        dibatalkan INTEGER NOT NULL DEFAULT 0,
+        batal_alasan TEXT NOT NULL DEFAULT '',
+        batal_pada TEXT NOT NULL DEFAULT ''
+      )''',
+      'CREATE INDEX IF NOT EXISTS idx_jual_sales ON penjualan(id_sales, id)',
+      '''CREATE TABLE IF NOT EXISTS penjualan_item (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        penjualan_id INTEGER NOT NULL,
+        produk_id INTEGER NOT NULL DEFAULT 0,
+        nama_produk TEXT NOT NULL DEFAULT '',
+        satuan TEXT NOT NULL DEFAULT 'PACK',
+        isi_per_pack INTEGER NOT NULL DEFAULT 0,
+        pack INTEGER NOT NULL DEFAULT 0,
+        batang INTEGER NOT NULL DEFAULT 0,
+        harga_satuan REAL NOT NULL DEFAULT 0,
+        subtotal REAL NOT NULL DEFAULT 0
+      )''',
+      'CREATE INDEX IF NOT EXISTS idx_item_nota ON penjualan_item(penjualan_id)',
+      '''CREATE TABLE IF NOT EXISTS piutang (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nomor TEXT NOT NULL UNIQUE,
+        jenis TEXT NOT NULL DEFAULT 'UTANG',
+        penjualan_id INTEGER NOT NULL DEFAULT 0,
+        tanggal TEXT NOT NULL,
+        jatuh_tempo TEXT NOT NULL DEFAULT '',
+        id_sales TEXT NOT NULL DEFAULT '',
+        nama_sales TEXT NOT NULL DEFAULT '',
+        customer_id TEXT NOT NULL DEFAULT '',
+        nama_customer TEXT NOT NULL DEFAULT '',
+        hp_customer TEXT NOT NULL DEFAULT '',
+        total REAL NOT NULL DEFAULT 0,
+        dibayar REAL NOT NULL DEFAULT 0,
+        sisa REAL NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'BELUM',
+        rincian TEXT NOT NULL DEFAULT '',
+        catatan TEXT NOT NULL DEFAULT '',
+        diperbarui TEXT NOT NULL DEFAULT ''
+      )''',
+      'CREATE INDEX IF NOT EXISTS idx_piut_sales ON piutang(id_sales, status)',
+      '''CREATE TABLE IF NOT EXISTS piutang_bayar (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        piutang_id INTEGER NOT NULL,
+        tanggal TEXT NOT NULL,
+        jumlah REAL NOT NULL DEFAULT 0,
+        metode TEXT NOT NULL DEFAULT 'CASH',
+        catatan TEXT NOT NULL DEFAULT '',
+        sisa_sesudah REAL NOT NULL DEFAULT 0
+      )''',
+      'CREATE INDEX IF NOT EXISTS idx_bayar_piut ON piutang_bayar(piutang_id)',
+      '''CREATE TABLE IF NOT EXISTS struk (
+        id_sales TEXT PRIMARY KEY,
+        judul TEXT NOT NULL DEFAULT 'RTS PANEL',
+        baris1 TEXT NOT NULL DEFAULT '',
+        baris2 TEXT NOT NULL DEFAULT '',
+        baris3 TEXT NOT NULL DEFAULT '',
+        footer1 TEXT NOT NULL DEFAULT 'Terima kasih',
+        footer2 TEXT NOT NULL DEFAULT '',
+        footer3 TEXT NOT NULL DEFAULT '',
+        lebar_kertas INTEGER NOT NULL DEFAULT 58,
+        ukuran_huruf TEXT NOT NULL DEFAULT 'SEDANG',
+        garis TEXT NOT NULL DEFAULT '-',
+        jumlah_salinan INTEGER NOT NULL DEFAULT 1,
+        tampilkan_barcode INTEGER NOT NULL DEFAULT 1,
+        tampilkan_hp INTEGER NOT NULL DEFAULT 1,
+        tampilkan_ttd INTEGER NOT NULL DEFAULT 0,
+        tampilkan_metode INTEGER NOT NULL DEFAULT 1,
+        diperbarui TEXT NOT NULL DEFAULT ''
+      )''',
+      '''CREATE TABLE IF NOT EXISTS setelan (
+        kunci TEXT PRIMARY KEY,
+        nilai TEXT NOT NULL DEFAULT '',
+        diperbarui TEXT NOT NULL DEFAULT ''
+      )''',
+      '''CREATE TABLE IF NOT EXISTS penomoran (
+        tanggal TEXT NOT NULL,
+        prefix TEXT NOT NULL,
+        urut INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (tanggal, prefix)
+      )''',
+    ];
+  }
+
+  /// Membuat tabel yang belum ada (aman dipanggil berkali-kali).
+  Future<void> siapkanTabel() async {
+    final Database d = await db;
+
+    for (final String sql in _perintahTabel()) {
+      await d.execute(sql);
+    }
+  }
+
+  /* --------------------------------------------------------------- bantuan */
+
+  static String _uang(dynamic nilai) {
+    final double angka = _angka(nilai);
+    final bool bulat = (angka - angka.round()).abs() < 0.005;
+
+    final String teks = bulat
+        ? angka.abs().round().toString()
+        : angka.abs().toStringAsFixed(2).replaceAll('.', ',');
+
+    final List<String> bagian = teks.split(',');
+    final StringBuffer kiri = StringBuffer();
+    final String angkaKiri = bagian[0];
+
+    for (int i = 0; i < angkaKiri.length; i++) {
+      final int sisa = angkaKiri.length - i;
+
+      kiri.write(angkaKiri[i]);
+
+      if (sisa > 1 && sisa % 3 == 1) kiri.write('.');
+    }
+
+    final String hasil = bagian.length > 1 ? '$kiri,${bagian[1]}' : kiri.toString();
+
+    return angka < 0 ? '-$hasil' : hasil;
+  }
+
+  static double _angka(dynamic nilai) {
+    if (nilai is num) return nilai.toDouble();
+
+    String teks = '${nilai ?? ''}'.replaceAll(RegExp(r'[^0-9,.\-]'), '');
+
+    if (teks.isEmpty) return 0;
+
+    if (teks.contains(',')) {
+      teks = teks.replaceAll('.', '').replaceAll(',', '.');
+
+      return double.tryParse(teks) ?? 0;
+    }
+
+    final List<String> bagian = teks.split('.');
+
+    if (bagian.length > 1 && bagian.last.length == 3) {
+      teks = bagian.join();
+    }
+
+    return double.tryParse(teks) ?? 0;
+  }
+
+  static int _bulat(dynamic nilai) => _angka(nilai).round();
+
+  static String _teks(dynamic nilai, [int maks = 255]) {
+    final String bersih = '${nilai ?? ''}'.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+    return bersih.length <= maks ? bersih : bersih.substring(0, maks);
+  }
+
+  static String _waktu([DateTime? saat]) {
+    final DateTime t = saat ?? DateTime.now();
+
+    return '${t.year}-${_dua(t.month)}-${_dua(t.day)} '
+        '${_dua(t.hour)}:${_dua(t.minute)}:${_dua(t.second)}';
+  }
+
+  static String _dua(int angka) => angka < 10 ? '0$angka' : '$angka';
+
+  static String _stokTeks(int pack, int batang) {
+    final List<String> bagian = <String>[];
+
+    if (pack != 0) bagian.add('$pack pack');
+    if (batang != 0 || pack == 0) bagian.add('$batang batang');
+
+    return bagian.join(' ');
+  }
+
+  Future<String> _setelanBaca(String kunci, [String bawaan = '']) async {
+    try {
+      final Database d = await db;
+      final List<Map<String, Object?>> baris = await d.query(
+        'setelan',
+        columns: <String>['nilai'],
+        where: 'kunci = ?',
+        whereArgs: <Object?>[kunci],
+        limit: 1,
+      );
+
+      if (baris.isEmpty) return bawaan;
+
+      final String nilai = '${baris.first['nilai'] ?? ''}'.trim();
+
+      return nilai.isEmpty ? bawaan : nilai;
+    } catch (_) {
+      return bawaan;
+    }
+  }
+
+  Future<void> _setelanTulis(String kunci, String nilai) async {
+    try {
+      final Database d = await db;
+
+      await d.insert(
+        'setelan',
+        <String, Object?>{
+          'kunci': kunci,
+          'nilai': nilai,
+          'diperbarui': _waktu(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } catch (_) {
+      // gagal menyimpan setelan tidak menghalangi pemakaian
+    }
+  }
+
+  /// Nomor dokumen harian: KS-20261001-0007 / PT-20261001-0007.
+  ///
+  /// Dipanggil di dalam transaksi supaya nomornya tidak kembar.
+  Future<String> _nomor(DatabaseExecutor d, String prefix) async {
+    final DateTime t = DateTime.now();
+    final String hari = '${t.year}-${_dua(t.month)}-${_dua(t.day)}';
+    final String kunci = '${t.year}${_dua(t.month)}${_dua(t.day)}';
+    final String atas = prefix.toUpperCase();
+
+    final List<Map<String, Object?>> ada = await d.query(
+      'penomoran',
+      where: 'tanggal = ? AND prefix = ?',
+      whereArgs: <Object?>[hari, atas],
+      limit: 1,
+    );
+
+    int urut = 1;
+
+    if (ada.isEmpty) {
+      await d.insert('penomoran', <String, Object?>{
+        'tanggal': hari,
+        'prefix': atas,
+        'urut': 1,
+      });
+    } else {
+      urut = _bulat(ada.first['urut']) + 1;
+
+      await d.update(
+        'penomoran',
+        <String, Object?>{'urut': urut},
+        where: 'tanggal = ? AND prefix = ?',
+        whereArgs: <Object?>[hari, atas],
+      );
+    }
+
+    return '$atas-$kunci-${urut.toString().padLeft(4, '0')}';
+  }
+
+  /* ------------------------------------------------------------- kewenangan */
+
+  /// Memeriksa apakah fitur kasir boleh dipakai (Akun PRO).
+  ///
+  /// Hasil dari server disimpan, sehingga saat tidak ada internet aplikasi
+  /// tetap dapat dipakai sampai [batasLuringHari] hari sejak pemeriksaan
+  /// terakhir.
+  Future<Map<String, dynamic>> akses({bool paksa = false}) async {
+    if (pengelola) {
+      return <String, dynamic>{
+        'boleh': true,
+        'label': 'PRO',
+        'mode': 'PENGELOLA',
+        'pesan': '',
+      };
+    }
+
+    final DateTime sekarang = DateTime.now();
+
+    if (!paksa &&
+        _aksesSimpan.isNotEmpty &&
+        _aksesDiperiksa != null &&
+        sekarang.difference(_aksesDiperiksa!).inHours < segarJam) {
+      return _aksesSimpan;
+    }
+
+    // 1. Coba periksa ke server.
+    if (baseUrl.isNotEmpty && token.isNotEmpty) {
+      try {
+        final Uri uri = Uri.parse('$baseUrl/kasir.php?aksi=akses');
+        final http.Response jawab = await http.get(
+          uri,
+          headers: <String, String>{
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ).timeout(const Duration(seconds: 20));
+
+        final dynamic urai = jsonDecode(jawab.body);
+
+        if (urai is Map) {
+          final Map<String, dynamic> peta = urai.cast<String, dynamic>();
+          final Map<String, dynamic> isi = (peta['akses'] is Map)
+              ? (peta['akses'] as Map).cast<String, dynamic>()
+              : <String, dynamic>{};
+
+          if (isi.isNotEmpty) {
+            _aksesSimpan = isi;
+            _aksesDiperiksa = sekarang;
+
+            await _setelanTulis('akses_simpan', jsonEncode(isi));
+            await _setelanTulis('akses_pada', _waktu());
+
+            return isi;
+          }
+        }
+      } catch (_) {
+        // tidak ada internet: lanjut memakai simpanan di bawah
+      }
+    }
+
+    // 2. Pakai simpanan pemeriksaan terakhir.
+    if (_aksesSimpan.isEmpty) {
+      final String simpan = await _setelanBaca('akses_simpan', '');
+
+      if (simpan.isNotEmpty) {
+        try {
+          final dynamic urai = jsonDecode(simpan);
+
+          if (urai is Map) {
+            _aksesSimpan = urai.cast<String, dynamic>();
+          }
+        } catch (_) {
+          _aksesSimpan = <String, dynamic>{};
+        }
+      }
+    }
+
+    if (_aksesSimpan.isNotEmpty) {
+      final String pada = await _setelanBaca('akses_pada', '');
+      final DateTime? waktu = DateTime.tryParse(pada.replaceAll(' ', 'T'));
+      final int umurHari =
+          waktu == null ? 9999 : sekarang.difference(waktu).inDays;
+
+      if (_aksesSimpan['boleh'] == true && umurHari <= batasLuringHari) {
+        final String label = '${_aksesSimpan['label'] ?? 'PRO'}';
+
+        return <String, dynamic>{
+          ..._aksesSimpan,
+          'luring': true,
+          'pesan': 'Diperiksa luring$label - terakhir diperiksa $umurHari hari lalu.',
+        };
+      }
+
+      if (_aksesSimpan['boleh'] == true) {
+        return <String, dynamic>{
+          'boleh': false,
+          'label': 'GRATIS',
+          'pesan': 'Masa berlaku perlu diperiksa ulang. Sambungkan internet '
+              'sekali, lalu buka menu Langganan PRO.',
+        };
+      }
+
+      return _aksesSimpan;
+    }
+
+    return <String, dynamic>{
+      'boleh': false,
+      'label': 'GRATIS',
+      'pesan': 'Perlu sambungan internet SEKALI untuk memeriksa langganan. '
+          'Setelah itu aplikasi dapat dipakai tanpa internet.',
+    };
+  }
+
+  Future<void> _pastikanBoleh() async {
+    final Map<String, dynamic> hasil = await akses();
+
+    if (hasil['boleh'] != true) {
+      throw RtsKasirGalat(
+        '${hasil['pesan'] ?? 'Fitur Barang Bawaan & Kasir tersedia untuk Akun PRO.'}',
+        perluPro: true,
+      );
+    }
+  }
+
+  /* ----------------------------------------------------------------- pintu */
+
+  /// Pintu perintah, bentuknya disamakan dengan api/kasir.php supaya seluruh
+  /// halaman kasir tidak perlu diubah.
+  Future<Map<String, dynamic>> kirim(
+    String aksi, [
+    Map<String, dynamic> data = const <String, dynamic>{},
+  ]) async {
+    await siapkanTabel();
+
+    switch (aksi.toLowerCase()) {
+      case 'siap':
+        return <String, dynamic>{
+          'success': true,
+          'message': 'Data kasir tersimpan di HP dan siap dipakai.',
+          'siap': true,
+          'lokal': true,
+        };
+
+      case 'siapkan':
+        return <String, dynamic>{
+          'success': true,
+          'message': 'Data kasir sudah siap di HP.',
+          'siap': true,
+        };
+
+      case 'akses':
+        final Map<String, dynamic> hasil = await akses(paksa: true);
+
+        return <String, dynamic>{
+          'success': true,
+          'message': '${hasil['pesan'] ?? 'Fitur kasir dapat dipakai.'}',
+          'akses': hasil,
+        };
+
+      case 'ringkas':
+        await _pastikanBoleh();
+
+        return <String, dynamic>{
+          'success': true,
+          'message': 'Ringkasan hari ini.',
+          'ringkas': await _ringkas(_teks(data['tanggal'], 20)),
+        };
+
+      case 'produk_daftar':
+        await _pastikanBoleh();
+
+        final List<Map<String, dynamic>> daftar =
+            await _produkCari(_teks(data['cari'], 60), _bulat(data['batas'] ?? 200));
+
+        return <String, dynamic>{
+          'success': true,
+          'message': '${daftar.length} produk ditemukan.',
+          'items': daftar,
+          'jumlah': daftar.length,
+        };
+
+      case 'produk_ambil':
+        await _pastikanBoleh();
+
+        final Map<String, dynamic>? produk = await _produkAmbil(_bulat(data['id']));
+
+        if (produk == null) {
+          throw RtsKasirGalat('Produk tidak ditemukan.');
+        }
+
+        return <String, dynamic>{
+          'success': true,
+          'message': 'Produk ditemukan.',
+          'produk': produk,
+        };
+
+      case 'produk_barcode':
+        await _pastikanBoleh();
+
+        final String kode = _teks(data['barcode'], 64);
+
+        if (kode.isEmpty) {
+          throw RtsKasirGalat('Barcode belum terbaca.');
+        }
+
+        final Map<String, dynamic>? hasil = await _produkDariBarcode(kode);
+
+        if (hasil == null) {
+          return <String, dynamic>{
+            'success': false,
+            'message': 'Barcode $kode belum ada pada daftar produk. '
+                'Tambahkan produknya lebih dahulu pada menu Barang Bawaan.',
+            'ditemukan': false,
+            'barcode': kode,
+          };
+        }
+
+        final Map<String, dynamic> produk =
+            hasil['produk'] as Map<String, dynamic>;
+        final Map<String, dynamic> saldo =
+            await _stokSaldo(_bulat(produk['id']));
+
+        return <String, dynamic>{
+          'success': true,
+          'message': 'Produk ditemukan: ${produk['nama']}',
+          'ditemukan': true,
+          'satuan': hasil['satuan'],
+          'produk': produk,
+          'stok_pack': saldo['pack'],
+          'stok_batang': saldo['batang'],
+          'stok_teks': _stokTeks(
+            _bulat(saldo['pack']),
+            _bulat(saldo['batang']),
+          ),
+        };
+
+      case 'produk_simpan':
+        await _pastikanBoleh();
+
+        return _produkSimpan(data);
+
+      case 'produk_hapus':
+        await _pastikanBoleh();
+
+        return _produkHapus(_bulat(data['id']));
+
+      case 'stok_daftar':
+        await _pastikanBoleh();
+
+        return _stokDaftar(
+          _teks(data['cari'], 60),
+          data['hanya_ada'] == true || data['hanya_ada'] == 1 || data['hanya_ada'] == '1',
+        );
+
+      case 'stok_gerak':
+        await _pastikanBoleh();
+
+        return _stokGerak(data);
+
+      case 'stok_riwayat':
+        await _pastikanBoleh();
+
+        final List<Map<String, dynamic>> daftar =
+            await _stokRiwayat(_bulat(data['produk_id']));
+
+        return <String, dynamic>{
+          'success': true,
+          'message': '${daftar.length} catatan perubahan stok.',
+          'items': daftar,
+          'jumlah': daftar.length,
+        };
+
+      case 'kasir_simpan':
+        await _pastikanBoleh();
+
+        return _kasirSimpan(data);
+
+      case 'kasir_daftar':
+        await _pastikanBoleh();
+
+        return _kasirDaftar(_teks(data['cari'], 60), _bulat(data['batas'] ?? 60));
+
+      case 'kasir_ambil':
+        await _pastikanBoleh();
+
+        final Map<String, dynamic>? nota = await _kasirAmbil(_bulat(data['id']));
+
+        if (nota == null) {
+          throw RtsKasirGalat('Nota tidak ditemukan.');
+        }
+
+        return <String, dynamic>{
+          'success': true,
+          'message': 'Nota ${nota['nomor']}',
+          'nota': nota,
+        };
+
+      case 'kasir_batal':
+        await _pastikanBoleh();
+
+        return _kasirBatal(_bulat(data['id']), _teks(data['alasan'], 200));
+
+      case 'kasir_cetak':
+        await _pastikanBoleh();
+
+        final Database d = await db;
+
+        await d.rawUpdate(
+          'UPDATE penjualan SET dicetak = dicetak + 1, cetak_terakhir = ? WHERE id = ?',
+          <Object?>[_waktu(), _bulat(data['id'])],
+        );
+
+        return <String, dynamic>{
+          'success': true,
+          'message': 'Nota ditandai sudah dicetak.',
+        };
+
+      case 'piutang_daftar':
+        await _pastikanBoleh();
+
+        return _piutangDaftar(
+          _teks(data['jenis'], 10),
+          _teks(data['status'], 12),
+          _teks(data['cari'], 60),
+        );
+
+      case 'piutang_ambil':
+        await _pastikanBoleh();
+
+        final Map<String, dynamic>? piutang =
+            await _piutangAmbil(_bulat(data['id']));
+
+        if (piutang == null) {
+          throw RtsKasirGalat('Piutang tidak ditemukan.');
+        }
+
+        return <String, dynamic>{
+          'success': true,
+          'message': 'Piutang ${piutang['nomor']}',
+          'piutang': piutang,
+        };
+
+      case 'piutang_bayar':
+        await _pastikanBoleh();
+
+        return _piutangBayar(data);
+
+      case 'struk_baca':
+        return <String, dynamic>{
+          'success': true,
+          'message': 'Template struk.',
+          'struk': await _strukBaca(),
+        };
+
+      case 'struk_simpan':
+        await _pastikanBoleh();
+
+        return _strukSimpan(data);
+
+      case 'struk_contoh':
+        await _pastikanBoleh();
+
+        return _strukContoh();
+
+      case 'laporan':
+        await _pastikanBoleh();
+
+        final String dari = _teks(data['dari'], 20);
+        final String sampai = _teks(data['sampai'], 20);
+
+        return <String, dynamic>{
+          'success': true,
+          'message': 'Laporan $dari sampai $sampai',
+          'dari': dari,
+          'sampai': sampai,
+          'nota': await _kasirDaftar('', 200),
+          'piutang': await _piutangDaftar('', '', ''),
+          'ringkas': await _ringkas(''),
+        };
+
+      case 'sinkron_produk':
+        await _pastikanBoleh();
+
+        return _sinkronProduk();
+
+      case 'cadangan_info':
+        return _cadanganInfo();
+
+      case 'cadangkan':
+        return _cadangkan();
+
+      case 'pulihkan':
+        return _pulihkan(_teks(data['berkas'], 200));
+    }
+
+    throw RtsKasirGalat('Perintah "$aksi" tidak dikenal pada mesin kasir lokal.');
+  }
+
+  /* ----------------------------------------------------------------- produk */
+
+  Map<String, dynamic> _produkBentuk(Map<String, Object?> baris) {
+    final int isi = _bulat(baris['isi_per_pack']);
+    double hargaPack = _angka(baris['harga_pack']);
+    double hargaBatang = _angka(baris['harga_batang']);
+
+    if (hargaBatang <= 0 && isi > 0 && hargaPack > 0) {
+      hargaBatang = (hargaPack / isi / 100).round() * 100;
+    }
+
+    return <String, dynamic>{
+      'id': _bulat(baris['id']),
+      'id_server': _bulat(baris['id_server']),
+      'barcode_pack': '${baris['barcode_pack'] ?? ''}',
+      'barcode_batang': '${baris['barcode_batang'] ?? ''}',
+      'nama': '${baris['nama'] ?? ''}',
+      'merek': '${baris['merek'] ?? ''}',
+      'isi_per_pack': isi,
+      'harga_pack': hargaPack,
+      'harga_batang': hargaBatang,
+      'harga_pack_teks': _uang(hargaPack),
+      'harga_batang_teks': _uang(hargaBatang),
+      'aktif': _bulat(baris['aktif']) == 1,
+      'catatan': '${baris['catatan'] ?? ''}',
+      'dari_server': _bulat(baris['dari_server']) == 1,
+    };
+  }
+
+  Future<List<Map<String, dynamic>>> _produkCari(String cari, int batas) async {
+    final Database d = await db;
+
+    final int jumlah = batas < 1 ? 200 : (batas > 500 ? 500 : batas);
+
+    List<Map<String, Object?>> baris;
+
+    if (cari.isEmpty) {
+      baris = await d.query('produk',
+          where: 'aktif = 1', orderBy: 'nama ASC', limit: jumlah);
+    } else {
+      final String mirip = '%$cari%';
+
+      baris = await d.rawQuery(
+        'SELECT * FROM produk WHERE aktif = 1 AND '
+        '(nama LIKE ? OR merek LIKE ? OR barcode_pack = ? OR barcode_batang = ?) '
+        'ORDER BY nama ASC LIMIT $jumlah',
+        <Object?>[mirip, mirip, cari, cari],
+      );
+    }
+
+    return baris.map(_produkBentuk).toList();
+  }
+
+  Future<Map<String, dynamic>?> _produkAmbil(int id) async {
+    if (id <= 0) return null;
+
+    final Database d = await db;
+    final List<Map<String, Object?>> baris =
+        await d.query('produk', where: 'id = ?', whereArgs: <Object?>[id], limit: 1);
+
+    if (baris.isEmpty) return null;
+
+    return _produkBentuk(baris.first);
+  }
+
+  Future<Map<String, dynamic>?> _produkDariBarcode(String kode) async {
+    final Database d = await db;
+    final List<Map<String, Object?>> baris = await d.query(
+      'produk',
+      where: 'barcode_pack = ? OR barcode_batang = ?',
+      whereArgs: <Object?>[kode, kode],
+      limit: 1,
+    );
+
+    if (baris.isEmpty) return null;
+
+    final Map<String, Object?> p = baris.first;
+    final String satuan = '${p['barcode_batang'] ?? ''}' == kode &&
+            '${p['barcode_pack'] ?? ''}' != kode
+        ? 'BATANG'
+        : 'PACK';
+
+    return <String, dynamic>{
+      'produk': _produkBentuk(p),
+      'satuan': satuan,
+    };
+  }
+
+  Future<Map<String, dynamic>> _produkSimpan(Map<String, dynamic> data) async {
+    final Database d = await db;
+
+    final int id = _bulat(data['id']);
+    final String nama = _teks(data['nama'], 150);
+    final String merek = _teks(data['merek'], 80);
+    final String barcodePack = _teks(data['barcode_pack'], 64);
+    final String barcodeBatang = _teks(data['barcode_batang'], 64);
+    final int isi = _bulat(data['isi_per_pack']);
+    final double hargaPack = _angka(data['harga_pack']);
+    final double hargaBatang = _angka(data['harga_batang']);
+    final String catatan = _teks(data['catatan'], 255);
+
+    if (nama.length < 2) {
+      throw RtsKasirGalat('Nama produk terlalu pendek.');
+    }
+
+    if (hargaPack < 0 || hargaBatang < 0) {
+      throw RtsKasirGalat('Harga tidak boleh negatif.');
+    }
+
+    if (barcodePack.isNotEmpty && barcodePack == barcodeBatang) {
+      throw RtsKasirGalat('Barcode pack dan barcode batang tidak boleh sama.');
+    }
+
+    // Barcode tidak boleh dipakai produk lain.
+    for (final List<String> pasang in <List<String>>[
+      <String>['barcode_pack', barcodePack],
+      <String>['barcode_batang', barcodeBatang],
+    ]) {
+      if (pasang[1].isEmpty) continue;
+
+      final List<Map<String, Object?>> lain = await d.query(
+        'produk',
+        where: '${pasang[0]} = ? AND id <> ?',
+        whereArgs: <Object?>[pasang[1], id],
+        limit: 1,
+      );
+
+      if (lain.isNotEmpty) {
+        throw RtsKasirGalat(
+          'Barcode ${pasang[1]} sudah dipakai produk "${lain.first['nama']}".',
+        );
+      }
+    }
+
+    if (id > 0) {
+      await d.update(
+        'produk',
+        <String, Object?>{
+          'nama': nama,
+          'merek': merek,
+          'barcode_pack': barcodePack,
+          'barcode_batang': barcodeBatang,
+          'isi_per_pack': isi,
+          'harga_pack': hargaPack,
+          'harga_batang': hargaBatang,
+          'catatan': catatan,
+          'diubah_pada': _waktu(),
+        },
+        where: 'id = ?',
+        whereArgs: <Object?>[id],
+      );
+
+      return <String, dynamic>{
+        'success': true,
+        'message': 'Produk diperbarui.',
+        'id': id,
+        'produk': await _produkAmbil(id),
+      };
+    }
+
+    final int baru = await d.insert('produk', <String, Object?>{
+      'nama': nama,
+      'merek': merek,
+      'barcode_pack': barcodePack,
+      'barcode_batang': barcodeBatang,
+      'isi_per_pack': isi,
+      'harga_pack': hargaPack,
+      'harga_batang': hargaBatang,
+      'catatan': catatan,
+      'aktif': 1,
+      'dari_server': 0,
+      'diubah_pada': _waktu(),
+    });
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Produk baru tersimpan di HP.',
+      'id': baru,
+      'produk': await _produkAmbil(baru),
+    };
+  }
+
+  Future<Map<String, dynamic>> _produkHapus(int id) async {
+    if (id <= 0) {
+      throw RtsKasirGalat('Produk tidak ditemukan.');
+    }
+
+    final Database d = await db;
+
+    final List<Map<String, Object?>> terpakai = await d.rawQuery(
+      'SELECT COUNT(*) AS total FROM penjualan_item WHERE produk_id = ?',
+      <Object?>[id],
+    );
+
+    final bool pernahTerjual = _bulat(terpakai.first['total']) > 0;
+
+    if (pernahTerjual) {
+      await d.update('produk', <String, Object?>{'aktif': 0},
+          where: 'id = ?', whereArgs: <Object?>[id]);
+
+      return <String, dynamic>{
+        'success': true,
+        'message': 'Produk dinonaktifkan (pernah terjual, riwayatnya tetap disimpan).',
+      };
+    }
+
+    await d.delete('produk', where: 'id = ?', whereArgs: <Object?>[id]);
+    await d.delete('stok', where: 'produk_id = ?', whereArgs: <Object?>[id]);
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Produk dihapus dari HP.',
+    };
+  }
+
+  /* -------------------------------------------------------------------- stok */
+
+  Future<Map<String, dynamic>> _stokSaldo(int produkId) async {
+    final Database d = await db;
+    final List<Map<String, Object?>> baris = await d.query(
+      'stok',
+      where: 'id_sales = ? AND produk_id = ?',
+      whereArgs: <Object?>[idSales, produkId],
+      limit: 1,
+    );
+
+    if (baris.isEmpty) return <String, dynamic>{'pack': 0, 'batang': 0};
+
+    return <String, dynamic>{
+      'pack': _bulat(baris.first['pack']),
+      'batang': _bulat(baris.first['batang']),
+    };
+  }
+
+  /// Mengubah saldo stok sekaligus mencatat riwayatnya.
+  Future<Map<String, dynamic>> _stokUbah({
+    required DatabaseExecutor d,
+    required int produkId,
+    required String namaProduk,
+    required String jenis,
+    required int deltaPack,
+    required int deltaBatang,
+    String keterangan = '',
+    String refTipe = '',
+    int refId = 0,
+  }) async {
+    final Map<String, dynamic> saldo = await _stokSaldo(produkId);
+
+    final int packBaru = _bulat(saldo['pack']) + deltaPack;
+    final int batangBaru = _bulat(saldo['batang']) + deltaBatang;
+
+    if (packBaru < 0 || batangBaru < 0) {
+      throw RtsKasirGalat(
+        'Stok $namaProduk tidak mencukupi. Sisa '
+        '${_stokTeks(_bulat(saldo['pack']), _bulat(saldo['batang']))}.',
+      );
+    }
+
+    await d.insert(
+      'stok',
+      <String, Object?>{
+        'id_sales': idSales,
+        'produk_id': produkId,
+        'pack': packBaru,
+        'batang': batangBaru,
+        'diubah': _waktu(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    await d.insert('stok_gerak', <String, Object?>{
+      'tanggal': _waktu(),
+      'id_sales': idSales,
+      'nama_sales': namaSales,
+      'produk_id': produkId,
+      'nama_produk': namaProduk,
+      'jenis': jenis.toUpperCase(),
+      'pack_delta': deltaPack,
+      'batang_delta': deltaBatang,
+      'saldo_pack': packBaru,
+      'saldo_batang': batangBaru,
+      'keterangan': keterangan,
+      'ref_tipe': refTipe.toUpperCase(),
+      'ref_id': refId,
+    });
+
+    return <String, dynamic>{'pack': packBaru, 'batang': batangBaru};
+  }
+
+  Future<Map<String, dynamic>> _stokDaftar(String cari, bool hanyaAda) async {
+    final Database d = await db;
+
+    String where = 'p.aktif = 1';
+    final List<Object?> args = <Object?>[idSales];
+
+    if (cari.isNotEmpty) {
+      where += ' AND (p.nama LIKE ? OR p.merek LIKE ? OR p.barcode_pack = ? OR p.barcode_batang = ?)';
+      final String mirip = '%$cari%';
+      args.addAll(<Object?>[mirip, mirip, cari, cari]);
+    }
+
+    if (hanyaAda) {
+      where += ' AND (COALESCE(s.pack, 0) > 0 OR COALESCE(s.batang, 0) > 0)';
+    }
+
+    final List<Map<String, Object?>> baris = await d.rawQuery(
+      'SELECT p.*, s.pack AS stok_pack, s.batang AS stok_batang '
+      'FROM produk p LEFT JOIN stok s ON s.produk_id = p.id AND s.id_sales = ? '
+      'WHERE $where ORDER BY p.nama ASC LIMIT 300',
+      args,
+    );
+
+    int totalPack = 0;
+    int totalBatang = 0;
+    double nilai = 0;
+
+    final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
+
+    for (final Map<String, Object?> b in baris) {
+      final Map<String, dynamic> produk = _produkBentuk(b);
+
+      final int pack = _bulat(b['stok_pack']);
+      final int batang = _bulat(b['stok_batang']);
+
+      totalPack += pack;
+      totalBatang += batang;
+
+      final double nilaiSatu =
+          pack * _angka(produk['harga_pack']) + batang * _angka(produk['harga_batang']);
+
+      nilai += nilaiSatu;
+
+      produk['stok_pack'] = pack;
+      produk['stok_batang'] = batang;
+      produk['stok_total_batang'] = pack * _bulat(produk['isi_per_pack']) + batang;
+      produk['stok_teks'] = _stokTeks(pack, batang);
+      produk['nilai'] = nilaiSatu;
+      produk['nilai_teks'] = _uang(nilaiSatu);
+
+      items.add(produk);
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': '${items.length} produk pada daftar barang bawaan.',
+      'items': items,
+      'jumlah': items.length,
+      'total_pack': totalPack,
+      'total_batang': totalBatang,
+      'nilai': nilai,
+      'nilai_teks': _uang(nilai),
+      'lokal': true,
+    };
+  }
+
+  Future<Map<String, dynamic>> _stokGerak(Map<String, dynamic> data) async {
+    final int produkId = _bulat(data['produk_id']);
+    final String jenis = _teks(data['jenis'], 12).toUpperCase();
+    final int pack = _bulat(data['pack']);
+    final int batang = _bulat(data['batang']);
+    String keterangan = _teks(data['keterangan'], 255);
+
+    if (!<String>['MASUK', 'RUSAK', 'KEMBALI', 'KOREKSI', 'OPNAME'].contains(jenis)) {
+      throw RtsKasirGalat('Jenis perubahan stok tidak dikenal.');
+    }
+
+    final Map<String, dynamic>? produk = await _produkAmbil(produkId);
+
+    if (produk == null) {
+      throw RtsKasirGalat('Produk tidak ditemukan.');
+    }
+
+    if (pack == 0 && batang == 0 && jenis != 'OPNAME') {
+      throw RtsKasirGalat('Jumlah pack atau batang belum diisi.');
+    }
+
+    final Database d = await db;
+
+    int dPack = pack;
+    int dBatang = batang;
+
+    if (jenis == 'RUSAK' || jenis == 'KEMBALI') {
+      dPack = -pack.abs();
+      dBatang = -batang.abs();
+    }
+
+    if (jenis == 'OPNAME') {
+      final Map<String, dynamic> saldo = await _stokSaldo(produkId);
+
+      dPack = pack - _bulat(saldo['pack']);
+      dBatang = batang - _bulat(saldo['batang']);
+
+      if (keterangan.isEmpty) keterangan = 'Penyesuaian hasil hitung fisik';
+    }
+
+    final Map<String, dynamic> baru = await _stokUbah(
+      d: d,
+      produkId: produkId,
+      namaProduk: '${produk['nama']}',
+      jenis: jenis,
+      deltaPack: dPack,
+      deltaBatang: dBatang,
+      keterangan: keterangan,
+      refTipe: 'STOK',
+    );
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Stok ${produk['nama']} sekarang '
+          '${_stokTeks(_bulat(baru['pack']), _bulat(baru['batang']))}.',
+      'nama_produk': produk['nama'],
+      'stok_pack': baru['pack'],
+      'stok_batang': baru['batang'],
+      'stok_teks': _stokTeks(_bulat(baru['pack']), _bulat(baru['batang'])),
+    };
+  }
+
+  Future<List<Map<String, dynamic>>> _stokRiwayat(int produkId) async {
+    final Database d = await db;
+
+    final List<Map<String, Object?>> baris = produkId > 0
+        ? await d.query(
+            'stok_gerak',
+            where: 'id_sales = ? AND produk_id = ?',
+            whereArgs: <Object?>[idSales, produkId],
+            orderBy: 'id DESC',
+            limit: 300,
+          )
+        : await d.query(
+            'stok_gerak',
+            where: 'id_sales = ?',
+            whereArgs: <Object?>[idSales],
+            orderBy: 'id DESC',
+            limit: 300,
+          );
+
+    final List<Map<String, dynamic>> hasil = <Map<String, dynamic>>[];
+
+    for (final Map<String, Object?> b in baris) {
+      final int pack = _bulat(b['pack_delta']);
+      final int batang = _bulat(b['batang_delta']);
+
+      final List<String> ubah = <String>[];
+
+      if (pack != 0) ubah.add('${pack > 0 ? '+' : ''}$pack pack');
+      if (batang != 0) ubah.add('${batang > 0 ? '+' : ''}$batang batang');
+
+      hasil.add(<String, dynamic>{
+        'id': _bulat(b['id']),
+        'tanggal': '${b['tanggal'] ?? ''}',
+        'jenis': '${b['jenis'] ?? ''}',
+        'nama_produk': '${b['nama_produk'] ?? ''}',
+        'perubahan': ubah.isEmpty ? 'tetap' : ubah.join(' '),
+        'saldo': _stokTeks(_bulat(b['saldo_pack']), _bulat(b['saldo_batang'])),
+        'keterangan': '${b['keterangan'] ?? ''}',
+      });
+    }
+
+    return hasil;
+  }
+
+  /* ------------------------------------------------------------------ kasir */
+
+  Future<Map<String, dynamic>> _kasirSimpan(Map<String, dynamic> data) async {
+    final List<dynamic> masukan =
+        (data['items'] is List) ? data['items'] as List<dynamic> : <dynamic>[];
+
+    if (masukan.isEmpty) {
+      throw RtsKasirGalat('Belum ada barang yang dimasukkan ke nota.');
+    }
+
+    String metode = _teks(data['metode'], 10).toUpperCase();
+
+    if (!<String>['CASH', 'UTANG', 'TITIP'].contains(metode)) {
+      metode = 'CASH';
+    }
+
+    double total = 0;
+
+    final List<Map<String, dynamic>> baris = <Map<String, dynamic>>[];
+
+    for (final dynamic item in masukan) {
+      if (item is! Map) continue;
+
+      final Map<String, dynamic> isi = item.cast<String, dynamic>();
+      final int produkId = _bulat(isi['produk_id']);
+
+      final Map<String, dynamic>? produk = await _produkAmbil(produkId);
+
+      if (produk == null) {
+        throw RtsKasirGalat('Ada barang yang tidak ada pada daftar produk.');
+      }
+
+      final int pack = _bulat(isi['pack']);
+      final int batang = _bulat(isi['batang']);
+
+      if (pack < 0 || batang < 0) {
+        throw RtsKasirGalat('Jumlah tidak boleh negatif.');
+      }
+
+      if (pack == 0 && batang == 0) continue;
+
+      if (batang > 0 && _bulat(produk['isi_per_pack']) <= 0) {
+        throw RtsKasirGalat(
+          'Produk "${produk['nama']}" tidak dijual per batang (isi per pack belum diisi).',
+        );
+      }
+
+      final double hargaPack = _angka(isi['harga_pack']) > 0
+          ? _angka(isi['harga_pack'])
+          : _angka(produk['harga_pack']);
+
+      final double hargaBatang = _angka(isi['harga_batang']) > 0
+          ? _angka(isi['harga_batang'])
+          : _angka(produk['harga_batang']);
+
+      final double subtotal = pack * hargaPack + batang * hargaBatang;
+
+      total += subtotal;
+
+      baris.add(<String, dynamic>{
+        'produk_id': produkId,
+        'nama_produk': produk['nama'],
+        'satuan': pack > 0 ? 'PACK' : 'BATANG',
+        'isi_per_pack': _bulat(produk['isi_per_pack']),
+        'pack': pack,
+        'batang': batang,
+        'harga_satuan': pack > 0 ? hargaPack : hargaBatang,
+        'subtotal': subtotal,
+      });
+    }
+
+    if (baris.isEmpty) {
+      throw RtsKasirGalat('Belum ada barang yang sah pada nota.');
+    }
+
+    if (total <= 0) {
+      throw RtsKasirGalat('Total nota masih nol. Periksa harga barang.');
+    }
+
+    double bayar = _angka(data['bayar']);
+    double kembali = 0;
+    String status = 'LUNAS';
+
+    if (metode == 'CASH') {
+      if (bayar <= 0) bayar = total;
+
+      if (bayar + 0.01 < total) {
+        throw RtsKasirGalat(
+          'Uang diterima Rp ${_uang(bayar)} kurang dari total Rp ${_uang(total)}.',
+        );
+      }
+
+      kembali = bayar - total;
+    } else {
+      bayar = 0;
+      status = 'BELUM';
+    }
+
+    final Database d = await db;
+
+    String nomorNota = '';
+    int notaId = 0;
+    Map<String, dynamic>? piutang;
+
+    await d.transaction((Transaction txn) async {
+      nomorNota = await _nomor(txn, 'KS');
+
+      final int jumlahItem = baris.fold<int>(
+        0,
+        (int a, Map<String, dynamic> b) =>
+            a + ((_bulat(b['pack']) > 0 ? 1 : 0) + (_bulat(b['batang']) > 0 ? 1 : 0)),
+      );
+
+      notaId = await txn.insert('penjualan', <String, Object?>{
+        'nomor': nomorNota,
+        'tanggal': _waktu(),
+        'id_sales': idSales,
+        'nama_sales': namaSales,
+        'district': _teks(pengguna['sales_district'], 60),
+        'jenis_customer': _teks(data['jenis_customer'], 20).isEmpty
+            ? 'REGULER'
+            : _teks(data['jenis_customer'], 20).toUpperCase(),
+        'customer_id': _teks(data['customer_id'], 40),
+        'nama_customer': _teks(data['nama_customer'], 150),
+        'hp_customer': _teks(data['hp_customer'], 30),
+        'alamat_customer': _teks(data['alamat_customer'], 255),
+        'metode': metode,
+        'total': total,
+        'bayar': bayar,
+        'kembali': kembali,
+        'status': status,
+        'jumlah_item': jumlahItem,
+        'catatan': _teks(data['catatan'], 255),
+        'dibatalkan': 0,
+      });
+
+      for (final Map<String, dynamic> b in baris) {
+        await txn.insert('penjualan_item', <String, Object?>{
+          'penjualan_id': notaId,
+          'produk_id': b['produk_id'],
+          'nama_produk': b['nama_produk'],
+          'satuan': b['satuan'],
+          'isi_per_pack': b['isi_per_pack'],
+          'pack': b['pack'],
+          'batang': b['batang'],
+          'harga_satuan': b['harga_satuan'],
+          'subtotal': b['subtotal'],
+        });
+      }
+
+      // Stok berkurang. Satu produk dihitung sekali saja walau ada dua baris
+      // (pack dan batang).
+      final Map<int, List<int>> perProduk = <int, List<int>>{};
+
+      for (final Map<String, dynamic> b in baris) {
+        final int pid = _bulat(b['produk_id']);
+
+        perProduk.putIfAbsent(pid, () => <int>[0, 0, _bulat(b['isi_per_pack'])]);
+
+        perProduk[pid]![0] += _bulat(b['pack']);
+        perProduk[pid]![1] += _bulat(b['batang']);
+      }
+
+      for (final MapEntry<int, List<int>> masuk in perProduk.entries) {
+        final int pid = masuk.key;
+        final int butuhPack = masuk.value[0];
+        final int butuhBatang = masuk.value[1];
+        final int isi = masuk.value[2];
+
+        final Map<String, dynamic>? produk = await _produkAmbil(pid);
+        final String namaProduk = produk == null ? 'Produk' : '${produk['nama']}';
+
+        final Map<String, dynamic> saldo = await _stokSaldo(pid);
+
+        final int sisaPack = _bulat(saldo['pack']) - butuhPack;
+
+        if (sisaPack < 0) {
+          throw RtsKasirGalat(
+            'Stok $namaProduk kurang. Sisa ${_bulat(saldo['pack'])} pack, '
+            'dibutuhkan $butuhPack pack.',
+          );
+        }
+
+        int bukaPack = 0;
+
+        if (butuhBatang > _bulat(saldo['batang'])) {
+          if (isi <= 0) {
+            throw RtsKasirGalat('Produk $namaProduk tidak dijual per batang.');
+          }
+
+          final int kurang = butuhBatang - _bulat(saldo['batang']);
+          bukaPack = (kurang / isi).ceil();
+
+          if (bukaPack > sisaPack) {
+            throw RtsKasirGalat(
+              'Stok $namaProduk kurang. Sisa ${_bulat(saldo['pack'])} pack dan '
+              '${_bulat(saldo['batang'])} batang, dibutuhkan $butuhPack pack dan '
+              '$butuhBatang batang.',
+            );
+          }
+        }
+
+        String keterangan = 'Terjual pada nota $nomorNota';
+
+        if (bukaPack > 0) {
+          keterangan += ' (membuka $bukaPack pack menjadi ${bukaPack * isi} batang)';
+        }
+
+        await _stokUbah(
+          d: txn,
+          produkId: pid,
+          namaProduk: namaProduk,
+          jenis: 'JUAL',
+          deltaPack: -butuhPack - bukaPack,
+          deltaBatang: bukaPack * isi - butuhBatang,
+          keterangan: keterangan,
+          refTipe: 'KASIR',
+          refId: notaId,
+        );
+      }
+
+      // Piutang untuk UTANG dan TITIP.
+      if (metode != 'CASH') {
+        final List<String> rincian = <String>[];
+
+        for (final Map<String, dynamic> b in baris) {
+          final List<String> bagian = <String>[];
+
+          if (_bulat(b['pack']) > 0) bagian.add('${_bulat(b['pack'])} pack');
+          if (_bulat(b['batang']) > 0) bagian.add('${_bulat(b['batang'])} batang');
+
+          rincian.add('${bagian.join(' + ')} ${b['nama_produk']}');
+        }
+
+        final String nomorPiutang = await _nomor(txn, 'PT');
+
+        String tempo = _teks(data['jatuh_tempo'], 20);
+
+        if (tempo.isEmpty) {
+          tempo = DateTime.now()
+              .add(Duration(days: metode == 'UTANG' ? 7 : 30))
+              .toIso8601String()
+              .substring(0, 10);
+        }
+
+        final int piutangId = await txn.insert('piutang', <String, Object?>{
+          'nomor': nomorPiutang,
+          'jenis': metode,
+          'penjualan_id': notaId,
+          'tanggal': _waktu(),
+          'jatuh_tempo': tempo,
+          'id_sales': idSales,
+          'nama_sales': namaSales,
+          'customer_id': _teks(data['customer_id'], 40),
+          'nama_customer': _teks(data['nama_customer'], 150),
+          'hp_customer': _teks(data['hp_customer'], 30),
+          'total': total,
+          'dibayar': 0,
+          'sisa': total,
+          'status': 'BELUM',
+          'rincian': rincian.join(', '),
+          'catatan': _teks(data['catatan'], 255),
+          'diperbarui': _waktu(),
+        });
+
+        piutang = <String, dynamic>{
+          'id': piutangId,
+          'nomor': nomorPiutang,
+          'jenis': metode,
+          'jatuh_tempo': tempo,
+          'sisa': total,
+        };
+      }
+    });
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Nota $nomorNota tersimpan di HP.',
+      'id': notaId,
+      'nomor': nomorNota,
+      'total': total,
+      'total_teks': _uang(total),
+      'bayar': bayar,
+      'kembali': kembali,
+      'kembali_teks': _uang(kembali),
+      'metode': metode,
+      'status': status,
+      'piutang': piutang,
+      'nota': await _kasirAmbil(notaId),
+    };
+  }
+
+  Future<Map<String, dynamic>?> _kasirAmbil(int id) async {
+    if (id <= 0) return null;
+
+    final Database d = await db;
+    final List<Map<String, Object?>> baris =
+        await d.query('penjualan', where: 'id = ?', whereArgs: <Object?>[id], limit: 1);
+
+    if (baris.isEmpty) return null;
+
+    final Map<String, Object?> n = baris.first;
+
+    final List<Map<String, Object?>> itemBaris = await d.query(
+      'penjualan_item',
+      where: 'penjualan_id = ?',
+      whereArgs: <Object?>[id],
+      orderBy: 'id ASC',
+    );
+
+    final List<Map<String, dynamic>> items = itemBaris
+        .map((Map<String, Object?> b) => <String, dynamic>{
+              'produk_id': _bulat(b['produk_id']),
+              'nama_produk': '${b['nama_produk'] ?? ''}',
+              'satuan': '${b['satuan'] ?? 'PACK'}',
+              'isi_per_pack': _bulat(b['isi_per_pack']),
+              'pack': _bulat(b['pack']),
+              'batang': _bulat(b['batang']),
+              'harga_satuan': _angka(b['harga_satuan']),
+              'harga_satuan_teks': _uang(b['harga_satuan']),
+              'subtotal': _angka(b['subtotal']),
+              'subtotal_teks': _uang(b['subtotal']),
+            })
+        .toList();
+
+    Map<String, dynamic>? piutang;
+
+    final List<Map<String, Object?>> piutangBaris = await d.query(
+      'piutang',
+      where: 'penjualan_id = ?',
+      whereArgs: <Object?>[id],
+      limit: 1,
+    );
+
+    if (piutangBaris.isNotEmpty) {
+      final Map<String, Object?> p = piutangBaris.first;
+
+      piutang = <String, dynamic>{
+        'id': _bulat(p['id']),
+        'nomor': '${p['nomor'] ?? ''}',
+        'jenis': '${p['jenis'] ?? ''}',
+        'jatuh_tempo': '${p['jatuh_tempo'] ?? ''}',
+        'total': _angka(p['total']),
+        'dibayar': _angka(p['dibayar']),
+        'sisa': _angka(p['sisa']),
+        'status': '${p['status'] ?? ''}',
+      };
+    }
+
+    return <String, dynamic>{
+      'id': _bulat(n['id']),
+      'nomor': '${n['nomor'] ?? ''}',
+      'tanggal': '${n['tanggal'] ?? ''}',
+      'id_sales': '${n['id_sales'] ?? ''}',
+      'nama_sales': '${n['nama_sales'] ?? ''}',
+      'district': '${n['district'] ?? ''}',
+      'jenis_customer': '${n['jenis_customer'] ?? ''}',
+      'customer_id': '${n['customer_id'] ?? ''}',
+      'nama_customer': '${n['nama_customer'] ?? ''}',
+      'hp_customer': '${n['hp_customer'] ?? ''}',
+      'alamat_customer': '${n['alamat_customer'] ?? ''}',
+      'metode': '${n['metode'] ?? ''}',
+      'total': _angka(n['total']),
+      'total_teks': _uang(n['total']),
+      'bayar': _angka(n['bayar']),
+      'bayar_teks': _uang(n['bayar']),
+      'kembali': _angka(n['kembali']),
+      'kembali_teks': _uang(n['kembali']),
+      'status': '${n['status'] ?? ''}',
+      'catatan': '${n['catatan'] ?? ''}',
+      'dicetak': _bulat(n['dicetak']),
+      'dibatalkan': _bulat(n['dibatalkan']) == 1,
+      'items': items,
+      'piutang': piutang,
+    };
+  }
+
+  Future<Map<String, dynamic>> _kasirDaftar(String cari, int batas) async {
+    final Database d = await db;
+
+    final int jumlah = batas < 1 ? 60 : (batas > 500 ? 500 : batas);
+
+    String where = 'id_sales = ?';
+    final List<Object?> args = <Object?>[idSales];
+
+    if (cari.isNotEmpty) {
+      where += ' AND (nomor LIKE ? OR nama_customer LIKE ? OR customer_id = ?)';
+      final String mirip = '%$cari%';
+      args.addAll(<Object?>[mirip, mirip, cari]);
+    }
+
+    final List<Map<String, Object?>> baris = await d.query(
+      'penjualan',
+      where: where,
+      whereArgs: args,
+      orderBy: 'id DESC',
+      limit: jumlah,
+    );
+
+    final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
+    double total = 0;
+    double cash = 0;
+
+    for (final Map<String, Object?> n in baris) {
+      final double nilai = _angka(n['total']);
+      final bool batal = _bulat(n['dibatalkan']) == 1;
+
+      total += nilai;
+
+      if ('${n['metode']}'.toUpperCase() == 'CASH' && !batal) {
+        cash += nilai;
+      }
+
+      items.add(<String, dynamic>{
+        'id': _bulat(n['id']),
+        'nomor': '${n['nomor'] ?? ''}',
+        'tanggal': '${n['tanggal'] ?? ''}',
+        'nama_customer': '${n['nama_customer'] ?? ''}',
+        'customer_id': '${n['customer_id'] ?? ''}',
+        'metode': '${n['metode'] ?? ''}',
+        'total': nilai,
+        'total_teks': _uang(nilai),
+        'status': '${n['status'] ?? ''}',
+        'dibatalkan': batal,
+        'jumlah_item': _bulat(n['jumlah_item']),
+        'nama_sales': '${n['nama_sales'] ?? ''}',
+        'dicetak': _bulat(n['dicetak']),
+      });
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': '${items.length} nota tersimpan di HP.',
+      'items': items,
+      'jumlah': items.length,
+      'total': total,
+      'total_teks': _uang(total),
+      'cash': cash,
+      'cash_teks': _uang(cash),
+    };
+  }
+
+  Future<Map<String, dynamic>> _kasirBatal(int id, String alasan) async {
+    final Map<String, dynamic>? nota = await _kasirAmbil(id);
+
+    if (nota == null) {
+      throw RtsKasirGalat('Nota tidak ditemukan.');
+    }
+
+    if (nota['dibatalkan'] == true) {
+      throw RtsKasirGalat('Nota ini sudah dibatalkan sebelumnya.');
+    }
+
+    final Map<String, dynamic>? piutang =
+        (nota['piutang'] is Map) ? (nota['piutang'] as Map).cast<String, dynamic>() : null;
+
+    if (piutang != null && _angka(piutang['dibayar']) > 0) {
+      throw RtsKasirGalat(
+        'Nota ini sudah ada pembayaran piutangnya. Hapus pembayaran lebih dahulu.',
+      );
+    }
+
+    final Database d = await db;
+
+    await d.transaction((Transaction txn) async {
+      final List<dynamic> items =
+          (nota['items'] is List) ? nota['items'] as List<dynamic> : <dynamic>[];
+
+      for (final dynamic item in items) {
+        if (item is! Map) continue;
+
+        final Map<String, dynamic> b = item.cast<String, dynamic>();
+        final int pid = _bulat(b['produk_id']);
+
+        await _stokUbah(
+          d: txn,
+          produkId: pid,
+          namaProduk: '${b['nama_produk']}',
+          jenis: 'BATAL',
+          deltaPack: _bulat(b['pack']),
+          deltaBatang: _bulat(b['batang']),
+          keterangan: alasan.isEmpty
+              ? 'Pembatalan nota ${nota['nomor']}'
+              : 'Pembatalan nota ${nota['nomor']} - $alasan',
+          refTipe: 'KASIR',
+          refId: id,
+        );
+      }
+
+      await txn.update(
+        'penjualan',
+        <String, Object?>{
+          'dibatalkan': 1,
+          'batal_alasan': alasan,
+          'batal_pada': _waktu(),
+        },
+        where: 'id = ?',
+        whereArgs: <Object?>[id],
+      );
+
+      await txn.update(
+        'piutang',
+        <String, Object?>{'status': 'BATAL', 'diperbarui': _waktu()},
+        where: 'penjualan_id = ?',
+        whereArgs: <Object?>[id],
+      );
+    });
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Nota ${nota['nomor']} dibatalkan dan stok dikembalikan.',
+    };
+  }
+
+  /* ---------------------------------------------------------------- piutang */
+
+  Future<Map<String, dynamic>> _piutangDaftar(
+    String jenis,
+    String status,
+    String cari,
+  ) async {
+    final Database d = await db;
+
+    String where = 'id_sales = ?';
+    final List<Object?> args = <Object?>[idSales];
+
+    if (jenis.isNotEmpty) {
+      where += ' AND jenis = ?';
+      args.add(jenis.toUpperCase());
+    }
+
+    if (status.isNotEmpty) {
+      where += ' AND status = ?';
+      args.add(status.toUpperCase());
+    }
+
+    if (cari.isNotEmpty) {
+      where += ' AND (nomor LIKE ? OR nama_customer LIKE ? OR customer_id = ?)';
+      final String mirip = '%$cari%';
+      args.addAll(<Object?>[mirip, mirip, cari]);
+    }
+
+    final List<Map<String, Object?>> baris = await d.query(
+      'piutang',
+      where: where,
+      whereArgs: args,
+      orderBy: "CASE status WHEN 'LUNAS' THEN 1 ELSE 0 END ASC, id DESC",
+      limit: 300,
+    );
+
+    final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
+    double belum = 0;
+    double dibayar = 0;
+
+    for (final Map<String, Object?> p in baris) {
+      final double sisa = _angka(p['sisa']);
+      final double sudah = _angka(p['dibayar']);
+      final String st = '${p['status'] ?? ''}';
+
+      if (st != 'LUNAS' && st != 'BATAL') belum += sisa;
+
+      dibayar += sudah;
+
+      final String tempo = '${p['jatuh_tempo'] ?? ''}';
+      final bool terlambat = tempo.isNotEmpty &&
+          st != 'LUNAS' &&
+          st != 'BATAL' &&
+          (DateTime.tryParse(tempo)?.isBefore(DateTime.now()) ?? false);
+
+      items.add(<String, dynamic>{
+        'id': _bulat(p['id']),
+        'nomor': '${p['nomor'] ?? ''}',
+        'jenis': '${p['jenis'] ?? ''}',
+        'tanggal': '${p['tanggal'] ?? ''}',
+        'jatuh_tempo': tempo,
+        'nama_customer': '${p['nama_customer'] ?? ''}',
+        'customer_id': '${p['customer_id'] ?? ''}',
+        'hp_customer': '${p['hp_customer'] ?? ''}',
+        'nama_sales': '${p['nama_sales'] ?? ''}',
+        'total': _angka(p['total']),
+        'total_teks': _uang(p['total']),
+        'dibayar': sudah,
+        'dibayar_teks': _uang(sudah),
+        'sisa': sisa,
+        'sisa_teks': _uang(sisa),
+        'status': st,
+        'rincian': '${p['rincian'] ?? ''}',
+        'terlambat': terlambat,
+      });
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': '${items.length} piutang tersimpan di HP.',
+      'items': items,
+      'jumlah': items.length,
+      'belum': belum,
+      'belum_teks': _uang(belum),
+      'dibayar': dibayar,
+      'dibayar_teks': _uang(dibayar),
+      'lokal': true,
+    };
+  }
+
+  Future<Map<String, dynamic>?> _piutangAmbil(int id) async {
+    if (id <= 0) return null;
+
+    final Database d = await db;
+    final List<Map<String, Object?>> baris =
+        await d.query('piutang', where: 'id = ?', whereArgs: <Object?>[id], limit: 1);
+
+    if (baris.isEmpty) return null;
+
+    final Map<String, Object?> p = baris.first;
+
+    final List<Map<String, Object?>> bayarBaris = await d.query(
+      'piutang_bayar',
+      where: 'piutang_id = ?',
+      whereArgs: <Object?>[id],
+      orderBy: 'id ASC',
+    );
+
+    final List<Map<String, dynamic>> pembayaran = bayarBaris
+        .map((Map<String, Object?> b) => <String, dynamic>{
+              'id': _bulat(b['id']),
+              'tanggal': '${b['tanggal'] ?? ''}',
+              'jumlah': _angka(b['jumlah']),
+              'jumlah_teks': _uang(b['jumlah']),
+              'metode': '${b['metode'] ?? ''}',
+              'catatan': '${b['catatan'] ?? ''}',
+              'sisa_sesudah_teks': _uang(b['sisa_sesudah']),
+            })
+        .toList();
+
+    return <String, dynamic>{
+      'id': _bulat(p['id']),
+      'nomor': '${p['nomor'] ?? ''}',
+      'jenis': '${p['jenis'] ?? ''}',
+      'penjualan_id': _bulat(p['penjualan_id']),
+      'tanggal': '${p['tanggal'] ?? ''}',
+      'jatuh_tempo': '${p['jatuh_tempo'] ?? ''}',
+      'nama_customer': '${p['nama_customer'] ?? ''}',
+      'customer_id': '${p['customer_id'] ?? ''}',
+      'hp_customer': '${p['hp_customer'] ?? ''}',
+      'nama_sales': '${p['nama_sales'] ?? ''}',
+      'total': _angka(p['total']),
+      'total_teks': _uang(p['total']),
+      'dibayar': _angka(p['dibayar']),
+      'dibayar_teks': _uang(p['dibayar']),
+      'sisa': _angka(p['sisa']),
+      'sisa_teks': _uang(p['sisa']),
+      'status': '${p['status'] ?? ''}',
+      'rincian': '${p['rincian'] ?? ''}',
+      'catatan': '${p['catatan'] ?? ''}',
+      'pembayaran': pembayaran,
+    };
+  }
+
+  Future<Map<String, dynamic>> _piutangBayar(Map<String, dynamic> data) async {
+    final int id = _bulat(data['id']);
+    final Map<String, dynamic>? piutang = await _piutangAmbil(id);
+
+    if (piutang == null) {
+      throw RtsKasirGalat('Piutang tidak ditemukan.');
+    }
+
+    final String status = '${piutang['status']}';
+
+    if (status == 'LUNAS' || status == 'BATAL') {
+      throw RtsKasirGalat('Piutang ini sudah ${status.toLowerCase()}.');
+    }
+
+    final double nilai = _angka(data['jumlah']);
+
+    if (nilai <= 0) {
+      throw RtsKasirGalat('Jumlah pembayaran belum diisi.');
+    }
+
+    final double sisa = _angka(piutang['sisa']);
+
+    if (nilai > sisa + 0.01) {
+      throw RtsKasirGalat(
+        'Jumlah melebihi sisa piutang Rp ${_uang(sisa)}.',
+      );
+    }
+
+    String metode = _teks(data['metode'], 12).toUpperCase();
+
+    if (!<String>['CASH', 'TRANSFER', 'QRIS'].contains(metode)) {
+      metode = 'CASH';
+    }
+
+    final double dibayarBaru = _angka(piutang['dibayar']) + nilai;
+    double sisaBaru = _angka(piutang['total']) - dibayarBaru;
+
+    if (sisaBaru < 0) sisaBaru = 0;
+
+    final String statusBaru = sisaBaru <= 0.01
+        ? 'LUNAS'
+        : (dibayarBaru > 0 ? 'SEBAGIAN' : 'BELUM');
+
+    final Database d = await db;
+
+    await d.transaction((Transaction txn) async {
+      await txn.insert('piutang_bayar', <String, Object?>{
+        'piutang_id': id,
+        'tanggal': _waktu(),
+        'jumlah': nilai,
+        'metode': metode,
+        'catatan': _teks(data['catatan'], 255),
+        'sisa_sesudah': sisaBaru,
+      });
+
+      await txn.update(
+        'piutang',
+        <String, Object?>{
+          'dibayar': dibayarBaru,
+          'sisa': sisaBaru,
+          'status': statusBaru,
+          'diperbarui': _waktu(),
+        },
+        where: 'id = ?',
+        whereArgs: <Object?>[id],
+      );
+
+      final int notaId = _bulat(piutang['penjualan_id']);
+
+      if (notaId > 0) {
+        await txn.update(
+          'penjualan',
+          <String, Object?>{'status': statusBaru == 'LUNAS' ? 'LUNAS' : statusBaru},
+          where: 'id = ?',
+          whereArgs: <Object?>[notaId],
+        );
+      }
+    });
+
+    return <String, dynamic>{
+      'success': true,
+      'message': statusBaru == 'LUNAS'
+          ? 'Piutang ${piutang['nomor']} LUNAS.'
+          : 'Pembayaran Rp ${_uang(nilai)} tersimpan. Sisa Rp ${_uang(sisaBaru)}.',
+      'sisa': sisaBaru,
+      'sisa_teks': _uang(sisaBaru),
+      'status': statusBaru,
+      'piutang': await _piutangAmbil(id),
+    };
+  }
+
+  /* ------------------------------------------------------------------ struk */
+
+  Map<String, dynamic> _strukBawaan() {
+    return <String, dynamic>{
+      'judul': 'RTS PANEL',
+      'baris1': 'PT. Wismilak Inti Makmur',
+      'baris2': '',
+      'baris3': '',
+      'footer1': 'Terima kasih',
+      'footer2': 'Barang yang sudah dibeli',
+      'footer3': 'tidak dapat ditukar',
+      'lebar_kertas': 58,
+      'ukuran_huruf': 'SEDANG',
+      'garis': '-',
+      'jumlah_salinan': 1,
+      'tampilkan_barcode': 1,
+      'tampilkan_hp': 1,
+      'tampilkan_ttd': 0,
+      'tampilkan_metode': 1,
+    };
+  }
+
+  Future<Map<String, dynamic>> _strukBaca() async {
+    final Database d = await db;
+    final List<Map<String, Object?>> baris = await d.query(
+      'struk',
+      where: 'id_sales = ?',
+      whereArgs: <Object?>[idSales],
+      limit: 1,
+    );
+
+    final Map<String, dynamic> bawaan = _strukBawaan();
+
+    if (baris.isEmpty) {
+      bawaan['ada'] = false;
+
+      return bawaan;
+    }
+
+    final Map<String, Object?> s = baris.first;
+
+    for (final String kunci in bawaan.keys.toList()) {
+      if (s.containsKey(kunci) && s[kunci] != null) {
+        bawaan[kunci] = s[kunci];
+      }
+    }
+
+    bawaan['ada'] = true;
+
+    return bawaan;
+  }
+
+  Future<Map<String, dynamic>> _strukSimpan(Map<String, dynamic> data) async {
+    final Map<String, dynamic> bawaan = _strukBawaan();
+
+    final Map<String, Object?> simpan = <String, Object?>{
+      'id_sales': idSales,
+      'diperbarui': _waktu(),
+    };
+
+    for (final String kunci in <String>[
+      'judul',
+      'baris1',
+      'baris2',
+      'baris3',
+      'footer1',
+      'footer2',
+      'footer3',
+    ]) {
+      final int maks = kunci == 'judul' ? 60 : 120;
+
+      simpan[kunci] = data.containsKey(kunci)
+          ? _teks(data[kunci], maks)
+          : '${bawaan[kunci]}';
+    }
+
+    int lebar = data.containsKey('lebar_kertas')
+        ? _bulat(data['lebar_kertas'])
+        : _bulat(bawaan['lebar_kertas']);
+
+    if (lebar < 40 || lebar > 80) lebar = 58;
+
+    int salinan = data.containsKey('jumlah_salinan')
+        ? _bulat(data['jumlah_salinan'])
+        : _bulat(bawaan['jumlah_salinan']);
+
+    if (salinan < 1 || salinan > 3) salinan = 1;
+
+    String huruf = _teks(data['ukuran_huruf'], 10).toUpperCase();
+
+    if (!<String>['KECIL', 'SEDANG', 'BESAR'].contains(huruf)) huruf = 'SEDANG';
+
+    String garis = _teks(data['garis'], 3);
+
+    if (garis.isEmpty) garis = '-';
+
+    simpan['lebar_kertas'] = lebar;
+    simpan['jumlah_salinan'] = salinan;
+    simpan['ukuran_huruf'] = huruf;
+    simpan['garis'] = garis;
+
+    for (final String kunci in <String>[
+      'tampilkan_barcode',
+      'tampilkan_hp',
+      'tampilkan_ttd',
+      'tampilkan_metode',
+    ]) {
+      simpan[kunci] = data.containsKey(kunci)
+          ? (_bulat(data[kunci]) == 1 ? 1 : 0)
+          : _bulat(bawaan[kunci]);
+    }
+
+    final Database d = await db;
+
+    await d.insert('struk', simpan, conflictAlgorithm: ConflictAlgorithm.replace);
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Template struk disimpan di HP.',
+      'struk': await _strukBaca(),
+    };
+  }
+
+  Future<Map<String, dynamic>> _strukContoh() async {
+    final Map<String, dynamic> struk = await _strukBaca();
+    final Map<String, dynamic> stok = await _stokDaftar('', false);
+
+    final List<dynamic> daftar =
+        (stok['items'] is List) ? stok['items'] as List<dynamic> : <dynamic>[];
+
+    final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
+
+    for (final dynamic item in daftar) {
+      if (item is! Map) continue;
+
+      final Map<String, dynamic> p = item.cast<String, dynamic>();
+
+      if (items.length >= 2) break;
+
+      if (_bulat(p['stok_pack']) > 0) {
+        final double harga = _angka(p['harga_pack']);
+
+        items.add(<String, dynamic>{
+          'nama_produk': '${p['nama']}',
+          'satuan': 'PACK',
+          'pack': 2,
+          'batang': 0,
+          'harga_satuan': harga,
+          'subtotal': 2 * harga,
+        });
+      }
+
+      if (_bulat(p['isi_per_pack']) > 0 && _bulat(p['stok_batang']) >= 3) {
+        final double harga = _angka(p['harga_batang']);
+
+        items.add(<String, dynamic>{
+          'nama_produk': '${p['nama']}',
+          'satuan': 'BATANG',
+          'pack': 0,
+          'batang': 3,
+          'harga_satuan': harga,
+          'subtotal': 3 * harga,
+        });
+      }
+    }
+
+    if (items.isEmpty) {
+      items.add(<String, dynamic>{
+        'nama_produk': 'Contoh Produk Rokok 16',
+        'satuan': 'PACK',
+        'pack': 2,
+        'batang': 0,
+        'harga_satuan': 32000,
+        'subtotal': 64000,
+      });
+      items.add(<String, dynamic>{
+        'nama_produk': 'Contoh Produk Rokok 16',
+        'satuan': 'BATANG',
+        'pack': 0,
+        'batang': 3,
+        'harga_satuan': 2200,
+        'subtotal': 6600,
+      });
+    }
+
+    double total = 0;
+
+    for (final Map<String, dynamic> i in items) {
+      total += _angka(i['subtotal']);
+    }
+
+    final double bayar = ((total / 50000).ceil() * 50000).toDouble();
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Contoh nota untuk uji cetak.',
+      'struk': struk,
+      'nota': <String, dynamic>{
+        'nomor': 'KS-CONTOH-0001',
+        'tanggal': _waktu(),
+        'nama_sales': namaSales,
+        'nama_customer': 'TOKO CONTOH UJI CETAK',
+        'customer_id': 'CONTOH',
+        'hp_customer': '',
+        'metode': 'CASH',
+        'status': 'LUNAS',
+        'total': total,
+        'bayar': bayar,
+        'kembali': bayar - total,
+        'items': items,
+        'contoh': true,
+      },
+    };
+  }
+
+  /* -------------------------------------------------------------- ringkasan */
+
+  Future<Map<String, dynamic>> _ringkas(String tanggal) async {
+    final Database d = await db;
+
+    final String hari = tanggal.isEmpty ? _waktu().substring(0, 10) : tanggal;
+
+    final List<Map<String, Object?>> nota = await d.rawQuery(
+      'SELECT COUNT(*) AS jumlah, COALESCE(SUM(total), 0) AS total, '
+      "COALESCE(SUM(CASE WHEN metode = 'CASH' THEN total ELSE 0 END), 0) AS cash "
+      'FROM penjualan WHERE id_sales = ? AND dibatalkan = 0 AND substr(tanggal, 1, 10) = ?',
+      <Object?>[idSales, hari],
+    );
+
+    final List<Map<String, Object?>> piutang = await d.rawQuery(
+      'SELECT COALESCE(SUM(CASE WHEN substr(tanggal, 1, 10) = ? THEN total ELSE 0 END), 0) AS baru, '
+      "COALESCE(SUM(CASE WHEN status IN ('BELUM', 'SEBAGIAN') THEN sisa ELSE 0 END), 0) AS belum "
+      'FROM piutang WHERE id_sales = ?',
+      <Object?>[hari, idSales],
+    );
+
+    final List<Map<String, Object?>> stok = await d.rawQuery(
+      'SELECT COUNT(*) AS jumlah, '
+      'COALESCE(SUM(s.pack * p.harga_pack + s.batang * p.harga_batang), 0) AS nilai '
+      'FROM stok s INNER JOIN produk p ON p.id = s.produk_id '
+      'WHERE s.id_sales = ? AND (s.pack > 0 OR s.batang > 0)',
+      <Object?>[idSales],
+    );
+
+    final Map<String, Object?> n = nota.isEmpty ? <String, Object?>{} : nota.first;
+    final Map<String, Object?> p2 = piutang.isEmpty ? <String, Object?>{} : piutang.first;
+    final Map<String, Object?> s = stok.isEmpty ? <String, Object?>{} : stok.first;
+
+    return <String, dynamic>{
+      'tanggal': hari,
+      'jumlah_nota': _bulat(n['jumlah']),
+      'total_jual': _angka(n['total']),
+      'total_jual_teks': _uang(n['total']),
+      'cash': _angka(n['cash']),
+      'cash_teks': _uang(n['cash']),
+      'piutang_baru': _angka(p2['baru']),
+      'piutang_baru_teks': _uang(p2['baru']),
+      'piutang_belum': _angka(p2['belum']),
+      'piutang_belum_teks': _uang(p2['belum']),
+      'jumlah_produk': _bulat(s['jumlah']),
+      'nilai_stok': _angka(s['nilai']),
+      'nilai_stok_teks': _uang(s['nilai']),
+    };
+  }
+
+  /* ------------------------------------------------------- sinkron & berkas */
+
+  Future<Map<String, dynamic>> _sinkronProduk() async {
+    if (baseUrl.isEmpty || token.isEmpty) {
+      throw RtsKasirGalat('Alamat server belum dikenal. Masuk kembali ke aplikasi.');
+    }
+
+    final Database d = await db;
+
+    int terkirim = 0;
+    int diunduh = 0;
+
+    // 1. Kirim produk yang hanya ada di HP (belum pernah tersimpan di server).
+    final List<Map<String, Object?>> lokal = await d.query(
+      'produk',
+      where: 'id_server = 0',
+      orderBy: 'id ASC',
+      limit: 200,
+    );
+
+    for (final Map<String, Object?> p in lokal) {
+      try {
+        final http.Response jawab = await http
+            .post(
+              Uri.parse('$baseUrl/kasir.php'),
+              headers: <String, String>{
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: jsonEncode(<String, dynamic>{
+                'aksi': 'produk_simpan',
+                'id': 0,
+                'nama': '${p['nama'] ?? ''}',
+                'merek': '${p['merek'] ?? ''}',
+                'barcode_pack': '${p['barcode_pack'] ?? ''}',
+                'barcode_batang': '${p['barcode_batang'] ?? ''}',
+                'isi_per_pack': _bulat(p['isi_per_pack']),
+                'harga_pack': _angka(p['harga_pack']),
+                'harga_batang': _angka(p['harga_batang']),
+                'catatan': '${p['catatan'] ?? ''}',
+              }),
+            )
+            .timeout(const Duration(seconds: 30));
+
+        final dynamic urai = jsonDecode(jawab.body);
+
+        if (urai is Map && urai['success'] == true) {
+          final int idServer = _bulat(urai['id']);
+
+          if (idServer > 0) {
+            await d.update(
+              'produk',
+              <String, Object?>{'id_server': idServer, 'dari_server': 1},
+              where: 'id = ?',
+              whereArgs: <Object?>[p['id']],
+            );
+
+            terkirim++;
+          }
+        }
+      } catch (_) {
+        // satu produk gagal terkirim tidak menghentikan sisanya
+      }
+    }
+
+    // 2. Unduh katalog dari server (nama, barcode, isi, HARGA).
+    try {
+      final Uri uri = Uri.parse('$baseUrl/kasir.php?aksi=katalog');
+      final http.Response jawab = await http.get(
+        uri,
+        headers: <String, String>{
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 45));
+
+      final dynamic urai = jsonDecode(jawab.body);
+
+      if (urai is! Map || urai['success'] != true) {
+        throw RtsKasirGalat('Katalog server tidak dapat dibaca.');
+      }
+
+      final List<dynamic> items =
+          (urai['items'] is List) ? urai['items'] as List<dynamic> : <dynamic>[];
+
+      for (final dynamic item in items) {
+        if (item is! Map) continue;
+
+        final Map<String, dynamic> p = item.cast<String, dynamic>();
+        final int idServer = _bulat(p['id']);
+
+        if (idServer <= 0) continue;
+
+        final List<Map<String, Object?>> sudah = await d.query(
+          'produk',
+          where: 'id_server = ?',
+          whereArgs: <Object?>[idServer],
+          limit: 1,
+        );
+
+        final Map<String, Object?> isi = <String, Object?>{
+          'id_server': idServer,
+          'nama': _teks(p['nama'], 150),
+          'merek': _teks(p['merek'], 80),
+          'barcode_pack': _teks(p['barcode_pack'], 64),
+          'barcode_batang': _teks(p['barcode_batang'], 64),
+          'isi_per_pack': _bulat(p['isi_per_pack']),
+          'harga_pack': _angka(p['harga_pack']),
+          'harga_batang': _angka(p['harga_batang']),
+          'catatan': _teks(p['catatan'], 255),
+          'aktif': p['aktif'] == false ? 0 : 1,
+          'dari_server': 1,
+          'diubah_pada': _teks(p['diubah_pada'], 30),
+        };
+
+        if (sudah.isEmpty) {
+          await d.insert('produk', isi);
+        } else {
+          await d.update('produk', isi,
+              where: 'id = ?', whereArgs: <Object?>[sudah.first['id']]);
+        }
+
+        diunduh++;
+      }
+    } catch (e) {
+      if (terkirim == 0) {
+        throw RtsKasirGalat(
+          'Sinkron gagal: tidak dapat menghubungi server. Periksa internet Anda.',
+        );
+      }
+    }
+
+    await _setelanTulis('sinkron_pada', _waktu());
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Sinkron selesai. $diunduh produk diperbarui dari server, '
+          '$terkirim produk baru dikirim ke server.',
+      'diunduh': diunduh,
+      'terkirim': terkirim,
+    };
+  }
+
+  /// Folder berkas cadangan. Diletakkan pada folder aplikasi di penyimpanan HP
+  /// supaya tidak memerlukan izin tambahan.
+  Future<Directory> _folderCadangan() async {
+    Directory? dasar;
+
+    try {
+      dasar = await getExternalStorageDirectory();
+    } catch (_) {
+      dasar = null;
+    }
+
+    dasar ??= await getApplicationDocumentsDirectory();
+
+    final Directory folder = Directory(p.join(dasar.path, 'cadangan'));
+
+    if (!await folder.exists()) {
+      await folder.create(recursive: true);
+    }
+
+    return folder;
+  }
+
+  Future<Map<String, dynamic>> _cadanganInfo() async {
+    final String sinkron = await _setelanBaca('sinkron_pada', '');
+    final List<Map<String, dynamic>> berkas = <Map<String, dynamic>>[];
+
+    try {
+      final Directory folder = await _folderCadangan();
+
+      final List<FileSystemEntity> isi = await folder.list().toList();
+
+      for (final FileSystemEntity f in isi) {
+        if (f is! File) continue;
+        if (!f.path.toLowerCase().endsWith('.db')) continue;
+
+        final FileStat stat = await f.stat();
+
+        berkas.add(<String, dynamic>{
+          'nama': p.basename(f.path),
+          'ukuran': stat.size,
+          'ukuran_teks': '${(stat.size / 1024).round()} KB',
+          'waktu': '${stat.modified}'.substring(0, 16),
+          'jalur': f.path,
+        });
+      }
+
+      berkas.sort((Map<String, dynamic> a, Map<String, dynamic> b) =>
+          '${b['nama']}'.compareTo('${a['nama']}'));
+    } catch (_) {
+      // daftar kosong
+    }
+
+    final Database d = await db;
+
+    final List<Map<String, Object?>> jual = await d.rawQuery(
+      'SELECT COUNT(*) AS jumlah FROM penjualan WHERE id_sales = ?',
+      <Object?>[idSales],
+    );
+
+    final List<Map<String, Object?>> piut = await d.rawQuery(
+      'SELECT COUNT(*) AS jumlah FROM piutang WHERE id_sales = ?',
+      <Object?>[idSales],
+    );
+
+    final List<Map<String, Object?>> prod =
+        await d.rawQuery('SELECT COUNT(*) AS jumlah FROM produk');
+
+    String folder = '';
+
+    try {
+      folder = (await _folderCadangan()).path;
+    } catch (_) {
+      folder = '';
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Data tersimpan di HP.',
+      'berkas': berkas,
+      'jumlah_berkas': berkas.length,
+      'folder': folder,
+      'sinkron_terakhir': sinkron,
+      'jumlah_produk': _bulat(prod.isEmpty ? 0 : prod.first['jumlah']),
+      'jumlah_nota': _bulat(jual.isEmpty ? 0 : jual.first['jumlah']),
+      'jumlah_piutang': _bulat(piut.isEmpty ? 0 : piut.first['jumlah']),
+    };
+  }
+
+  Future<Map<String, dynamic>> _cadangkan() async {
+    final Database d = await db;
+
+    // Data ditulis ke cakram lebih dahulu supaya berkas cadangan lengkap.
+    await d.rawQuery('PRAGMA wal_checkpoint(FULL)').catchError((Object _) => <Map<String, Object?>>[]);
+
+    final Directory folder = await _folderCadangan();
+    final String sumber = await jalurDatabase();
+
+    final DateTime t = DateTime.now();
+
+    final String nama = 'rts_panel_cadangan_${t.year}${_dua(t.month)}${_dua(t.day)}'
+        '_${_dua(t.hour)}${_dua(t.minute)}${_dua(t.second)}.db';
+
+    final File tujuan = File(p.join(folder.path, nama));
+
+    await File(sumber).copy(tujuan.path);
+
+    final FileStat stat = await tujuan.stat();
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Cadangan dibuat: $nama (${(stat.size / 1024).round()} KB). '
+          'Simpan berkas ini ke Google Drive atau kirim ke diri sendiri agar '
+          'aman bila HP hilang.',
+      'nama': nama,
+      'jalur': tujuan.path,
+      'folder': folder.path,
+    };
+  }
+
+  Future<Map<String, dynamic>> _pulihkan(String nama) async {
+    if (nama.isEmpty) {
+      throw RtsKasirGalat('Berkas cadangan belum dipilih.');
+    }
+
+    final Directory folder = await _folderCadangan();
+    final File sumber = File(p.join(folder.path, p.basename(nama)));
+
+    if (!await sumber.exists()) {
+      throw RtsKasirGalat('Berkas cadangan tidak ditemukan.');
+    }
+
+    // Berkas diperiksa lebih dahulu: harus berupa database SQLite yang memuat
+    // tabel produk. Jadi berkas yang salah tidak akan merusak data.
+    Database? uji;
+
+    try {
+      uji = await openDatabase(sumber.path, readOnly: true);
+      await uji.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'produk'",
+      );
+    } catch (e) {
+      try {
+        await uji?.close();
+      } catch (_) {}
+
+      throw RtsKasirGalat('Berkas cadangan tidak dapat dibaca atau bukan berkas RTS Panel.');
+    }
+
+    final bool sah = (await uji.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'produk'",
+    ))
+        .isNotEmpty;
+
+    await uji.close();
+
+    if (!sah) {
+      throw RtsKasirGalat('Berkas cadangan tidak memuat data RTS Panel.');
+    }
+
+    // Database lama disalin ke berkas .sebelum agar masih dapat dikembalikan.
+    final String jalur = await jalurDatabase();
+
+    try {
+      await _db?.close();
+    } catch (_) {}
+
+    _db = null;
+
+    if (await File(jalur).exists()) {
+      await File(jalur).copy('$jalur.sebelum');
+    }
+
+    await sumber.copy(jalur);
+
+    await siapkanTabel();
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Data berhasil dipulihkan dari $nama. Data sebelum pemulihan '
+          'disimpan sebagai berkas .sebelum.',
+    };
+  }
+}

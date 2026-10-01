@@ -1,6 +1,33 @@
 ==============================================================================
  RTS PANEL BY BENE
- TUTORIAL PUTARAN INI - IKLAN, LANGGANAN PRO (QRIS), DAN FOTO PRIBADI
+ TUTORIAL PUTARAN 10 - KASIR OFFLINE (DATA DI DALAM HP) + IKLAN,
+ LANGGANAN PRO (QRIS), DAN FOTO PRIBADI
+==============================================================================
+
+ ============================================================================
+  PALING PENTING - BACA 6 BARIS INI DULU
+ ============================================================================
+
+  Sesudah permintaan Bapak tanggal 1 Oktober 2026, SELURUH data kasir
+  (produk, stok, penjualan/nota, piutang, struk, dan template struk)
+  sekarang DISIMPAN DI DALAM HP memakai database SQLite, sehingga KASIR
+  TETAP BERJALAN WALAU TIDAK ADA INTERNET. Server hanya menyimpan daftar
+  produk (SKU) beserta harganya.
+
+  Yang perlu Bapak lakukan untuk perubahan ini:
+     1. Jalankan .\LANGKAH1_PASANG_SEMUA.ps1 dari paket RTS_PANEL_PUTARAN_10.zip
+        (skrip itu kini ikut menyalin berkas baru lib\kasir_lokal.dart)
+     2. flutter clean  ->  flutter pub get  ->  flutter run -d CPH1937
+     3. Uji: matikan internet HP, lalu buat satu nota. Harus tetap berhasil.
+     4. Tekan CADANGKAN SEKARANG, lalu KIRIM berkasnya ke Google Drive.
+
+  Penjelasan lengkap perubahan ini ada di berkas KASIR_BARANG_BAWAAN.txt
+  (bagian 6 sampai 11). Tautan unduhnya ada di TAUTAN_UNDUH.txt.
+
+  Bila Bapak ingin mengerjakan hal lain lebih dahulu (iklan, langganan PRO,
+  dan foto pribadi), lanjutkan saja membaca berkas ini dari atas ke bawah -
+  caranya tidak berubah.
+
 ==============================================================================
 
  Berkas ini adalah SATU-SATUNYA panduan yang perlu Bapak ikuti untuk topik ini.
@@ -153,15 +180,18 @@
 
               powershell -ExecutionPolicy Bypass -File .\LANGKAH1_PASANG_SEMUA.ps1
 
-   [ ] 3. Skrip akan meminta konfirmasi lalu mengerjakan 7 hal:
+   [ ] 3. Skrip akan meminta konfirmasi lalu mengerjakan hal berikut:
               1. mencari folder proyek D:\Project\rts_panel_app
               2. menyalin main.dart ke main.dart DAN lib\main.dart
-              3. menyalin pubspec.yaml (kamera barcode + printer + versi 1.2.2+5)
-              4. menambahkan izin KAMERA pada AndroidManifest.xml
-              5. mengubah NAMA APLIKASI pada layar HP menjadi "RTS Panel"
-              6. memasang gambar QRIS ke assets\images\qris_bene_s.jpg
-              7. menjalankan flutter clean dan flutter pub get
-              8. menampilkan perintah terakhir
+              3. menyalin lib\kasir.dart dan lib\kasir_lokal.dart
+                 (kasir_lokal.dart = mesin kasir di dalam HP, tanpa internet)
+              4. menyalin pubspec.yaml (sqflite + kamera barcode + printer,
+                 versi 1.2.3+6)
+              5. menambahkan izin KAMERA pada AndroidManifest.xml
+              6. mengubah NAMA APLIKASI pada layar HP menjadi "RTS Panel"
+              7. memasang gambar QRIS ke assets\images\qris_bene_s.jpg
+              8. menjalankan flutter clean dan flutter pub get
+              9. menampilkan perintah terakhir
 
           Berkas lama TIDAK dihapus - selalu dicadangkan dengan tambahan
           ".lama_tanggal_jam".

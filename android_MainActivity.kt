@@ -159,6 +159,19 @@ class MainActivity : FlutterActivity() {
 
             "pasangTersimpan" -> hasil.success(pasangBerkasTersimpan())
 
+            "bagikan" -> {
+                val alamat = panggilan.argument<String>("path") ?: ""
+                val judul = panggilan.argument<String>("judul") ?: "Kirim Berkas"
+                val teks = panggilan.argument<String>("teks") ?: ""
+
+                if (alamat.isEmpty()) {
+                    hasil.success(petaGagal("Berkas yang akan dikirim tidak diketahui."))
+                    return
+                }
+
+                hasil.success(bagikanBerkas(alamat, judul, teks))
+            }
+
             else -> hasil.notImplemented()
         }
     }
@@ -371,6 +384,53 @@ class MainActivity : FlutterActivity() {
             pesanGalat = "Layar pemasangan tidak dapat dibuka. "
 
             false
+        }
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 4. MENGIRIM BERKAS (CADANGAN DATA KASIR) KE APLIKASI LAIN              */
+    /* ---------------------------------------------------------------------- */
+
+    /**
+     * Membuka layar "Bagikan" Android untuk sebuah berkas di dalam HP.
+     *
+     * Dipakai tombol KIRIM pada menu Server & Cadangan, supaya petugas dapat
+     * mengirim salinan data kasir ke WhatsApp (diri sendiri) atau mengunggahnya
+     * ke Google Drive. Berkas diambil dari folder milik aplikasi sendiri,
+     * sehingga tidak memerlukan izin penyimpanan tambahan.
+     */
+    private fun bagikanBerkas(alamatBerkas: String, judul: String, teks: String): Map<String, Any> {
+        val berkas = File(alamatBerkas)
+
+        if (!berkas.exists() || berkas.length() <= 0L) {
+            return petaGagal("Berkas cadangan tidak ditemukan pada HP.")
+        }
+
+        val alamat: Uri = try {
+            FileProvider.getUriForFile(this, "$packageName.rtsberkas", berkas)
+        } catch (galat: Exception) {
+            return petaGagal("Berkas cadangan tidak dapat dibuka: "
+                + (galat.message ?: "sebab tidak diketahui"))
+        }
+
+        val niat = Intent(Intent.ACTION_SEND).apply {
+            type = "application/octet-stream"
+            putExtra(Intent.EXTRA_STREAM, alamat)
+            putExtra(Intent.EXTRA_TITLE, judul)
+            if (teks.isNotEmpty()) {
+                putExtra(Intent.EXTRA_TEXT, teks)
+            }
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        return try {
+            startActivity(Intent.createChooser(niat, judul)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+
+            peta("status" to "OK", "pesan" to "Layar Bagikan dibuka.")
+        } catch (galat: Exception) {
+            petaGagal("Layar Bagikan tidak dapat dibuka pada HP ini.")
         }
     }
 

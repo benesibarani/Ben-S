@@ -19,7 +19,13 @@ publish_to: 'none'
 #   (produk + barcode, stok pack/batang, riwayat), Kasir (scan barcode dengan
 #   kamera, bayar CASH/UTANG/TITIP, cetak struk Bluetooth), Piutang (angsuran
 #   utang & titip), serta Printer & Template Struk yang dapat diedit sales.
-version: 1.2.2+5
+#   Kode 6 (1.2.3) memuat perubahan besar: SELURUH data kasir (produk, stok,
+#   penjualan, piutang, template struk) kini disimpan DI DALAM HP memakai
+#   SQLite, sehingga aplikasi berjalan tanpa internet. Server hanya menyimpan
+#   SKU produk beserta harganya. Ditambahkan pula tombol Lanjut Tanpa Internet
+#   pada halaman pembuka, menu Server & Cadangan (sinkron produk + cadangkan
+#   dan pulihkan data).
+version: 1.2.3+6
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -60,6 +66,15 @@ dependencies:
   print_bluetooth_thermal: ^1.2.5
   # Meminta izin kamera dan Bluetooth (wajib pada Android 12 ke atas).
   permission_handler: ^13.0.2
+
+  # ---- PENYIMPANAN DI DALAM HP (aplikasi berjalan tanpa internet) ----
+  # sqflite : database SQLite di dalam HP untuk stok, penjualan, piutang,
+  #           dan template struk.
+  sqflite: ^2.4.4
+  # path : menyusun alamat berkas database dan berkas cadangan.
+  path: ^1.9.0
+  # path_provider : menemukan folder aplikasi di HP (tempat berkas cadangan).
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:

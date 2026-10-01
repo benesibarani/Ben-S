@@ -10,10 +10,18 @@
       (utang & titip dapat diperbarui sampai lunas)
    3. Cetak struk ke printer Bluetooth + template bisa diedit ...... BISA
 
-   Putaran ini saya kerjakan BAGIAN SERVERNYA lebih dahulu (susunan database
-   + seluruh perintah yang dipakai aplikasi). Bagian tampilan di dalam
-   aplikasi (layar) dikerjakan pada putaran berikutnya, supaya tidak ada
-   yang setengah jadi.
+   KETIGA-TIGANYA SUDAH JADI, dan sesudah permintaan terbaru Bapak
+   (1 Oktober 2026) SUSUNANNYA SAYA UBAH MENJADI LEBIH BAIK:
+
+       SELURUH data kasir  ->  disimpan DI DALAM HP memakai SQLite
+                               (produk, stok, penjualan, piutang, struk,
+                                template struk, nomor nota)
+       SERVER              ->  hanya menyimpan DAFTAR PRODUK (SKU) + HARGA
+
+   Artinya: aplikasi KASIR TETAP BERJALAN WALAU TIDAK ADA INTERNET.
+   Internet dipakai hanya untuk hal-hal "sekali-sekali" saja: masuk
+   (login) pertama kali, memeriksa masa PRO, dan sinkron daftar produk
+   dari server.
 
 
 ==============================================================================
@@ -159,35 +167,47 @@
 
 
 ==============================================================================
- BAGIAN 4 - YANG PERLU BAPAK LAKUKAN SEKARANG (4 langkah, 5 menit)
+ BAGIAN 4 - YANG PERLU BAPAK LAKUKAN SEKARANG
 ==============================================================================
 
- LANGKAH 1 - Unggah 2 berkas API ke folder api
+ PENTING: SETELAH PERUBAHAN INI, TABEL KASIR DI SERVER MENJADI TIDAK WAJIB.
+ Seluruh transaksi sudah tersimpan di HP. Server hanya menyimpan daftar
+ produk (SKU) + harganya. Jadi:
+
+   WAJIB (sekali saja)  : unggah berkas aplikasi + flutter clean / pub get
+   OPSIONAL (bila ingin): unggah berkas API + buat tabel server, supaya
+                          daftar produk dapat dipakai bersama seluruh sales
+                          dan dapat diunduh ke HP (menu SINKRON PRODUK)
+
+ LANGKAH 1 - Unggah 2 berkas API ke folder api  (OPSIONAL)
     cPanel - File Manager - masuk ke public_html/api
     Tekan Upload, unggah:
         [ ] api/kasir_inti.php   (91.195 B)
         [ ] api/kasir.php        (23.835 B)
     (Tidak ada berkas lama yang perlu ditimpa - ini berkas baru.)
 
- LANGKAH 2 - Siapkan tabel database (PILIH SALAH SATU)
+ LANGKAH 2 - Siapkan tabel database  (OPSIONAL, hanya bila Langkah 1 dipakai)
 
     CARA A (disarankan, tanpa phpMyAdmin):
-        Buka aplikasi - menu Barang Bawaan - tekan "SIAPKAN DATA KASIR".
-        (Bila menu belum ada, gunakan Cara B dulu.)
+        Buka aplikasi - menu Barang Bawaan - Server & Cadangan -
+        tekan "SINKRON PRODUK".
 
     CARA B (phpMyAdmin):
         cPanel - phpMyAdmin - pilih database benedics_bene_sales -
         tab Import - pilih berkas RTS_PANEL_KASIR.sql - Go.
 
- LANGKAH 3 - Periksa berhasil
+ LANGKAH 3 - Periksa berhasil  (OPSIONAL)
     Buka di browser:
         https://rts.benedic-s.com/api/kasir.php?aksi=diagnosa
     Akan muncul keterangan berisi daftar tabel yang sudah ada.
+    Bila tabel belum ada, MENU KASIR DI HP TETAP BERJALAN NORMAL - tidak
+    ada yang berhenti.
 
- LANGKAH 4 - Bagian tampilan di aplikasi
-    Menyusul pada putaran berikutnya: layar Barang Bawaan, Kasir, Piutang,
-    serta Pengaturan Printer & Template Struk (termasuk tombol Uji Cetak).
-    Saya kabari begitu siap - tidak ada yang perlu Bapak lakukan untuk ini.
+ LANGKAH 4 - Bagian tampilan di aplikasi  (SUDAH JADI)
+    Layar Barang Bawaan, Kasir, Riwayat Nota, Piutang, serta Printer &
+    Template Struk sudah selesai dan sudah disesuaikan supaya tersimpan
+    DI DALAM HP (tanpa internet). Tidak ada yang perlu Bapak kerjakan
+    untuk bagian ini selain memasang berkas aplikasi (Bagian 7).
 
 
 ==============================================================================
@@ -208,76 +228,117 @@
 
 
 ==============================================================================
- BAGIAN 6 - BAGIAN APLIKASI (SUDAH JADI PUTARAN INI)
+ BAGIAN 6 - PERUBAHAN BESAR PUTARAN INI : SEMUA DATA PINDAH KE DALAM HP
 ==============================================================================
 
- Berkas baru : lib/kasir.dart (142.041 B, 4.243 baris)
-   Berisi SELURUH halaman fitur ini, dipisah dari main.dart supaya pembaruan
-   berikutnya cukup mengganti satu berkas:
+ Ini jawaban atas pertanyaan Bapak: "Semua stok, transaksi, program dan
+ template itu offline di HP, pakai SQLite, karena semua transaksi dan
+ history disimpan di HP. Server hanya menyimpan SKU produk dan harganya.
+ Apakah bisa?"
 
-     1. BARANG BAWAAN - 3 tab:
-          PRODUK  : daftar barang bawaan + tombol tambah/ubah produk
-          STOK    : sisa per produk + tombol MASUK / KELUAR
-                    (KELUAR = rusak, kembali ke gudang, atau hitung fisik)
-          RIWAYAT : seluruh perubahan stok sampai detik
-     2. KASIR
-          - kotak pencarian + tombol PINDAI (kamera)
-          - ringkasan hari ini di bagian atas (nota, penjualan, tunai, piutang)
-          - keranjang dengan pengatur PACK dan BATANG per barang
-          - pilihan bayar CASH / UTANG / TITIP
-          - uang diterima + hitung kembalian otomatis
-          - pilih toko dari Master Customer (atau tulis sendiri)
-          - SIMPAN NOTA -> muncul nomor nota + tombol CETAK STRUK
-     3. RIWAYAT NOTA  - daftar nota, rincian barang, CETAK ULANG, BATALKAN
-                        (stok otomatis kembali bila dibatalkan)
-     4. PIUTANG       - daftar utang & titip + total belum diterima,
-                        saringan (semua / utang / titip / belum lunas),
-                        penanda TERLAMBAT, dan CATAT PEMBAYARAN (angsuran)
-     5. PRINTER & STRUK
-          - daftar printer Bluetooth yang sudah dipasangkan dengan HP
-          - tombol SAMBUNG, PUTUSKAN, dan UJI CETAK
-          - template struk dapat diubah bebas: judul, 3 baris alamat,
-            3 baris penutup, lebar 58/80 mm, ukuran huruf, garis pemisah,
-            jumlah salinan, tampil/tidak barcode, nomor HP, tanda tangan,
-            metode bayar
-          - contoh tampilan struk diperlihatkan sebelum disimpan
+ JAWABAN: BISA - dan sudah saya kerjakan pada putaran ini.
+
+ Perbandingan sebelum dan sesudah:
+
+     SEBELUM (putaran lalu)                SEKARANG (putaran ini)
+     --------------------------            --------------------------
+     Produk, stok, penjualan,              Semuanya DISIMPAN DI DALAM HP
+     piutang, struk disimpan di            memakai database SQLite
+     server.                               (rts_panel_kasir.db).
+     Butuh internet setiap kali            Hanya perlu internet untuk:
+     membuka menu kasir.                     - masuk (login) pertama kali
+     Server wajib hidup.                     - memeriksa masa PRO
+                                             - sinkron daftar produk
+
+ Berkas baru : lib/kasir_lokal.dart (83 KB) - MESIN KASIR DI DALAM HP
+
+    Di dalamnya ada 10 tabel SQLite yang meniru susunan server:
+        produk, stok, stok_gerak, penjualan, penjualan_item,
+        piutang, piutang_bayar, struk, setelan, penomoran
+
+    Seluruh perintah aplikasi (produk_*, stok_*, kasir_*, piutang_*,
+    struk_*, ringkas) kini dikerjakan MESIN INI, jadi tampilan di HP
+    TIDAK BERUBAH SAMA SEKALI - yang berubah hanya tempat menyimpan
+    datanya: dari server ke dalam HP.
+
+    Satu transaksi = satu perintah database (transaction). Artinya bila
+    ada satu barang yang stoknya kurang, SELURUH nota dibatalkan - tidak
+    ada setengah tersimpan.
+
+ Izin PRO saat tidak ada internet:
+    - Hasil pemeriksaan PRO disimpan di HP dan tetap berlaku sampai 30 hari.
+    - Bila internet tersedia, pemeriksaan diulang otomatis (segarkan 6 jam).
+    - ADMIN dan ASS selalu dapat masuk tanpa internet.
+    - Bila masa PRO benar-benar habis, aplikasi menampilkan layar PRO -
+      buka internet sebentar untuk memperpanjang lewat QRIS seperti biasa.
 
  Menu baru pada Beranda aplikasi: Barang Bawaan, Kasir, Piutang,
  Printer & Struk.
 
- Berkas aplikasi yang berubah:
-    lib/kasir.dart                 (BARU)  - seluruh halaman fitur ini
-    lib/main.dart  & main.dart     (DIPERBARUI) - 4 menu baru + pembuka halaman
-    pubspec.yaml                   (DIPERBARUI) - tambahan paket + versi 1.2.2+5
-    android_manifest_tambahan.xml  (DIPERBARUI) - izin Bluetooth + kamera
-    LANGKAH1_PASANG_SEMUA.ps1      (DIPERBARUI) - ikut menyalin lib/kasir.dart
+ Tombol baru di halaman Barang Bawaan: "Server & Cadangan"
+    Di dalamnya ada:
+       1. Keterangan jumlah produk, nota, piutang, dan sinkron terakhir
+       2. SINKRON PRODUK   - mengunduh daftar produk dari server dan
+                             mengirim produk baru yang Bapak tambahkan
+                             dari HP (butuh internet, sekali-sekali saja)
+       3. CADANGKAN SEKARANG - membuat salinan seluruh data kasir
+       4. Daftar berkas cadangan + tombol KIRIM dan PULIHKAN
+
+ Halaman pembuka (saat masuk) kini memuat tombol "LANJUT TANPA INTERNET"
+    Dipakai bila HP tidak ada sinyal: aplikasi langsung membuka Beranda
+    memakai akun yang tersimpan, tanpa menunggu server.
+
+
+==============================================================================
+ BAGIAN 7 - BERKAS APLIKASI YANG BERUBAH (PUTARAN 10)
+==============================================================================
+
+    lib/kasir_lokal.dart           (BARU)      - mesin kasir SQLite di HP
+    lib/kasir.dart                 (DIPERBARUI) - memakai mesin lokal,
+                                                  tombol Server & Cadangan
+    main.dart & lib/main.dart      (DIPERBARUI) - Beranda dapat dibuka
+                                                  tanpa internet + penanda
+                                                  RTS-2026-10-01-10
+    pubspec.yaml                   (DIPERBARUI) - versi 1.2.3+6 + 4 paket
+    LANGKAH1_PASANG_SEMUA.ps1      (DIPERBARUI) - ikut menyalin
+                                                  lib/kasir_lokal.dart
+    android_MainActivity.kt        (DIPERBARUI) - tombol KIRIM cadangan
+    android_file_paths.xml         (TIDAK BERUBAH - cukup disalin apa adanya)
+    android_manifest_tambahan.xml  (TIDAK BERUBAH - cukup disalin apa adanya)
 
  Paket baru yang dipasang (sudah dituliskan di pubspec.yaml):
-    mobile_scanner          ^7.4.2  -> memindai barcode dengan kamera
-    esc_pos_utils_plus      ^2.0.4  -> menyusun perintah cetak struk
-    print_bluetooth_thermal ^1.2.5  -> mengirim struk ke printer Bluetooth
-    permission_handler      ^13.0.2 -> izin kamera & Bluetooth
+    sqflite          ^2.4.4  -> database SQLite di dalam HP
+    path             ^1.9.0  -> menyusun alamat berkas
+    path_provider    ^2.1.5  -> menemukan folder aplikasi di HP
+
+ Paket dari putaran lalu yang tetap dipakai:
+    mobile_scanner ^7.4.2, esc_pos_utils_plus ^2.0.4,
+    print_bluetooth_thermal ^1.2.5, permission_handler ^13.0.2
 
 
 ==============================================================================
- BAGIAN 7 - LANGKAH PEMASANGAN DI KOMPUTER (untuk aplikasi)
+ BAGIAN 8 - LANGKAH PEMASANGAN DI KOMPUTER
 ==============================================================================
 
-   [ ] 1. Unduh RTS_PANEL_PUTARAN_8.zip, ekstrak ke Desktop.
+   [ ] 1. Unduh RTS_PANEL_PUTARAN_10.zip, ekstrak ke Desktop.
    [ ] 2. Buka PowerShell di dalam folder hasil ekstrak, jalankan:
               .\LANGKAH1_PASANG_SEMUA.ps1
-          Skrip ini menyalin main.dart, lib\kasir.dart, pubspec.yaml, dan
-          berkas Android (termasuk izin Bluetooth). Bila ada pertanyaan,
-          jawab sesuai petunjuk di layar.
-   [ ] 3. Tambahkan izin pada AndroidManifest.xml - panduannya ada di berkas
-          android_manifest_tambahan.xml (bagian "Izin Bluetooth untuk PRINTER
-          STRUK"). Sesudah itu jalankan:
+          Skrip ini menyalin main.dart, lib\kasir.dart, lib\kasir_lokal.dart,
+          pubspec.yaml, dan berkas Android (semuanya selalu dicadangkan
+          lebih dahulu dengan tambahan .lama_tanggal_jam).
+   [ ] 3. Tambahkan izin pada AndroidManifest.xml bila belum pernah -
+          panduannya ada di berkas android_manifest_tambahan.xml.
+          Kubah putaran ini TIDAK menambah izin baru (tidak ada izin
+          penyimpanan) - jadi bila putaran lalu sudah dipasang, lewati saja.
+   [ ] 4. Jalankan berturut-turut:
               flutter clean
               flutter pub get
               flutter run -d CPH1937
-   [ ] 4. Buka menu Barang Bawaan - tekan SIAPKAN DATA KASIR (khusus ADMIN).
-   [ ] 5. Tambahkan produk + barcode, isi stok MASUK, lalu coba menu Kasir.
-   [ ] 6. Pasangkan printer Bluetooth di Pengaturan HP, lalu buka
+   [ ] 5. Di HP: buka menu Barang Bawaan - tekan SINKRON PRODUK bila ingin
+          mengambil daftar produk dari server (boleh dilewati; produk juga
+          dapat ditambahkan langsung dari HP).
+   [ ] 6. Tambahkan produk + barcode, isi stok MASUK, lalu coba menu Kasir.
+   [ ] 7. Pasangkan printer Bluetooth di Pengaturan HP, lalu buka
           menu Printer & Struk - tekan SAMBUNG - tekan UJI CETAK.
 
  CATATAN: bila "flutter pub get" menampilkan pesan, kirimkan tangkapan
@@ -287,31 +348,96 @@
 
 
 ==============================================================================
- BAGIAN 8 - CATATAN PENTING & SARAN URUTAN
+ BAGIAN 9 - CADANGAN DATA : INI YANG PALING PENTING DIINGAT
+==============================================================================
+
+ Karena data kasir sekarang HANYA ada di dalam HP, cadangan menjadi
+ sangat penting. Bila HP hilang / rusak / aplikasi dihapus, datanya
+ ikut hilang.
+
+    Menu : Barang Bawaan - Server & Cadangan - CADANGKAN SEKARANG
+    Berkas tersimpan dengan nama:
+        rts_panel_cadangan_TAHUNBULANTANGGAL_JAMMENITDETIK.db
+        contoh: rts_panel_cadangan_20261001_193045.db
+    Letak folder (biasanya):
+        Android/data/com.example.rts_panel_app/files/cadangan
+
+ CARA MENGIRIM SALINANNYA KELUAR DARI HP (supaya benar-benar aman):
+    Di daftar berkas cadangan ada tombol KIRIM. Tekan tombol itu, lalu
+    Android menampilkan pilihan aplikasi - pilih:
+        - WhatsApp (kirim ke diri sendiri), atau
+        - Google Drive (unggah ke Drive), atau
+        - aplikasi lain yang Bapak pakai
+
+    Tombol KIRIM ini memakai berkas android_MainActivity.kt yang baru.
+    Bila muncul petunjuk menyalin manual, artinya MainActivity.kt di
+    komputer Bapak belum diperbarui - jalankan LANGKAH1_PASANG_SEMUA.ps1
+    lalu bangun ulang aplikasinya.
+
+ PULIHKAN (mengembalikan data dari berkas cadangan):
+    Di daftar berkas cadangan tekan PULIHKAN. Aplikasi memeriksa dulu
+    bahwa berkas itu benar-benar cadangan RTS Panel, menyalin data lama
+    sebagai berkas *.sebelum, baru menggantinya.
+
+ SARAN: lakukan cadangan sekurangnya sekali seminggu, lalu KIRIM ke
+ Google Drive. Untuk HP baru, pasang aplikasi - buka menu Server &
+ Cadangan - PULIHKAN berkas cadangan yang dikirim tadi.
+
+
+==============================================================================
+ BAGIAN 10 - JAWABAN BAPAK (sudah saya kerjakan sesuai jawaban)
+==============================================================================
+
+  1. Printer          : RPP02 / printer 58 mm umum
+                        -> bawaan template = 58 mm; pilihan 80 mm tetap ada;
+                           tombol "UJI CETAK" tersedia untuk memastikan.
+  2. Daftar produk    : SATU DAFTAR BERSAMA, siapa pun boleh menambah
+                        -> sudah begitu. Produk dibuat sekali di server
+                           (SKU + harga) lalu diunduh ke HP semua sales
+                           dengan tombol SINKRON PRODUK.
+  3. Scan barcode     : KAMERA HP
+                        -> tombol pindai pada form produk dan pada halaman
+                           kasir (izin kamera diminta sekali).
+  4. Harga            : SAMA untuk semua sales
+                        -> diisi sekali pada produk, dipakai semua sales.
+
+
+==============================================================================
+ BAGIAN 11 - CATATAN PENTING & SARAN URUTAN MENCOBA
 ==============================================================================
 
  1. Fitur ini akan meminta beberapa hal saat pertama dipakai (semuanya cukup
-    sekali): izin kamera, izin Bluetooth, dan tombol SIAPKAN DATA KASIR.
+    sekali): izin kamera, izin Bluetooth, dan (bila perlu) tekan SINKRON
+    PRODUK sekali.
  2. Saran urutan mencoba:
-       a. SIAPKAN DATA KASIR
-       b. Isi 2-3 produk contoh + barcode + harga
-       c. Catat stok MASUK (misalnya 10 pack 0 batang)
-       d. Buat satu nota uji: 2 pack + 3 batang -> lihat hitungan dan struk
-       e. Coba UTANG dan TITIP, lalu buka menu Piutang dan catat pembayaran
+       a. Isi 2-3 produk contoh + barcode + harga
+       b. Catat stok MASUK (misalnya 10 pack 0 batang)
+       c. Buat satu nota uji: 2 pack + 3 batang -> lihat hitungan dan struk
+       d. Coba UTANG dan TITIP, lalu buka menu Piutang dan catat pembayaran
+       e. Putuskan internet HP, lalu buat satu nota lagi - harus tetap
+          berhasil. Inilah bukti kasir sudah bekerja luring.
+       f. Tekan CADANGKAN SEKARANG, lalu KIRIM berkasnya ke Google Drive.
  3. Bila ada sales yang statusnya masih GRATIS, mereka akan melihat layar
     "FITUR PRO". Untuk masa percobaan seluruh tim, ADMIN dapat mengubah
-    setelan mode_akses menjadi SEMUA (lihat bagian 3 di atas).
+    setelan mode_akses menjadi SEMUA (lihat Bagian 3).
 
 
 ==============================================================================
  RINGKASAN JAWABAN UNTUK PERTANYAAN BAPAK
 ==============================================================================
 
-   "Apakah bisa permintaan saya ini?"
-       YA - ketiganya bisa:
-         (1) input stok barang bawaan + barcode ....... SIAP (server + aplikasi)
-         (2) kasir dengan CASH / UTANG / TITIP ........ SIAP (server + aplikasi)
-         (3) cetak struk Bluetooth + template bebas .. SIAP (server + aplikasi)
-       Bagian server sudah diunggah-ready pada putaran ini; bagian aplikasi
-       perlu dipasang dengan LANGKAH1_PASANG_SEMUA.ps1 lalu dibangun.
+   "Semua stok, transaksi, program dan template offline di HP pakai SQLite,
+    karena semua transaksi dan history disimpan di HP. Server hanya
+    menyimpan SKU produk dan harganya. Apakah bisa?"
+
+       YA - sudah jadi pada putaran ini:
+         (1) produk, stok, dan riwayat ......... tersimpan di HP (SQLite)
+         (2) kasir, nota, piutang .............. tersimpan di HP (SQLite)
+         (3) template struk & printer .......... tersimpan di HP (SQLite)
+         (4) server ............................ HANYA daftar produk (SKU)
+                                                 beserta harganya
+         (5) tetap berjalan walau TIDAK ada internet
+       Langkah Bapak: pasang berkas aplikasi dengan LANGKAH1_PASANG_SEMUA.ps1,
+       jalankan flutter clean / flutter pub get / flutter run -d CPH1937,
+       lalu uji satu nota dengan internet dimatikan. Jangan lupa CADANGKAN.
 ==============================================================================

@@ -8,7 +8,7 @@
 #     1. Memastikan folder proyek Flutter ditemukan
 #     2. Menyalin main.dart  ->  D:\Project\rts_panel_app\main.dart
 #                                D:\Project\rts_panel_app\lib\main.dart
-#     3. Menyalin pubspec.yaml (memuat image_picker + nomor versi 1.2.2+5)
+#     3. Menyalin pubspec.yaml (memuat sqflite + nomor versi 1.2.3+6)
 #     4. Menambahkan izin KAMERA pada AndroidManifest.xml (bila belum ada)
 #     5. Mengubah NAMA APLIKASI pada layar HP menjadi "RTS Panel"
 #        (sebelumnya tertulis rts_panel_app)
@@ -21,9 +21,9 @@
 #
 #  CARA PAKAI
 #  ----------
-#     1. Ekstrak paket RTS_PANEL_PUTARAN_8.zip ke Desktop
+#     1. Ekstrak paket RTS_PANEL_PUTARAN_10.zip ke Desktop
 #     2. Buka PowerShell, masuk ke folder hasil ekstrak, contoh:
-#            cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_8"
+#            cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_10"
 #     3. Jalankan:
 #            .\LANGKAH1_PASANG_SEMUA.ps1
 #     4. Bila muncul pesan "running scripts is disabled", jalankan:
@@ -103,7 +103,7 @@ if (-not (Test-Path $folderAplikasi)) {
     Write-Host ''
     Write-Host ' Skrip ini harus dijalankan dari DALAM folder hasil ekstrak paket.' -ForegroundColor Yellow
     Write-Host ' Contoh:' -ForegroundColor Yellow
-    Write-Host '     cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_8"' -ForegroundColor White
+    Write-Host '     cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_10"' -ForegroundColor White
     Write-Host '     .\LANGKAH1_PASANG_SEMUA.ps1' -ForegroundColor White
     Write-Host ''
     exit 1
@@ -111,6 +111,7 @@ if (-not (Test-Path $folderAplikasi)) {
 
 $berkasMain = Join-Path $folderAplikasi 'main.dart'
 $berkasKasir = Join-Path $folderAplikasi 'kasir.dart'
+$berkasKasirLokal = Join-Path $folderAplikasi 'kasir_lokal.dart'
 $berkasPubspec = Join-Path $folderAplikasi 'pubspec.yaml'
 $berkasManifestPanduan = Join-Path $folderAplikasi 'android_manifest_tambahan.xml'
 $berkasMainActivity = Join-Path $folderAplikasi 'MainActivity.kt'
@@ -203,11 +204,26 @@ if (Test-Path $berkasKasir) {
     Info 'Kasir, Piutang, dan Printer akan tampil sebagai "sedang disiapkan".'
 }
 
+# lib\kasir_lokal.dart adalah MESIN KASIR DI DALAM HP (SQLite).
+# Berkas inilah yang membuat stok, penjualan, piutang, dan template struk
+# tetap tersimpan dan tetap berjalan TANPA INTERNET. Wajib ada.
+if (Test-Path $berkasKasirLokal) {
+    $tujuanKasirLokal = Join-Path $folderProyek 'lib\kasir_lokal.dart'
+
+    if (Salin-DenganCadangan $berkasKasirLokal $tujuanKasirLokal) {
+        Baik 'lib\kasir_lokal.dart dipasang  <-- data kasir tersimpan di HP (tanpa internet).'
+    }
+} else {
+    Awas 'kasir_lokal.dart TIDAK ada di folder paket!'
+    Awas 'Tanpa berkas itu aplikasi GAGAL dibangun (lib\kasir.dart memanggilnya).'
+    Awas 'Pastikan memakai paket RTS_PANEL_PUTARAN_10.zip yang lengkap.'
+}
+
 # =============================================================================
 # 3. pubspec.yaml
 # =============================================================================
 
-Judul '3. Memasang pubspec.yaml (kamera barcode + printer + versi 1.2.2+5)'
+Judul '3. Memasang pubspec.yaml (sqflite + kamera barcode + printer + versi 1.2.3+6)'
 
 $tujuanPubspec = Join-Path $folderProyek 'pubspec.yaml'
 
@@ -225,6 +241,15 @@ if (Salin-DenganCadangan $berkasPubspec $tujuanPubspec) {
         Baik 'image_picker sudah ada di dalamnya (untuk memilih foto).'
     } else {
         Awas 'image_picker TIDAK ada di pubspec. Gunakan pubspec.yaml dari paket ini.'
+    }
+
+    foreach ($paketWajib in @('sqflite', 'path_provider', 'path:', 'mobile_scanner',
+            'esc_pos_utils_plus', 'print_bluetooth_thermal', 'permission_handler')) {
+        if ($isiPubspec -match [regex]::Escape($paketWajib)) {
+            Baik "paket $paketWajib sudah ada di pubspec."
+        } else {
+            Awas "paket $paketWajib TIDAK ada di pubspec. Gunakan pubspec.yaml dari paket ini."
+        }
     }
 }
 
