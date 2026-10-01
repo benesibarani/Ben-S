@@ -48,6 +48,11 @@
         sebagian). Jalankan .\PERIKSA_KODE_APLIKASI.ps1 untuk memeriksanya
         - skrip itu menunjukkan apakah kurungnya sudah berpasangan, tanpa
         perlu membangun aplikasi. Ukuran yang benar: 4.738 baris.
+     4. Bila muncul pesan Kotlin "Redeclaration: class MainActivity" atau
+        "Unresolved reference 'unaryPlus'": jalankan
+        .\PERBAIKI_MAINACTIVITY.ps1 (sudah otomatis dijalankan oleh LANGKAH1
+        pada paket PUTARAN_10 terbaru). Skrip itu memastikan hanya ada SATU
+        berkas MainActivity.kt dan menaruhnya pada folder yang benar.
 
 ==============================================================================
 

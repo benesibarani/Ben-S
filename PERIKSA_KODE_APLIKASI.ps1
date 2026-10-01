@@ -16,6 +16,8 @@
 #       berpasangan - jadi hal itu ketahuan SEBELUM membangun aplikasi.
 #     - pubspec.yaml: paket penunjang kasir luring (sqflite dll).
 #     - android\app\build.gradle.kts: angka compileSdk (harus 37).
+#     - berkas Kotlin: jumlah MainActivity.kt (harus SATU) dan tanda +
+#       yang diletakkan di awal baris (Kotlin tidak mengizinkannya).
 #
 #  Skrip ini TIDAK menghapus, TIDAK memindahkan, dan TIDAK mengubah berkas.
 #  Aman dijalankan berkali-kali.
@@ -459,6 +461,58 @@ else {
         Write-Host "           Jalankan PERBAIKI_COMPILE_SDK.ps1 sekali saja." -ForegroundColor Yellow
         $bermasalah++
     }
+}
+
+# -----------------------------------------------------------------------------
+# 6d. Berkas Kotlin (MainActivity) - jumlah berkas & tanda + di awal baris
+# -----------------------------------------------------------------------------
+TulisJudul "6d. Berkas Kotlin (MainActivity)"
+
+$akarKotlin = 'android\app\src\main'
+$daftarMain = @()
+
+if (Test-Path $akarKotlin) {
+    $daftarMain = @(Get-ChildItem -Path $akarKotlin -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -eq 'MainActivity.kt' })
+}
+
+TulisHasil ($daftarMain.Count -eq 1) ("hanya SATU berkas MainActivity.kt (jumlah sekarang: " + $daftarMain.Count + ")")
+
+foreach ($f in $daftarMain) {
+    Write-Host ('            ' + $f.FullName) -ForegroundColor Gray
+}
+
+if ($daftarMain.Count -ne 1) {
+    Write-Host '            Bila jumlahnya DUA, pembangunan berhenti dengan pesan' -ForegroundColor Yellow
+    Write-Host '            "Redeclaration: class MainActivity". Jalankan' -ForegroundColor Yellow
+    Write-Host '            PERBAIKI_MAINACTIVITY.ps1 untuk merapikannya.' -ForegroundColor Yellow
+    $bermasalah++
+}
+
+# Kotlin TIDAK mengizinkan tanda + diletakkan di AWAL baris sebagai sambungan.
+# Bila ada, pembangunan berhenti dengan pesan "Unresolved reference 'unaryPlus'".
+$tandaPlus = 0
+
+$daftarKotlin = @(Get-ChildItem -Path $akarKotlin -Recurse -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name.EndsWith('.kt') })
+
+foreach ($f in $daftarKotlin) {
+    $barisKt = @(Get-Content $f.FullName)
+
+    for ($i = 0; $i -lt $barisKt.Count; $i++) {
+        $bersih = $barisKt[$i].Trim()
+
+        if ($bersih -match '^\+') {
+            $tandaPlus++
+            Write-Host ("            " + $f.Name + " baris " + ($i + 1) + " dimulai tanda + : " + $bersih) -ForegroundColor Yellow
+        }
+    }
+}
+
+TulisHasil ($tandaPlus -eq 0) "tidak ada tanda + di awal baris pada berkas Kotlin"
+
+if ($tandaPlus -ne 0) {
+    $bermasalah++
 }
 
 # -----------------------------------------------------------------------------

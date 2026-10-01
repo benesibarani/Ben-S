@@ -27,8 +27,9 @@ KASIR_BARANG_BAWAAN.txt - panduan lengkap versi terbaru: seluruh data kasir
         dibuka tanpa internet + tombol LANJUT TANPA INTERNET
     2_APLIKASI_copy_ke_proyek/pubspec.yaml      (DIPERBARUI) - versi 1.2.3+6 +
         sqflite, path_provider, path (+ 4 paket putaran lalu)
-    2_APLIKASI_copy_ke_proyek/MainActivity.kt   (DIPERBARUI) - tombol KIRIM
-        berkas cadangan ke WhatsApp / Google Drive
+    2_APLIKASI_copy_ke_proyek/MainActivity.kt   (DIPERBARUI, 19.555 B) -
+        tombol KIRIM berkas cadangan ke WhatsApp / Google Drive +
+        perbaikan tanda + di awal baris (galat "unaryPlus" pada Kotlin)
     2_APLIKASI_copy_ke_proyek/file_paths.xml    (tidak berubah - cukup disalin)
     2_APLIKASI_copy_ke_proyek/android_manifest_tambahan.xml (tidak berubah)
 
@@ -55,10 +56,17 @@ KASIR_BARANG_BAWAAN.txt - panduan lengkap versi terbaru: seluruh data kasir
                                 dijalankan otomatis oleh LANGKAH1 pada paket
                                 PUTARAN_10 terbaru)
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERBAIKI_COMPILE_SDK.ps1
+    PERBAIKI_MAINACTIVITY.ps1   (BARU - mengatasi galat "Redeclaration: class
+                                MainActivity": menulis MainActivity.kt pada
+                                tempat yang benar + memindahkan salinan
+                                berlebih; dijalankan otomatis oleh LANGKAH1)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERBAIKI_MAINACTIVITY.ps1
     PERIKSA_KODE_APLIKASI.ps1   (DIPERBARUI - memeriksa keseimbangan kurung
                                 lib\kasir.dart & lib\kasir_lokal.dart,
-                                paket sqflite, dan angka compileSdk SEBELUM
-                                membangun; tidak mengubah apa pun)
+                                paket sqflite, angka compileSdk, jumlah berkas
+                                MainActivity.kt, dan tanda + di awal baris
+                                Kotlin SEBELUM membangun; tidak mengubah
+                                apa pun)
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERIKSA_KODE_APLIKASI.ps1
 
   Catatan: tabel kasir di server kini TIDAK WAJIB. Bila Bapak ingin daftar

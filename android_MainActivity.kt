@@ -121,8 +121,8 @@ class MainActivity : FlutterActivity() {
                 try {
                     tanganiPermintaan(panggilan, hasil)
                 } catch (galat: Exception) {
-                    hasil.success(petaGagal("Gagal menyiapkan pembaruan: "
-                        + (galat.message ?: "sebab tidak diketahui")))
+                    hasil.success(petaGagal("Gagal menyiapkan pembaruan: " +
+                        (galat.message ?: "sebab tidak diketahui")))
                 }
             }
     }
@@ -214,8 +214,8 @@ class MainActivity : FlutterActivity() {
         idUnduhan = try {
             pengelola.enqueue(permintaan)
         } catch (galat: Exception) {
-            return petaGagal("Unduhan tidak dapat dimulai: "
-                + (galat.message ?: "sebab tidak diketahui"))
+            return petaGagal("Unduhan tidak dapat dimulai: " +
+                (galat.message ?: "sebab tidak diketahui"))
         }
 
         if (idUnduhan <= 0L) {
@@ -364,8 +364,8 @@ class MainActivity : FlutterActivity() {
         val alamat: Uri = try {
             FileProvider.getUriForFile(this, "$packageName.rtsberkas", berkas)
         } catch (galat: Exception) {
-            pesanGalat = "Berkas pembaruan tidak dapat dibuka: "
-                + (galat.message ?: "sebab tidak diketahui")
+            pesanGalat = "Berkas pembaruan tidak dapat dibuka: " +
+                (galat.message ?: "sebab tidak diketahui")
 
             return false
         }
@@ -409,8 +409,8 @@ class MainActivity : FlutterActivity() {
         val alamat: Uri = try {
             FileProvider.getUriForFile(this, "$packageName.rtsberkas", berkas)
         } catch (galat: Exception) {
-            return petaGagal("Berkas cadangan tidak dapat dibuka: "
-                + (galat.message ?: "sebab tidak diketahui"))
+            return petaGagal("Berkas cadangan tidak dapat dibuka: " +
+                (galat.message ?: "sebab tidak diketahui"))
         }
 
         val niat = Intent(Intent.ACTION_SEND).apply {

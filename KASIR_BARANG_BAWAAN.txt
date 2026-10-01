@@ -305,7 +305,12 @@
     pubspec.yaml                   (DIPERBARUI) - versi 1.2.3+6 + 4 paket
     LANGKAH1_PASANG_SEMUA.ps1      (DIPERBARUI) - ikut menyalin
                                                   lib/kasir_lokal.dart
-    android_MainActivity.kt        (DIPERBARUI) - tombol KIRIM cadangan
+    android_MainActivity.kt        (DIPERBARUI) - tombol KIRIM cadangan +
+                                                  perbaikan tanda + di awal
+                                                  baris (galat unaryPlus)
+    PERBAIKI_MAINACTIVITY.ps1      (BARU) - memasang MainActivity.kt pada
+                                                  tempat yang benar dan
+                                                  merapikan salinan berlebih
     android_file_paths.xml         (TIDAK BERUBAH - cukup disalin apa adanya)
     android_manifest_tambahan.xml  (TIDAK BERUBAH - cukup disalin apa adanya)
 
@@ -511,6 +516,55 @@
     (dijalankan otomatis oleh LANGKAH1_PASANG_SEMUA.ps1 pada paket terbaru).
     Pemberitahuan Kotlin/Gradle itu hanya pesan untuk versi Flutter MENDATANG
     - bukan penyebab pembangunan gagal, dan tidak perlu dikerjakan sekarang.
+
+
+==============================================================================
+ BAGIAN 13 - PERBAIKAN GALAT KOTLIN (MainActivity) - 2 OKTOBER 2026
+==============================================================================
+
+ Pesan galat dari komputer Bapak:
+     e: .../kotlin/MainActivity.kt:75:7  Redeclaration:
+            class MainActivity : FlutterActivity
+     e: .../kotlin/MainActivity.kt:368:17 Unresolved reference 'unaryPlus'
+            for operator '+'.
+     e: .../kotlin/com/example/rts_panel_app/MainActivity.kt:5:7
+            Redeclaration: class MainActivity : FlutterActivity
+
+ ADA DUA SEBAB - KEDUANYA SUDAH DIPERBAIKI
+
+ 1. DUA BERKAS MainActivity.kt DI DALAM PROYEK
+    Proyek Bapak memuat DUA berkas dengan nama yang sama:
+        android\app\src\main\kotlin\MainActivity.kt              (salinan)
+        android\app\src\main\kotlin\com\example\rts_panel_app\
+                                                   MainActivity.kt   (aslinya)
+    Keduanya memakai nama paket yang sama, sehingga Kotlin menganggap kelas
+    MainActivity dibuat dua kali -> "Redeclaration" -> pembangunan berhenti.
+
+    Perbaikan: berkas baru PERBAIKI_MAINACTIVITY.ps1
+       1. menulis MainActivity.kt dan RtsPenerimaPembaruan.kt ke tempat yang
+          BENAR  (android\app\src\main\kotlin\<nama paket jadi folder>)
+       2. setiap SALINAN BERLEBIH diubah namanya menjadi
+          <nama>.lama_tanggal_jam  (TIDAK dihapus - hanya tidak ikut dibangun)
+       3. menampilkan jumlah berkas MainActivity.kt yang tersisa (harus SATU)
+    Skrip ini juga dijalankan otomatis oleh LANGKAH1_PASANG_SEMUA.ps1.
+
+ 2. TANDA "+" DI AWAL BARIS (aturan Kotlin)
+    Berkas MainActivity.kt lama memuat penulisan seperti ini:
+        pesanGalat = "Berkas pembaruan tidak dapat dibuka: "
+            + (galat.message ?: "sebab tidak diketahui")
+    Pada Kotlin, tanda + yang berada di AWAL baris dianggap sebagai "tanda
+    plus satu angka" (unary plus), bukan sambungan kalimat - itulah pesan
+    "Unresolved reference 'unaryPlus'". Pada berkas versi baru, tanda +
+    diletakkan di AKHIR baris sebelumnya:
+        pesanGalat = "Berkas pembaruan tidak dapat dibuka: " +
+            (galat.message ?: "sebab tidak diketahui")
+    Terdapat 4 tempat seperti itu - semuanya sudah diperbaiki.
+
+ CARA MEMERIKSA SENDIRI (tanpa membangun aplikasi)
+    Jalankan .\PERIKSA_KODE_APLIKASI.ps1 - bagian 6d sekarang memeriksa:
+       - jumlah berkas MainActivity.kt (harus 1)
+       - tanda + yang diletakkan di awal baris pada berkas Kotlin
+    Semua harus [ADA]/[BENAR] sebelum Bapak menjalankan flutter run.
 
 
 ==============================================================================

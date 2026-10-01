@@ -14,6 +14,8 @@
 #     5. Menambahkan izin KAMERA pada AndroidManifest.xml (bila belum ada)
 #     6. Mengubah NAMA APLIKASI pada layar HP menjadi "RTS Panel"
 #        (sebelumnya tertulis rts_panel_app)
+#     6b. Memasang MainActivity.kt pada tempat yang benar dan memindahkan
+#        salinan berlebih (mencegah galat "Redeclaration: class MainActivity")
 #     7. Memasang gambar QRIS Bapak -> assets\images\qris_bene_s.jpg
 #     8. Memperbaiki compileSdk menjadi 37 (sekali saja) supaya pesan
 #        "permission_handler_android compiles against Android SDK 37"
@@ -340,40 +342,35 @@ if (-not (Test-Path $berkasMainActivity) -or -not (Test-Path $berkasFilePaths)) 
 
     Info ('Nama paket aplikasi : ' + $pakej)
 
-    # --- 1) MainActivity.kt --------------------------------------------------
-    $folderMainLama = Join-Path $folderProyek 'android\app\src\main'
-    $mainLama = $null
+    # --- 1) MainActivity.kt + RtsPenerimaPembaruan.kt ------------------------
+    #
+    # PENTING (perbaikan 2 Oktober 2026):
+    #   Pada putaran sebelumnya berkas ini ditulis ke folder MainActivity.kt
+    #   yang ditemukan PERTAMA. Bila di dalam proyek ternyata ada DUA berkas
+    #   MainActivity.kt (misalnya satu di folder induk "kotlin" dan satu di
+    #   dalam folder paket), Kotlin menolak membangun dengan pesan:
+    #       Redeclaration: class MainActivity : FlutterActivity
+    #   Karena itu pekerjaan ini diserahkan kepada PERBAIKI_MAINACTIVITY.ps1
+    #   yang menulis berkas pada tempat yang benar DAN memindahkan setiap
+    #   salinan berlebih (diubah namanya menjadi .lama_tanggal, tidak dihapus).
+    $berkasPerbaikiMain = Join-Path $PSScriptRoot 'PERBAIKI_MAINACTIVITY.ps1'
 
-    if (Test-Path $folderMainLama) {
-        $mainLama = Get-ChildItem -Path $folderMainLama -Recurse -Filter 'MainActivity.kt' -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-    }
+    if (Test-Path $berkasPerbaikiMain) {
+        try {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File `
+                $berkasPerbaikiMain -Proyek $folderProyek
 
-    if ($mainLama) {
-        $folderTujuanMain = $mainLama.DirectoryName
-        $cadanganMain = $mainLama.FullName + '.lama_' + (Get-Date -Format 'ddMM-yyyy_HHmmss')
-        Copy-Item -Path $mainLama.FullName -Destination $cadanganMain -Force
-        Info ('cadangan lama : ' + (Split-Path $cadanganMain -Leaf))
+            Baik 'MainActivity.kt dipasang & salinan berlebih dirapikan.'
+        }
+        catch {
+            Awas 'Pemasangan MainActivity.kt gagal pada langkah otomatis.'
+            Info 'Jalankan sendiri berkas PERBAIKI_MAINACTIVITY.ps1 dari folder'
+            Info '3_SKRIP_POWERSHELL, lalu jalankan lagi skrip ini.'
+        }
     } else {
-        $folderTujuanMain = Join-Path (Join-Path $folderProyek 'android\app\src\main\kotlin') ($pakej -replace '\.', '\')
-        New-Item -ItemType Directory -Path $folderTujuanMain -Force | Out-Null
-        Info ('folder baru dibuat : ' + $folderTujuanMain)
-    }
-
-    $isiMain = Get-Content $berkasMainActivity -Raw
-    $isiMain = [regex]::Replace($isiMain, '(?m)^package\s+[A-Za-z0-9_.]+', ('package ' + $pakej), 1)
-    Simpan-TanpaBom (Join-Path $folderTujuanMain 'MainActivity.kt') $isiMain
-    Baik 'MainActivity.kt dipasang - pembaruan dapat diunduh & dipasang dari aplikasi.'
-
-    # --- 1b) RtsPenerimaPembaruan.kt (membuka aplikasi sesudah pembaruan) ----
-    if (Test-Path $berkasPenerima) {
-        $isiPenerima = Get-Content $berkasPenerima -Raw
-        $isiPenerima = [regex]::Replace($isiPenerima, '(?m)^package\s+[A-Za-z0-9_.]+', ('package ' + $pakej), 1)
-        Simpan-TanpaBom (Join-Path $folderTujuanMain 'RtsPenerimaPembaruan.kt') $isiPenerima
-        Baik 'RtsPenerimaPembaruan.kt dipasang - aplikasi berusaha terbuka sendiri sesudah pembaruan.'
-    } else {
-        Awas 'RtsPenerimaPembaruan.kt tidak ditemukan di folder paket.'
-        Info 'Pembaruan tetap bekerja; hanya pembukaan otomatis yang tidak ada.'
+        Awas 'PERBAIKI_MAINACTIVITY.ps1 tidak ditemukan di folder paket.'
+        Info 'Bila muncul pesan "Redeclaration: class MainActivity", unduh'
+        Info 'berkas itu dari daftar tautan (TAUTAN_UNDUH.txt) lalu jalankan.'
     }
 
     # --- 2) file_paths.xml ---------------------------------------------------
