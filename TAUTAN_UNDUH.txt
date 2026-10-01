@@ -39,6 +39,16 @@ KASIR_BARANG_BAWAAN.txt - rancangan lengkap: produk + barcode (pack & batang),
     1_SERVER_unggah_ke_hosting/api/kasir_inti.php  (BARU, 91.195 B)
     1_SERVER_unggah_ke_hosting/api/kasir.php       (BARU, 23.835 B)
 
+  Berkas APLIKASI (dipasang dengan LANGKAH1_PASANG_SEMUA.ps1):
+    2_APLIKASI_copy_ke_proyek/kasir.dart   (BARU, 142.041 B) - seluruh halaman
+        Barang Bawaan, Kasir, Piutang, Printer & Template Struk
+    2_APLIKASI_copy_ke_proyek/main.dart    (DIPERBARUI) - 4 menu baru
+    2_APLIKASI_copy_ke_proyek/pubspec.yaml (DIPERBARUI) - versi 1.2.2+5 +
+        mobile_scanner, esc_pos_utils_plus, print_bluetooth_thermal,
+        permission_handler
+    2_APLIKASI_copy_ke_proyek/android_manifest_tambahan.xml (DIPERBARUI) -
+        izin Bluetooth untuk printer + kamera untuk scan barcode
+
   Susunan tabel database (cara phpMyAdmin, pilihan):
     1_SERVER_unggah_ke_hosting/RTS_PANEL_KASIR.sql (11 tabel rts_ks_*)
 
@@ -135,7 +145,7 @@ Bila bingung mulai dari mana, cukup pakai DUA tautan ini:
 1. BACA_DULU.txt  - tutorial 8 langkah (buka lebih dahulu)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
 
-2. RTS_PANEL_PUTARAN_8.zip  - SATU paket lengkap putaran ini (42 berkas,
+2. RTS_PANEL_PUTARAN_8.zip  - SATU paket lengkap putaran ini (43 berkas,
      termasuk api/kasir.php, api/kasir_inti.php, dan RTS_PANEL_KASIR.sql):
      BACA_DULU.txt
      1_SERVER_unggah_ke_hosting\  (12 berkas untuk cPanel, termasuk

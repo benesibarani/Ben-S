@@ -30,7 +30,7 @@
 
    [ ] 4. Nomor versi pada pubspec.yaml sudah benar - harus berbunyi:
 
-              version: 1.2.1+4
+              version: 1.2.2+5
 
           Amannya: berkas pubspec.yaml dari paket RTS_PANEL_PUTARAN_7 sudah
           memuat angka itu.
@@ -121,7 +121,7 @@
            yang penting berakhiran .apk)
    [ ] 3. Buka https://rts.benedic-s.com/app_versi.php
    [ ] 4. Gulir ke kartu "Publikasikan Berkas yang Sudah Ada di Folder apk/"
-   [ ] 5. Isi Versi aplikasi (1.2.1) + Kode versi (4) + catatan, lalu tekan
+   [ ] 5. Isi Versi aplikasi (1.2.2) + Kode versi (5) + catatan, lalu tekan
           PUBLIKASIKAN BERKAS INI
    [ ] 6. Seluruh HP menerima pemberitahuan pembaruan + tombol UPDATE
 
@@ -266,8 +266,8 @@
 
    [ ] 2. Isi kolomnya seperti ini:
 
-              Versi aplikasi      : 1.2.1
-              Kode versi          : 4
+              Versi aplikasi      : 1.2.2
+              Kode versi          : 5
               Berkas APK          : pilih app-release.apk dari Langkah B
               Catatan pembaruan   : Nama aplikasi menjadi RTS Panel; halaman
                                     Kelola Akun PRO untuk ADMIN (setujui /

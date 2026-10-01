@@ -15,7 +15,11 @@ publish_to: 'none'
 #   Kode 4 (1.2.1) memuat: nama aplikasi pada layar HP menjadi "RTS Panel",
 #   dan halaman Kelola Akun PRO untuk ADMIN (setujui/tolak pembayaran QRIS
 #   serta mengatur masa PRO langsung dari HP).
-version: 1.2.1+4
+#   Kode 5 (1.2.2) memuat FITUR PRO BARANG BAWAAN & KASIR: menu Barang Bawaan
+#   (produk + barcode, stok pack/batang, riwayat), Kasir (scan barcode dengan
+#   kamera, bayar CASH/UTANG/TITIP, cetak struk Bluetooth), Piutang (angsuran
+#   utang & titip), serta Printer & Template Struk yang dapat diedit sales.
+version: 1.2.2+5
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -46,6 +50,16 @@ dependencies:
   firebase_messaging: ^16.7.0
   shared_preferences: ^2.3.2
   url_launcher: ^6.3.0
+
+  # ---- FITUR PRO: BARANG BAWAAN & KASIR ----
+  # Memindai barcode produk memakai kamera HP (tanpa alat tambahan).
+  mobile_scanner: ^7.4.2
+  # Menyusun perintah cetak struk (ESC/POS) untuk printer thermal 58/80 mm.
+  esc_pos_utils_plus: ^2.0.4
+  # Mengirim struk ke printer Bluetooth: RPP02, Xprinter P323B, EPPOS, Mypos.
+  print_bluetooth_thermal: ^1.2.5
+  # Meminta izin kamera dan Bluetooth (wajib pada Android 12 ke atas).
+  permission_handler: ^13.0.2
 
 dev_dependencies:
   flutter_test:

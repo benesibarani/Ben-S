@@ -14,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'kasir.dart';
 
 /* ------------------------------------------------------------------------- */
 /* KONFIGURASI                                                                */
@@ -2018,6 +2019,26 @@ class _DashboardPageState extends State<DashboardPage> {
         icon: Icons.assignment_outlined,
       ),
       const _MenuData(
+        title: 'Barang Bawaan',
+        subtitle: 'Produk & stok',
+        icon: Icons.inventory_2_outlined,
+      ),
+      const _MenuData(
+        title: 'Kasir',
+        subtitle: 'Jual & cetak struk',
+        icon: Icons.point_of_sale_outlined,
+      ),
+      const _MenuData(
+        title: 'Piutang',
+        subtitle: 'Utang & titip',
+        icon: Icons.request_quote_outlined,
+      ),
+      const _MenuData(
+        title: 'Printer & Struk',
+        subtitle: 'Bluetooth & template',
+        icon: Icons.print_outlined,
+      ),
+      const _MenuData(
         title: 'Notifikasi',
         subtitle: 'Pemberitahuan',
         icon: Icons.notifications_none_rounded,
@@ -2180,6 +2201,57 @@ class _DashboardPageState extends State<DashboardPage> {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => RequestListPage(user: user, token: token),
+        ),
+      );
+      return;
+    }
+
+    if (menu == 'Barang Bawaan') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RtsBarangBawaanPage(
+            baseUrl: RtsConfig.baseUrl,
+            token: token,
+            pengguna: user.toJson(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (menu == 'Kasir') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RtsKasirPage(
+            baseUrl: RtsConfig.baseUrl,
+            token: token,
+            pengguna: user.toJson(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (menu == 'Piutang') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RtsPiutangPage(
+            baseUrl: RtsConfig.baseUrl,
+            token: token,
+            pengguna: user.toJson(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (menu == 'Printer & Struk') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RtsPrinterPage(
+            baseUrl: RtsConfig.baseUrl,
+            token: token,
+          ),
         ),
       );
       return;

@@ -156,7 +156,7 @@
    [ ] 3. Skrip akan meminta konfirmasi lalu mengerjakan 7 hal:
               1. mencari folder proyek D:\Project\rts_panel_app
               2. menyalin main.dart ke main.dart DAN lib\main.dart
-              3. menyalin pubspec.yaml (image_picker + versi 1.2.1+4)
+              3. menyalin pubspec.yaml (kamera barcode + printer + versi 1.2.2+5)
               4. menambahkan izin KAMERA pada AndroidManifest.xml
               5. mengubah NAMA APLIKASI pada layar HP menjadi "RTS Panel"
               6. memasang gambar QRIS ke assets\images\qris_bene_s.jpg
@@ -259,7 +259,7 @@
 
 
 ==============================================================================
- ISI PAKET RTS_PANEL_PUTARAN_8.zip (42 berkas)
+ ISI PAKET RTS_PANEL_PUTARAN_8.zip (43 berkas)
 ==============================================================================
 
    BACA_DULU.txt                      panduan ini

@@ -44,6 +44,27 @@ Catatan:
      berjalan sendiri. -->
 <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+<!-- Izin Bluetooth untuk PRINTER STRUK (fitur PRO Barang Bawaan & Kasir).
+     Dua baris pertama hanya dipakai Android 11 ke bawah; dua baris berikutnya
+     dipakai Android 12 ke atas. Semuanya boleh ditulis sekaligus - Android
+     memilih sendiri yang sesuai dengan versi HP.
+
+     Catatan Android 12 ke atas: saat pertama kali menekan tombol "SAMBUNG",
+     Android menampilkan permintaan izin "Perangkat di sekitar" - tekan
+     IZINKAN. -->
+<uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+    android:usesPermissionFlags="neverForLocation" />
+
+<!-- Keterangan: izin KAMERA di atas juga dipakai untuk MEMINDAI BARCODE produk
+     pada menu Kasir, bukan hanya mengambil foto pribadi. -->
+
+<!-- Agar aplikasi tetap dapat dipasang pada HP tanpa kamera. -->
+<uses-feature android:name="android.hardware.camera" android:required="false" />
+<uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
 <!--
 ================================================================================
 KODE APLIKASI ADMOB - CARA PEMASANGANNYA BERBEDA
@@ -55,7 +76,7 @@ Baris di bawah ini BUKAN <uses-permission>, jadi letaknya BUKAN di atas
 Contoh susunan yang benar:
 
     <application
-        android:label="rts_panel_app"
+        android:label="RTS Panel"
         android:icon="@mipmap/ic_launcher">
 
         <meta-data

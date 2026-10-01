@@ -8,7 +8,7 @@
 #     1. Memastikan folder proyek Flutter ditemukan
 #     2. Menyalin main.dart  ->  D:\Project\rts_panel_app\main.dart
 #                                D:\Project\rts_panel_app\lib\main.dart
-#     3. Menyalin pubspec.yaml (memuat image_picker + nomor versi 1.2.1+4)
+#     3. Menyalin pubspec.yaml (memuat image_picker + nomor versi 1.2.2+5)
 #     4. Menambahkan izin KAMERA pada AndroidManifest.xml (bila belum ada)
 #     5. Mengubah NAMA APLIKASI pada layar HP menjadi "RTS Panel"
 #        (sebelumnya tertulis rts_panel_app)
@@ -21,9 +21,9 @@
 #
 #  CARA PAKAI
 #  ----------
-#     1. Ekstrak paket RTS_PANEL_PUTARAN_7.zip ke Desktop
+#     1. Ekstrak paket RTS_PANEL_PUTARAN_8.zip ke Desktop
 #     2. Buka PowerShell, masuk ke folder hasil ekstrak, contoh:
-#            cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_7"
+#            cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_8"
 #     3. Jalankan:
 #            .\LANGKAH1_PASANG_SEMUA.ps1
 #     4. Bila muncul pesan "running scripts is disabled", jalankan:
@@ -103,13 +103,14 @@ if (-not (Test-Path $folderAplikasi)) {
     Write-Host ''
     Write-Host ' Skrip ini harus dijalankan dari DALAM folder hasil ekstrak paket.' -ForegroundColor Yellow
     Write-Host ' Contoh:' -ForegroundColor Yellow
-    Write-Host '     cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_7"' -ForegroundColor White
+    Write-Host '     cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_8"' -ForegroundColor White
     Write-Host '     .\LANGKAH1_PASANG_SEMUA.ps1' -ForegroundColor White
     Write-Host ''
     exit 1
 }
 
 $berkasMain = Join-Path $folderAplikasi 'main.dart'
+$berkasKasir = Join-Path $folderAplikasi 'kasir.dart'
 $berkasPubspec = Join-Path $folderAplikasi 'pubspec.yaml'
 $berkasManifestPanduan = Join-Path $folderAplikasi 'android_manifest_tambahan.xml'
 $berkasMainActivity = Join-Path $folderAplikasi 'MainActivity.kt'
@@ -189,11 +190,24 @@ if (Salin-DenganCadangan $berkasMain $tujuanLib) {
     Baik 'lib\main.dart diperbarui  <-- INI YANG DIBANGUN FLUTTER.'
 }
 
+# lib\kasir.dart berisi seluruh halaman FITUR PRO Barang Bawaan & Kasir
+# (produk, stok, kasir, piutang, printer bluetooth, template struk).
+if (Test-Path $berkasKasir) {
+    $tujuanKasir = Join-Path $folderProyek 'lib\kasir.dart'
+
+    if (Salin-DenganCadangan $berkasKasir $tujuanKasir) {
+        Baik 'lib\kasir.dart diperbarui  <-- halaman Barang Bawaan, Kasir, Piutang, Printer.'
+    }
+} else {
+    Info 'Berkas kasir.dart tidak ada di dalam paket - menu Barang Bawaan,'
+    Info 'Kasir, Piutang, dan Printer akan tampil sebagai "sedang disiapkan".'
+}
+
 # =============================================================================
 # 3. pubspec.yaml
 # =============================================================================
 
-Judul '3. Memasang pubspec.yaml (image_picker + versi 1.2.0+3)'
+Judul '3. Memasang pubspec.yaml (kamera barcode + printer + versi 1.2.2+5)'
 
 $tujuanPubspec = Join-Path $folderProyek 'pubspec.yaml'
 

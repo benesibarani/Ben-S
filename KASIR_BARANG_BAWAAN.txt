@@ -191,32 +191,127 @@
 
 
 ==============================================================================
- BAGIAN 5 - YANG MASIH PERLU SAYA TAHU DARI BAPAK (4 pertanyaan)
+ BAGIAN 5 - JAWABAN BAPAK (sudah saya kerjakan sesuai jawaban)
 ==============================================================================
 
-  1. PRINTER BLUETOOTH yang dipakai Sales merek/tipe apa?
-        (RPP02 / Xprinter P323B / EPPOS / Mypos / merek lain / belum tahu)
-     Bila belum tahu: tidak masalah - akan saya sediakan tombol UJI CETAK
-     supaya Bapak dapat mencoba beberapa pilihan lebar kertas.
-
-  2. DAFTAR PRODUK diisi siapa?
-        a. Satu daftar bersama, siapa pun boleh menambah  (yang saya bangun)
-        b. Hanya ADMIN yang mengisi, sales hanya memakai
-        c. Tiap sales punya daftar produk sendiri-sendiri
-
-  3. Saat men-scan barcode: memakai KAMERA HP atau ALAT SCANNER Bluetooth?
-        (Keduanya akan didukung. Untuk kamera perlu izin kamera pada HP.)
-
-  4. Harga jual: sama untuk semua sales, atau boleh berbeda per district?
-        (Saat ini saya sediakan: harga umum + harga khusus per sales.)
+  1. Printer          : RPP02 / printer 58 mm umum
+                        -> bawaan template = 58 mm; pilihan 80 mm tetap ada;
+                           tombol "UJI CETAK" tersedia untuk memastikan.
+  2. Daftar produk    : SATU DAFTAR BERSAMA, siapa pun boleh menambah
+                        -> sudah begitu (tabel rts_ks_produk).
+  3. Scan barcode     : KAMERA HP
+                        -> tombol pindai pada form produk dan pada halaman
+                           kasir (izin kamera diminta sekali).
+  4. Harga            : SAMA untuk semua sales
+                        -> diisi sekali pada produk, dipakai semua sales.
+                           (Tabel harga khusus tetap ada bila nanti diperlukan.)
 
 
 ==============================================================================
- CATATAN KEAMANAN
+ BAGIAN 6 - BAGIAN APLIKASI (SUDAH JADI PUTARAN INI)
 ==============================================================================
- - Tidak ada satu pun data asli (customer/petugas/penjualan) di dalam berkas
-   yang saya buat. Berkas .sql hanya berisi susunan tabel.
- - Jangan lupa: repo GitHub masih PUBLIC dan riwayat lama masih memuat
-   salinan dashboard.php berisi password database. SEGERA ganti password
-   database dan jadikan repo Private.
+
+ Berkas baru : lib/kasir.dart (142.041 B, 4.243 baris)
+   Berisi SELURUH halaman fitur ini, dipisah dari main.dart supaya pembaruan
+   berikutnya cukup mengganti satu berkas:
+
+     1. BARANG BAWAAN - 3 tab:
+          PRODUK  : daftar barang bawaan + tombol tambah/ubah produk
+          STOK    : sisa per produk + tombol MASUK / KELUAR
+                    (KELUAR = rusak, kembali ke gudang, atau hitung fisik)
+          RIWAYAT : seluruh perubahan stok sampai detik
+     2. KASIR
+          - kotak pencarian + tombol PINDAI (kamera)
+          - ringkasan hari ini di bagian atas (nota, penjualan, tunai, piutang)
+          - keranjang dengan pengatur PACK dan BATANG per barang
+          - pilihan bayar CASH / UTANG / TITIP
+          - uang diterima + hitung kembalian otomatis
+          - pilih toko dari Master Customer (atau tulis sendiri)
+          - SIMPAN NOTA -> muncul nomor nota + tombol CETAK STRUK
+     3. RIWAYAT NOTA  - daftar nota, rincian barang, CETAK ULANG, BATALKAN
+                        (stok otomatis kembali bila dibatalkan)
+     4. PIUTANG       - daftar utang & titip + total belum diterima,
+                        saringan (semua / utang / titip / belum lunas),
+                        penanda TERLAMBAT, dan CATAT PEMBAYARAN (angsuran)
+     5. PRINTER & STRUK
+          - daftar printer Bluetooth yang sudah dipasangkan dengan HP
+          - tombol SAMBUNG, PUTUSKAN, dan UJI CETAK
+          - template struk dapat diubah bebas: judul, 3 baris alamat,
+            3 baris penutup, lebar 58/80 mm, ukuran huruf, garis pemisah,
+            jumlah salinan, tampil/tidak barcode, nomor HP, tanda tangan,
+            metode bayar
+          - contoh tampilan struk diperlihatkan sebelum disimpan
+
+ Menu baru pada Beranda aplikasi: Barang Bawaan, Kasir, Piutang,
+ Printer & Struk.
+
+ Berkas aplikasi yang berubah:
+    lib/kasir.dart                 (BARU)  - seluruh halaman fitur ini
+    lib/main.dart  & main.dart     (DIPERBARUI) - 4 menu baru + pembuka halaman
+    pubspec.yaml                   (DIPERBARUI) - tambahan paket + versi 1.2.2+5
+    android_manifest_tambahan.xml  (DIPERBARUI) - izin Bluetooth + kamera
+    LANGKAH1_PASANG_SEMUA.ps1      (DIPERBARUI) - ikut menyalin lib/kasir.dart
+
+ Paket baru yang dipasang (sudah dituliskan di pubspec.yaml):
+    mobile_scanner          ^7.4.2  -> memindai barcode dengan kamera
+    esc_pos_utils_plus      ^2.0.4  -> menyusun perintah cetak struk
+    print_bluetooth_thermal ^1.2.5  -> mengirim struk ke printer Bluetooth
+    permission_handler      ^13.0.2 -> izin kamera & Bluetooth
+
+
+==============================================================================
+ BAGIAN 7 - LANGKAH PEMASANGAN DI KOMPUTER (untuk aplikasi)
+==============================================================================
+
+   [ ] 1. Unduh RTS_PANEL_PUTARAN_8.zip, ekstrak ke Desktop.
+   [ ] 2. Buka PowerShell di dalam folder hasil ekstrak, jalankan:
+              .\LANGKAH1_PASANG_SEMUA.ps1
+          Skrip ini menyalin main.dart, lib\kasir.dart, pubspec.yaml, dan
+          berkas Android (termasuk izin Bluetooth). Bila ada pertanyaan,
+          jawab sesuai petunjuk di layar.
+   [ ] 3. Tambahkan izin pada AndroidManifest.xml - panduannya ada di berkas
+          android_manifest_tambahan.xml (bagian "Izin Bluetooth untuk PRINTER
+          STRUK"). Sesudah itu jalankan:
+              flutter clean
+              flutter pub get
+              flutter run -d CPH1937
+   [ ] 4. Buka menu Barang Bawaan - tekan SIAPKAN DATA KASIR (khusus ADMIN).
+   [ ] 5. Tambahkan produk + barcode, isi stok MASUK, lalu coba menu Kasir.
+   [ ] 6. Pasangkan printer Bluetooth di Pengaturan HP, lalu buka
+          menu Printer & Struk - tekan SAMBUNG - tekan UJI CETAK.
+
+ CATATAN: bila "flutter pub get" menampilkan pesan, kirimkan tangkapan
+ layarnya kepada saya. Seluruh berkas Dart sudah diperiksa keseimbangan
+ kurungnya (tidak ada kurung yang tertinggal), namun pembangun Flutter di
+ komputer Bapak adalah pemeriksaan terakhir yang paling sahih.
+
+
+==============================================================================
+ BAGIAN 8 - CATATAN PENTING & SARAN URUTAN
+==============================================================================
+
+ 1. Fitur ini akan meminta beberapa hal saat pertama dipakai (semuanya cukup
+    sekali): izin kamera, izin Bluetooth, dan tombol SIAPKAN DATA KASIR.
+ 2. Saran urutan mencoba:
+       a. SIAPKAN DATA KASIR
+       b. Isi 2-3 produk contoh + barcode + harga
+       c. Catat stok MASUK (misalnya 10 pack 0 batang)
+       d. Buat satu nota uji: 2 pack + 3 batang -> lihat hitungan dan struk
+       e. Coba UTANG dan TITIP, lalu buka menu Piutang dan catat pembayaran
+ 3. Bila ada sales yang statusnya masih GRATIS, mereka akan melihat layar
+    "FITUR PRO". Untuk masa percobaan seluruh tim, ADMIN dapat mengubah
+    setelan mode_akses menjadi SEMUA (lihat bagian 3 di atas).
+
+
+==============================================================================
+ RINGKASAN JAWABAN UNTUK PERTANYAAN BAPAK
+==============================================================================
+
+   "Apakah bisa permintaan saya ini?"
+       YA - ketiganya bisa:
+         (1) input stok barang bawaan + barcode ....... SIAP (server + aplikasi)
+         (2) kasir dengan CASH / UTANG / TITIP ........ SIAP (server + aplikasi)
+         (3) cetak struk Bluetooth + template bebas .. SIAP (server + aplikasi)
+       Bagian server sudah diunggah-ready pada putaran ini; bagian aplikasi
+       perlu dipasang dengan LANGKAH1_PASANG_SEMUA.ps1 lalu dibangun.
 ==============================================================================
