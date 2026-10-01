@@ -333,7 +333,9 @@
           panduannya ada di berkas android_manifest_tambahan.xml.
           Putaran ini TIDAK menambah izin baru (tidak ada izin
           penyimpanan) - jadi bila putaran lalu sudah dipasang, lewati saja.
-   [ ] 4. Jalankan SEKALI SAJA:
+   [ ] 4. Jalankan SEKALI SAJA (langkah ini SUDAH dijalankan otomatis oleh
+          LANGKAH1_PASANG_SEMUA.ps1 pada paket PUTARAN_10 - kerjakan sendiri
+          hanya bila Bapak memakai paket lama):
               .\PERBAIKI_COMPILE_SDK.ps1
           Skrip itu mengubah satu baris pada android\app\build.gradle.kts
           menjadi compileSdk = 37, karena paket permission_handler yang baru

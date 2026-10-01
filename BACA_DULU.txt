@@ -17,7 +17,9 @@
   Yang perlu Bapak lakukan untuk perubahan ini:
      1. Jalankan .\LANGKAH1_PASANG_SEMUA.ps1 dari paket RTS_PANEL_PUTARAN_10.zip
         (skrip itu kini ikut menyalin berkas baru lib\kasir_lokal.dart)
-     2. Jalankan .\PERBAIKI_COMPILE_SDK.ps1 SEKALI SAJA. Skrip ini mengubah
+     2. PERBAIKI_COMPILE_SDK.ps1 SEKALI SAJA - sudah dijalankan otomatis oleh
+        LANGKAH1_PASANG_SEMUA.ps1 di atas. (Jalankan sendiri hanya bila
+        pembangunan pertama Bapak belum memakai paket ini.) Skrip ini mengubah
         satu baris pada android\app\build.gradle.kts menjadi compileSdk = 37.
         Diperlukan karena paket permission_handler yang baru dibangun memakai
         Android SDK 37 (angka lebih tinggi selalu boleh - mundur kompatibel).

@@ -4,17 +4,22 @@
 #
 #  SATU-SATUNYA SKRIP YANG PERLU DIJALANKAN UNTUK TOPIK INI.
 #
-#  APA YANG DIKERJAKAN SKRIP INI (8 langkah, semuanya dicadangkan lebih dahulu)
+#  APA YANG DIKERJAKAN SKRIP INI (9 langkah, semuanya dicadangkan lebih dahulu)
 #     1. Memastikan folder proyek Flutter ditemukan
 #     2. Menyalin main.dart  ->  D:\Project\rts_panel_app\main.dart
 #                                D:\Project\rts_panel_app\lib\main.dart
 #     3. Menyalin pubspec.yaml (memuat sqflite + nomor versi 1.2.3+6)
-#     4. Menambahkan izin KAMERA pada AndroidManifest.xml (bila belum ada)
-#     5. Mengubah NAMA APLIKASI pada layar HP menjadi "RTS Panel"
+#     4. Menyalin lib\kasir.dart DAN lib\kasir_lokal.dart
+#        (kasir_lokal.dart = mesin kasir di dalam HP, berjalan tanpa internet)
+#     5. Menambahkan izin KAMERA pada AndroidManifest.xml (bila belum ada)
+#     6. Mengubah NAMA APLIKASI pada layar HP menjadi "RTS Panel"
 #        (sebelumnya tertulis rts_panel_app)
-#     6. Memasang gambar QRIS Bapak -> assets\images\qris_bene_s.jpg
-#     7. Menjalankan flutter clean dan flutter pub get
-#     8. Menampilkan perintah terakhir yang perlu diketik
+#     7. Memasang gambar QRIS Bapak -> assets\images\qris_bene_s.jpg
+#     8. Memperbaiki compileSdk menjadi 37 (sekali saja) supaya pesan
+#        "permission_handler_android compiles against Android SDK 37"
+#        tidak menghentikan pembangunan, lalu menjalankan
+#        flutter clean dan flutter pub get
+#     9. Menampilkan perintah terakhir yang perlu diketik
 #
 #  Skrip ini TIDAK menghapus berkas apa pun. Berkas lama selalu dicadangkan
 #  dengan tambahan ".lama_tanggal_jam".
@@ -560,10 +565,35 @@ if (Test-Path $tujuanQris) {
 }
 
 # =============================================================================
+# 5b. MEMPERBAIKI compileSdk MENJADI 37 (SEKALI SAJA)
+# =============================================================================
+
+Judul '7. Memperbaiki compileSdk Android menjadi 37 (sekali saja)'
+
+$berkasPerbaikiSdk = Join-Path $PSScriptRoot 'PERBAIKI_COMPILE_SDK.ps1'
+
+if (Test-Path $berkasPerbaikiSdk) {
+    try {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File `
+            $berkasPerbaikiSdk -Proyek $folderProyek
+
+        Baik 'compileSdk diperiksa/diperbaiki menjadi 37.'
+    }
+    catch {
+        Awas 'Pemeriksaan compileSdk dilewati. Jalankan sendiri berkas'
+        Awas 'PERBAIKI_COMPILE_SDK.ps1 di folder 3_SKRIP_POWERSHELL.'
+    }
+} else {
+    Info 'Berkas PERBAIKI_COMPILE_SDK.ps1 tidak ada di folder paket.'
+    Info 'Bila pembangunan berhenti dengan pesan permission_handler_android'
+    Info 'compiles against Android SDK 37, jalankan berkas itu lebih dahulu.'
+}
+
+# =============================================================================
 # 6. flutter clean + flutter pub get
 # =============================================================================
 
-Judul '7. Menjalankan flutter clean dan flutter pub get'
+Judul '8. Menjalankan flutter clean dan flutter pub get'
 
 $flutter = Get-Command flutter -ErrorAction SilentlyContinue
 
@@ -595,10 +625,10 @@ if (-not $flutter) {
 }
 
 # =============================================================================
-# 7. RINGKASAN
+# 8. RINGKASAN
 # =============================================================================
 
-Judul '8. SELESAI - LANGKAH BERIKUTNYA'
+Judul '9. SELESAI - LANGKAH BERIKUTNYA'
 
 Write-Host ' Di komputer (sekarang):' -ForegroundColor White
 Write-Host '     cd ' $folderProyek -ForegroundColor Gray
@@ -613,12 +643,13 @@ Write-Host '     3. Tekan tombol PERBARUI DATABASE' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Periksa di aplikasi:' -ForegroundColor White
 Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-10-01-9' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-01-10' -ForegroundColor Gray
 Write-Host '     Pembaruan   : kotak Pembaruan -> PERBARUI SEKARANG' -ForegroundColor Gray
 Write-Host '                   (berkas diunduh DI DALAM aplikasi, tanpa Chrome)' -ForegroundColor Gray
 Write-Host '     Profil      : tombol LANGGANAN PRO tampil + gambar QRIS tampil' -ForegroundColor Gray
 Write-Host '     Profil      : ketuk foto -> pilih dari galeri -> foto berubah' -ForegroundColor Gray
 Write-Host '     Beranda     : iklan banner + iklan native tampil (akun GRATIS)' -ForegroundColor Gray
+Write-Host '     Barang Bawaan: SIAPKAN DATA -> produk -> stok -> nota (tanpa internet)' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Bila ada yang gagal, buka berkas BACA_DULU.txt bagian "KALAU ADA MASALAH".' -ForegroundColor Yellow
 Write-Host ''
