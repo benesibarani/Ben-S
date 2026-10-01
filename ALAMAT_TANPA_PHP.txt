@@ -1,104 +1,155 @@
 ==============================================================================
- RTS PANEL BY BENE - ALAMAT HALAMAN: /.php DAN ALAMAT TANPA .php
+ RTS PANEL BY BENE - KENAPA /inbox DAN /gsp MENJAWAB 404
+ (dan cara membuat alamat pendek itu dapat dibuka)
 ==============================================================================
 
  PERTANYAAN BAPAK
  ----------------
- "Kenapa menu https://rts.benedic-s.com/inbox ... ?"
+   1. Kenapa https://rts.benedic-s.com/inbox jadi 404?
+   2. https://rts.benedic-s.com/gsp juga jadi 404?
 
- JAWABAN SINGKAT
- --------------
-   Alamat itu MEMANG tidak ada, sebab berkasnya bernama inbox.php.
+ JAWABAN
+ -------
+   Sebab berkas yang ada di hosting bernama inbox.php dan gsp.php.
+   Nama berkas itulah yang menjadi alamat halaman.
 
-   https://rts.benedic-s.com/inbox        -> 404 Not Found  (tanpa .php, tidak ada)
-   https://rts.benedic-s.com/inbox.php    -> BENAR, berjalan normal
+ HASIL PENGUJIAN LANGSUNG KE HOSTING BAPAK
 
- Saya sudah menguji keduanya ke hosting Bapak:
-   - /inbox   -> LiteSpeed menjawab "404 Not Found"
-   - /inbox.php -> berjalan, lalu dialihkan ke halaman masuk (index.php)
-                   karena belum login. Itu memang perilakunya yang benar.
+   Alamat                              Hasil
+   -----------------------------------|------------------------------------------
+   https://rts.benedic-s.com/inbox     | 404 Not Found  (tidak ada berkas "inbox")
+   https://rts.benedic-s.com/inbox.php | BERJALAN (dialihkan ke halaman masuk
+                                       |  bila belum login - memang begitu)
+   https://rts.benedic-s.com/gsp       | 404 Not Found  (tidak ada berkas "gsp")
+   https://rts.benedic-s.com/gsp.php   | BERJALAN (formulir GSP tampil)
 
- Jadi TIDAK ada yang rusak. Menu "Inbox" pada sidebar juga sudah benar:
- tautannya menuju inbox.php, bukan /inbox.
+   Jadi TIDAK ada yang rusak. Yang kurang hanyalah akhiran .php.
+   Menu pada sidebar juga sudah benar - semuanya menuju alamat berakhiran .php.
 
- CATATAN: seluruh halaman RTS Panel memakai akhiran .php -
-   dashboard.php, master_customer.php, pengajuan_toko.php, gsp.php,
-   inbox.php, notifications.php, manage_users.php, app_versi.php,
-   langganan_admin.php, akun.php, dan seterusnya.
+ DAFTAR ALAMAT YANG BENAR UNTUK SETIAP MENU
 
-
-==============================================================================
- BAGIAN 1 - KALAU INGIN ALAMAT TANPA .php TETAP BISA DIBUKA (OPSIONAL)
-==============================================================================
-
- Bila Bapak ingin https://rts.benedic-s.com/inbox (tanpa .php) juga dapat
- dibuka, caranya menambahkan aturan pada berkas .htaccess di public_html.
-
- Berkas itu membuat aturan: "bila ada permintaan /inbox, carikan berkas
- inbox.php". Hanya berlaku bila berkas .php-nya memang ada, sehingga tidak
- mengganggu halaman lain.
-
- CARA MEMASANG (hati-hati, sekali saja)
-
-   [ ] 1. CADANGKAN lebih dahulu berkas .htaccess yang lama:
-             cPanel - File Manager - aktifkan "Show Hidden Files (dotfiles)"
-             - klik kanan .htaccess - Copy - beri nama  htaccess_lama.txt
-   [ ] 2. Buka .htaccess dengan Edit, lalu TAMBAHKAN isi berkas
-          htaccess_opsional.txt pada BAGIAN PALING BAWAH.
-          (Jangan menghapus isi yang sudah ada - biasanya hanya berisi
-           pengaturan php_value dari cPanel.)
-   [ ] 3. Simpan.
-   [ ] 4. Uji:
-             https://rts.benedic-s.com/inbox        -> harus terbuka
-             https://rts.benedic-s.com/dashboard    -> harus terbuka
-             https://rts.benedic-s.com/kelola_user  -> bila namanya tidak
-                                                      ada, 404 (wajar)
-
- BILA SESUATU MENJADI SALAH (misalnya halaman menjadi 500)
-   Bila hal itu terjadi, kembalikan berkas .htaccess seperti semula:
-   timpa dengan salinan cadangan tadi (htaccess_lama.txt), atau hapus seluruh
-   isi tambahan yang Bapak tempel. Aturan ini TIDAK mengubah data apa pun,
-   jadi tidak ada risiko pada database.
-
- KELEBIHAN cara ini
-   - Alamat menjadi lebih pendek dan mudah diingat: /inbox, /dashboard
- KEKURANGANNYA
-   - Berkas .htaccess berlaku untuk SELURUH website (bukan hanya RTS Panel),
-     jadi harus diuji sesudah dipasang. Bila Bapak lebih suka aman, cukup
-     gunakan alamat dengan .php - semuanya sudah berjalan normal.
+   Menu / Halaman        Alamat yang benar
+   ---------------------|--------------------------------------------
+   Masuk (login)         https://rts.benedic-s.com/index.php
+   Mendaftar             https://rts.benedic-s.com/daftar.php
+   Dashboard             https://rts.benedic-s.com/dashboard.php
+   Master Customer       https://rts.benedic-s.com/master_customer.php
+   Upload Customer       https://rts.benedic-s.com/upload_customer.php
+   Pengajuan Customer    https://rts.benedic-s.com/pengajuan_toko.php
+   GSP                   https://rts.benedic-s.com/gsp.php
+   Inbox                 https://rts.benedic-s.com/inbox.php
+   Notifikasi            https://rts.benedic-s.com/notifications.php
+   Kelola User           https://rts.benedic-s.com/manage_users.php
+   Langganan PRO         https://rts.benedic-s.com/langganan_admin.php
+   Versi Aplikasi        https://rts.benedic-s.com/app_versi.php
+   Akun Saya             https://rts.benedic-s.com/akun.php
 
 
 ==============================================================================
- BAGIAN 2 - BILA MASALAHNYA BUKAN 404
+ BAGIAN 1 - BILA INGIN ALAMAT PENDEK (/inbox, /gsp) JUGA BISA DIBUKA
 ==============================================================================
 
- Bila yang Bapak maksud bukan "alamat tidak ditemukan", melainkan halaman
- Inbox-nya bermasalah SETELAH MASUK (misalnya tampil kosong, isi tidak muncul,
- atau muncul tulisan galat), tolong kirimkan kepada saya:
+ Bisa. Caranya menambahkan 6 baris aturan pada berkas .htaccess di
+ public_html. Sesudah itu, /inbox dan /gsp dapat dibuka seperti yang Bapak
+ tuliskan - walaupun berkasnya bernama inbox.php dan gsp.php.
 
-   [ ] 1. Tangkapan layar halaman itu (seperti Bapak kirim sebelumnya)
-   [ ] 2. Tulisan galat yang tampak (bila ada)
-   [ ] 3. Apakah terjadi pada semua akun atau hanya akun tertentu
+ LANGKAH-LANGKAHNYA (hati-hati, sekali saja)
 
- Halaman Inbox membaca tiga hal:
-   - pengajuan_sales   (pengajuan toko dari tim Sales)
-   - pengajuan_gsp     (pengajuan GSP)
-   - hak persetujuan sesuai role (ADMIN & ASS yang menyetujui;
-     WSS & SMST melihat semua district; RTS & TF sesuai district/salesman)
- Jadi bila isinya kosong, biasanya memang belum ada pengajuan yang sesuai
- cakupan akun tersebut - bukan kerusakan.
+   [ ] 1. cPanel - File Manager - masuk ke public_html
+          Aktifkan: Settings - centang "Show Hidden Files (dotfiles)"
+          (sebab berkas .htaccess berawalan titik, tidak tampak sebelum ini)
 
- Pengingat kecil: halaman Inbox juga menjalankan pembersihan otomatis berkas
- pengajuan yang sudah diproses lebih dari 30 hari (foto KTP/luar/dalam ikut
- dihapus). Itu sudah ada sejak awal dan memang disengaja.
+   [ ] 2. CADANGKAN berkas .htaccess yang sudah ada:
+          klik kanan .htaccess - Copy - beri nama  htaccess_lama.txt
+          (langkah ini membuat Bapak selalu dapat kembali seperti semula)
+
+   [ ] 3. Klik kanan .htaccess - Edit - Edit
+          Lalu TEMPEL isi berkas htaccess_opsional.txt pada BAGIAN PALING
+          BAWAH (jangan menghapus isi yang sudah ada - biasanya hanya berisi
+          pengaturan php_value dari cPanel).
+
+          Isi yang perlu ditempel:
+
+              <IfModule mod_rewrite.c>
+                  RewriteEngine On
+                  RewriteCond %{REQUEST_FILENAME} -f [OR]
+                  RewriteCond %{REQUEST_FILENAME} -d
+                  RewriteRule ^ - [L]
+                  RewriteCond %{REQUEST_FILENAME}\.php -f
+                  RewriteRule ^(.*?)/?$ $1.php [L,QSA]
+              </IfModule>
+
+   [ ] 4. Save, lalu uji pada HP:
+             https://rts.benedic-s.com/inbox    -> harus terbuka
+             https://rts.benedic-s.com/gsp      -> harus terbuka
+             https://rts.benedic-s.com/dashboard -> harus terbuka
+
+   [ ] 5. Bila ada yang salah (misalnya halaman menjadi 500):
+             hapus bagian yang baru ditempel, atau timpa .htaccess dengan
+             htaccess_lama.txt. Tidak ada risiko pada database.
+
+ CATATAN: aturan ini hanya berlaku bila berkas .php dengan nama itu benar-benar
+ ada. Jadi alamat /halaman-yang-tidak-ada tetap menjawab 404 seperti biasa.
+
+
+==============================================================================
+ BAGIAN 2 - TEMUAN PENTING SAAT PEMERIKSAAN (SUDAH SAYA PERBAIKI)
+==============================================================================
+
+ Sambil memeriksa, saya menemukan 4 halaman yang dapat dibuka TANPA LOGIN:
+
+     gsp.php                    - formulir pengajuan GSP
+     pengajuan_toko.php         - formulir pengajuan toko
+     pengajuan_toko_updated.php - salinan berkas di atas
+     stokgsp.php                - halaman stok GSP
+
+   Artinya: siapa pun yang mengetahui alamatnya dapat membuka formulir itu dan
+   MENGIRIM pengajuan tanpa masuk lebih dahulu. Pengajuan seperti itu tercatat
+   dengan email kosong, sehingga tampak sebagai data aneh pada Inbox.
+
+   Halaman lain sudah aman (memakai pengaman login sendiri): dashboard.php,
+   master_customer.php, upload_customer.php, inbox.php, notifications.php,
+   manage_users.php, akun.php, insentif.php, p_user.php, app_versi.php
+   (khusus ADMIN), dan langganan_admin.php (khusus ADMIN).
+
+ PERBAIKAN YANG SAYA LAKUKAN
+
+   Keempat berkas di atas kini memanggil pengaman login lebih dahulu
+   (rts_require_login). Bila belum masuk, pengunjung diarahkan ke halaman
+   masuk - persis seperti halaman lain.
+
+   Caranya aman: pengaman hanya dijalankan bila berkas auth.php ada pada
+   hosting; bila tidak ada, pemeriksaan memakai $_SESSION seperti halaman
+   lainnya. Berkas PHP sudah diperiksa dengan pengurai PHP - sintaksnya bersih.
+
+ BERKAS YANG PERLU DIUNGGAH (kalau ingin ditutup, disarankan)
+
+   [ ] 1. gsp.php
+   [ ] 2. pengajuan_toko.php
+   [ ] 3. stokgsp.php
+   [ ] 4. pengajuan_toko_updated.php   (salinan - aman untuk disamakan)
+
+   Semuanya ke public_html. Sebelum menimpa, cadangkan berkas lama bila ingin
+   (cPanel: klik kanan - Copy - beri nama dengan akhiran .lama).
+
+ CARA MENGUJI SUDAH BENAR
+
+   [ ] Buka browser mode PRIBADI (incognito), lalu buka
+          https://rts.benedic-s.com/gsp.php
+       Sekarang harus dialihkan ke halaman MASUK (bukan lagi menampilkan
+       formulir GSP).
+   [ ] Masuk memakai akun Bapak, lalu buka menu GSP - harus tampil normal
+       seperti biasa (tidak ada yang hilang).
 
 
 ==============================================================================
  RINGKASAN
 ==============================================================================
 
- 1. Alamat yang benar  : https://rts.benedic-s.com/inbox.php
- 2. Menu sidebar       : sudah benar (inbox.php)
- 3. Alamat tanpa .php  : opsional, memakai htaccess_opsional.txt
- 4. Bila bermasalah setelah masuk: kirimkan tangkapan layarnya kepada saya
+ 1. Alamat yang benar     : pakai akhiran .php (lihat tabel pada bagian atas)
+ 2. Ingin alamat pendek   : tempel 6 baris dari htaccess_opsional.txt pada
+                            bagian bawah .htaccess public_html (setelah
+                            dicadangkan lebih dahulu) - langkah pada Bagian 1
+ 3. Pengaman login 4 berkas: sudah disiapkan bersama berkas ini (Bagian 2)
+ 4. Berkas PHP diperiksa  : memakai pengurai PHP sungguhan, sintaks bersih
 ==============================================================================

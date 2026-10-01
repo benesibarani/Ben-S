@@ -1,5 +1,27 @@
 <?php
 require_once 'config.php';
+
+/* ==========================================================================
+ * PENGAMAN LOGIN (ditambahkan 1 Oktober 2026)
+ * Halaman ini hanya boleh dibuka oleh akun yang sudah masuk. Sebelumnya
+ * halaman ini dapat dibuka tanpa login, sehingga formulirnya dapat diisi
+ * orang luar. Bila belum masuk, pengunjung diarahkan ke halaman masuk.
+ * ========================================================================== */
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    @session_start();
+}
+
+if (is_file(__DIR__ . '/auth.php')) {
+    require_once __DIR__ . '/auth.php';
+}
+
+if (function_exists('rts_require_login')) {
+    rts_require_login();
+} elseif (!isset($_SESSION['is_logged_in'])) {
+    header('Location: index.php');
+    exit;
+}
+
 require_once 'header.php';
 
 // --- CONFIG ---

@@ -3,16 +3,27 @@
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.
 ==============================================================================
 
-SOAL ALAMAT HALAMAN (/.php ATAU TANPA .php)
------------------------------------------
-ALAMAT_TANPA_PHP.txt - kenapa https://rts.benedic-s.com/inbox menjawab 404
-                        dan cara membuat alamat tanpa .php bila diinginkan
+ALAMAT PENDEK (/inbox, /gsp) + PENGAMAN LOGIN 4 HALAMAN
+-------------------------------------------------------
+ALAMAT_TANPA_PHP.txt - kenapa /inbox dan /gsp menjawab 404 (hasil pengujian:
+                        berkasnya bernama inbox.php / gsp.php), tabel alamat
+                        yang benar untuk SETIAP menu, dan cara membuat alamat
+                        pendek dapat dibuka
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/ALAMAT_TANPA_PHP.txt
 
-  Alamat yang benar : https://rts.benedic-s.com/inbox.php
-  Aturan opsional   : htaccess_opsional.txt (tempelkan di bagian bawah
-                      .htaccess public_html, setelah dicadangkan lebih dahulu)
+  PERBAIKAN PENTING - 4 halaman yang tadinya dapat dibuka TANPA LOGIN sudah
+  ditambahkan pengamannya (isi formulir dapat dikirim orang luar):
+     1_SERVER_unggah_ke_hosting/gsp.php
+     1_SERVER_unggah_ke_hosting/pengajuan_toko.php
+     1_SERVER_unggah_ke_hosting/stokgsp.php
+     1_SERVER_unggah_ke_hosting/pengajuan_toko_updated.php
+
+  Aturan opsional alamat pendek : htaccess_opsional.txt (tempelkan pada bagian
+  bawah .htaccess public_html, setelah dicadangkan lebih dahulu)
   https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/htaccess_opsional.txt
+
+  Paket kecil khusus topik ini : RTS_PANEL_ALAMAT_DAN_LOGIN.zip
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_ALAMAT_DAN_LOGIN.zip
 
 
 BARU - TOMBOL "MENDAFTAR" UNTUK TIM SALES (DROPDOWN SALES DISTRICT)
