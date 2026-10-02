@@ -170,10 +170,12 @@ if (!$can_view_all) {
     $where_gsp[] = "sales_email = '$my_email'";
 }
 
-$f_start = $_GET['f_start'] ?? '';
-$f_end   = $_GET['f_end'] ?? '';
-$f_stat  = $_GET['f_status'] ?? '';
-$f_key   = $_GET['f_keyword'] ?? '';
+// Nilai saringan dibersihkan lebih dahulu (real_escape_string) supaya aman
+// dipakai pada perintah database dan tidak dapat disalahgunakan.
+$f_start = $conn->real_escape_string(trim((string) ($_GET['f_start'] ?? '')));
+$f_end   = $conn->real_escape_string(trim((string) ($_GET['f_end'] ?? '')));
+$f_stat  = $conn->real_escape_string(trim((string) ($_GET['f_status'] ?? '')));
+$f_key   = $conn->real_escape_string(trim((string) ($_GET['f_keyword'] ?? '')));
 
 if ($f_start) { $where_toko[] = "DATE(tanggal_request) >= '$f_start'"; $where_gsp[] = "DATE(tanggal_request) >= '$f_start'"; }
 if ($f_end) { $where_toko[] = "DATE(tanggal_request) <= '$f_end'"; $where_gsp[] = "DATE(tanggal_request) <= '$f_end'"; }
@@ -187,21 +189,324 @@ $sql_toko = "SELECT *, 'Toko Reguler' as tipe_data FROM pengajuan_sales " . (cou
 $sql_gsp  = "SELECT *, 'GSP' as tipe_data FROM pengajuan_gsp " . (count($where_gsp) ? "WHERE " . implode(' AND ', $where_gsp) : "") . " ORDER BY tanggal_request DESC";
 
 // --- 3. EXPORT EXCEL ---
+//
+// CATATAN PERBAIKAN (2 Oktober 2026)
+// ----------------------------------
+// Sebelumnya berkas Excel hanya memuat 12 kolom pilihan, dan pengajuan Sales
+// digabung dengan pengajuan GSP pada satu lembar. Akibatnya isi berkas tidak
+// selengkap isi tabel pada database.
+//
+// Sekarang isi berkas Excel sama dengan isi database:
+//    Lembar 1 : "Pengajuan Sales"   -> SELURUH kolom tabel pengajuan_sales
+//    Lembar 2 : "Pengajuan GSP"     -> SELURUH kolom tabel pengajuan_gsp
+//    Lembar 3 : "Gabungan (ringkas)"-> susunan ringkas seperti versi lama,
+//                                      supaya laporan yang sudah biasa
+//                                      dipakai tetap dapat dibuat
+//
+// Nama dan urutan kolom dibaca langsung dari database (SHOW COLUMNS),
+// sehingga bila kelak Bapak menambahkan kolom baru pada tabel, kolom itu
+// otomatis ikut terunduh tanpa perlu mengubah berkas ini.
+//
+// Saringan (tanggal, status, kata kunci) yang sedang dipakai pada halaman
+// tetap berlaku untuk berkas yang diunduh.
+
+// Nama kolom dalam Bahasa Indonesia yang mudah dibaca di Excel.
+$label_kolom = [
+    'id'               => 'ID',
+    'tanggal_request'  => 'Tanggal Request',
+    'sales_email'      => 'Email Sales',
+    'sales_distric'    => 'Sales District',
+    'sales_district'   => 'Sales District',
+    'salesman'         => 'Nama Salesman',
+    'jenis_request'    => 'Jenis Request',
+    'id_customer'      => 'ID Customer',
+    'pic'              => 'PIC',
+    'rute_kunjungan'   => 'Rute Kunjungan',
+    'week'             => 'Frekuensi Kunjungan (Week)',
+    'nama_toko_lama'   => 'Nama Toko Lama',
+    'nama_toko_baru'   => 'Nama Toko Baru',
+    'alamat_lama'      => 'Alamat Lama',
+    'alamat_baru'      => 'Alamat Baru',
+    'tipe_baru'        => 'Tipe Baru',
+    'visit_day_baru'   => 'Hari Kunjungan Baru',
+    'alasan'           => 'Alasan',
+    'status_approval'  => 'Status Approval',
+    'processed_by'     => 'Diproses Oleh',
+    'processed_at'     => 'Waktu Proses',
+    'approval_note'    => 'Catatan Approval',
+    'toko_lama_nama'   => 'Nama Toko Lama',
+    'toko_lama_id'     => 'ID Toko Lama',
+    'toko_baru_nama'   => 'Nama Toko Baru',
+    'toko_baru_id'     => 'ID Toko Baru',
+    'alamat_lengkap'   => 'Alamat Lengkap',
+    'pic_nama'         => 'Nama PIC',
+    'nomor_hp'         => 'Nomor HP',
+    'koordinat'        => 'Koordinat',
+    'link_foto_ktp'    => 'Foto KTP',
+    'link_foto_luar'   => 'Foto Toko (Luar)',
+    'link_foto_dalam'  => 'Foto Toko (Dalam)',
+];
+
+/** Mengubah nama kolom database menjadi judul yang enak dibaca. */
+$label = function (string $nama) use ($label_kolom): string {
+    return $label_kolom[$nama] ?? $nama;
+};
+
+/** Membaca daftar kolom sebuah tabel langsung dari database. */
+$kolom_tabel = function (string $tabel) use ($conn): array {
+    $daftar = [];
+    $hasil = $conn->query('SHOW COLUMNS FROM `' . $tabel . '`');
+
+    if ($hasil) {
+        while ($baris = $hasil->fetch_assoc()) {
+            $daftar[] = $baris['Field'];
+        }
+    }
+
+    return $daftar;
+};
+
 if (isset($_GET['export_excel'])) {
     if (ob_get_length()) ob_end_clean();
-    $rows = [['Tipe Data','Tanggal Request','Nama Salesman','District','Jenis Request / GSP Lama','Detail / GSP Baru','ID Customer','Alamat','Status Approval','Diproses Oleh','Waktu Proses','Catatan']];
-    $q1=$conn->query($sql_toko); while($r=$q1->fetch_assoc()) $rows[]=['Toko Reguler',$r['tanggal_request'],$r['salesman'],$r['sales_distric'],$r['jenis_request'],($r['nama_toko_baru']?:$r['nama_toko_lama']),($r['id_customer']?:'-'),($r['alamat_baru']?:$r['alamat_lama']),$r['status_approval'],$r['processed_by']??'',$r['processed_at']??'',$r['approval_note']??''];
-    $q2=$conn->query($sql_gsp); while($r=$q2->fetch_assoc()) $rows[]=['GSP',$r['tanggal_request'],$r['salesman'],$r['sales_district'],($r['jenis_request']??'GSP'),($r['toko_baru_nama']?:$r['toko_lama_nama']),($r['toko_baru_id']?:$r['toko_lama_id']),$r['alamat_lengkap'],$r['status_approval'],$r['processed_by']??'',$r['processed_at']??'',$r['approval_note']??''];
-    if (!class_exists('ZipArchive')) { http_response_code(500); exit('Fitur XLSX membutuhkan ekstensi PHP ZipArchive pada hosting.'); }
-    $tmp=sys_get_temp_dir().'/rts_xlsx_'.bin2hex(random_bytes(4)); mkdir($tmp.'/xl/worksheets',0755,true); mkdir($tmp.'/xl/_rels',0755,true); mkdir($tmp.'/_rels',0755,true);
-    $esc=fn($v)=>htmlspecialchars((string)$v,ENT_XML1|ENT_QUOTES,'UTF-8'); $sheet='';
-    foreach($rows as $ri=>$row){$sheet.='<row r="'.($ri+1).'">';foreach($row as $ci=>$val){$col='';$n=$ci+1;while($n){$n--; $col=chr(65+$n%26).$col;$n=intdiv($n,26);} $sheet.='<c r="'.$col.($ri+1).'" t="inlineStr"><is><t>'.$esc($val).'</t></is></c>';} $sheet.='</row>';}
-    file_put_contents($tmp.'/xl/worksheets/sheet1.xml','<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'.$sheet.'</sheetData></worksheet>');
-    file_put_contents($tmp.'/xl/workbook.xml','<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Pengajuan" sheetId="1" r:id="rId1"/></sheets></workbook>');
-    file_put_contents($tmp.'/xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>');
-    file_put_contents($tmp.'/_rels/.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
-    file_put_contents($tmp.'/[Content_Types].xml','<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>');
-    $zip=new ZipArchive();$file=$tmp.'.xlsx';$zip->open($file,ZipArchive::CREATE);foreach([$tmp.'/xl/worksheets/sheet1.xml',''.$tmp.'/xl/workbook.xml',$tmp.'/xl/_rels/workbook.xml.rels',$tmp.'/_rels/.rels',$tmp.'/[Content_Types].xml'] as $f)$zip->addFile($f,str_replace($tmp.'/','',$f));$zip->close();header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');header('Content-Disposition: attachment; filename="Laporan_Pengajuan_'.date('Ymd_His').'.xlsx"');readfile($file);exit;
+
+    if (!class_exists('ZipArchive')) {
+        http_response_code(500);
+        exit('Fitur XLSX membutuhkan ekstensi PHP ZipArchive pada hosting.');
+    }
+
+    $lembar = [];
+    $ringkas = [[
+        'Tipe Data', 'Tanggal Request', 'Nama Salesman', 'District',
+        'Jenis Request / GSP Lama', 'Detail / GSP Baru', 'ID Customer',
+        'Alamat', 'Status Approval', 'Diproses Oleh', 'Waktu Proses', 'Catatan',
+    ]];
+
+    // --- Lembar 1 & 2: seluruh kolom masing-masing tabel ---------------------
+    $sumber = [
+        [
+            'judul'   => 'Pengajuan Sales',
+            'tabel'   => 'pengajuan_sales',
+            'sql'     => $sql_toko,
+            'tipe'    => 'Toko Reguler',
+            'district' => 'sales_distric',
+            'jenis'   => 'jenis_request',
+            'toko'    => ['nama_toko_baru', 'nama_toko_lama'],
+            'idcust'  => 'id_customer',
+            'alamat'  => ['alamat_baru', 'alamat_lama'],
+        ],
+        [
+            'judul'   => 'Pengajuan GSP',
+            'tabel'   => 'pengajuan_gsp',
+            'sql'     => $sql_gsp,
+            'tipe'    => 'GSP',
+            'district' => 'sales_district',
+            'jenis'   => '',
+            'toko'    => ['toko_baru_nama', 'toko_lama_nama'],
+            'idcust'  => 'toko_baru_id',
+            'alamat'  => ['alamat_lengkap'],
+        ],
+    ];
+
+    foreach ($sumber as $satu) {
+        $kolom = $kolom_tabel($satu['tabel']);
+        $hasil = $conn->query($satu['sql']);
+
+        if (!$kolom || !$hasil) {
+            continue;
+        }
+
+        // Baris pertama = judul kolom, memakai nama yang mudah dibaca.
+        $baris = [array_map($label, $kolom)];
+
+        while ($r = $hasil->fetch_assoc()) {
+            $satu_baris = [];
+
+            foreach ($kolom as $nama) {
+                $satu_baris[] = (string) ($r[$nama] ?? '');
+            }
+
+            $baris[] = $satu_baris;
+
+            // Susunan ringkas untuk lembar ke-3.
+            $jenis = $satu['jenis'] !== '' ? ($r[$satu['jenis']] ?? '') : 'GSP';
+
+            $nama_toko = '';
+            foreach ($satu['toko'] as $kunci) {
+                if ($nama_toko === '' && !empty($r[$kunci])) {
+                    $nama_toko = $r[$kunci];
+                }
+            }
+
+            $alamat = '';
+            foreach ($satu['alamat'] as $kunci) {
+                if ($alamat === '' && !empty($r[$kunci])) {
+                    $alamat = $r[$kunci];
+                }
+            }
+
+            $ringkas[] = [
+                $satu['tipe'],
+                $r['tanggal_request'] ?? '',
+                $r['salesman'] ?? '',
+                $r[$satu['district']] ?? '',
+                $jenis,
+                $nama_toko,
+                ($r[$satu['idcust']] ?? '') !== '' ? $r[$satu['idcust']] : '-',
+                $alamat,
+                $r['status_approval'] ?? '',
+                $r['processed_by'] ?? '',
+                $r['processed_at'] ?? '',
+                $r['approval_note'] ?? '',
+            ];
+        }
+
+        $lembar[] = ['judul' => $satu['judul'], 'baris' => $baris];
+    }
+
+    if (!$lembar) {
+        http_response_code(500);
+        exit('Data pengajuan tidak dapat dibaca dari database.');
+    }
+
+    $lembar[] = ['judul' => 'Gabungan (ringkas)', 'baris' => $ringkas];
+
+    // --- Menyusun berkas XLSX ------------------------------------------------
+    // Nilai dibersihkan lebih dahulu supaya berkas Excel selalu dapat dibuka.
+    $esc = function ($nilai): string {
+        $teks = (string) $nilai;
+        $teks = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $teks);
+        $teks = substr($teks, 0, 32767);
+
+        return htmlspecialchars($teks, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    };
+
+    // Nama lembar Excel paling panjang 31 huruf dan tanpa karakter tertentu.
+    $nama_lembar = function (string $judul): string {
+        $aman = preg_replace('#[\\\\/\?\*\[\]:]#', ' ', $judul);
+
+        return substr(trim($aman), 0, 31);
+    };
+
+    $tmp = sys_get_temp_dir() . '/rts_xlsx_' . bin2hex(random_bytes(4));
+    mkdir($tmp . '/xl/worksheets', 0755, true);
+    mkdir($tmp . '/xl/_rels', 0755, true);
+    mkdir($tmp . '/_rels', 0755, true);
+
+    $bagian = [];
+    $def_lembar = [];
+    $def_rel = [];
+    $def_tipe = [];
+
+    foreach ($lembar as $i => $l) {
+        $nomor = $i + 1;
+        $sheet = '';
+
+        foreach ($l['baris'] as $ri => $row) {
+            $sheet .= '<row r="' . ($ri + 1) . '">';
+
+            foreach ($row as $ci => $val) {
+                $col = '';
+                $n = $ci + 1;
+
+                while ($n > 0) {
+                    $n--;
+                    $col = chr(65 + ($n % 26)) . $col;
+                    $n = intdiv($n, 26);
+                }
+
+                $sheet .= '<c r="' . $col . ($ri + 1) . '" t="inlineStr"><is><t>'
+                    . $esc($val) . '</t></is></c>';
+            }
+
+            $sheet .= '</row>';
+        }
+
+        $bagian['xl/worksheets/sheet' . $nomor . '.xml'] =
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            . '<sheetData>' . $sheet . '</sheetData></worksheet>';
+
+        $def_lembar[] = '<sheet name="' . $esc($nama_lembar($l['judul'])) . '" sheetId="'
+            . $nomor . '" r:id="rId' . $nomor . '"/>';
+
+        $def_rel[] = '<Relationship Id="rId' . $nomor . '" '
+            . 'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
+            . 'Target="worksheets/sheet' . $nomor . '.xml"/>';
+
+        $def_tipe[] = '<Override PartName="/xl/worksheets/sheet' . $nomor . '.xml" '
+            . 'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+    }
+
+    $bagian['xl/workbook.xml'] =
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+        . 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        . '<sheets>' . implode('', $def_lembar) . '</sheets></workbook>';
+
+    $bagian['xl/_rels/workbook.xml.rels'] =
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        . implode('', $def_rel) . '</Relationships>';
+
+    $bagian['_rels/.rels'] =
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        . '<Relationship Id="rId1" '
+        . 'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" '
+        . 'Target="xl/workbook.xml"/></Relationships>';
+
+    $bagian['[Content_Types].xml'] =
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        . '<Default Extension="xml" ContentType="application/xml"/>'
+        . '<Override PartName="/xl/workbook.xml" '
+        . 'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+        . implode('', $def_tipe) . '</Types>';
+
+    foreach ($bagian as $nama_bagian => $isi) {
+        $jalur = $tmp . '/' . $nama_bagian;
+        $folder = dirname($jalur);
+
+        if (!is_dir($folder)) {
+            mkdir($folder, 0755, true);
+        }
+
+        file_put_contents($jalur, $isi);
+    }
+
+    $file = $tmp . '.xlsx';
+    $zip = new ZipArchive();
+
+    if ($zip->open($file, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        http_response_code(500);
+        exit('Berkas Excel tidak dapat disusun pada hosting ini (ZipArchive gagal dibuka).');
+    }
+
+    foreach (array_keys($bagian) as $nama_bagian) {
+        $zip->addFile($tmp . '/' . $nama_bagian, $nama_bagian);
+    }
+
+    $zip->close();
+
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="Laporan_Pengajuan_' . date('Ymd_His') . '.xlsx"');
+    header('Content-Length: ' . filesize($file));
+    readfile($file);
+
+    // Berkas sementara dibersihkan supaya folder hosting tidak menumpuk.
+    foreach (array_keys($bagian) as $nama_bagian) {
+        @unlink($tmp . '/' . $nama_bagian);
+    }
+
+    @rmdir($tmp . '/xl/worksheets');
+    @rmdir($tmp . '/xl/_rels');
+    @rmdir($tmp . '/_rels');
+    @rmdir($tmp . '/xl');
+    @rmdir($tmp);
+    @unlink($file);
+
+    exit;
 }
 
 // --- 4. LOGIC ACTIONS ---
@@ -367,7 +672,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-inbox me-2"></i> Inbox Semua Pengajuan</h5>
             <?php if($can_approve): ?>
-            <a href="?export_excel=true&<?php echo http_build_query($_GET); ?>" class="btn btn-success btn-sm"><i class="fas fa-file-excel me-1"></i> Export Excel (.csv)</a>
+            <a href="?export_excel=true&<?php echo http_build_query($_GET); ?>" class="btn btn-success btn-sm"><i class="fas fa-file-excel me-1"></i> Export Excel (.xlsx - seluruh kolom)</a>
             <?php endif; ?>
         </div>
         <div class="card-body bg-light">

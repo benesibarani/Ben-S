@@ -3,6 +3,32 @@
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.
 ==============================================================================
 
+PALING BARU - EXPORT EXCEL MENU INBOX (LENGKAP SAMA DENGAN DATABASE)
+-------------------------------------------------------------------
+EXPORT_INBOX.txt - penjelasan lengkap: kenapa hasil export sebelumnya hanya
+                   12 kolom (nama toko & alamat digabung), dan bagaimana
+                   berkas baru memuat SELURUH 21 kolom tabel pengajuan_sales
+                   pada lembarnya sendiri + lembar pengajuan_gsp + 1 lembar
+                   ringkas untuk laporan lama. Termasuk cara memasang dan
+                   cara memeriksa hasilnya.
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/EXPORT_INBOX.txt
+
+  Berkas server yang perlu diunggah (TIMPA yang lama di public_html):
+    1_SERVER_unggah_ke_hosting/inbox.php   (DIPERBARUI, 51.673 B) - export
+        Excel seluruh kolom (3 lembar), saringan dibersihkan lebih dahulu,
+        keterangan jelas bila hosting tidak mendukung ZipArchive
+    1_SERVER_unggah_ke_hosting/inbox_updated.php (salinan berkas yang sama)
+
+  Unduh inbox.php langsung:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/inbox.php
+
+  Paket kecil khusus topik ini : RTS_PANEL_EXPORT_INBOX.zip (2 berkas)
+  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_EXPORT_INBOX.zip
+
+  Saringan (tanggal / status / kata kunci) di halaman Inbox TETAP berlaku
+  untuk berkas yang diunduh. Untuk seluruh data, kosongkan saringan dahulu.
+
+
 PALING BARU - KASIR OFFLINE (SEMUA DATA DI DALAM HP, PAKAI SQLITE)
 ------------------------------------------------------------------
 KASIR_BARANG_BAWAAN.txt - panduan lengkap versi terbaru: seluruh data kasir

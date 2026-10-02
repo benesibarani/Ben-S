@@ -1,0 +1,167 @@
+==============================================================================
+ RTS PANEL BY BENE - EXPORT EXCEL MENU INBOX (LENGKAP SAMA DENGAN DATABASE)
+ Berkas : EXPORT_INBOX.txt
+ Tanggal : 2 Oktober 2026
+==============================================================================
+
+ PERTANYAAN BAPAK
+ ----------------
+   "Pada menu Inbox, dapatkah hasil export excel sama dengan isi database pada
+    tabel pengajuan_sales? Karena saya lihat hasil export tidak selengkap isi
+    database."
+
+ JAWABAN SINGKAT
+ --------------
+   BISA - dan sudah saya perbaiki pada putaran ini (berkas inbox.php baru).
+
+
+==============================================================================
+ BAGIAN 1 - KENAPA HASIL EXPORT SEBELUMNYA TIDAK LENGKAP
+==============================================================================
+
+ Berkas Excel versi lama hanya memuat 12 kolom PILIHAN:
+
+     Tipe Data, Tanggal Request, Nama Salesman, District, Jenis Request,
+     Detail, ID Customer, Alamat, Status Approval, Diproses Oleh,
+     Waktu Proses, Catatan
+
+ Penyebabnya: pada kode lama, isi berkas disusun dari beberapa kolom saja
+ (misalnya nama toko lama dan nama toko baru DIGABUNG menjadi satu kolom
+ "Detail", alamat lama dan alamat baru digabung menjadi satu kolom "Alamat").
+ Selain itu pengajuan Sales dan pengajuan GSP DIGABUNG menjadi satu lembar,
+ sehingga kolom yang hanya ada pada salah satu tabel (misalnya PIC, Rute
+ Kunjungan, Week, Alamat Lama, Alamat Baru, Tipe Baru, Hari Kunjungan Baru)
+ tidak ikut terunduh.
+
+ Jadi jumlah kolomnya memang tidak pernah sama dengan tabel pada database.
+
+
+==============================================================================
+ BAGIAN 2 - APA YANG BERUBAH PADA BERKAS BARU
+==============================================================================
+
+ Sekarang isi berkas Excel SAMA dengan isi database. Satu berkas memuat TIGA
+ lembar (tab di bawah layar Excel):
+
+   LEMBAR 1 - "Pengajuan Sales"
+      SELURUH kolom tabel pengajuan_sales, urutannya persis seperti di
+      database (21 kolom):
+        1. ID                            12. Nama Toko Baru
+        2. Tanggal Request               13. Alamat Lama
+        3. Email Sales                   14. Alamat Baru
+        4. Sales District                15. Tipe Baru
+        5. Nama Salesman                 16. Hari Kunjungan Baru
+        6. Jenis Request                 17. Alasan
+        7. ID Customer                   18. Status Approval
+        8. PIC                           19. Diproses Oleh
+        9. Rute Kunjungan                20. Waktu Proses
+       10. Frekuensi Kunjungan (Week)    21. Catatan Approval
+       11. Nama Toko Lama
+
+   LEMBAR 2 - "Pengajuan GSP"
+      SELURUH kolom tabel pengajuan_gsp (21 kolom): ID, Tanggal Request,
+      Email Sales, Sales District, Nama Salesman, Jenis Request, Nama Toko
+      Lama, ID Toko Lama, Nama Toko Baru, ID Toko Baru, Alamat Lengkap,
+      Nama PIC, Nomor HP, Koordinat, Foto KTP, Foto Toko (Luar),
+      Foto Toko (Dalam), Status Approval, Diproses Oleh, Waktu Proses,
+      Catatan Approval.
+
+   LEMBAR 3 - "Gabungan (ringkas)"
+      Susunan ringkas seperti versi lama (12 kolom). Lembar ini tetap
+      disediakan supaya laporan yang biasa Bapak buat dari berkas lama tidak
+      perlu diubah.
+
+ Hal-hal penting yang perlu diketahui:
+
+   1. Kolom TIDAK lagi digabung. Nama toko lama dan nama toko baru berada
+      pada kolomnya masing-masing, begitu juga alamat lama dan alamat baru.
+   2. Tidak ada kolom yang tertinggal. Nama dan urutan kolom dibaca LANGSUNG
+      dari database (perintah SHOW COLUMNS), jadi bila kelak Bapak
+      menambahkan kolom baru pada tabel, kolom itu otomatis ikut terunduh
+      tanpa perlu mengubah berkas ini lagi.
+   3. Saringan tetap berlaku. Bila di halaman Inbox Bapak memakai saringan
+      tanggal, status, atau kata kunci, maka berkas yang diunduh memuat
+      data yang tersaring itu (sama seperti tampilan di layar).
+   4. Tulisan pada tombol berubah menjadi:
+         "Export Excel (.xlsx - seluruh kolom)"
+      Nama berkas: Laporan_Pengajuan_TAHUNBULANTANGGAL_JAM.xlsx
+   5. Tampilan daftar DI LAYAR tidak saya ubah, tetap ringkas supaya nyaman
+      dibaca dari HP. Yang lengkap adalah berkas Excel-nya.
+
+
+==============================================================================
+ BAGIAN 3 - YANG PERLU BAPAK LAKUKAN (1 berkas saja, 2 menit)
+==============================================================================
+
+   [ ] 1. Unduh berkas inbox.php yang baru (tautannya ada di chat / pada
+          berkas TAUTAN_UNDUH.txt).
+
+   [ ] 2. cPanel - File Manager - masuk ke public_html
+          Cari berkas inbox.php yang lama, klik kanan - Download
+          (supaya ada simpanan bila perlu dikembalikan).
+
+   [ ] 3. Unggah berkas inbox.php baru ke folder public_html
+          (TIMPA berkas lama - pilih Overwrite / Replace).
+
+   [ ] 4. Buka halaman Inbox pada peramban, tekan Ctrl + Refresh (sekali)
+          supaya peramban mengambil versi terbaru.
+
+   [ ] 5. Tekan tombol "Export Excel (.xlsx - seluruh kolom)", lalu buka
+          berkasnya di Excel / WPS / Google Sheets. Di bagian bawah layar
+          akan tampak tiga lembar: Pengajuan Sales, Pengajuan GSP, dan
+          Gabungan (ringkas).
+
+ CATATAN: berkas ini TIDAK memerlukan perubahan database sama sekali.
+          Tidak ada tabel yang perlu diubah atau ditambah.
+
+
+==============================================================================
+ BAGIAN 4 - CARA MEMERIKSA HASILNYA BENAR
+==============================================================================
+
+   Cocokkan dengan tampilan database Bapak (yang terlihat pada tangkapan
+   layar: Server localhost:3306 - Basis data benedics_bene_sales -
+   Tabel pengajuan_sales):
+
+       Baris 1 pada tabel    -> kolom ke-1 pada lembar "Pengajuan Sales"
+       Baris 21 pada tabel   -> kolom ke-21 pada lembar "Pengajuan Sales"
+
+   Bila jumlah kolomnya sudah 21 dan namanya sesuai, berarti isi berkas
+   sudah sama lengkap dengan database.
+
+   Perlu diingat: jumlah BARIS pada berkas Excel hanya memuat data yang
+   cocok dengan saringan yang sedang dipakai - bukan seluruh database.
+   Untuk mengunduh seluruh data, kosongkan lebih dahulu saringan
+   (tanggal, status, dan kata kunci), tekan Filter, baru tekan Export.
+
+   Tambahan pula: halaman Inbox menghapus otomatis pengajuan yang sudah
+   diproses (bukan Pending) dan berumur lebih dari 30 hari - hal itu sudah
+   berlaku sejak sebelum perubahan ini (ada pemberitahuannya pada bagian
+   atas halaman).
+
+
+==============================================================================
+ BAGIAN 5 - PERBAIKAN KECIL YANG IKUT DIKERJAKAN
+==============================================================================
+
+   1. Kotak saringan (tanggal, status, kata kunci) kini dibersihkan lebih
+      dahulu sebelum dipakai pada perintah database. Isinya tidak berubah,
+      hanya lebih aman.
+   2. Bila hosting tidak mendukung penyusunan berkas Excel (ekstensi
+      ZipArchive tidak aktif), halaman menampilkan keterangan yang jelas
+      (sebelumnya halaman tampak kosong/rusak).
+   3. Berkas sementara pembuat Excel dibersihkan sesudah diunduh, supaya
+      folder hosting tidak menumpuk.
+
+
+==============================================================================
+ RINGKASAN
+==============================================================================
+
+   "Apakah hasil export Excel dapat sama dengan isi database pengajuan_sales?"
+
+       YA. Berkas inbox.php baru kini mengunduh SELURUH 21 kolom tabel
+       pengajuan_sales pada lembarnya sendiri, ditambah lembar pengajuan_gsp
+       dan satu lembar ringkas untuk laporan lama. Yang perlu Bapak lakukan
+       hanya menimpa SATU berkas: public_html/inbox.php.
+==============================================================================
