@@ -2,6 +2,15 @@
 // 1. Matikan Error Display agar tidak merusak file download
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
+
+// Seluruh halaman ditahan pada tampungan keluaran MILIK BERKAS INI.
+// Penting: bila hosting memakai output_buffering terbatas (misalnya 4096),
+// halaman bisa terkirim lebih dahulu sehingga header unduhan tidak terpasang
+// dan berkas Excel menjadi rusak. Tampungan di bawah ini tanpa batas, jadi
+// halaman baru dikirim setelah berkas selesai disusun.
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
 ob_start();
 
 require_once 'config.php';
@@ -190,13 +199,11 @@ $sql_gsp  = "SELECT *, 'GSP' as tipe_data FROM pengajuan_gsp " . (count($where_g
 
 // --- 3. EXPORT EXCEL ---
 //
-// CATATAN PERBAIKAN (2 Oktober 2026)
-// ----------------------------------
+// CATATAN PERBAIKAN
+// ----------------
 // Sebelumnya berkas Excel hanya memuat 12 kolom pilihan, dan pengajuan Sales
-// digabung dengan pengajuan GSP pada satu lembar. Akibatnya isi berkas tidak
-// selengkap isi tabel pada database.
-//
-// Sekarang isi berkas Excel sama dengan isi database:
+// digabung dengan pengajuan GSP pada satu lembar. Sekarang isi berkas Excel
+// sama dengan isi database:
 //    Lembar 1 : "Pengajuan Sales"   -> SELURUH kolom tabel pengajuan_sales
 //    Lembar 2 : "Pengajuan GSP"     -> SELURUH kolom tabel pengajuan_gsp
 //    Lembar 3 : "Gabungan (ringkas)"-> susunan ringkas seperti versi lama,
@@ -209,6 +216,21 @@ $sql_gsp  = "SELECT *, 'GSP' as tipe_data FROM pengajuan_gsp " . (count($where_g
 //
 // Saringan (tanggal, status, kata kunci) yang sedang dipakai pada halaman
 // tetap berlaku untuk berkas yang diunduh.
+//
+// CATATAN PERBAIKAN TAMBAHAN (2 Oktober 2026 - berkas tidak dapat dibuka di HP)
+// ---------------------------------------------------------------------------
+// Penyebab yang diperbaiki pada putaran ini:
+//   a. Berkas XLSX disusun SELURUHNYA di dalam memori. Tidak lagi memakai
+//      ZipArchive, berkas sementara, mkdir, filesize, atau readfile, supaya
+//      tidak bergantung pada penyetelan folder sementara hosting.
+//   b. SELURUH tampungan keluaran (output buffer) dikosongkan lebih dahulu,
+//      sehingga tidak satu huruf pun dari halaman web dapat menyusup ke dalam
+//      berkas Excel (penyebab paling sering munculnya pesan "Excel tidak dapat
+//      membuka berkas").
+//   c. Isi XLSX dilengkapi bagian standar berkas Excel (styles, docProps,
+//      dimension, sheetViews) supaya diterima Microsoft Excel di HP.
+//   d. Bila alamat dibuka dengan tambahan &diagnosa=1, halaman menampilkan
+//      laporan pemeriksaan hosting (untuk memastikan penyebab bila masih gagal).
 
 // Nama kolom dalam Bahasa Indonesia yang mudah dibaca di Excel.
 $label_kolom = [
@@ -266,12 +288,104 @@ $kolom_tabel = function (string $tabel) use ($conn): array {
     return $daftar;
 };
 
-if (isset($_GET['export_excel'])) {
-    if (ob_get_length()) ob_end_clean();
+/**
+ * Menyusun berkas XLSX (ZIP) langsung di dalam memori.
+ *
+ * Sengaja TIDAK memakai kelas ZipArchive, berkas sementara, maupun readfile
+ * supaya hasilnya sama di semua hosting dan tidak mungkin terpotong.
+ * Ukuran data kecil (hanya huruf), sehingga aman disusun di memori.
+ */
+function rts_xlsx_buat(array $bagian): string
+{
+    $waktu = getdate();
+    $jam_dos = (($waktu['hours'] << 11) | ($waktu['minutes'] << 5) | intdiv($waktu['seconds'], 2)) & 0xFFFF;
+    $tgl_dos = ((($waktu['year'] - 1980) << 9) | ($waktu['mon'] << 5) | $waktu['mday']) & 0xFFFF;
 
-    if (!class_exists('ZipArchive')) {
-        http_response_code(500);
-        exit('Fitur XLSX membutuhkan ekstensi PHP ZipArchive pada hosting.');
+    $isi_lokal = '';
+    $isi_pusat = '';
+    $jumlah = 0;
+    $offset = 0;
+
+    foreach ($bagian as $nama => $data) {
+        $nama = (string) $nama;
+        $data = (string) $data;
+
+        $crc = crc32($data);
+        $crc_bawah = $crc & 0xFFFF;
+        $crc_atas = ($crc >> 16) & 0xFFFF;
+
+        $asli = strlen($data);
+
+        // Data dipadatkan lebih dahulu (deflate). Bila zlib tidak tersedia,
+        // berkas tetap sah dengan mode tanpa pemadatan (stored).
+        $metode = 8;
+        $padat = function_exists('gzcompress') ? @gzcompress($data, 6) : false;
+
+        // gzcompress menghasilkan format zlib: 2 byte tajuk + data + 4 byte adler.
+        // ZIP memerlukan deflate mentah, jadi tajuk dan adler dibuang.
+        if (is_string($padat) && strlen($padat) > 6) {
+            $padat = substr($padat, 2, -4);
+        } else {
+            $metode = 0;
+            $padat = $data;
+        }
+
+        $ukuran = strlen($padat);
+        $bendera = 0x0800; // nama berkas memakai huruf UTF-8
+
+        $isi_lokal .= "PK\x03\x04"
+            . pack('v', 20)            // versi minimum
+            . pack('v', $bendera)      // penanda
+            . pack('v', $metode)       // cara pemadatan
+            . pack('v', $jam_dos)      // jam
+            . pack('v', $tgl_dos)      // tanggal
+            . pack('v', $crc_bawah) . pack('v', $crc_atas)
+            . pack('V', $ukuran)       // ukuran padat
+            . pack('V', $asli)         // ukuran asli
+            . pack('v', strlen($nama))
+            . pack('v', 0)             // panjang keterangan tambahan
+            . $nama
+            . $padat;
+
+        $isi_pusat .= "PK\x01\x02"
+            . pack('v', 20)            // versi pembuat
+            . pack('v', 20)            // versi minimum
+            . pack('v', $bendera)
+            . pack('v', $metode)
+            . pack('v', $jam_dos)
+            . pack('v', $tgl_dos)
+            . pack('v', $crc_bawah) . pack('v', $crc_atas)
+            . pack('V', $ukuran)
+            . pack('V', $asli)
+            . pack('v', strlen($nama))
+            . pack('v', 0)             // panjang keterangan tambahan
+            . pack('v', 0)             // panjang komentar
+            . pack('v', 0)             // nomor cakram
+            . pack('v', 0)             // atribut dalam
+            . pack('V', 32)            // atribut luar (berkas biasa)
+            . pack('V', $offset)       // letak tajuk lokal
+            . $nama;
+
+        $offset += 30 + strlen($nama) + $ukuran;
+        $jumlah++;
+    }
+
+    return $isi_lokal . $isi_pusat
+        . "PK\x05\x06"
+        . pack('v', 0)                 // nomor cakram
+        . pack('v', 0)                 // cakram awal pusat
+        . pack('v', $jumlah)
+        . pack('v', $jumlah)
+        . pack('V', strlen($isi_pusat))
+        . pack('V', $offset)
+        . pack('v', 0);                // panjang komentar
+}
+
+if (isset($_GET['export_excel'])) {
+    // Seluruh tampungan keluaran dikosongkan supaya HTML halaman tidak pernah
+    // ikut terkirim bersama berkas Excel.
+    while (ob_get_level() > 0) {
+        ob_end_clean();
     }
 
     $lembar = [];
@@ -306,6 +420,8 @@ if (isset($_GET['export_excel'])) {
             'alamat'  => ['alamat_lengkap'],
         ],
     ];
+
+    $jumlah_baris = [];
 
     foreach ($sumber as $satu) {
         $kolom = $kolom_tabel($satu['tabel']);
@@ -360,6 +476,7 @@ if (isset($_GET['export_excel'])) {
             ];
         }
 
+        $jumlah_baris[$satu['judul']] = count($baris);
         $lembar[] = ['judul' => $satu['judul'], 'baris' => $baris];
     }
 
@@ -369,9 +486,9 @@ if (isset($_GET['export_excel'])) {
     }
 
     $lembar[] = ['judul' => 'Gabungan (ringkas)', 'baris' => $ringkas];
+    $jumlah_baris['Gabungan (ringkas)'] = count($ringkas);
 
-    // --- Menyusun berkas XLSX ------------------------------------------------
-    // Nilai dibersihkan lebih dahulu supaya berkas Excel selalu dapat dibuka.
+    // --- Nilai dibersihkan lebih dahulu supaya berkas Excel selalu dapat dibuka.
     $esc = function ($nilai): string {
         $teks = (string) $nilai;
         $teks = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $teks);
@@ -382,24 +499,24 @@ if (isset($_GET['export_excel'])) {
 
     // Nama lembar Excel paling panjang 31 huruf dan tanpa karakter tertentu.
     $nama_lembar = function (string $judul): string {
-        $aman = preg_replace('#[\\\\/\?\*\[\]:]#', ' ', $judul);
+        $aman = preg_replace('~[\\\\/?*\[\]:]~', ' ', $judul);
 
-        return substr(trim($aman), 0, 31);
+        return substr(trim((string) $aman), 0, 31);
     };
 
-    $tmp = sys_get_temp_dir() . '/rts_xlsx_' . bin2hex(random_bytes(4));
-    mkdir($tmp . '/xl/worksheets', 0755, true);
-    mkdir($tmp . '/xl/_rels', 0755, true);
-    mkdir($tmp . '/_rels', 0755, true);
-
+    // --- Menyusun bagian-bagian berkas XLSX ----------------------------------
     $bagian = [];
     $def_lembar = [];
     $def_rel = [];
     $def_tipe = [];
+    $nama_semua = [];
 
     foreach ($lembar as $i => $l) {
         $nomor = $i + 1;
+        $nama_aman = $nama_lembar($l['judul']);
+        $nama_semua[] = $nama_aman;
         $sheet = '';
+        $terakhir = 'A1';
 
         foreach ($l['baris'] as $ri => $row) {
             $sheet .= '<row r="' . ($ri + 1) . '">';
@@ -414,19 +531,25 @@ if (isset($_GET['export_excel'])) {
                     $n = intdiv($n, 26);
                 }
 
-                $sheet .= '<c r="' . $col . ($ri + 1) . '" t="inlineStr"><is><t>'
-                    . $esc($val) . '</t></is></c>';
+                $sheet .= '<c r="' . $col . ($ri + 1) . '" t="inlineStr" s="0">'
+                    . '<is><t xml:space="preserve">' . $esc($val) . '</t></is></c>';
+                $terakhir = $col . ($ri + 1);
             }
 
             $sheet .= '</row>';
         }
 
         $bagian['xl/worksheets/sheet' . $nomor . '.xml'] =
-            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            . '<sheetData>' . $sheet . '</sheetData></worksheet>';
+            . '<dimension ref="A1:' . $terakhir . '"/>'
+            . '<sheetViews><sheetView workbookViewId="0"/></sheetViews>'
+            . '<sheetFormatPr defaultRowHeight="15"/>'
+            . '<sheetData>' . $sheet . '</sheetData>'
+            . '<pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>'
+            . '</worksheet>';
 
-        $def_lembar[] = '<sheet name="' . $esc($nama_lembar($l['judul'])) . '" sheetId="'
+        $def_lembar[] = '<sheet name="' . $esc($nama_aman) . '" sheetId="'
             . $nomor . '" r:id="rId' . $nomor . '"/>';
 
         $def_rel[] = '<Relationship Id="rId' . $nomor . '" '
@@ -438,74 +561,160 @@ if (isset($_GET['export_excel'])) {
     }
 
     $bagian['xl/workbook.xml'] =
-        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
         . 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-        . '<sheets>' . implode('', $def_lembar) . '</sheets></workbook>';
+        . '<workbookPr/>'
+        . '<bookViews><workbookView xWindow="0" yWindow="0" windowWidth="20000" windowHeight="10000"/></bookViews>'
+        . '<sheets>' . implode('', $def_lembar) . '</sheets>'
+        . '</workbook>';
 
     $bagian['xl/_rels/workbook.xml.rels'] =
-        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        . implode('', $def_rel) . '</Relationships>';
+        . implode('', $def_rel)
+        . '<Relationship Id="rId' . (count($lembar) + 1) . '" '
+        . 'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" '
+        . 'Target="styles.xml"/></Relationships>';
+
+    // Gaya tampilan paling sederhana (sama seperti berkas Excel baru).
+    $bagian['xl/styles.xml'] =
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        . '<fonts count="1"><font><sz val="11"/><color theme="1"/><name val="Calibri"/>'
+        . '<family val="2"/><scheme val="minor"/></font></fonts>'
+        . '<fills count="2"><fill><patternFill patternType="none"/></fill>'
+        . '<fill><patternFill patternType="gray125"/></fill></fills>'
+        . '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+        . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+        . '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>'
+        . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+        . '<dxfs count="0"/>'
+        . '</styleSheet>';
 
     $bagian['_rels/.rels'] =
-        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
         . '<Relationship Id="rId1" '
         . 'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" '
-        . 'Target="xl/workbook.xml"/></Relationships>';
+        . 'Target="xl/workbook.xml"/>'
+        . '<Relationship Id="rId2" '
+        . 'Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" '
+        . 'Target="docProps/core.xml"/>'
+        . '<Relationship Id="rId3" '
+        . 'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" '
+        . 'Target="docProps/app.xml"/></Relationships>';
 
-    $bagian['[Content_Types].xml'] =
-        '<?xml version="1.0" encoding="UTF-8"?>'
+    $waktu_iso = gmdate('Y-m-d\TH:i:s\Z');
+
+    $bagian['docProps/core.xml'] =
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<cp:coreProperties '
+        . 'xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" '
+        . 'xmlns:dc="http://purl.org/dc/elements/1.1/" '
+        . 'xmlns:dcterms="http://purl.org/dc/terms/" '
+        . 'xmlns:dcmitype="http://purl.org/dc/dcmitype/" '
+        . 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+        . '<dc:title>Laporan Pengajuan RTS Panel</dc:title>'
+        . '<dc:creator>RTS Panel</dc:creator>'
+        . '<cp:lastModifiedBy>RTS Panel</cp:lastModifiedBy>'
+        . '<dcterms:created xsi:type="dcterms:W3CDTF">' . $waktu_iso . '</dcterms:created>'
+        . '<dcterms:modified xsi:type="dcterms:W3CDTF">' . $waktu_iso . '</dcterms:modified>'
+        . '</cp:coreProperties>';
+
+    $judul_lembar = '';
+    foreach ($nama_semua as $satu_nama) {
+        $judul_lembar .= '<vt:lpstr>' . $esc($satu_nama) . '</vt:lpstr>';
+    }
+
+    $bagian['docProps/app.xml'] =
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        . '<Properties '
+        . 'xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" '
+        . 'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
+        . '<Application>Microsoft Excel</Application>'
+        . '<DocSecurity>0</DocSecurity><ScaleCrop>false</ScaleCrop>'
+        . '<HeadingPairs><vt:vector size="2" baseType="variant">'
+        . '<vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant>'
+        . '<vt:variant><vt:i4>' . count($nama_semua) . '</vt:i4></vt:variant>'
+        . '</vt:vector></HeadingPairs>'
+        . '<TitlesOfParts><vt:vector size="' . count($nama_semua) . '" baseType="lpstr">'
+        . $judul_lembar . '</vt:vector></TitlesOfParts>'
+        . '<Company></Company><LinksUpToDate>false</LinksUpToDate>'
+        . '<SharedDoc>false</SharedDoc><HyperlinksChanged>false</HyperlinksChanged>'
+        . '<AppVersion>16.0300</AppVersion></Properties>';
+
+    // Berkas [Content_Types].xml diletakkan paling depan, sama seperti Excel.
+    $tipe_isi =
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
         . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
         . '<Default Extension="xml" ContentType="application/xml"/>'
         . '<Override PartName="/xl/workbook.xml" '
         . 'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+        . '<Override PartName="/xl/styles.xml" '
+        . 'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+        . '<Override PartName="/docProps/core.xml" '
+        . 'ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+        . '<Override PartName="/docProps/app.xml" '
+        . 'ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
         . implode('', $def_tipe) . '</Types>';
 
-    foreach ($bagian as $nama_bagian => $isi) {
-        $jalur = $tmp . '/' . $nama_bagian;
-        $folder = dirname($jalur);
+    $urutan = ['[Content_Types].xml' => $tipe_isi];
 
-        if (!is_dir($folder)) {
-            mkdir($folder, 0755, true);
+    foreach ($bagian as $nama_bagian => $isi_bagian) {
+        $urutan[$nama_bagian] = $isi_bagian;
+    }
+
+    $isi_xlsx = rts_xlsx_buat($urutan);
+
+    // --- Mode pemeriksaan hosting (buka: inbox.php?export_excel=1&diagnosa=1) -
+    if (isset($_GET['diagnosa'])) {
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+
+        $cek_tanda = substr($isi_xlsx, 0, 4) === "PK\x03\x04" ? 'BENAR (PK)' : 'SALAH';
+        $cek_ekor = substr($isi_xlsx, -22, 4) === "PK\x05\x06" ? 'BENAR (PK)' : 'SALAH';
+
+        echo "LAPORAN PEMERIKSAAN EXPORT EXCEL - RTS PANEL\n";
+        echo "waktu                : " . date('Y-m-d H:i:s') . "\n";
+        echo "versi PHP            : " . PHP_VERSION . " (" . PHP_SAPI . ")\n";
+        echo "ZipArchive           : " . (class_exists('ZipArchive') ? 'ADA' : 'TIDAK ADA') . "\n";
+        echo "zlib (gzcompress)    : " . (function_exists('gzcompress') ? 'ADA' : 'TIDAK ADA') . "\n";
+        echo "mbstring             : " . (function_exists('mb_check_encoding') ? 'ADA' : 'TIDAK ADA') . "\n";
+        echo "output_buffering     : " . (string) ini_get('output_buffering') . "\n";
+        echo "zlib.output_compression: " . (string) ini_get('zlib.output_compression') . "\n";
+        echo "memory_limit         : " . (string) ini_get('memory_limit') . "\n";
+        echo "folder sementara     : " . sys_get_temp_dir() . " (" . (is_writable(sys_get_temp_dir()) ? 'bisa ditulis' : 'TIDAK bisa ditulis') . ")\n";
+        echo "headers sudah terkirim: " . (headers_sent() ? 'YA' : 'belum') . "\n";
+        echo "sisa tampungan       : " . ob_get_level() . "\n";
+        echo "baris per lembar     :";
+
+        foreach ($jumlah_baris as $nama_l => $jml) {
+            echo " " . $nama_l . "=" . $jml;
         }
 
-        file_put_contents($jalur, $isi);
+        echo "\n";
+        echo "ukuran berkas xlsx   : " . strlen($isi_xlsx) . " byte\n";
+        echo "jumlah bagian        : " . count($urutan) . "\n";
+        echo "empat byte pertama   : " . $cek_tanda . "\n";
+        echo "penutup berkas       : " . $cek_ekor . "\n";
+        echo "nama lembar          : " . implode(' | ', $nama_semua) . "\n";
+        echo "empat byte pertama (hex): " . strtoupper(bin2hex(substr($isi_xlsx, 0, 4))) . "\n";
+        exit;
     }
 
-    $file = $tmp . '.xlsx';
-    $zip = new ZipArchive();
-
-    if ($zip->open($file, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-        http_response_code(500);
-        exit('Berkas Excel tidak dapat disusun pada hosting ini (ZipArchive gagal dibuka).');
-    }
-
-    foreach (array_keys($bagian) as $nama_bagian) {
-        $zip->addFile($tmp . '/' . $nama_bagian, $nama_bagian);
-    }
-
-    $zip->close();
-
+    // --- Berkas dikirim apa adanya -------------------------------------------
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="Laporan_Pengajuan_' . date('Ymd_His') . '.xlsx"');
-    header('Content-Length: ' . filesize($file));
-    readfile($file);
+    header('Content-Length: ' . strlen($isi_xlsx));
+    header('Content-Transfer-Encoding: binary');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    header('X-Content-Type-Options: nosniff');
 
-    // Berkas sementara dibersihkan supaya folder hosting tidak menumpuk.
-    foreach (array_keys($bagian) as $nama_bagian) {
-        @unlink($tmp . '/' . $nama_bagian);
-    }
-
-    @rmdir($tmp . '/xl/worksheets');
-    @rmdir($tmp . '/xl/_rels');
-    @rmdir($tmp . '/_rels');
-    @rmdir($tmp . '/xl');
-    @rmdir($tmp);
-    @unlink($file);
-
+    echo $isi_xlsx;
     exit;
 }
 
@@ -672,7 +881,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-inbox me-2"></i> Inbox Semua Pengajuan</h5>
             <?php if($can_approve): ?>
-            <a href="?export_excel=true&<?php echo http_build_query($_GET); ?>" class="btn btn-success btn-sm"><i class="fas fa-file-excel me-1"></i> Export Excel (.xlsx - seluruh kolom)</a>
+            <div class="d-flex gap-2">
+                <a href="?export_excel=true&<?php echo http_build_query($_GET); ?>" class="btn btn-success btn-sm"><i class="fas fa-file-excel me-1"></i> Export Excel (.xlsx - seluruh kolom)</a>
+                <a href="?export_excel=1&diagnosa=1" target="_blank" class="btn btn-outline-secondary btn-sm" title="Periksa kesiapan export di hosting"><i class="fas fa-stethoscope me-1"></i> Periksa Export</a>
+            </div>
             <?php endif; ?>
         </div>
         <div class="card-body bg-light">

@@ -3,30 +3,54 @@
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.
 ==============================================================================
 
-PALING BARU - EXPORT EXCEL MENU INBOX (LENGKAP SAMA DENGAN DATABASE)
+PALING BARU - EXPORT EXCEL MENU INBOX (SUDAH DIPERBAIKI 2 OKT 2026)
 -------------------------------------------------------------------
-EXPORT_INBOX.txt - penjelasan lengkap: kenapa hasil export sebelumnya hanya
-                   12 kolom (nama toko & alamat digabung), dan bagaimana
-                   berkas baru memuat SELURUH 21 kolom tabel pengajuan_sales
-                   pada lembarnya sendiri + lembar pengajuan_gsp + 1 lembar
-                   ringkas untuk laporan lama. Termasuk cara memasang dan
-                   cara memeriksa hasilnya.
-  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/EXPORT_INBOX.txt
+KELUHAN: berkas .xlsx hasil export tidak dapat dibuka Microsoft Excel di HP.
+PENYEBAB yang diperbaiki: berkas export masih bisa terbawa potongan halaman
+web (HTML) + bergantung pada ZipArchive/berkas sementara/folder sementara
+hosting. Sekarang berkas XLSX disusun SELURUHNYA di memori (tanpa ZipArchive,
+tanpa mkdir, tanpa readfile), seluruh tampungan keluaran dikosongkan, halaman
+ditahan pada tampungan tanpa batas sejak baris awal, dan isi berkas
+dilengkapi bagian standar Excel (styles, docProps, dimension, sheetViews).
 
   Berkas server yang perlu diunggah (TIMPA yang lama di public_html):
-    1_SERVER_unggah_ke_hosting/inbox.php   (DIPERBARUI, 51.673 B) - export
-        Excel seluruh kolom (3 lembar), saringan dibersihkan lebih dahulu,
-        keterangan jelas bila hosting tidak mendukung ZipArchive
+    1_SERVER_unggah_ke_hosting/inbox.php  (DIPERBARUI, 63.188 B / 1.083
+        baris) - export 3 lembar, disusun di memori, tombol baru
+        "Periksa Export" untuk memeriksa keadaan hosting
     1_SERVER_unggah_ke_hosting/inbox_updated.php (salinan berkas yang sama)
 
-  Unduh inbox.php langsung:
+  Unduh inbox.php langsung (63.188 B):
     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/inbox.php
 
-  Paket kecil khusus topik ini : RTS_PANEL_EXPORT_INBOX.zip (2 berkas)
-  https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_EXPORT_INBOX.zip
+  BERKAS CONTOH untuk diuji buka di HP (hasil ASLI dari kode baru, diuji di
+  komputer dengan PHP 8.3 sungguhan):
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/CONTOH_HASIL_EXPORT.xlsx
+
+  EXPORT_INBOX.txt - penjelasan lengkap + langkah pasang + langkah uji +
+                     cara memisahkan penyebab bila masih tidak bisa dibuka:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/EXPORT_INBOX.txt
+
+  Paket kecil khusus topik ini : RTS_PANEL_EXPORT_INBOX.zip
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_EXPORT_INBOX.zip
+
+  Paket lengkap : RTS_PANEL_PUTARAN_10.zip
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_10.zip
+
+  CARA MEMERIKSA HOSTING (bila masih bermasalah):
+    Buka menu Inbox -> tombol "Periksa Export", atau alamat
+    inbox.php?export_excel=1&diagnosa=1
+    Kirimkan tulisan yang muncul di layar: versi PHP, ada/tidaknya ZipArchive
+    dan zlib, output_buffering, folder sementara, jumlah baris, ukuran
+    berkas, dan hasil pemeriksaan tanda awal/penutup berkas.
+
+  Hasil uji di komputer: berkas 7.175 byte, 10 bagian, diawali PK dan ditutup
+  PK, CRC BERSIH, dapat dibaca openpyxl + python-calamine + exceljs, seluruh
+  XML sah, karakter rawan (kutip, < > &, emoji, karakter kendali, UTF-8
+  rusak, teks 32.767 huruf) aman.
 
   Saringan (tanggal / status / kata kunci) di halaman Inbox TETAP berlaku
   untuk berkas yang diunduh. Untuk seluruh data, kosongkan saringan dahulu.
+  Pengajuan berstatus selesai yang lebih tua 30 hari memang dihapus otomatis.
 
 
 PALING BARU - KASIR OFFLINE (SEMUA DATA DI DALAM HP, PAKAI SQLITE)
