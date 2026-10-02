@@ -1,3 +1,64 @@
+PALING BARU - MENU PRO DIPISAH + PRODUK BERSAMA + STOK + PRINTER + TOKO
+------------------------------------------------------------------------
+Permintaan yang dikerjakan pada putaran ini:
+  1. MENU PRO dipisahkan dari MENU UTAMA (posisinya di bawah, bertanda PRO).
+  2. PRODUK memakai TABEL DATABASE BARU `produk` di phpMyAdmin dan dapat
+     DISINKRON, sehingga daftar produk dapat DILOAD oleh SEMUA user.
+     Barcode hanya pada BUNGKUS; kolom barcode batang DIHAPUS.
+  3. STOK tetap offline di HP, tetapi daftar produknya diambil dari Produk,
+     dan stok kini dapat DIHAPUS / DICADANGKAN / DIPULIHKAN dari menu Stok.
+  4. PRINTER & TEMPLATE STRUK: pilihan JENIS PRINTER 58 mm (Mini/Mobile) dan
+     80 mm (Desktop/POS), masing-masing dengan pilihan DIAMETER ROLL:
+        58 mm -> 30, 38, 40, 45, 50 mm
+        80 mm -> 40, 47, 80, 100, 140 mm
+  5. KASIR: PILIH TOKO terhubung ke tabel `master_toko` (dan dapat dipakai
+     luring setelah disalin ke HP). Dua kesalahan lama ikut diperbaiki:
+     daftar toko selalu kosong, dan SINKRON PRODUK selalu gagal.
+
+  PANDUAN LENGKAP (penjelasan + langkah pemasangan + langkah uji):
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PRODUK_STOK_PRINTER_TOKO.txt
+
+  BERKAS SERVER yang perlu diunggah ke public_html:
+    api/produk.php  <-- BARU (API daftar produk bersama)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/produk.php
+    api/kasir.php   <-- DIPERBARUI (perintah katalog membaca tabel produk)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/kasir.php
+
+  BERKAS DATABASE (jalankan di phpMyAdmin, tab SQL):
+    database/migrations/RTS_PANEL_PRODUK.sql
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/database/migrations/RTS_PANEL_PRODUK.sql
+
+  BERKAS APLIKASI (dipasang dengan LANGKAH1_PASANG_SEMUA.ps1):
+    main.dart         (484.839 B) - MENU PRO dipisah dari MENU UTAMA
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+    lib/kasir.dart    (179.453 B) - Produk bersama + SINKRON PRODUK,
+                        Stok (HAPUS / CADANGKAN / PULIHKAN), Jenis Printer +
+                        Diameter Roll, Pilih Toko dari master_toko
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir.dart
+    lib/kasir_lokal.dart (98.524 B) - mesin kasir di HP: kolom sku, tabel toko
+                        (salinan master_toko), jenis printer + diameter roll,
+                        dan sinkron produk ke tabel `produk` di server
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
+    pubspec.yaml.updated (1.2.4+7)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+
+  PAKET:
+    Kecil  : RTS_PANEL_PRODUK_MENU_PRO.zip
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PRODUK_MENU_PRO.zip
+    Lengkap: RTS_PANEL_PUTARAN_11.zip
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_11.zip
+
+  URUTAN PEMASANGAN SINGKAT:
+    1. phpMyAdmin -> tab SQL -> jalankan RTS_PANEL_PRODUK.sql
+    2. Unggah api/produk.php + api/kasir.php ke public_html/api
+    3. Jalankan LANGKAH1_PASANG_SEMUA.ps1 (salin berkas aplikasi)
+    4. flutter clean -> flutter pub get -> flutter run -d CPH1937
+    5. Uji: Beranda (Menu PRO di bawah), Barang Bawaan -> SINKRON PRODUK,
+       Stok -> HAPUS/CADANGKAN/PULIHKAN, Printer -> jenis printer + roll,
+       Kasir -> Pilih Toko -> MUAT DARI MASTER_TOKO
+    6. Rilis: Versi 1.2.4, Kode 7, Wajib JANGAN -> PUBLIKASIKAN
+
+
 ==============================================================================
  RTS PANEL BY BENE - DAFTAR TAUTAN UNDUH
  Berkas ini selalu diperbarui setiap ada berkas/paket baru.

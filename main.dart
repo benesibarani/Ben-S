@@ -963,7 +963,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-01-10';
+const String rtsKodeAplikasi = 'RTS-2026-10-03-11';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -1832,7 +1832,17 @@ class _DashboardPageState extends State<DashboardPage> {
                       const SizedBox(height: 18),
                       const RtsSectionTitle('Menu Utama'),
                       const SizedBox(height: 10),
-                      _buildMenuGrid(context),
+                      _buildMenuGrid(context, _menuUtama),
+                      const SizedBox(height: 20),
+                      const RtsSectionTitle('Menu PRO'),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Fitur Barang Bawaan, Kasir, Piutang, dan Printer - '
+                        'tersedia untuk akun PRO.',
+                        style: TextStyle(color: rtsTextSecondary, fontSize: 12),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildMenuGrid(context, _menuPro),
                       const SizedBox(height: 18),
                       const RtsIklanAsli(),
                       _buildFooterInfo(),
@@ -2065,60 +2075,70 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildMenuGrid(BuildContext context) {
-    final List<_MenuData> menus = [
-      const _MenuData(
-        title: 'Master Customer',
-        subtitle: 'Data toko & GSP',
-        icon: Icons.storefront_outlined,
-      ),
-      const _MenuData(
-        title: 'Pengajuan',
-        subtitle: 'Ajukan & tinjau',
-        icon: Icons.assignment_outlined,
-      ),
-      const _MenuData(
-        title: 'Barang Bawaan',
-        subtitle: 'Produk & stok',
-        icon: Icons.inventory_2_outlined,
-      ),
-      const _MenuData(
-        title: 'Kasir',
-        subtitle: 'Jual & cetak struk',
-        icon: Icons.point_of_sale_outlined,
-      ),
-      const _MenuData(
-        title: 'Piutang',
-        subtitle: 'Utang & titip',
-        icon: Icons.request_quote_outlined,
-      ),
-      const _MenuData(
-        title: 'Printer & Struk',
-        subtitle: 'Bluetooth & template',
-        icon: Icons.print_outlined,
-      ),
-      const _MenuData(
-        title: 'Notifikasi',
-        subtitle: 'Pemberitahuan',
-        icon: Icons.notifications_none_rounded,
-      ),
-      const _MenuData(
-        title: 'Sinkronisasi',
-        subtitle: 'Tarik data',
-        icon: Icons.sync_rounded,
-      ),
-      const _MenuData(
-        title: 'Profil',
-        subtitle: 'Akun pengguna',
-        icon: Icons.person_outline_rounded,
-      ),
-      const _MenuData(
-        title: 'Pengaturan',
-        subtitle: 'Server & aplikasi',
-        icon: Icons.settings_outlined,
-      ),
-    ];
+  /// Menu UTAMA: fitur yang dipakai semua akun.
+  static const List<_MenuData> _menuUtama = <_MenuData>[
+    _MenuData(
+      title: 'Master Customer',
+      subtitle: 'Data toko & GSP',
+      icon: Icons.storefront_outlined,
+    ),
+    _MenuData(
+      title: 'Pengajuan',
+      subtitle: 'Ajukan & tinjau',
+      icon: Icons.assignment_outlined,
+    ),
+    _MenuData(
+      title: 'Notifikasi',
+      subtitle: 'Pemberitahuan',
+      icon: Icons.notifications_none_rounded,
+    ),
+    _MenuData(
+      title: 'Sinkronisasi',
+      subtitle: 'Tarik data',
+      icon: Icons.sync_rounded,
+    ),
+    _MenuData(
+      title: 'Profil',
+      subtitle: 'Akun pengguna',
+      icon: Icons.person_outline_rounded,
+    ),
+    _MenuData(
+      title: 'Pengaturan',
+      subtitle: 'Server & aplikasi',
+      icon: Icons.settings_outlined,
+    ),
+  ];
 
+  /// Menu PRO: fitur Barang Bawaan, Kasir, Piutang, dan Printer.
+  /// Dipisahkan dari Menu Utama dan diletakkan di bawahnya.
+  static const List<_MenuData> _menuPro = <_MenuData>[
+    _MenuData(
+      title: 'Barang Bawaan',
+      subtitle: 'Produk & stok',
+      icon: Icons.inventory_2_outlined,
+      pro: true,
+    ),
+    _MenuData(
+      title: 'Kasir',
+      subtitle: 'Jual & cetak struk',
+      icon: Icons.point_of_sale_outlined,
+      pro: true,
+    ),
+    _MenuData(
+      title: 'Piutang',
+      subtitle: 'Utang & titip',
+      icon: Icons.request_quote_outlined,
+      pro: true,
+    ),
+    _MenuData(
+      title: 'Printer & Struk',
+      subtitle: 'Bluetooth & template',
+      icon: Icons.print_outlined,
+      pro: true,
+    ),
+  ];
+
+  Widget _buildMenuGrid(BuildContext context, List<_MenuData> menus) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -2164,15 +2184,41 @@ class _DashboardPageState extends State<DashboardPage> {
                     child: Icon(menu.icon, color: rtsMaroon, size: 19),
                   ),
                   const Spacer(),
-                  Text(
-                    menu.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: rtsTextPrimary,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          menu.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: rtsTextPrimary,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      if (menu.pro)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xfffdf1d8),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'PRO',
+                            style: TextStyle(
+                              color: rtsAmber,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -2405,11 +2451,15 @@ class _MenuData {
     required this.title,
     required this.subtitle,
     required this.icon,
+    this.pro = false,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
+
+  /// Menu PRO (Barang Bawaan, Kasir, Piutang, Printer) diberi penanda.
+  final bool pro;
 }
 
 /* ------------------------------------------------------------------------- */

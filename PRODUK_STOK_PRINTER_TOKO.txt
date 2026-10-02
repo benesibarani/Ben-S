@@ -1,0 +1,265 @@
+==============================================================================
+ RTS PANEL BY BENE - MENU PRO DIPISAH, PRODUK BERSAMA, STOK, PRINTER, TOKO
+ Berkas : PRODUK_STOK_PRINTER_TOKO.txt
+ Tanggal: 3 Oktober 2026
+ Versi aplikasi: 1.2.4 (kode 7)
+==============================================================================
+
+RINGKASAN PERUBAHAN
+-------------------
+1. MENU PRO dipisahkan dari MENU UTAMA pada halaman Beranda aplikasi.
+   Menu PRO diletakkan DI BAWAH, lengkap dengan penanda kecil "PRO".
+
+2. PRODUK memakai TABEL DATABASE BARU bernama `produk` di phpMyAdmin.
+   Daftar produk dapat DISINKRON, sehingga dapat DILOAD oleh SEMUA user
+   (satu daftar bersama + harga yang sama untuk semua sales).
+   Barcode hanya ada pada BUNGKUS: kolom "barcode batang" DIHAPUS.
+
+3. STOK tetap OFFLINE di dalam HP (SQLite), tetapi daftar produknya diambil
+   dari menu Produk. Stok sekarang dapat DIHAPUS (per produk atau semua),
+   DICADANGKAN, dan DIPULIHKAN langsung dari menu Stok.
+
+4. PRINTER & TEMPLATE STRUK: di atas ditambahkan pilihan JENIS PRINTER
+   - 58 mm (Mini / Mobile Printer) -> diameter roll 30, 38, 40, 45, 50 mm
+   - 80 mm (Desktop / POS Printer) -> diameter roll 40, 47, 80, 100, 140 mm
+
+5. KASIR: PILIH TOKO sekarang terhubung ke tabel `master_toko` di database.
+   Daftar toko disalin ke HP sehingga pemilihan toko tetap berjalan tanpa
+   internet. (Sebelumnya daftar toko selalu kosong - kesalahan sudah
+   diperbaiki, lihat bagian 6 di bawah.)
+
+
+==============================================================================
+ BAGIAN 1 - MENU PRO DIPISAH DARI MENU UTAMA
+==============================================================================
+Pada halaman Beranda (Dashboard) sekarang ada DUA bagian:
+
+   MENU UTAMA                      MENU PRO  (di bawah, dengan tanda "PRO")
+   ---------------------------     ----------------------------------------
+   1. Master Customer              1. Barang Bawaan   (Produk & Stok)
+   2. Pengajuan                    2. Kasir           (Jual & cetak struk)
+   3. Notifikasi                   3. Piutang         (Utang & titip)
+   4. Sinkronisasi                 4. Printer & Struk (Bluetooth & template)
+   5. Profil
+   6. Pengaturan
+
+Yang berubah hanya TATA LETAKNYA. Isi tiap menu tetap sama, dan pengaman akun
+PRO tetap berlaku: menu PRO hanya dapat dibuka oleh akun PRO (atau masa uji
+coba 7 hari).
+
+
+==============================================================================
+ BAGIAN 2 - PRODUK: TABEL BARU DI phpMyAdmin + SINKRON SEMUA USER
+==============================================================================
+
+2A. BUAT TABELNYA (sekali saja)
+------------------------------
+   1. Masuk cPanel -> phpMyAdmin -> pilih database RTS Panel.
+   2. Klik tab "SQL".
+   3. Buka berkas  RTS_PANEL_PRODUK.sql  (ada di paket ini, folder
+      1_SERVER_unggah_ke_hosting), salin SELURUH isinya, tempelkan pada
+      kotak SQL, lalu tekan GO.
+   4. Muncul keterangan berhasil, dan tabel `produk` tampak pada daftar
+      tabel di sebelah kiri.
+
+   Tabel ini berisi: id, sku, barcode_bungkus, nama, merek, isi_per_bungkus,
+   harga_bungkus, harga_batang, catatan, status_aktif, dibuat_oleh,
+   dibuat_pada, diubah_oleh, diubah_pada.
+
+   CATATAN: TIDAK ADA kolom barcode batang (sesuai permintaan: barcode hanya
+   ada pada bungkus). Kolom barcode_bungkus boleh dikosongkan (NULL).
+
+   Bapak juga boleh menambah produk LANGSUNG dari phpMyAdmin, contoh:
+     INSERT INTO `produk`
+       (`sku`,`barcode_bungkus`,`nama`,`merek`,`isi_per_bungkus`,
+        `harga_bungkus`,`harga_batang`,`dibuat_oleh`,`dibuat_pada`,`diubah_pada`)
+     VALUES ('SMP-MILD-16','8992761111234','Sampoerna Mild 16','Sampoerna',
+             16,32000,2200,'ADMIN',NOW(),NOW());
+
+   Kalau berkas SQL belum dijalankan pun API akan membuat tabel ini otomatis,
+   tetapi menjalankan berkas SQL lebih rapi dan pasti.
+
+2B. UNGGAH BERKAS SERVER
+------------------------
+   Ke folder public_html (TIMPA berkas lama):
+     1. api/produk.php   <-- BARU (API daftar produk bersama)
+     2. api/kasir.php    <-- DIPERBARUI (perintah katalog membaca tabel produk)
+
+   Berkas lain tidak berubah.
+
+2C. CARA PAKAI DI APLIKASI
+--------------------------
+   Menu PRO -> Barang Bawaan -> tab PRODUK -> tombol "SINKRON PRODUK".
+
+   Yang terjadi saat menekan tombol itu:
+     - Produk yang dibuat/diubah di HP dikirim ke tabel `produk` di server.
+     - Daftar produk dari server diunduh, dan salinan di HP disamakan.
+     - Produk yang dinonaktifkan ADMIN ikut disembunyikan di HP sales.
+
+   Jadi: satu sales menambah produk -> sales lain cukup menekan SINKRON
+   PRODUK -> produk itu langsung muncul di HP mereka, dengan harga sama.
+
+   Di tab PRODUK juga ada:
+     - Kotak pencarian (nama, merek, SKU, atau barcode bungkus).
+     - Keterangan bahwa daftar produk dipakai BERSAMA semua user.
+     - Tombol "Produk" (kanan bawah) untuk menambah produk baru, dan ikon
+       pensil untuk mengubah produk.
+
+   Siapa yang boleh apa:
+     - Menambah / mengubah produk : semua user (seperti sebelumnya).
+     - Menghapus permanen / menonaktifkan produk : hanya ADMIN & ASS
+       (perintahnya sudah tersedia di api/produk.php: hapus & aktifkan).
+
+2D. BARCODE BATANG DIHAPUS
+--------------------------
+   - Form produk sekarang hanya memuat SATU kolom barcode, yaitu
+     "Barcode pada bungkus (pack)".
+   - Di HP, kolom barcode_batang pada tabel produk SQLite dibuang memakai
+     cara yang aman (data disalin dulu, baru tabel lama diganti).
+   - Di aplikasi, pencarian barcode hanya memakai barcode bungkus. Hasil scan
+     barcode otomatis menambah 1 BUNGKUS.
+
+
+==============================================================================
+ BAGIAN 3 - STOK: OFFLINE, DAPAT DIHAPUS / DICADANGKAN / DIPULIHKAN
+==============================================================================
+   Tab STOK pada menu Barang Bawaan:
+     - TETAP offline. Seluruh stok disimpan di database HP (SQLite), jadi
+       kasir tetap jalan tanpa internet.
+     - DAFTAR PRODUK diambil dari menu Produk (daftar bersama), bukan diisi
+       ulang dari nol.
+     - Tiap produk sekarang punya TIGA tombol:
+         MASUK   -> menambah stok (barang datang)
+         KELUAR  -> mengurangi stok (rusak / kembali / hasil hitung fisik)
+         HAPUS STOK PRODUK INI -> menjadikan stok produk itu 0 (riwayat tetap
+                                  tercatat, produknya tidak terhapus)
+     - Tombol "HAPUS SEMUA STOK (JADIKAN 0)" hanya tampil untuk ADMIN & ASS.
+     - Kartu "CADANGAN DATA KASIR" di tab yang sama:
+         CADANGKAN -> menyimpan seluruh data kasir menjadi satu berkas
+                      (rts_panel_cadangan_YYYYMMDD_HHMMSS.db) yang dapat
+                      dikirim ke WhatsApp / Google Drive.
+         PULIHKAN  -> mengembalikan data dari berkas cadangan.
+       (Keduanya membuka halaman Server & Cadangan yang sudah ada.)
+
+   Catatan penting: stok TIDAK disimpan di server. Bila HP hilang/rusak, stok
+   ikut hilang - karena itu anjurkan sales menekan CADANGKAN setiap hari.
+
+
+==============================================================================
+ BAGIAN 4 - PRINTER & TEMPLATE STRUK: JENIS PRINTER + DIAMETER ROLL
+==============================================================================
+   Pada menu Printer & Struk sekarang ada kartu paling atas:
+   "1. JENIS PRINTER & UKURAN KERTAS"
+
+     Jenis printer:
+       [ ] 58 mm - Mini / Mobile Printer     (32 huruf per baris)
+       [ ] 80 mm - Desktop / POS Printer     (48 huruf per baris)
+
+     Diameter roll kertas (pilihannya mengikuti jenis printer):
+       58 mm : 30 mm, 38 mm, 40 mm, 45 mm, 50 mm
+       80 mm : 40 mm, 47 mm, 80 mm, 100 mm, 140 mm
+
+   - Pilihan ini disimpan per sales (di HP masing-masing) bersama template
+     struk, dan langsung dipakai saat mencetak.
+   - Lebar kertas pada template mengikuti jenis printer (58 mm -> 58 mm,
+     80 mm -> 80 mm), jadi tidak bisa lagi bertentangan.
+   - Nomor kartu di bawahnya menyesuaikan: 2. Printer Bluetooth,
+     3. Template Struk.
+
+   Catatan: pada sebagian printer mini, diameter roll hanya mempengaruhi
+   kapasitas kertas (bukan bentuk cetakan). Bila hasil cetak terpotong,
+   periksa jenis printer (58/80) terlebih dahulu.
+
+
+==============================================================================
+ BAGIAN 5 - KASIR: PILIH TOKO TERHUBUNG KE TABEL master_toko
+==============================================================================
+   Pada menu Kasir, tombol pilih toko sekarang:
+
+     - Menampilkan judul "Pilih Toko (master_toko)".
+     - MENGAMBIL DATA LANGSUNG dari tabel `master_toko` di database server
+       (lewat api/customers.php) dengan tombol "MUAT DARI MASTER_TOKO".
+     - Menyimpan SALINAN daftar toko ke dalam HP, sehingga pemilihan toko
+       tetap dapat dipakai saat TIDAK ADA INTERNET.
+     - Menampilkan ID customer, district, dan salesman tiap toko, serta
+       jumlah toko yang ditemukan.
+     - Ada kotak pencarian (nama toko, ID customer, alamat, district).
+     - Menampilkan waktu salinan terakhir (contoh: "Salinan terakhir dari
+       master_toko: 03/10/2026 08:15 - dapat dipakai tanpa internet").
+
+   Alur yang dianjurkan: saat ada internet, buka Pilih Toko satu kali sehari
+   lalu tekan MUAT DARI MASTER_TOKO supaya salinan di HP selalu baru.
+
+   Toko yang dipilih langsung mengisi Nama Toko, ID Customer, dan Nomor HP
+   pada nota kasir (kolom isian manual tetap ada sebagai cadangan).
+
+
+==============================================================================
+ BAGIAN 6 - KESALAHAN LAMA YANG IKUT DIPERBAIKI
+==============================================================================
+   a. PILIH TOKO SELALU KOSONG.
+      Aplikasi membaca kunci "items" pada balasan api/customers.php, padahal
+      server mengirim datanya pada kunci "data" beserta "meta". Akibatnya
+      daftar toko selalu kosong walaupun database master_toko terisi.
+      Sekarang aplikasi membaca kunci "data" + "meta" dengan benar.
+
+   b. SINKRON PRODUK SELALU GAGAL.
+      Aplikasi lama memanggil kasir.php?aksi=katalog, padahal perintah
+      "katalog" tidak ada di server. Sekarang aplikasi memakai berkas baru
+      api/produk.php (perintah daftar & impor), dan api/kasir.php juga
+      ditambahi perintah "katalog" supaya versi lama tetap jalan.
+
+   c. Setiap produk yang dibuat di HP kini punya penanda "perlu_kirim",
+      sehingga hanya produk yang berubah yang dikirim ke server (sinkron
+      lebih cepat dan tidak mengulang-ulang).
+
+
+==============================================================================
+ BAGIAN 7 - LANGKAH PEMASANGAN (URUT)
+==============================================================================
+   1. DATABASE  : jalankan RTS_PANEL_PRODUK.sql di phpMyAdmin (tab SQL).
+   2. SERVER    : unggah api/produk.php dan api/kasir.php ke public_html/api.
+   3. APLIKASI  : jalankan LANGKAH1_PASANG_SEMUA.ps1 (menyalin main.dart,
+                  lib\kasir.dart, lib\kasir_lokal.dart, pubspec.yaml, dan
+                  berkas Android ke folder proyek).
+   4. FLUTTER   : flutter clean -> flutter pub get -> flutter run -d CPH1937
+   5. UJI       :
+        - Beranda: pastikan "Menu PRO" muncul di bawah Menu Utama.
+        - Barang Bawaan -> PRODUK -> SINKRON PRODUK (produk naik ke tabel).
+        - Buka phpMyAdmin -> tabel `produk` (isinya harus bertambah).
+        - Barang Bawaan -> STOK -> HAPUS STOK PRODUK INI, CADANGKAN, PULIHKAN.
+        - Printer & Struk -> pilih 80 mm lalu 140 mm -> SIMPAN, UJI CETAK.
+        - Kasir -> Pilih Toko -> MUAT DARI MASTER_TOKO -> pilih satu toko.
+   6. RILIS     : Versi `1.2.4`, Kode `7`, Wajib `JANGAN` -> PUBLIKASIKAN.
+                  (pubspec.yaml.updated sudah memuat version: 1.2.4+7 dan
+                  penanda kode aplikasi RTS-2026-10-03-11.)
+
+
+==============================================================================
+ BAGIAN 8 - CATATAN TEKNIS (untuk pemeriksaan bila ada masalah)
+==============================================================================
+   - API produk : api/produk.php
+       hitung | daftar | simpan | impor | hapus | aktifkan
+       Pemeriksaan cepat dari browser setelah login:
+         https://<alamat-server>/api/produk.php?aksi=hitung
+       Harus menjawab: {"success":true,...,"jumlah":<jumlah produk>}
+   - Tabel lokal HP: produk (ada kolom sku, perlu_kirim; TANPA barcode_batang),
+     toko (salinan master_toko), struk (ada jenis_printer & diameter_roll),
+     stok, stok_gerak, penjualan, penjualan_item, piutang, piutang_bayar,
+     setelan, penomoran.
+   - Versi database HP naik dari 1 ke 2. Penyesuaiannya dijalankan otomatis
+     sekali: menambah kolom sku/perlu_kirim/jenis_printer/diameter_roll,
+     membuat tabel toko, dan membuang kolom barcode_batang.
+   - Bila pemasangan gagal di tengah jalan, database HP tidak dirusak:
+     seluruh perintah penyesuaian dibungkus pengaman (bila kolom sudah ada,
+     kesalahannya diabaikan).
+   - Hak akses produk: semua user boleh menambah/mengubah; hapus & nonaktifkan
+     hanya ADMIN/ASS.
+
+==============================================================================
+   Semua berkas pada paket ini sudah diperiksa:
+     - api/produk.php & api/kasir.php  : lolos pemeriksaan sintaks PHP
+     - main.dart, lib/kasir.dart, lib/kasir_lokal.dart : kurung & tanda kutip
+       seimbang, seluruh kelas lama tetap ada
+     - database/migrations/RTS_PANEL_PRODUK.sql : aman dijalankan berkali-kali
+==============================================================================

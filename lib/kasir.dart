@@ -223,12 +223,12 @@ class RtsProduk {
     required this.nama,
     required this.merek,
     required this.barcodePack,
-    required this.barcodeBatang,
     required this.isiPerPack,
     required this.hargaPack,
     required this.hargaBatang,
     required this.stokPack,
     required this.stokBatang,
+    this.sku = '',
     this.aktif = true,
     this.catatan = '',
   });
@@ -237,7 +237,11 @@ class RtsProduk {
   final String nama;
   final String merek;
   final String barcodePack;
-  final String barcodeBatang;
+
+  /// Kode produk pada daftar produk bersama (boleh dikosongkan).
+  final String sku;
+
+  /// Barcode hanya ada pada bungkus (pack). Tidak ada barcode batang.
   final int isiPerPack;
   final double hargaPack;
   final double hargaBatang;
@@ -258,7 +262,7 @@ class RtsProduk {
       nama: '${j['nama'] ?? ''}',
       merek: '${j['merek'] ?? ''}',
       barcodePack: '${j['barcode_pack'] ?? ''}',
-      barcodeBatang: '${j['barcode_batang'] ?? ''}',
+      sku: '${j['sku'] ?? ''}',
       isiPerPack: rtsKsBulat(j['isi_per_pack']),
       hargaPack: rtsKsAngka(j['harga_pack']),
       hargaBatang: rtsKsAngka(j['harga_batang']),
@@ -698,9 +702,12 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
       RtsKasirApi(baseUrl: widget.baseUrl, token: widget.token, pengguna: widget.pengguna);
   late final TabController _tab = TabController(length: 3, vsync: this);
 
+  final TextEditingController _cariProduk = TextEditingController();
+
   List<RtsProduk> _produk = <RtsProduk>[];
   List<Map<String, dynamic>> _riwayat = <Map<String, dynamic>>[];
   bool _memuat = true;
+  bool _sibuk = false;
   String _galat = '';
   bool _perluPro = false;
   bool _perluSiap = false;
@@ -714,6 +721,7 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
 
   @override
   void dispose() {
+    _cariProduk.dispose();
     _tab.dispose();
     super.dispose();
   }
@@ -765,6 +773,125 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
         _perluSiap = e.perluSiap;
       });
     }
+  }
+
+  /// Mengunduh daftar produk bersama dari server (tabel `produk`).
+  Future<void> _sinkronProduk() async {
+    setState(() => _sibuk = true);
+
+    try {
+      final Map<String, dynamic> hasil = await _api.kirim('sinkron_produk');
+
+      if (!mounted) return;
+
+      setState(() => _sibuk = false);
+      rtsKsPesan(context, '${hasil['message'] ?? 'Sinkron produk selesai.'}');
+      await _muat();
+    } on RtsKasirGalat catch (e) {
+      if (!mounted) return;
+
+      setState(() => _sibuk = false);
+      rtsKsPesan(context, e.pesan, galat: true);
+    }
+  }
+
+  /// Menghapus (menolkkan) stok satu produk.
+  Future<void> _hapusStok(RtsProduk produk) async {
+    final bool? setuju = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Hapus stok?', style: TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          'Stok ${produk.nama} yang sekarang ${produk.stokTeks} akan dihapus '
+          '(menjadi 0).\n\nRiwayatnya tetap tercatat, dan produknya TIDAK '
+          'dihapus dari daftar produk.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('BATAL', style: TextStyle(color: rtsKsTeks2)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: rtsKsMerah),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('HAPUS STOK'),
+          ),
+        ],
+      ),
+    );
+
+    if (setuju != true) return;
+
+    try {
+      final Map<String, dynamic> hasil = await _api.kirim('stok_hapus', <String, dynamic>{
+        'produk_id': produk.id,
+      });
+
+      if (!mounted) return;
+
+      rtsKsPesan(context, '${hasil['message'] ?? 'Stok dihapus.'}');
+      await _muat();
+    } on RtsKasirGalat catch (e) {
+      if (!mounted) return;
+
+      rtsKsPesan(context, e.pesan, galat: true);
+    }
+  }
+
+  /// Menghapus stok SELURUH produk (khusus ADMIN / ASS).
+  Future<void> _hapusSemuaStok() async {
+    final bool? setuju = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Hapus SEMUA stok?',
+            style: TextStyle(fontWeight: FontWeight.w800)),
+        content: const Text(
+          'Seluruh sisa stok pada HP ini akan dijadikan 0. Riwayatnya tetap '
+          'tercatat. Daftar produk tidak terhapus.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('BATAL', style: TextStyle(color: rtsKsTeks2)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: rtsKsMerah),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('HAPUS SEMUA'),
+          ),
+        ],
+      ),
+    );
+
+    if (setuju != true) return;
+
+    try {
+      final Map<String, dynamic> hasil = await _api.kirim('stok_hapus_semua');
+
+      if (!mounted) return;
+
+      rtsKsPesan(context, '${hasil['message'] ?? 'Stok dihapus.'}');
+      await _muat();
+    } on RtsKasirGalat catch (e) {
+      if (!mounted) return;
+
+      rtsKsPesan(context, e.pesan, galat: true);
+    }
+  }
+
+  /// Membuka halaman cadangan (backup) & pulihkan.
+  void _bukaCadangan() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => RtsCadanganPage(
+          baseUrl: widget.baseUrl,
+          token: widget.token,
+          pengguna: widget.pengguna,
+        ),
+      ),
+    );
   }
 
   Future<void> _siapkanData() async {
@@ -1061,58 +1188,144 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
   }
 
   Widget _tabProduk() {
-    if (_produk.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Belum ada produk. Tekan tombol "Produk" di bawah untuk menambah '
-            'barang yang Bapak bawa, lengkap dengan barcodenya.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: rtsKsTeks2),
-          ),
-        ),
-      );
-    }
+    final String cari = _cariProduk.text.trim().toLowerCase();
+    final List<RtsProduk> daftar = cari.isEmpty
+        ? _produk
+        : _produk
+            .where((RtsProduk p) =>
+                p.nama.toLowerCase().contains(cari) ||
+                p.merek.toLowerCase().contains(cari) ||
+                p.sku.toLowerCase().contains(cari) ||
+                p.barcodePack.contains(cari))
+            .toList();
 
     return RefreshIndicator(
       onRefresh: _muat,
-      child: ListView.separated(
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
-        itemCount: _produk.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (BuildContext ctx, int i) {
-          final RtsProduk p = _produk[i];
-
-          return _kartu(
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              leading: CircleAvatar(
-                backgroundColor: rtsKsMaroon.withValues(alpha: 0.10),
-                child: const Icon(Icons.inventory_2_outlined, color: rtsKsMaroon),
-              ),
-              title: Text(
-                p.nama,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              subtitle: Column(
+        children: <Widget>[
+          _kartu(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(p.ringkas),
-                  if (p.barcodePack.isNotEmpty)
-                    Text(
-                      'Barcode: ${p.barcodePack}',
-                      style: const TextStyle(fontSize: 12, color: rtsKsTeks2),
+                  const Row(
+                    children: <Widget>[
+                      Icon(Icons.storefront_outlined, color: rtsKsMaroon),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Daftar Produk Bersama',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Produk di sini dipakai BERSAMA semua user. Tambah / ubah '
+                    'produk dari HP mana saja, lalu tekan SINKRON PRODUK supaya '
+                    'semua HP memakai daftar yang sama. Harga berlaku sama '
+                    'untuk semua sales.',
+                    style: TextStyle(fontSize: 12, color: rtsKsTeks2),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
+                          onPressed: _sibuk ? null : _sinkronProduk,
+                          icon: const Icon(Icons.cloud_sync_outlined, size: 18),
+                          label: Text(_sibuk ? 'MENYINKRON...' : 'SINKRON PRODUK'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _cariProduk,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      hintText: 'Cari nama, merek, SKU, atau barcode bungkus',
+                      prefixIcon: const Icon(Icons.search),
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                      suffixIcon: _cariProduk.text.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () => setState(() => _cariProduk.clear()),
+                            ),
                     ),
+                  ),
                 ],
               ),
-              trailing: IconButton(
-                icon: const Icon(Icons.edit_outlined, color: rtsKsMaroon),
-                onPressed: () => _formProduk(p),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (_produk.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                'Belum ada produk pada daftar di HP ini.\n\n'
+                'Tekan SINKRON PRODUK untuk mengunduh daftar produk bersama '
+                'dari server (tabel produk), atau tekan tombol "Produk" di '
+                'bawah untuk menambah produk baru.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: rtsKsTeks2),
+              ),
+            )
+          else if (daftar.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                'Tidak ada produk yang cocok dengan pencarian.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: rtsKsTeks2),
               ),
             ),
-          );
-        },
+          for (final RtsProduk p in daftar)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _kartu(
+                child: ListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  leading: CircleAvatar(
+                    backgroundColor: rtsKsMaroon.withValues(alpha: 0.10),
+                    child: const Icon(Icons.inventory_2_outlined, color: rtsKsMaroon),
+                  ),
+                  title: Text(
+                    p.nama,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(p.ringkas),
+                      if (p.sku.isNotEmpty)
+                        Text(
+                          'SKU: ${p.sku}',
+                          style: const TextStyle(fontSize: 12, color: rtsKsTeks2),
+                        ),
+                      if (p.barcodePack.isNotEmpty)
+                        Text(
+                          'Barcode bungkus: ${p.barcodePack}',
+                          style: const TextStyle(fontSize: 12, color: rtsKsTeks2),
+                        ),
+                    ],
+                  ),
+                  trailing: IconButton(
+                    tooltip: 'Ubah produk',
+                    icon: const Icon(Icons.edit_outlined, color: rtsKsMaroon),
+                    onPressed: () => _formProduk(p),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1146,6 +1359,12 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
                           'Nilai stok: Rp $_nilaiStok',
                           style: const TextStyle(fontSize: 12, color: rtsKsTeks2),
                         ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Stok tersimpan DI DALAM HP (jalan tanpa internet) '
+                          'dan dapat dihapus, dicadangkan, serta dipulihkan.',
+                          style: TextStyle(fontSize: 11.5, color: rtsKsTeks2),
+                        ),
                       ],
                     ),
                   ),
@@ -1154,12 +1373,66 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
             ),
           ),
           const SizedBox(height: 10),
+          _kartu(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const Text(
+                    'CADANGAN DATA KASIR',
+                    style: TextStyle(fontWeight: FontWeight.w800, color: rtsKsTeks2),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Cadangkan seluruh data kasir di HP ini (produk, stok, nota, '
+                    'piutang, template struk) menjadi satu berkas, atau '
+                    'pulihkan dari berkas cadangan.',
+                    style: TextStyle(fontSize: 12, color: rtsKsTeks2),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _bukaCadangan,
+                          icon: const Icon(Icons.save_outlined, size: 18),
+                          label: const Text('CADANGKAN'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _bukaCadangan,
+                          icon: const Icon(Icons.settings_backup_restore, size: 18),
+                          label: const Text('PULIHKAN'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (_pengelola)
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: rtsKsMerah,
+                side: const BorderSide(color: rtsKsMerah),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: _hapusSemuaStok,
+              icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+              label: const Text('HAPUS SEMUA STOK (JADIKAN 0)'),
+            ),
+          const SizedBox(height: 10),
           if (_produk.isEmpty)
             const Padding(
               padding: EdgeInsets.all(20),
               child: Text(
-                'Belum ada produk. Tambahkan produk terlebih dahulu pada tab '
-                'PRODUK.',
+                'Belum ada produk. Buka tab PRODUK lalu tekan SINKRON PRODUK '
+                'untuk mengunduh daftar produk bersama.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: rtsKsTeks2),
               ),
@@ -1214,6 +1487,18 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(foregroundColor: rtsKsMerah),
+                          onPressed: (p.stokPack == 0 && p.stokBatang == 0)
+                              ? null
+                              : () => _hapusStok(p),
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          label: const Text('HAPUS STOK PRODUK INI'),
+                        ),
                       ),
                     ],
                   ),
@@ -1315,8 +1600,8 @@ class _RtsFormProdukPageState extends State<RtsFormProdukPage> {
 
   final TextEditingController _nama = TextEditingController();
   final TextEditingController _merek = TextEditingController();
+  final TextEditingController _sku = TextEditingController();
   final TextEditingController _barcodePack = TextEditingController();
-  final TextEditingController _barcodeBatang = TextEditingController();
   final TextEditingController _isi = TextEditingController(text: '16');
   final TextEditingController _hargaPack = TextEditingController();
   final TextEditingController _hargaBatang = TextEditingController();
@@ -1333,8 +1618,8 @@ class _RtsFormProdukPageState extends State<RtsFormProdukPage> {
     if (p != null) {
       _nama.text = p.nama;
       _merek.text = p.merek;
+      _sku.text = p.sku;
       _barcodePack.text = p.barcodePack;
-      _barcodeBatang.text = p.barcodeBatang;
       _isi.text = '${p.isiPerPack}';
       _hargaPack.text = p.hargaPack > 0 ? rtsKsUang(p.hargaPack) : '';
       _hargaBatang.text = p.hargaBatang > 0 ? rtsKsUang(p.hargaBatang) : '';
@@ -1346,8 +1631,8 @@ class _RtsFormProdukPageState extends State<RtsFormProdukPage> {
   void dispose() {
     _nama.dispose();
     _merek.dispose();
+    _sku.dispose();
     _barcodePack.dispose();
-    _barcodeBatang.dispose();
     _isi.dispose();
     _hargaPack.dispose();
     _hargaBatang.dispose();
@@ -1402,8 +1687,8 @@ class _RtsFormProdukPageState extends State<RtsFormProdukPage> {
         'id': widget.produk?.id ?? 0,
         'nama': _nama.text.trim(),
         'merek': _merek.text.trim(),
+        'sku': _sku.text.trim(),
         'barcode_pack': _barcodePack.text.trim(),
-        'barcode_batang': _barcodeBatang.text.trim(),
         'isi_per_pack': rtsKsBulat(_isi.text),
         'harga_pack': rtsKsDariUang(_hargaPack.text),
         'harga_batang': rtsKsDariUang(_hargaBatang.text),
@@ -1455,19 +1740,30 @@ class _RtsFormProdukPageState extends State<RtsFormProdukPage> {
             ),
           ),
           const SizedBox(height: 16),
+          TextField(
+            controller: _sku,
+            decoration: const InputDecoration(
+              labelText: 'Kode produk / SKU (opsional)',
+              hintText: 'Contoh: SMP-MILD-16',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
           const Text(
-            'BARCODE',
+            'BARCODE BUNGKUS',
             style: TextStyle(fontWeight: FontWeight.w800, color: rtsKsTeks2),
           ),
           const SizedBox(height: 8),
           _barisBarcode(
-            label: 'Barcode PACK (bungkus)',
+            label: 'Barcode pada bungkus (pack)',
             controller: _barcodePack,
           ),
-          const SizedBox(height: 10),
-          _barisBarcode(
-            label: 'Barcode BATANG (bila ada)',
-            controller: _barcodeBatang,
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Text(
+              'Barcode hanya ada pada bungkus. Tidak ada kolom barcode batang.',
+              style: TextStyle(fontSize: 12, color: rtsKsTeks2),
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -1514,8 +1810,9 @@ class _RtsFormProdukPageState extends State<RtsFormProdukPage> {
           const Padding(
             padding: EdgeInsets.only(top: 10),
             child: Text(
-              'Harga ini berlaku untuk semua sales. Bila dikosongkan, harga '
-              'batang dihitung otomatis dari harga pack dibagi isi per pack.',
+              'Harga ini berlaku untuk SEMUA sales (daftar produk bersama). '
+              'Bila dikosongkan, harga batang dihitung otomatis dari harga '
+              'bungkus dibagi isi per bungkus.',
               style: TextStyle(fontSize: 12, color: rtsKsTeks2),
             ),
           ),
@@ -1874,6 +2171,7 @@ class _RtsKasirPageState extends State<RtsKasirPage> {
         builder: (_) => RtsPilihCustomerPage(
           baseUrl: widget.baseUrl,
           token: widget.token,
+          pengguna: widget.pengguna,
         ),
       ),
     );
@@ -2085,8 +2383,8 @@ class _RtsKasirPageState extends State<RtsKasirPage> {
         : _produk
             .where((RtsProduk p) =>
                 p.nama.toLowerCase().contains(cari) ||
-                p.barcodePack.contains(cari) ||
-                p.barcodeBatang.contains(cari))
+                p.sku.toLowerCase().contains(cari) ||
+                p.barcodePack.contains(cari))
             .toList();
 
     return Column(
@@ -2453,7 +2751,7 @@ class _RtsKasirPageState extends State<RtsKasirPage> {
 }
 
 /* ------------------------------------------------------------------------- */
-/* PILIH TOKO DARI MASTER CUSTOMER                                           */
+/* PILIH TOKO DARI MASTER CUSTOMER (tabel master_toko di server)              */
 /* ------------------------------------------------------------------------- */
 
 class RtsPilihCustomerPage extends StatefulWidget {
@@ -2461,80 +2759,146 @@ class RtsPilihCustomerPage extends StatefulWidget {
     super.key,
     required this.baseUrl,
     required this.token,
+    this.pengguna = const <String, dynamic>{},
   });
 
   final String baseUrl;
   final String token;
+  final Map<String, dynamic> pengguna;
 
   @override
   State<RtsPilihCustomerPage> createState() => _RtsPilihCustomerPageState();
 }
 
+/// Pemilih toko untuk menu Kasir.
+///
+/// Sumber datanya adalah tabel `master_toko` pada database server (lewat
+/// api/customers.php). Daftarnya disalin ke HP, sehingga pemilihan toko tetap
+/// dapat dipakai saat tidak ada internet.
 class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
-  final TextEditingController _cari = TextEditingController();
-  List<Map<String, dynamic>> _hasil = <Map<String, dynamic>>[];
-  bool _memuat = false;
-  String _galat = '';
+  late final RtsKasirApi _api = RtsKasirApi(
+    baseUrl: widget.baseUrl,
+    token: widget.token,
+    pengguna: widget.pengguna,
+  );
 
-  Future<void> _cariToko() async {
+  final TextEditingController _cari = TextEditingController();
+
+  List<Map<String, dynamic>> _daftar = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _hasil = <Map<String, dynamic>>[];
+  bool _memuat = true;
+  bool _menyalin = false;
+  String _galat = '';
+  String _sinkronPada = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _muat();
+  }
+
+  @override
+  void dispose() {
+    _cari.dispose();
+    super.dispose();
+  }
+
+  /// Membaca salinan daftar toko di HP, lalu (bila belum ada) menyalin dari
+  /// master_toko di server.
+  Future<void> _muat() async {
     setState(() {
       _memuat = true;
       _galat = '';
     });
 
     try {
-      final Uri uri = Uri.parse('${widget.baseUrl}/customers.php').replace(
-        queryParameters: <String, String>{
-          'q': _cari.text.trim(),
-          'limit': '30',
-        },
-      );
+      final Map<String, dynamic> hasil = await _api.kirim('toko_daftar', <String, dynamic>{
+        'batas': 300,
+      });
 
-      final http.Response jawab = await http.get(
-        uri,
-        headers: <String, String>{
-          'Accept': 'application/json',
-          'Authorization': 'Bearer ${widget.token}',
-        },
-      ).timeout(const Duration(seconds: 30));
-
-      final dynamic urai = jsonDecode(jawab.body);
-      final Map<String, dynamic> peta =
-          (urai is Map) ? urai.cast<String, dynamic>() : <String, dynamic>{};
-
-      final List<dynamic> items =
-          (peta['items'] is List) ? peta['items'] as List<dynamic> : <dynamic>[];
-
-      final List<Map<String, dynamic>> daftar = <Map<String, dynamic>>[];
-
-      for (final dynamic item in items) {
-        if (item is! Map) continue;
-
-        final Map<String, dynamic> baris = item.cast<String, dynamic>();
-
-        daftar.add(<String, dynamic>{
-          'id': '${baris['id_customer'] ?? baris['id'] ?? baris['kode'] ?? ''}',
-          'nama': '${baris['nama_toko'] ?? baris['nama'] ?? baris['nama_customer'] ?? ''}',
-          'hp': '${baris['nomor_hp'] ?? baris['hp'] ?? baris['telepon'] ?? ''}',
-          'alamat': '${baris['alamat'] ?? ''}',
-        });
-      }
+      final List<Map<String, dynamic>> daftar = _baca(hasil);
 
       if (!mounted) return;
 
       setState(() {
+        _daftar = daftar;
         _hasil = daftar;
+        _sinkronPada = '${hasil['sinkron_pada'] ?? ''}';
         _memuat = false;
       });
-    } catch (e) {
+
+      // Salinan di HP masih kosong: coba salin dari master_toko sekarang.
+      if (_daftar.isEmpty) {
+        await _segarkan(diam: true);
+      }
+    } on RtsKasirGalat catch (e) {
       if (!mounted) return;
 
       setState(() {
         _memuat = false;
-        _galat = 'Daftar toko tidak dapat dibaca. Isi nama toko secara manual '
-            'pada halaman kasir.';
+        _galat = e.pesan;
       });
     }
+  }
+
+  /// Menyalin ulang daftar toko dari tabel master_toko di server.
+  Future<void> _segarkan({bool diam = false}) async {
+    setState(() {
+      _menyalin = true;
+
+      if (!diam) _galat = '';
+    });
+
+    try {
+      final Map<String, dynamic> hasil = await _api.kirim('toko_segarkan');
+
+      if (!mounted) return;
+
+      setState(() => _menyalin = false);
+
+      if (!diam) {
+        rtsKsPesan(context, '${hasil['message'] ?? 'Daftar toko diperbarui.'}');
+      }
+
+      await _muat();
+    } on RtsKasirGalat catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _menyalin = false;
+        _galat = _daftar.isEmpty
+            ? 'Daftar toko belum pernah disalin ke HP dan server tidak dapat '
+                'dihubungi. Sambungkan internet lalu tekan MUAT DARI MASTER_TOKO. '
+                '(${e.pesan})'
+            : 'Daftar toko dari HP dipakai (tanpa internet). '
+                'Tekan MUAT DARI MASTER_TOKO bila ingin memperbarui. (${e.pesan})';
+      });
+    }
+  }
+
+  List<Map<String, dynamic>> _baca(Map<String, dynamic> hasil) {
+    final List<dynamic> items =
+        (hasil['items'] is List) ? hasil['items'] as List<dynamic> : <dynamic>[];
+
+    return items
+        .whereType<Map>()
+        .map((Map<dynamic, dynamic> e) => e.cast<String, dynamic>())
+        .toList();
+  }
+
+  void _saring(String kata) {
+    final String cari = kata.trim().toLowerCase();
+
+    setState(() {
+      _hasil = cari.isEmpty
+          ? _daftar
+          : _daftar.where((Map<String, dynamic> t) {
+              return '${t['nama']}'.toLowerCase().contains(cari) ||
+                  '${t['id']}'.toLowerCase().contains(cari) ||
+                  '${t['alamat']}'.toLowerCase().contains(cari) ||
+                  '${t['district']}'.toLowerCase().contains(cari);
+            }).toList();
+    });
   }
 
   @override
@@ -2544,35 +2908,63 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
       appBar: AppBar(
         backgroundColor: rtsKsMaroon,
         foregroundColor: Colors.white,
-        title: const Text('Pilih Toko'),
+        title: const Text('Pilih Toko (master_toko)'),
+        actions: <Widget>[
+          IconButton(
+            tooltip: 'Muat dari master_toko',
+            icon: const Icon(Icons.cloud_download_outlined),
+            onPressed: _menyalin ? null : () => _segarkan(),
+          ),
+        ],
       ),
       body: Column(
         children: <Widget>[
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Row(
+            child: Column(
               children: <Widget>[
-                Expanded(
-                  child: TextField(
-                    controller: _cari,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => _cariToko(),
-                    decoration: const InputDecoration(
-                      hintText: 'Nama toko atau ID customer',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
+                TextField(
+                  controller: _cari,
+                  onChanged: _saring,
+                  decoration: InputDecoration(
+                    hintText: 'Cari nama toko, ID customer, atau district',
+                    prefixIcon: const Icon(Icons.search),
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                    suffixIcon: _cari.text.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _cari.clear();
+                              _saring('');
+                            },
+                          ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 46,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
-                    onPressed: _memuat ? null : _cariToko,
-                    child: const Text('CARI'),
-                  ),
+                const SizedBox(height: 8),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
+                        onPressed: _menyalin ? null : () => _segarkan(),
+                        icon: const Icon(Icons.sync_rounded, size: 18),
+                        label: Text(
+                          _menyalin ? 'MENYALIN...' : 'MUAT DARI MASTER_TOKO',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _sinkronPada.isEmpty
+                      ? 'Salinan daftar toko belum ada di HP.'
+                      : 'Salinan terakhir dari master_toko: '
+                          '${rtsKsWaktuLengkap(_sinkronPada)}'
+                          ' - dapat dipakai tanpa internet.',
+                  style: const TextStyle(fontSize: 11.5, color: rtsKsTeks2),
                 ),
               ],
             ),
@@ -2582,7 +2974,17 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(_galat, style: const TextStyle(color: rtsKsMerah)),
             ),
-          if (_memuat) const LinearProgressIndicator(),
+          if (_memuat || _menyalin) const LinearProgressIndicator(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${_hasil.length} dari ${_daftar.length} toko',
+                style: const TextStyle(fontSize: 12, color: rtsKsTeks2),
+              ),
+            ),
+          ),
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -2596,10 +2998,25 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
                     '${t['nama']}',
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
-                  subtitle: Text(
-                    rtsKsSambung('ID: ${t['id']}', '${t['hp']}'),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(rtsKsSambung('ID: ${t['id']}', '${t['hp']}')),
+                      if ('${t['district']}'.isNotEmpty ||
+                          '${t['salesman']}'.isNotEmpty)
+                        Text(
+                          rtsKsSambung('${t['district']}', '${t['salesman']}'),
+                          style: const TextStyle(fontSize: 12, color: rtsKsTeks2),
+                        ),
+                    ],
                   ),
-                  onTap: () => Navigator.of(ctx).pop(t),
+                  onTap: () => Navigator.of(ctx).pop(<String, dynamic>{
+                    'id': '${t['id']}',
+                    'nama': '${t['nama']}',
+                    'hp': '${t['hp']}',
+                    'alamat': '${t['alamat']}',
+                    'district': '${t['district']}',
+                  }),
                 );
               },
             ),
@@ -2610,7 +3027,6 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
   }
 }
 
-/* ------------------------------------------------------------------------- */
 /* RIWAYAT NOTA                                                              */
 /* ------------------------------------------------------------------------- */
 
@@ -3666,6 +4082,8 @@ class _RtsPrinterPageState extends State<RtsPrinterPage> {
   final TextEditingController _footer3 = TextEditingController();
 
   int _lebar = 58;
+  String _jenis = '58';
+  int _roll = 40;
   String _huruf = 'SEDANG';
   String _garis = '-';
   int _salinan = 1;
@@ -3713,6 +4131,8 @@ class _RtsPrinterPageState extends State<RtsPrinterPage> {
         _footer2.text = '${struk['footer2'] ?? ''}';
         _footer3.text = '${struk['footer3'] ?? ''}';
         _lebar = rtsKsBulat(struk['lebar_kertas'] ?? 58);
+        _jenis = '${struk['jenis_printer'] ?? (_lebar >= 76 ? '80' : '58')}';
+        _roll = rtsKsBulat(struk['diameter_roll'] ?? 40);
         _huruf = '${struk['ukuran_huruf'] ?? 'SEDANG'}';
         _garis = '${struk['garis'] ?? '-'}';
         _salinan = rtsKsBulat(struk['jumlah_salinan'] ?? 1);
@@ -3814,6 +4234,25 @@ class _RtsPrinterPageState extends State<RtsPrinterPage> {
     }
   }
 
+  /// Diameter roll yang tersedia untuk jenis printer yang dipilih.
+  List<int> get _daftarRoll => _jenis == '80'
+      ? <int>[40, 47, 80, 100, 140]
+      : <int>[30, 38, 40, 45, 50];
+
+  /// Mengubah jenis printer: lebar kertas ikut menyesuaikan.
+  void _ubahJenis(String? nilai) {
+    if (nilai == null) return;
+
+    setState(() {
+      _jenis = nilai;
+      _lebar = nilai == '80' ? 80 : 58;
+
+      if (!_daftarRoll.contains(_roll)) {
+        _roll = _daftarRoll.first;
+      }
+    });
+  }
+
   Future<void> _simpanTemplate() async {
     try {
       final Map<String, dynamic> hasil = await _api.kirim('struk_simpan', <String, dynamic>{
@@ -3825,6 +4264,8 @@ class _RtsPrinterPageState extends State<RtsPrinterPage> {
         'footer2': _footer2.text.trim(),
         'footer3': _footer3.text.trim(),
         'lebar_kertas': _lebar,
+        'jenis_printer': _jenis,
+        'diameter_roll': _roll,
         'ukuran_huruf': _huruf,
         'garis': _garis,
         'jumlah_salinan': _salinan,
@@ -3918,7 +4359,69 @@ class _RtsPrinterPageState extends State<RtsPrinterPage> {
         padding: const EdgeInsets.all(14),
         children: <Widget>[
           _kartu(
-            judul: '1. PRINTER BLUETOOTH',
+            judul: '1. JENIS PRINTER & UKURAN KERTAS',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                DropdownButtonFormField<String>(
+                  initialValue: _jenis,
+                  decoration: const InputDecoration(
+                    labelText: 'Jenis printer',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const <DropdownMenuItem<String>>[
+                    DropdownMenuItem<String>(
+                      value: '58',
+                      child: Text('58 mm - Mini / Mobile Printer'),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: '80',
+                      child: Text('80 mm - Desktop / POS Printer'),
+                    ),
+                  ],
+                  onChanged: _ubahJenis,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<int>(
+                  initialValue: _daftarRoll.contains(_roll) ? _roll : _daftarRoll.first,
+                  decoration: const InputDecoration(
+                    labelText: 'Diameter roll kertas',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: <DropdownMenuItem<int>>[
+                    for (final int mm in _daftarRoll)
+                      DropdownMenuItem<int>(
+                        value: mm,
+                        child: Text('$mm mm'),
+                      ),
+                  ],
+                  onChanged: (int? nilai) {
+                    if (nilai != null) setState(() => _roll = nilai);
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _jenis == '80'
+                      ? 'Printer 80 mm (Desktop / POS): lebar kertas 80 mm, '
+                          'umumnya 48 huruf per baris. Diameter roll tersedia: '
+                          '40, 47, 80, 100, dan 140 mm.'
+                      : 'Printer 58 mm (Mini / Mobile): lebar kertas 58 mm, '
+                          'umumnya 32 huruf per baris. Diameter roll tersedia: '
+                          '30, 38, 40, 45, dan 50 mm.',
+                  style: const TextStyle(fontSize: 12, color: rtsKsTeks2),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Pilihan ini dipakai untuk menyesuaikan struk dengan printer '
+                  'yang Bapak pakai (lebar kertas: $_lebar mm, roll: $_roll mm).',
+                  style: const TextStyle(fontSize: 12, color: rtsKsTeks2),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          _kartu(
+            judul: '2. PRINTER BLUETOOTH',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -4014,7 +4517,7 @@ class _RtsPrinterPageState extends State<RtsPrinterPage> {
           ),
           const SizedBox(height: 12),
           _kartu(
-            judul: '2. TEMPLATE STRUK (dapat diubah bebas)',
+            judul: '3. TEMPLATE STRUK (dapat diubah bebas)',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -4054,19 +4557,15 @@ class _RtsPrinterPageState extends State<RtsPrinterPage> {
                 Row(
                   children: <Widget>[
                     Expanded(
-                      child: DropdownButtonFormField<int>(
-                        initialValue: _lebar,
+                      child: InputDecorator(
                         decoration: const InputDecoration(
                           labelText: 'Lebar kertas',
                           border: OutlineInputBorder(),
                         ),
-                        items: const <DropdownMenuItem<int>>[
-                          DropdownMenuItem<int>(value: 58, child: Text('58 mm (RPP02)')),
-                          DropdownMenuItem<int>(value: 80, child: Text('80 mm')),
-                        ],
-                        onChanged: (int? nilai) {
-                          if (nilai != null) setState(() => _lebar = nilai);
-                        },
+                        child: Text(
+                          _jenis == '80' ? '80 mm' : '58 mm',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),

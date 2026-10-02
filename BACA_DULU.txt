@@ -1,5 +1,42 @@
 ==============================================================================
  RTS PANEL BY BENE
+ TUTORIAL PUTARAN 11 - MENU PRO DIPISAH, PRODUK BERSAMA (TABEL `produk`),
+ STOK DAPAT DIHAPUS/DICADANGKAN, JENIS PRINTER, DAN PILIH TOKO master_toko
+==============================================================================
+
+ ============================================================================
+  PUTARAN 11 - 4 PERMINTAAN BAPAK YANG SUDAH DIKERJAKAN (3 Oktober 2026)
+ ============================================================================
+
+  1. MENU PRO dipisahkan dari MENU UTAMA pada Beranda (posisinya DI BAWAH,
+     dengan penanda kecil "PRO").
+  2. PRODUK memakai TABEL DATABASE BARU bernama `produk` di phpMyAdmin.
+     Daftar produk dapat DISINKRON dan DILOAD SEMUA user (satu daftar
+     bersama, harga sama untuk semua sales). Barcode hanya pada BUNGKUS:
+     kolom barcode batang dihapus.
+  3. STOK tetap offline di HP, daftar produknya diambil dari Produk, dan
+     stok sekarang dapat DIHAPUS (per produk / semua), DICADANGKAN, dan
+     DIPULIHKAN langsung dari menu Stok.
+  4. PRINTER & TEMPLATE STRUK: di atas ada pilihan JENIS PRINTER
+       58 mm (Mini/Mobile) -> diameter roll 30, 38, 40, 45, 50 mm
+       80 mm (Desktop/POS) -> diameter roll 40, 47, 80, 100, 140 mm
+  5. KASIR: PILIH TOKO terhubung ke tabel `master_toko` dan dapat dipakai
+     tanpa internet (salinannya disimpan di HP).
+
+  LANGKAH PALING PENTING (3 langkah):
+     A. phpMyAdmin -> tab SQL -> jalankan RTS_PANEL_PRODUK.sql
+     B. Unggah api/produk.php dan api/kasir.php ke public_html/api
+     C. Jalankan .\LANGKAH1_PASANG_SEMUA.ps1 dari paket
+        RTS_PANEL_PUTARAN_11.zip, lalu flutter clean -> flutter pub get
+        -> flutter run -d CPH1937
+
+  PENJELASAN LENGKAP + CARA UJI: berkas PRODUK_STOK_PRINTER_TOKO.txt
+
+  Nomor versi naik menjadi 1.2.4 / kode 7 (pubspec.yaml.updated sudah memuat
+  version: 1.2.4+7). Pada halaman Versi Aplikasi di panel, isi:
+  Versi 1.2.4, Kode 7, Wajib JANGAN -> PUBLIKASIKAN.
+
+==============================================================================
  TUTORIAL PUTARAN 10 - KASIR OFFLINE (DATA DI DALAM HP) + IKLAN,
  LANGGANAN PRO (QRIS), DAN FOTO PRIBADI
 ==============================================================================

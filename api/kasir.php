@@ -16,6 +16,7 @@
  *    akses            status PRO / masa perkenalan
  *    ringkas          ringkasan hari ini (nota, penjualan, piutang, stok)
  *
+ *    katalog          daftar produk bersama (tabel `produk`) untuk sinkron
  *    produk_daftar    daftar produk (cari, batas)
  *    produk_ambil     satu produk (id)
  *    produk_barcode   mencari produk dari hasil SCAN (barcode)
@@ -189,6 +190,69 @@ if ($aksi === 'akses') {
         'harga' => function_exists('rts_lg_harga') ? rts_lg_harga() : 0,
         'durasi_hari' => function_exists('rts_lg_durasi') ? rts_lg_durasi() : 30,
         'trial_hari' => function_exists('rts_lg_trial') ? rts_lg_trial() : 7,
+    ]);
+}
+
+/* ==========================================================================
+ *  KATALOG PRODUK (dibaca dari tabel `produk` yang sama dengan API produk)
+ *
+ *  Perintah ini dipakai aplikasi versi lama yang memanggil
+ *  kasir.php?aksi=katalog. Sumber datanya adalah tabel `produk` pada
+ *  database (daftar produk bersama). Bila tabel itu belum ada, dipakai tabel
+ *  lama rts_ks_produk supaya tidak ada yang berhenti bekerja.
+ * ========================================================================== */
+
+if ($aksi === 'katalog') {
+    $cari = rts_ks_teks(rts_api_param('q', ''), 60);
+    $items = [];
+
+    $adaProdukBaru = rts_api_ada_kolom($conn, 'produk', 'barcode_bungkus');
+
+    if ($adaProdukBaru) {
+        $sql = 'SELECT * FROM `produk` WHERE `status_aktif` = 1';
+
+        if ($cari !== '') {
+            $aman = $conn->real_escape_string($cari);
+            $sql .= " AND (`nama` LIKE '%$aman%' OR `merek` LIKE '%$aman%'"
+                . " OR `sku` LIKE '%$aman%' OR `barcode_bungkus` LIKE '%$aman%')";
+        }
+
+        $sql .= ' ORDER BY `nama` ASC LIMIT 500';
+        $hasil = $conn->query($sql);
+
+        while ($hasil && ($baris = $hasil->fetch_assoc())) {
+            $hargaBungkus = (float) ($baris['harga_bungkus'] ?? 0);
+            $hargaBatang = (float) ($baris['harga_batang'] ?? 0);
+            $isi = (int) ($baris['isi_per_bungkus'] ?? 0);
+
+            if ($hargaBatang <= 0 && $isi > 0 && $hargaBungkus > 0) {
+                $hargaBatang = round($hargaBungkus / $isi / 100) * 100;
+            }
+
+            $items[] = [
+                'id' => (int) $baris['id'],
+                'nama' => (string) $baris['nama'],
+                'merek' => (string) ($baris['merek'] ?? ''),
+                'barcode_pack' => (string) ($baris['barcode_bungkus'] ?? ''),
+                'barcode_batang' => '',
+                'isi_per_pack' => $isi,
+                'harga_pack' => $hargaBungkus,
+                'harga_batang' => $hargaBatang,
+                'catatan' => (string) ($baris['catatan'] ?? ''),
+                'aktif' => true,
+                'diubah_pada' => (string) ($baris['diubah_pada'] ?? ''),
+            ];
+        }
+    } elseif (rts_ks_ada_tabel($conn, 'rts_ks_produk')) {
+        foreach (rts_ks_produk_cari($conn, $cari, 500) as $satu) {
+            $items[] = $satu;
+        }
+    }
+
+    rts_api_response(true, count($items) . ' produk pada katalog.', [
+        'items' => $items,
+        'jumlah' => count($items),
+        'sumber' => $adaProdukBaru ? 'produk' : 'rts_ks_produk',
     ]);
 }
 

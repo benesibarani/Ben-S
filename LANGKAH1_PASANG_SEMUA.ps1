@@ -8,7 +8,7 @@
 #     1. Memastikan folder proyek Flutter ditemukan
 #     2. Menyalin main.dart  ->  D:\Project\rts_panel_app\main.dart
 #                                D:\Project\rts_panel_app\lib\main.dart
-#     3. Menyalin pubspec.yaml (memuat sqflite + nomor versi 1.2.3+6)
+#     3. Menyalin pubspec.yaml (memuat sqflite + nomor versi 1.2.4+7)
 #     4. Menyalin lib\kasir.dart DAN lib\kasir_lokal.dart
 #        (kasir_lokal.dart = mesin kasir di dalam HP, berjalan tanpa internet)
 #     5. Menambahkan izin KAMERA pada AndroidManifest.xml (bila belum ada)

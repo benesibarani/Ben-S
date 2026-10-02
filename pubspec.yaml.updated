@@ -25,7 +25,14 @@ publish_to: 'none'
 #   SKU produk beserta harganya. Ditambahkan pula tombol Lanjut Tanpa Internet
 #   pada halaman pembuka, menu Server & Cadangan (sinkron produk + cadangkan
 #   dan pulihkan data).
-version: 1.2.3+6
+#   Kode 7 (1.2.4) memuat: MENU PRO dipisahkan dari MENU UTAMA pada Beranda
+#   (posisinya di bawah), DAFTAR PRODUK BERSAMA pada tabel `produk` di server
+#   (semua user memakai daftar yang sama + tombol SINKRON PRODUK), Stok dapat
+#   DIHAPUS selain dicadangkan/dipulihkan, barcode hanya pada bungkus (kolom
+#   barcode batang dihapus), pilihan JENIS PRINTER 58/80 mm beserta DIAMETER
+#   ROLL kertas, dan PILIH TOKO pada menu Kasir yang terhubung ke tabel
+#   master_toko.
+version: 1.2.4+7
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
