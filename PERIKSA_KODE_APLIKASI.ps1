@@ -17,6 +17,9 @@
 #     - lib\peta.dart: halaman Peta Customer / Radar / Rute Plan / Lokasi
 #       Kantor, ubin OpenStreetMap, penyaring warna, alat pensil, dan salin
 #       daftar plan.
+#     - langkah 6a: memeriksa analysis_options.yaml (berkas pengaturan yang
+#       menyuruh pemeriksa kode melewati salinan main.dart di akar folder,
+#       supaya tanda merah palsu "Target of URI doesn't exist" tidak muncul).
 #     - langkah 6e: menjalankan  flutter analyze  - memeriksa GALAT KODE
 #       (jenis nilai yang tidak cocok, nama yang salah tulis) dalam hitungan
 #       detik, tanpa perlu membangun aplikasi. Kesalahan seperti
@@ -140,9 +143,15 @@ if ($kodeLibFile -ne $harapanKode) {
     $bermasalah++
     Write-Host "   [PERHATIAN] lib\main.dart BELUM versi terbaru!" -ForegroundColor Red
     Write-Host "   Inilah sebabnya tampilan aplikasi tidak berubah di HP." -ForegroundColor Yellow
-    Write-Host "   Jalankan:  .\PASANG_MAIN_DART.ps1" -ForegroundColor Yellow
+    Write-Host "   Jalankan:  .\LANGKAH1_PASANG_SEMUA.ps1 dari paket terbaru" -ForegroundColor Yellow
     Write-Host "   (skrip itu menyalin main.dart ke lib\main.dart, dengan cadangan)" -ForegroundColor DarkGray
 }
+
+Write-Host "   CATATAN: main.dart di akar folder hanya SALINAN ACUAN." -ForegroundColor DarkGray
+Write-Host "            Berkas yang dibangun Flutter adalah lib\main.dart." -ForegroundColor DarkGray
+Write-Host "            Karena itu tanda merah di VS Code pada main.dart (akar)" -ForegroundColor DarkGray
+Write-Host "            TIDAK mempengaruhi hasil build." -ForegroundColor DarkGray
+Write-Host ""
 
 $isiMain = Get-Content "main.dart" -Raw
 $kodeAplikasi = $kodeAkarFile
@@ -448,6 +457,36 @@ else {
 }
 
 # -----------------------------------------------------------------------------
+# 6a. analysis_options.yaml (pemeriksa kode) - menghilangkan tanda merah palsu
+# -----------------------------------------------------------------------------
+TulisJudul "6a. Pengaturan pemeriksa kode (analysis_options.yaml)"
+
+if (-not (Test-Path 'analysis_options.yaml')) {
+    Write-Host "   [LEWAT] analysis_options.yaml belum ada." -ForegroundColor Yellow
+    Write-Host "           Berkas itu membuat VS Code MELEWATI salinan main.dart di" -ForegroundColor Yellow
+    Write-Host "           akar folder, sehingga tanda merah palsu" -ForegroundColor Yellow
+    Write-Host '           (pesan "Target of URI does not exist") tidak muncul.' -ForegroundColor Yellow
+    Write-Host "           Jalankan .\LANGKAH1_PASANG_SEMUA.ps1 dari paket terbaru" -ForegroundColor Yellow
+    Write-Host "           untuk memasangnya (tidak mempengaruhi hasil build)." -ForegroundColor Yellow
+    Write-Host "           Pemeriksaan kode tetap lanjut pada langkah 6e di bawah." -ForegroundColor DarkGray
+}
+else {
+    $isiAnalysis = [System.IO.File]::ReadAllText('analysis_options.yaml')
+
+    TulisHasil $true "analysis_options.yaml ADA"
+
+    $adaExclude = ($isiAnalysis -match 'exclude') -and ($isiAnalysis -match 'main\.dart')
+
+    TulisHasil $adaExclude "salinan main.dart di akar folder dilewati pemeriksa kode"
+
+    if (-not $adaExclude) {
+        Write-Host "            Isi berkas itu belum memuat baris 'exclude: - main.dart'." -ForegroundColor Yellow
+        Write-Host "            Timpa dengan analysis_options.yaml dari paket terbaru" -ForegroundColor Yellow
+        Write-Host "            supaya tanda merah palsu hilang dari VS Code." -ForegroundColor Yellow
+    }
+}
+
+# -----------------------------------------------------------------------------
 # 6b. Paket kasir luring pada pubspec.yaml
 # -----------------------------------------------------------------------------
 TulisJudul "6b. Paket kasir luring pada pubspec.yaml"
@@ -568,35 +607,54 @@ if (-not $adaFlutter) {
 else {
     Write-Host "   Menjalankan: flutter analyze   (30-90 detik, tidak membangun APK)" -ForegroundColor Gray
 
-    $keluaran = & flutter analyze 2>&1
+    $keluaran = @(& flutter analyze 2>&1)
     $teks = ($keluaran | Out-String)
 
-    $adaGalatKode = ($teks -match '(?m)^\s*error\s') -or ($teks -match 'Error:')
+    # Baris GALAT   : "error - ... - [berkas:baris]"  atau  "Error: ..."
+    # Baris KUNING  : "warning - ...", "info - ..."
+    $daftarGalat = @($keluaran | Where-Object {
+        $satuBaris = "$_"
+        ($satuBaris -match '(?m)^\s*error\s') -or ($satuBaris -match 'Error:')
+    })
 
-    if (-not $adaGalatKode) {
+    $daftarKuning = @($keluaran | Where-Object { "$_" -match '(?m)^\s*warning\s' })
+
+    if ($daftarGalat.Count -eq 0) {
         TulisHasil $true "flutter analyze: TIDAK ADA GALAT kode (kode siap dibangun)"
 
         if ($teks -match 'No issues found') {
-            Write-Host "            Pesan dari Flutter: No issues found! (bersih)" -ForegroundColor Gray
+            Write-Host "            Pesan dari Flutter: No issues found! (sepenuhnya bersih)" -ForegroundColor Gray
         }
     }
     else {
         Write-Host "   [BELUM] flutter analyze menemukan GALAT kode berikut:" -ForegroundColor Red
         Write-Host ""
 
-        foreach ($barisGalat in $keluaran) {
-            $teksBaris = "$barisGalat"
-
-            if ($teksBaris -match 'error' -or $teksBaris -match 'Error') {
-                Write-Host ("            " + $teksBaris.Trim()) -ForegroundColor Yellow
-            }
+        foreach ($satuBaris in $daftarGalat) {
+            Write-Host ("            " + "$satuBaris".Trim()) -ForegroundColor Yellow
         }
 
         Write-Host ""
         Write-Host "            Sebab tersering: satu baris yang jenis nilainya tidak cocok" -ForegroundColor Yellow
         Write-Host "            (misalnya teks disimpan ke kotak isian). Salin SELURUH baris" -ForegroundColor Yellow
-        Write-Host "            'Error: ...' di atas, kirimkan untuk diperbaiki." -ForegroundColor Yellow
+        Write-Host "            yang dimulai kata 'error' di atas, kirimkan untuk diperbaiki." -ForegroundColor Yellow
         $bermasalah++
+    }
+
+    # Peringatan (tanda kuning) tidak menghentikan build, tetapi tetap
+    # ditampilkan supaya dapat dibersihkan sebelum rilis.
+    if ($daftarKuning.Count -gt 0) {
+        Write-Host ""
+        Write-Host "   Peringatan (tanda kuning) - TIDAK menghentikan build:" -ForegroundColor Yellow
+
+        foreach ($satuBaris in $daftarKuning) {
+            Write-Host ("            " + "$satuBaris".Trim()) -ForegroundColor Gray
+        }
+
+        Write-Host ('            Jumlah peringatan: ' + $daftarKuning.Count) -ForegroundColor Gray
+    }
+    elseif ($daftarGalat.Count -eq 0) {
+        Write-Host "   Tidak ada peringatan (tanda kuning) juga - kode sepenuhnya bersih." -ForegroundColor Green
     }
 }
 

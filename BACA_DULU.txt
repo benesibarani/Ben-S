@@ -72,6 +72,38 @@
    proyek. Perintah itu memeriksa seluruh kode dalam hitungan detik (tidak
    perlu menunggu 3-4 menit) dan langsung menunjukkan baris yang bermasalah.
 
+  ============================================================================
+   TANDA MERAH DI VS CODE PADA main.dart (TIDAK BERBAHAYA)
+  ============================================================================
+
+   Bila VS Code menampilkan tanda merah seperti:
+
+       Target of URI doesn't exist: 'kasir.dart'.
+       Target of URI doesn't exist: 'kasir_lokal.dart'.
+       Target of URI doesn't exist: 'peta.dart'.
+       Undefined name 'RtsKasirLokal'.
+       The method 'RtsPetaCustomerPage' isn't defined ...
+
+   SEMUA itu datang dari berkas  D:\Project\rts_panel_app\main.dart  yang
+   ada di AKAR folder proyek - yaitu SALINAN ACUAN dari paket, bukan berkas
+   yang dibangun. Di dalam proyek ada DUA main.dart:
+
+       main.dart       (akar)  -> salinan acuan; tiga baris import-nya tidak
+                                  menemukan kasir.dart/kasir_lokal.dart/
+                                  peta.dart karena ketiganya ada di lib\
+       lib\main.dart   (lib)   -> INI YANG DIBANGUN FLUTTER, lengkap dan benar
+
+   Jadi tanda merah itu TIDAK mempengaruhi hasil build. Supaya tidak
+   mengganggu lagi, paket ini menyertakan berkas  analysis_options.yaml  yang
+   menyuruh pemeriksa kode MELEWATI salinan akar tersebut. Setelah menjalankan
+   LANGKAH1_PASANG_SEMUA.ps1 (yang memasang berkas itu), lakukan sekali:
+
+       Di VS Code: Ctrl + Shift + P  ->  ketik  Dart: Restart Analysis Server
+
+   Sesudah itu tanda merah palsu hilang, dan yang tersisa HANYA masalah yang
+   sebenarnya (bila ada). Untuk memeriksa seluruh kode: jalankan
+   .\PERIKSA_KODE_APLIKASI.ps1  (skrip itu ikut menjalankan flutter analyze).
+
   PENTING: pubspec.yaml menambah DUA paket baru (flutter_map dan latlong2).
   Keduanya 100% Dart - tidak ada kode Android/Gradle tambahan. Bila muncul
   pesan "requires Flutter SDK version ...", jalankan flutter upgrade lalu

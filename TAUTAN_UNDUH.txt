@@ -21,10 +21,10 @@ Permintaan yang dikerjakan pada putaran ini:
     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PETA_RADAR_RUTE.txt
 
   PAKET LENGKAP putaran ini (semua berkas sekaligus):
-    RTS_PANEL_PUTARAN_12.zip  (59 berkas di dalamnya)
+    RTS_PANEL_PUTARAN_12.zip  (60 berkas di dalamnya)
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_12.zip
     PAKET KHUSUS MENU PETA (7 berkas inti, lebih kecil):
-    RTS_PANEL_PETA_RADAR_RUTE.zip  (7 berkas inti)
+    RTS_PANEL_PETA_RADAR_RUTE.zip  (8 berkas inti)
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PETA_RADAR_RUTE.zip
 
   BERKAS SERVER yang perlu diunggah ke public_html:
@@ -49,8 +49,16 @@ Permintaan yang dikerjakan pada putaran ini:
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
     pubspec.yaml.updated (6.232 B) versi 1.2.5+8 + flutter_map + latlong2
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
-    LANGKAH1_PASANG_SEMUA.ps1 (28.678 B) kini ikut menyalin lib\peta.dart
+    LANGKAH1_PASANG_SEMUA.ps1 kini ikut menyalin lib\peta.dart DAN
+      analysis_options.yaml
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/LANGKAH1_PASANG_SEMUA.ps1
+    analysis_options.yaml  <-- BARU: menghilangkan tanda merah PALSU di
+                        VS Code pada salinan main.dart di akar folder
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/analysis_options.yaml
+    PERIKSA_KODE_APLIKASI.ps1  <-- DIPERBARUI: memeriksa lib\peta.dart,
+                        memeriksa analysis_options.yaml, dan MENJALANKAN
+                        flutter analyze (galat kode ketahuan dalam detik)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERIKSA_KODE_APLIKASI.ps1
 
   RILIS PENUTUP PUTARAN INI
     Nomor versi aplikasi : 1.2.5  (kode 8)

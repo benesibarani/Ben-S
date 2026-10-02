@@ -8,6 +8,9 @@
 #     1. Memastikan folder proyek Flutter ditemukan
 #     2. Menyalin main.dart  ->  D:\Project\rts_panel_app\main.dart
 #                                D:\Project\rts_panel_app\lib\main.dart
+#        (berkas di akar folder hanya salinan acuan; yang dibangun Flutter
+#         adalah lib\main.dart), lalu analysis_options.yaml supaya VS Code
+#         tidak menandai salinan akar itu dengan tanda merah palsu.
 #     3. Menyalin pubspec.yaml (memuat sqflite + flutter_map + versi 1.2.5+8)
 #     4. Menyalin lib\kasir.dart, lib\kasir_lokal.dart, DAN lib\peta.dart
 #        (kasir_lokal.dart  = mesin kasir di dalam HP, berjalan tanpa internet)
@@ -123,6 +126,7 @@ $berkasKasir = Join-Path $folderAplikasi 'kasir.dart'
 $berkasKasirLokal = Join-Path $folderAplikasi 'kasir_lokal.dart'
 $berkasPeta = Join-Path $folderAplikasi 'peta.dart'
 $berkasPubspec = Join-Path $folderAplikasi 'pubspec.yaml'
+$berkasAnalysis = Join-Path $folderAplikasi 'analysis_options.yaml'
 $berkasManifestPanduan = Join-Path $folderAplikasi 'android_manifest_tambahan.xml'
 $berkasMainActivity = Join-Path $folderAplikasi 'MainActivity.kt'
 $berkasFilePaths = Join-Path $folderAplikasi 'file_paths.xml'
@@ -276,6 +280,28 @@ if (Salin-DenganCadangan $berkasPubspec $tujuanPubspec) {
             Awas "paket $paketWajib TIDAK ada di pubspec. Gunakan pubspec.yaml dari paket ini."
         }
     }
+}
+
+# =============================================================================
+# 3b. analysis_options.yaml  (menghilangkan tanda merah palsu di VS Code)
+# =============================================================================
+
+Judul '3b. Memasang analysis_options.yaml (pemeriksa kode)'
+
+if (Test-Path $berkasAnalysis) {
+    $tujuanAnalysis = Join-Path $folderProyek 'analysis_options.yaml'
+
+    if (Salin-DenganCadangan $berkasAnalysis $tujuanAnalysis) {
+        Baik 'analysis_options.yaml diperbarui.'
+        Info 'Berkas main.dart di AKAR folder proyek hanya SALINAN ACUAN.'
+        Info 'Yang dibangun Flutter adalah lib\main.dart. Salinan akar itu'
+        Info 'diabaikan oleh pemeriksa kode supaya tanda merah palsu'
+        Info '("Target of URI doesn''t exist: kasir.dart") tidak muncul lagi.'
+        Info 'Bila tanda merah masih tampak: di VS Code tekan Ctrl+Shift+P,'
+        Info 'lalu pilih  "Dart: Restart Analysis Server".'
+    }
+} else {
+    Info 'analysis_options.yaml tidak ada di dalam paket - dilewati.'
 }
 
 # =============================================================================
@@ -673,6 +699,12 @@ Write-Host '     1. Unggah  api\kantor.php  ke folder api pada hosting' -Foregro
 Write-Host '     2. Jalankan  RTS_PANEL_KANTOR.sql  di phpMyAdmin' -ForegroundColor Gray
 Write-Host '     3. Masuk aplikasi sebagai ADMIN -> Menu PRO -> RUTE PLAN' -ForegroundColor Gray
 Write-Host '     4. Tekan tombol gedung -> KANTOR -> AMBIL TITIK DARI LOKASI SAYA' -ForegroundColor Gray
+Write-Host ''
+Write-Host ' SEBELUM membangun (dianjurkan, hanya 1-2 menit):' -ForegroundColor White
+Write-Host '     .\PERIKSA_KODE_APLIKASI.ps1' -ForegroundColor Gray
+Write-Host '     Skrip itu memeriksa berkas dan menjalankan flutter analyze.' -ForegroundColor Gray
+Write-Host '     Bila tertulis SEMUA BENAR, lanjutkan dengan flutter run di atas.' -ForegroundColor Gray
+Write-Host '     Bila ada galat kode, kirimkan bunyi pesannya sebelum membangun.' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Bila ada yang gagal, buka berkas BACA_DULU.txt bagian "KALAU ADA MASALAH".' -ForegroundColor Yellow
 Write-Host ''

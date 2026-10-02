@@ -416,7 +416,21 @@
     flutter analyze sendiri, jadi cukup jalankan skrip itu sebelum membangun:
     seluruh berkas diperiksa dan galat kode ditampilkan beserta barisnya.
 
-11. PERINGATAN KUNING TENTANG "Kotlin Gradle Plugin (KGP)" SAAT BUILD
+11. TANDA MERAH DI VS CODE: "Target of URI doesn't exist: 'kasir.dart'",
+    "Undefined name 'RtsKasirLokal'", "The method 'RtsPetaCustomerPage'
+    isn't defined ..."
+    Semua itu datang dari berkas main.dart yang ada di AKAR folder proyek.
+    Berkas itu hanya SALINAN ACUAN; yang dibangun Flutter adalah
+    lib\main.dart. Karena salinan akar duduk di luar folder lib, tiga baris
+    import-nya tidak menemukan kasir.dart / kasir_lokal.dart / peta.dart,
+    sehingga muncul puluhan tanda merah PALSU. Hal itu TIDAK mempengaruhi
+    hasil build.
+    Penawar: paket ini menyertakan  analysis_options.yaml  (memerintahkan
+    pemeriksa kode melewati salinan akar itu). Jalankan
+    LANGKAH1_PASANG_SEMUA.ps1 dari paket terbaru, lalu di VS Code tekan
+    Ctrl+Shift+P -> "Dart: Restart Analysis Server".
+
+12. PERINGATAN KUNING TENTANG "Kotlin Gradle Plugin (KGP)" SAAT BUILD
     Itu PERINGATAN, bukan galat - build tetap berjalan seperti biasa. Isinya:
     kelak Flutter versi baru akan mewajibkan susunan Gradle model baru
     ("Built-in Kotlin"), dan paket firebase_core masih memakai cara lama.

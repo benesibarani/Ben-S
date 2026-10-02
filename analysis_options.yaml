@@ -1,0 +1,61 @@
+# ============================================================================
+#  RTS PANEL BY BENE - PENGATURAN PEMERIKSA KODE (ANALYZER DART)
+#  Berkas : analysis_options.yaml
+#  Diletakkan di : D:\Project\rts_panel_app\analysis_options.yaml
+#  Versi catatan : 3 Oktober 2026 (penanda RTS-2026-10-03-13)
+# ============================================================================
+#
+#  KEGUNAAN BERKAS INI
+#  -------------------
+#  1. Memakai aturan resmi Flutter (flutter_lints) supaya kode rapi.
+#
+#  2. MENGHILANGKAN TANDA MERAH PALSU DI VS CODE.
+#
+#     Di dalam proyek Bapak ada DUA berkas main.dart:
+#
+#        D:\Project\rts_panel_app\main.dart      <-- SALINAN ACUAN (dari paket)
+#        D:\Project\rts_panel_app\lib\main.dart  <-- INI YANG DIBANGUN FLUTTER
+#
+#     Salinan di akar folder duduk DI LUAR folder lib, sehingga tiga baris
+#     import di dalamnya tidak menemukan berkasnya:
+#
+#        import 'kasir.dart';          -> ada di lib\kasir.dart
+#        import 'kasir_lokal.dart';    -> ada di lib\kasir_lokal.dart
+#        import 'peta.dart';           -> ada di lib\peta.dart
+#
+#     Akibatnya VS Code menampilkan puluhan tanda merah seperti:
+#
+#        Target of URI doesn't exist: 'kasir.dart'.
+#        Undefined name 'RtsKasirLokal'.
+#        The method 'RtsPetaCustomerPage' isn't defined ...
+#
+#     Semua tanda merah itu HANYA berlaku untuk salinan di akar folder dan
+#     TIDAK berpengaruh pada hasil build, karena Flutter HANYA membangun
+#     berkas yang ada di dalam folder lib.
+#
+#     Baris 'exclude: - main.dart' di bawah menyuruh pemeriksa kode MELEWATI
+#     salinan akar itu. Sesudah itu, tanda merah yang tersisa HANYA masalah
+#     yang sebenarnya (jika ada).
+#
+#  CATATAN PENTING
+#  ---------------
+#  - Berkas ini TIDAK mengubah cara kerja aplikasi. Ia hanya mengatur apa
+#    yang diperiksa oleh VS Code / perintah "flutter analyze".
+#  - Bila Bapak ingin memeriksa salinan akar juga, cukup hapus baris
+#    'exclude' di bawah, atau buka berkas lib\main.dart.
+# ============================================================================
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    # Hanya salinan acuan di akar folder proyek (bukan lib\main.dart).
+    - main.dart
+
+  errors:
+    # Kesalahan yang menghentikan build tetap ditampilkan sebagai ERROR.
+    # Peringatan (tanda kuning) tetap tampil sebagai peringatan, tidak
+    # mematikan build - sesuai catatan bahwa peringatan bukan galat.
+    dead_null_aware_expression: warning
+    unused_import: warning
+    unused_local_variable: warning
