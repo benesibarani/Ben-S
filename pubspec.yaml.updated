@@ -32,7 +32,17 @@ publish_to: 'none'
 #   barcode batang dihapus), pilihan JENIS PRINTER 58/80 mm beserta DIAMETER
 #   ROLL kertas, dan PILIH TOKO pada menu Kasir yang terhubung ke tabel
 #   master_toko.
-version: 1.2.4+7
+#   Kode 8 (1.2.5) memuat TIGA MENU PRO PETA (OpenStreetMap, gratis tanpa
+#   kunci API): PETA CUSTOMER (seluruh toko sebagai penanda, dapat disaring
+#   menurut HARI dan FREKUENSI KUNJUNGAN Weekly / Bi-Weekly Ganjil / Bi-Weekly
+#   Genap, warna penanda dapat dipilih menurut HARI atau FREKUENSI),
+#   RADAR CUSTOMER (daftar toko terdekat dari titik GPS petugas beserta
+#   jaraknya), dan RUTE PLAN (urutan kunjungan dari titik KANTOR sampai
+#   terjauh + PENSIL untuk menggambar garis rute perjalanan + daftar rencana
+#   yang dapat DISALIN berisi nama customer dan id customer). Ditambahkan pula
+#   halaman LOKASI KANTOR / MITRA untuk ADMIN & ASS, serta tombol TANDAI
+#   KUNJUNGI beserta riwayat kunjungan yang tersimpan di HP.
+version: 1.2.5+8
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -73,6 +83,19 @@ dependencies:
   print_bluetooth_thermal: ^1.2.5
   # Meminta izin kamera dan Bluetooth (wajib pada Android 12 ke atas).
   permission_handler: ^13.0.2
+
+  # ---- FITUR PRO: PETA, RADAR, RUTE PLAN (OpenStreetMap) ----
+  # Peta OpenStreetMap. Gratis, TANPA kunci API, dan 100% Dart sehingga
+  # tidak menambah kode Android / pengaturan Gradle apa pun.
+  flutter_map: ^8.3.2
+  # Titik koordinat (LatLng) dan perhitungan jarak antara dua titik.
+  latlong2: ^0.9.1
+  # CATATAN: bila flutter pub get menuliskan pesan bahwa paket ini
+  # memerlukan Flutter versi lebih baru (misalnya "requires Flutter SDK
+  # version >=3.27.0"), perbarui Flutter di komputer Bapak dengan perintah:
+  #     flutter upgrade
+  # lalu jalankan  flutter pub get  kembali. Paket peta ini TIDAK dapat
+  # dipasang pada Flutter lama, karena memerlukan fitur bahasa Dart 3.6.
 
   # ---- PENYIMPANAN DI DALAM HP (aplikasi berjalan tanpa internet) ----
   # sqflite : database SQLite di dalam HP untuk stok, penjualan, piutang,

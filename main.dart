@@ -15,6 +15,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'kasir.dart';
+import 'kasir_lokal.dart';
+import 'peta.dart';
 
 /* ------------------------------------------------------------------------- */
 /* KONFIGURASI                                                                */
@@ -963,7 +965,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-03-11';
+const String rtsKodeAplikasi = 'RTS-2026-10-03-12';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -1837,8 +1839,9 @@ class _DashboardPageState extends State<DashboardPage> {
                       const RtsSectionTitle('Menu PRO'),
                       const SizedBox(height: 6),
                       const Text(
-                        'Fitur Barang Bawaan, Kasir, Piutang, dan Printer - '
-                        'tersedia untuk akun PRO.',
+                        'Fitur Barang Bawaan, Kasir, Piutang, Peta Customer, '
+                        'Radar Customer, Rute Plan, dan Printer - tersedia '
+                        'untuk akun PRO.',
                         style: TextStyle(color: rtsTextSecondary, fontSize: 12),
                       ),
                       const SizedBox(height: 10),
@@ -2136,6 +2139,24 @@ class _DashboardPageState extends State<DashboardPage> {
       icon: Icons.print_outlined,
       pro: true,
     ),
+    _MenuData(
+      title: 'Peta Customer',
+      subtitle: 'Sebaran & filter warna',
+      icon: Icons.map_outlined,
+      pro: true,
+    ),
+    _MenuData(
+      title: 'Radar Customer',
+      subtitle: 'Toko terdekat dari saya',
+      icon: Icons.radar_rounded,
+      pro: true,
+    ),
+    _MenuData(
+      title: 'Rute Plan',
+      subtitle: 'Urutan dari kantor & pensil',
+      icon: Icons.route_outlined,
+      pro: true,
+    ),
   ];
 
   Widget _buildMenuGrid(BuildContext context, List<_MenuData> menus) {
@@ -2198,6 +2219,15 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         ),
                       ),
+                      if (menu.pro && !_akunPro)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 4),
+                          child: Icon(
+                            Icons.lock_outline_rounded,
+                            size: 13,
+                            color: rtsTextSecondary,
+                          ),
+                        ),
                       if (menu.pro)
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -2292,7 +2322,91 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  void _openMenu(BuildContext context, String menu) {
+  /// True bila akun ini sedang berhak memakai fitur PRO.
+  /// Sumber: data server (login / session_check) atau pemeriksaan luring
+  /// yang tersimpan di HP (30 hari).
+  bool get _akunPro => RtsTingkatAkun.pro || RtsLangganan.sekarang.pro;
+
+  /// Memeriksa hak PRO termasuk simpanan pemeriksaan luring.
+  Future<bool> _bolehPro() async {
+    if (_akunPro) return true;
+
+    try {
+      final Map<String, dynamic> akses = await RtsKasirLokal.aku.akses();
+
+      return akses['boleh'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Kartu PRO yang ditekan akun GRATIS: dijelaskan dan ditawarkan langganan.
+  Future<void> _tawaranPro(BuildContext context, String fitur) async {
+    final bool? buka = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const <Widget>[
+            Icon(Icons.workspace_premium_rounded, color: rtsAmber),
+            SizedBox(width: 9),
+            Text(
+              'Fitur PRO',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+        content: Text(
+          'Menu "$fitur" termasuk fitur PRO.\n\n'
+          'Akun GRATIS tetap dapat memakai seluruh Menu Utama. Untuk membuka '
+          'menu ini, aktifkan Langganan PRO '
+          '(Rp${rtsRupiah(RtsLangganan.sekarang.harga)} / '
+          '${RtsLangganan.sekarang.durasiHari} hari) atau pakai uji coba '
+          '${RtsLangganan.sekarang.trialHari} hari GRATIS.',
+          style: const TextStyle(fontSize: 13.5, height: 1.5),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(
+              'BATAL',
+              style: TextStyle(color: rtsTextSecondary),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: rtsMaroon),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('BUKA LANGGANAN PRO'),
+          ),
+        ],
+      ),
+    );
+
+    if (buka == true && context.mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => LanggananProPage(user: user, token: token),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openMenu(BuildContext context, String menu) async {
+    // Pengaman Menu PRO: akun GRATIS diarahkan ke halaman Langganan PRO.
+    final bool menuPro =
+        _menuPro.any((_MenuData satu) => satu.title == menu);
+
+    if (menuPro) {
+      final bool boleh = await _bolehPro();
+
+      if (!context.mounted) return;
+
+      if (!boleh) {
+        await _tawaranPro(context, menu);
+        return;
+      }
+    }
+
     if (menu == 'Master Customer') {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -2354,6 +2468,45 @@ class _DashboardPageState extends State<DashboardPage> {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => RtsPrinterPage(
+            baseUrl: RtsConfig.baseUrl,
+            token: token,
+            pengguna: user.toJson(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (menu == 'Peta Customer') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RtsPetaCustomerPage(
+            baseUrl: RtsConfig.baseUrl,
+            token: token,
+            pengguna: user.toJson(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (menu == 'Radar Customer') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RtsRadarPage(
+            baseUrl: RtsConfig.baseUrl,
+            token: token,
+            pengguna: user.toJson(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (menu == 'Rute Plan') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RtsRutePage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
             pengguna: user.toJson(),

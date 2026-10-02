@@ -1,0 +1,469 @@
+==============================================================================
+ RTS PANEL BY BENE - TIGA MENU PETA (PUTARAN 12)
+ PETA CUSTOMER - RADAR CUSTOMER - RUTE PLAN
+ Berkas : PETA_RADAR_RUTE.txt
+ Tanggal : 3 Oktober 2026
+==============================================================================
+
+ Isi berkas ini:
+
+   BAGIAN 1  APA YANG BARU (ringkas)
+   BAGIAN 2  CARA MEMASANG (3 langkah, +-10 menit)
+   BAGIAN 3  PETA CUSTOMER
+   BAGIAN 4  RADAR CUSTOMER
+   BAGIAN 5  RUTE PLAN (termasuk PENSIL rute dan SALIN daftar plan)
+   BAGIAN 6  LOKASI KANTOR / MITRA (dikerjakan ADMIN lebih dahulu)
+   BAGIAN 7  DAFTAR WARNA PENANDA
+   BAGIAN 8  KALAU ADA MASALAH
+   BAGIAN 9  CATATAN TEKNIS
+
+
+==============================================================================
+ BAGIAN 1 - APA YANG BARU (RINGKAS)
+==============================================================================
+
+ Tiga menu baru masuk ke MENU PRO pada Beranda (di bawah Menu Utama):
+
+   1. PETA CUSTOMER   - peta OpenStreetMap yang melampirkan SELURUH toko
+                        sebagai titik-titik. Titik dapat DISARING menurut HARI
+                        kunjungan dan menurut FREKUENSI KUNJUNGAN
+                        (Weekly / Bi-Weekly Ganjil / Bi-Weekly Genap), dan
+                        warnanya dapat dipilih: menurut HARI atau menurut
+                        FREKUENSI.
+
+   2. RADAR CUSTOMER  - daftar toko DI SEKITAR PETUGAS, urut dari yang paling
+                        dekat, lengkap dengan JARAK dan ARAH mata angin.
+                        Tampilannya: Nama Toko, Alamat, Jarak.
+
+   3. RUTE PLAN       - urutan kunjungan dari titik KANTOR sampai yang terjauh,
+                        lengkap dengan:
+                          - FILTER WARNA (hari / frekuensi)
+                          - PENSIL untuk menggambar garis rute perjalanan
+                          - DAFTAR PLAN yang dapat DISALIN (copy paste) berupa
+                            teks berisi NAMA CUSTOMER dan ID CUSTOMER
+                          - tombol BUKA RUTE untuk mengirim seluruh titik ke
+                            aplikasi Google Maps sekaligus
+
+ Tambahan halaman penting:
+
+   4. LOKASI KANTOR / MITRA  - halaman khusus ADMIN & ASS untuk menitikkan
+                               kantor. Titik kantor WAJIB ada supaya urutan
+                               RUTE PLAN dapat dihitung dari kantor.
+
+ Peta memakai OpenStreetMap: GRATIS, TANPA kunci API, tanpa biaya bulanan.
+ Aplikasi tetap dapat dibuka dan dihitung tanpa internet (titik toko, titik
+ kantor, catatan kunjungan, dan goresan pensil tersimpan DI DALAM HP).
+ Hanya GAMBAR PETA (ubin peta) yang perlu internet, sama seperti Google Maps.
+
+
+==============================================================================
+ BAGIAN 2 - CARA MEMASANG (3 LANGKAH)
+==============================================================================
+
+ LANGKAH A - DI HOSTING (cPanel), sekali saja: 2 menit
+ -------------------------------------------------------------------------
+   1. Buka cPanel -> File Manager -> masuk ke folder  public_html/api
+   2. Unggah berkas  api/kantor.php  (dari folder 1_SERVER_unggah_ke_hosting)
+      -> bila ditanya, pilih OVERWRITE / TIMPA
+   3. Buka phpMyAdmin -> pilih database  benedics_bene_sales
+   4. Klik tab SQL, tempelkan SELURUH isi berkas
+            RTS_PANEL_KANTOR.sql
+      lalu tekan GO. Muncul "Your SQL query has been executed successfully"
+      dan tabel baru bernama  rts_kantor  tampak pada daftar tabel.
+
+      (Tabel ini juga dapat dibuat otomatis oleh api/kantor.php. Tetap
+       disarankan menjalankan berkas SQL supaya lebih pasti.)
+
+ LANGKAH B - DI KOMPUTER (Flutter), sekali: 5 menit
+ -------------------------------------------------------------------------
+   1. Ekstrak  RTS_PANEL_PUTARAN_12.zip  ke Desktop
+   2. Buka PowerShell, masuk ke folder hasil ekstrak, lalu jalankan:
+
+            .\LANGKAH1_PASANG_SEMUA.ps1
+
+      Skrip itu menyalin seluruh berkas ke proyek Bapak
+      (main.dart, lib\kasir.dart, lib\kasir_lokal.dart, lib\peta.dart,
+       pubspec.yaml) dan menjalankan  flutter clean  +  flutter pub get.
+      Berkas lama selalu dicadangkan lebih dahulu (akhiran .lama_tanggal).
+
+   3. Setelah selesai, jalankan di HP:
+
+            flutter run -d CPH1937
+
+ CATATAN PENTING tentang pubspec.yaml
+   Berkas ini menambah DUA paket baru:
+        flutter_map: ^8.3.2      (peta OpenStreetMap)
+        latlong2:  ^0.9.1        (titik koordinat)
+   Keduanya 100% Dart - TIDAK ada kode Android / Gradle tambahan, jadi tidak
+   mengubah pengaturan build yang sudah berjalan.
+
+   Bila  flutter pub get  menuliskan pesan bahwa paket itu memerlukan Flutter
+   versi lebih baru (misalnya "requires Flutter SDK version >=3.27.0"), cukup
+   ketik:   flutter upgrade    lalu ulangi   flutter pub get.
+
+ LANGKAH C - DI APLIKASI (sebagai ADMIN), 2 menit
+ -------------------------------------------------------------------------
+   1. Masuk aplikasi memakai akun ADMIN (atau ASS)
+   2. Buka Menu PRO -> RUTE PLAN -> tekan tombol GEDUNG di kanan atas
+   3. Tekan tombol KANTOR di kanan bawah
+   4. Isi Nama Kantor (mis. KANTOR MEDAN) dan alamatnya
+   5. Berdiri di kantor, tekan  AMBIL TITIK DARI LOKASI SAYA  -> SIMPAN
+   6. Kembali ke RUTE PLAN. Urutan toko dari kantor langsung dapat dihitung.
+
+   Titik kantor otomatis tersimpan di server, sehingga sales lain cukup
+   menekan MUAT KANTOR untuk memakainya (dan tetap tersimpan di HP mereka
+   walau nanti tidak ada internet).
+
+
+==============================================================================
+ BAGIAN 3 - PETA CUSTOMER
+==============================================================================
+
+ APA YANG TAMPIL
+   - Seluruh toko yang menjadi hak petugas (dari Master Customer) sebagai
+     titik berwarna di atas peta.
+   - Titik KANTOR berupa bulatan hitam dengan ikon gedung.
+   - Titik PETUGAS berupa bulatan biru (setelah menekan tombol titik saya).
+   - Keterangan warna pada kiri atas peta.
+
+ TOMBOL DI KANAN ATAS PETA
+   - TITIK SAYA    : membaca GPS dan memusatkan peta ke posisi petugas
+   - KOTAK PENUH   : menampilkan kembali seluruh titik yang tampil
+   - PLUS / MINUS  : memperbesar / memperkecil peta
+
+ PENYARING (tombol corong di kanan atas layar)
+   - Hari kunjungan     : Semua / Senin / Selasa / Rabu / Kamis / Jumat /
+                          Sabtu / Minggu
+   - Frekuensi kunjungan: Semua / Weekly / Bi-Weekly Ganjil /
+                          Bi-Weekly Genap / Belum diisi
+   - Jenis customer     : Semua / REGULER / GSP
+   - Status kunjungan   : Semua / Belum dikunjungi hari ini /
+                          Sudah dikunjungi hari ini
+   - Warna penanda      : HARI atau FREKUENSI
+   - Kotak pencarian    : nama toko / kode customer / alamat
+
+   Tombol TERAPKAN menerapkan penyaring, tombol BERSIHKAN mengembalikannya
+   ke keadaan semula.
+
+ TAMPILAN PETA (tombol lapisan / layers)
+   - OpenStreetMap       : peta jalan biasa (paling ringan)
+   - OSM Bantuan         : nama jalan lebih tegas, mudah dibaca di HP
+   - OpenTopoMap         : menampilkan bentuk tanah dan ketinggian
+
+ MENYENTUH SEBUAH TITIK
+   Muncul kartu keterangan berisi: nama toko, kode customer, alamat, hari
+   kunjungan, frekuensi, Sales District, salesman, jarak dari KANTOR, jarak
+   dari posisi petugas, dan status kunjungan hari ini. Tersedia tombol:
+       SALIN     - menyalin keterangan toko (untuk WhatsApp dll.)
+       KUNJUNGI  - menandai toko SUDAH dikunjungi hari ini (tersimpan di HP)
+       NAVIGASI  - membuka Google Maps menuju titik toko
+
+ CATATAN YANG SERING DITANYAKAN
+   Bila ada tulisan  "N toko belum memiliki titik koordinat", artinya kolom
+   latitude / longitude toko tersebut masih kosong pada Master Customer.
+   Minta Admin melengkapi titiknya (lewat Ganti Alamat -> Sesuai Koordinat
+   Sekarang pada aplikasi, atau langsung di phpMyAdmin).
+
+
+==============================================================================
+ BAGIAN 4 - RADAR CUSTOMER
+==============================================================================
+
+ GUNA
+   Petugas yang sedang berada di jalan langsung dapat melihat TOKO MANA YANG
+   PALING DEKAT dari posisi sekarang - tidak perlu membuka daftar panjang.
+
+ TAMPILAN
+   - Kotak lokasi saya + tombol PERBARUI untuk membaca ulang titik GPS.
+   - Pilihan jarak maksimal:  100 m | 250 m | 500 m | 1 km | 3 km | 5 km |
+     Semua
+   - Peta kecil di bawahnya menampilkan lingkaran jarak (bentuk radar) dengan
+     titik petugas di tengahnya.
+   - DAFTAR TOKO urut dari yang paling dekat, setiap baris memuat:
+        Nama Toko, Alamat, Jarak (meter/km), Arah mata angin,
+        hari & frekuensi kunjungan.
+   - Tombol pada setiap baris:  SALIN | KUNJUNGI | NAVIGASI
+
+ CATATAN
+   Daftar ini TIDAK memerlukan internet (hanya memerlukan GPS).
+   Bila GPS belum menyala, akan muncul pesan untuk menyalakan Lokasi pada HP
+   dan memberi izin Lokasi kepada RTS Panel.
+
+
+==============================================================================
+ BAGIAN 5 - RUTE PLAN
+==============================================================================
+
+ APA YANG DIKERJAKAN
+   Menyusun URUTAN KUNJUNGAN: toko nomor 1 adalah toko yang paling DEKAT dari
+   titik KANTOR, sampai toko terakhir yang paling jauh. Inilah yang membantu
+   sales merapikan perjalanan kunjungan harian.
+
+ SUSUNAN LAYAR (dari atas ke bawah)
+   1. Kartu AWAL RUTE   : nama kantor yang dipakai + tombol MUAT KANTOR
+   2. Pilihan HARI      : bawaan = HARI INI
+   3. Pilihan FREKUENSI : Semua / Weekly / BW Ganjil / BW Genap / Belum diisi
+   4. Tulisan         : "N toko - panjang rute +-X km"
+      dan tombol WARNA: HARI / WARNA: FREKUENSI
+   5. PETA              : titik kantor (K), titik toko bernomor 1,2,3...
+                          dan garis rencana kunjungan
+   6. Tombol            : SALIN DAFTAR PLAN  |  BUKA RUTE
+   7. DAFTAR PLAN       : nomor, nama toko, kode customer, jarak dari kantor,
+                          jarak dari titik sebelumnya, hari & frekuensi,
+                          tombol naik/turun urutan, SALIN, KUNJUNGI, NAVIGASI
+
+ TOMBOL "SALIN DAFTAR PLAN"
+   Menampilkan dua bentuk teks yang siap di-copy paste ke WhatsApp / catatan:
+
+     Tab LENGKAP  - memuat tanggal, nama sales, kantor, hari, frekuensi,
+                    jumlah toko, panjang rute, dan setiap toko bernomor:
+
+                      RENCANA RUTE KUNJUNGAN
+                      Tanggal    : 03-10-2026 (Sabtu)
+                      Sales      : NAMA SALES (username)
+                      Kantor     : KANTOR MEDAN
+                      Hari       : Sabtu
+                      Frekuensi  : Semua
+                      Jumlah     : 12 toko
+                      Panjang rute: +- 14,3 km
+
+                      1. TOKO ABC  |  CST-0001  |  0,8 km dari titik sebelumnya
+                          Jl. Contoh No. 1
+                          Sabtu - Weekly
+                      2. ...
+
+     Tab NAMA & KODE - hanya nama customer dan id customer, satu baris satu
+                    toko (paling sering dipakai sales):
+
+                      DAFTAR TOKO KUNJUNGAN
+                      Hari: Sabtu - Frekuensi: Semua
+
+                      1. TOKO ABC | CST-0001
+                      2. TOKO XYZ | CST-0002
+
+   Ada dua tombol: SALIN LENGKAP dan SALIN NAMA & KODE. Sesudah ditekan,
+   tulisannya langsung tersimpan di papan klip HP dan siap ditempelkan.
+
+ TOMBOL "BUKA RUTE"
+   Mengirim titik KANTOR beserta toko-toko rencana ke aplikasi Google Maps
+   sekaligus (maksimal 10 titik sekali jalan). Google Maps akan menampilkan
+   rutenya lengkap dengan jarak dan waktu tempuh.
+
+ PENSIL RUTE (tombol pensil di kanan atas layar)
+   Gunanya: menggambar sendiri garis rute perjalanan di atas peta (misalnya
+   jalan pintas atau rute yang biasa dilalui sales).
+
+   Cara pakai:
+     1. Tekan tombol PENSIL. Muncul tulisan MODE PENSIL MENYALA.
+        (Dalam mode ini peta tidak dapat digeser; pakai tombol + dan -.)
+     2. Pilih warna pensil (5 pilihan warna).
+     3. GESER JARI pada peta -> garis mengikuti gerakan jari.
+        Boleh beberapa goresan sekaligus (satu goresan = satu tarikan jari).
+        Mengetuk peta sekali membuat satu titik.
+     4. Tombol yang tersedia:
+          BATALKAN         - menghapus goresan terakhir
+          SIMPAN GORESAN   - menyimpan goresan ke dalam HP (dapat dimuat lagi)
+          GORESAN TERSIMPAN- daftar goresan yang tersimpan: dapat ditampilkan,
+                             disembunyikan, atau dihapus satu-satu
+          HAPUS GORESAN    - membersihkan goresan dari layar (atau dari HP)
+     5. Tekan tombol PENSIL sekali lagi untuk kembali menggeser peta.
+
+   Goresan tersimpan DI DALAM HP (tidak memakai internet) dan tetap ada
+   walaupun aplikasi ditutup.
+
+ MENANDAI TOKO SUDAH DIKUNJUNGI
+   Tombol KUNJUNGI pada setiap baris mencatat kunjungan hari ini (jam sampai
+   detik). Toko yang sudah dikunjungi:
+     - berwarna HIJAU dan turun ke bawah daftar
+     - diberi garis pada namanya
+     - tampil sebagai "SUDAH DIKUNJUNGI HARI INI" pada kartu toko
+   Riwayat kunjungan tersimpan di HP dan dipakai menu Peta Customer untuk
+   penyaring "Sudah dikunjungi hari ini".
+
+ MENGUBAH URUTAN SECARA MANUAL
+   Tombol panah naik / turun pada setiap baris memindahkan posisi toko. Urutan
+   manual ini dipakai aplikasi sampai penyaring (hari / frekuensi) diubah.
+
+
+==============================================================================
+ BAGIAN 6 - LOKASI KANTOR / MITRA
+==============================================================================
+
+ HANYA ADMIN & ASS YANG DAPAT MENGISI. Halaman ini dapat dibuka dari:
+   Menu PRO -> RUTE PLAN -> tombol GEDUNG di kanan atas layar
+
+ CARA MENITIKKAN KANTOR
+   1. Tekan tombol KANTOR (kanan bawah)
+   2. Isi: nama kantor, alamat, Sales District yang dilayani (dapat dipilih),
+      dan catatan bila perlu
+   3. Tekan  AMBIL TITIK DARI LOKASI SAYA  (saat berada di kantor), atau isi
+      lintang & bujur secara manual
+   4. Tekan SIMPAN -> titik langsung naik ke server dan disalin ke HP
+
+ BOLEH LEBIH DARI SATU KANTOR
+   Misalnya KANTOR MEDAN dan KANTOR BINJAI. Pada RUTE PLAN akan muncul pilihan
+   kantor, dan sales dapat memilih kantor yang paling dekat.
+
+ TOMBOL MUAT DARI SERVER
+   Menarik daftar titik kantor dari server (tabel rts_kantor) ke dalam HP.
+   Sales baru cukup menekan tombol ini sekali (saat ada internet) supaya
+   RUTE PLAN dapat dihitung walau nanti di jalan tanpa internet.
+
+ MENGHAPUS / MENGUBAH
+   Tekan UBAH atau ikon tempat sampah pada daftar kantor. Penghapusan dan
+   perubahan perlu sambungan internet karena mengubah data di server.
+
+ BILA KANTOR BELUM DITITIKKAN
+   Pada RUTE PLAN akan muncul tulisan "Titik kantor belum ada" beserta
+   peringatan kuning. Selama kantor belum dititikkan, urutan toko hanya
+   memakai titik GPS petugas (tekan tombol ikon titik saya pada peta).
+   Urutan dari KANTOR baru dapat dihitung setelah titik kantor diisi.
+
+
+==============================================================================
+ BAGIAN 7 - DAFTAR WARNA PENANDA
+==============================================================================
+
+ A. WARNA MENURUT FREKUENSI KUNJUNGAN (bawaan)
+      HIJAU        Weekly              (satu kali setiap minggu)
+      BIRU         Bi-Weekly Ganjil    (dua minggu sekali, pekan ganjil)
+      UNGU         Bi-Weekly Genap     (dua minggu sekali, pekan genap)
+      ABU-ABU      belum diisi
+
+ B. WARNA MENURUT HARI KUNJUNGAN
+      MERAH TUA    Senin
+      ORANYE       Selasa
+      KUNING TUA   Rabu
+      HIJAU        Kamis
+      BIRU         Jumat
+      UNGU         Sabtu
+      HIJAU TELUR  Minggu
+      ABU-ABU      belum diisi
+
+ C. TANDA TAMBAHAN
+      Bulatan penuh  = customer REGULER
+      Kotak (huruf G)= customer GSP
+      Cincin putih tebal + lebih besar = titik yang sedang disentuh
+      Tanda centang  = sudah dikunjungi hari ini
+      Bulatan hitam berikon gedung = titik KANTOR
+      Bulatan biru   = titik petugas (lokasi saya)
+
+ Peubah warna dilakukan dengan tombol WARNA: HARI / WARNA: FREKUENSI pada
+ Rute Plan, dan pada lembar penyaring Peta Customer.
+
+ CATATAN PEKAN GANJIL / GENAP
+   Aplikasi menghitung nomor pekan dari kalender. Jadi sales tidak perlu
+   menghitung sendiri: pilih saja "BW Ganjil" atau "BW Genap" pada penyaring.
+   Bila data master_toko memakai tulisan yang berbeda (misalnya
+   "MINGGUAN" atau "BI WEEKLY"), aplikasi tetap mengenalinya.
+
+
+==============================================================================
+ BAGIAN 8 - KALAU ADA MASALAH
+==============================================================================
+
+ 1. PETA TAMPIL PUTIH / KOSONG, TITIK TIDAK MUNCUL
+    Penyebab tersering: tidak ada internet (ubin peta diunduh dari internet),
+    atau sumber peta sedang tidak dapat dihubungi.
+    Tindakan:
+      - Pastikan HP dapat membuka internet (kuota habis?).
+      - Tekan tombol lapisan (layers) -> pilih "OSM Bantuan".
+      - Tekan tombol ikon kotak penuh (kanan atas peta, di bawah tombol
+        titik saya) untuk menampilkan seluruh titik dalam satu layar.
+      - Bila tetap putih: tunggu 1-2 menit, lalu muat ulang halaman.
+
+ 2. TULISAN "N TOKO BELUM MEMILIKI TITIK KOORDINAT"
+    Data toko itu belum punya latitude/longitude pada Master Customer.
+    Tindakan: Admin melengkapi titik toko tersebut.
+
+ 3. DAFTAR TOKO DI PETA MASIH KOSONG SAMA SEKALI
+    Titik toko dibaca dari SALINAN di dalam HP. Tekan tombol SEGARKAN pada
+    halaman Peta Customer (perlu internet + akun PRO). Aplikasi juga mencoba
+    menyalin sendiri saat pertama kali halaman dibuka.
+
+ 4. TULISAN "LOKASI KANTOR BELUM DITITIKKAN"
+    ADMIN belum mengisi titik kantor. Kerjakan Bagian 6 di atas.
+
+ 5. PESAN "Hanya ADMIN / ASS ..." SAAT MENYIMPAN KANTOR
+    Halaman LOKASI KANTOR hanya untuk akun ADMIN & ASS. Minta Admin yang
+    mengisi titik kantor.
+
+ 6. PESAN TENTANG api/kantor.php ATAU TABEL rts_kantor
+    Berarti LANGKAH A (Bagian 2) belum dikerjakan. Unggah api/kantor.php ke
+    folder api pada hosting, lalu jalankan RTS_PANEL_KANTOR.sql di phpMyAdmin.
+
+ 7. PESAN "requires Flutter SDK version" SAAT flutter pub get
+    Komputer memakai Flutter versi lama. Jalankan:  flutter upgrade
+    lalu   flutter pub get   kembali.
+
+ 8. MODE PENSIL TIDAK MENGGAMBAR APA PUN
+    Pastikan tulisan MODE PENSIL MENYALA tampil di atas peta, lalu geser jari
+    DI ATAS PETA (bukan di daftar). Satu tarikan jari = satu goresan.
+
+ 9. SALIN DAFTAR PLAN TIDAK MENEMPEL DI WHATSAPP
+    Setelah menekan SALIN LENGKAP / SALIN NAMA & KODE, buka WhatsApp, tekan
+    lama kotak ketik, lalu pilih TEMPEL.
+
+
+==============================================================================
+ BAGIAN 9 - CATATAN TEKNIS (untuk pembaruan berikutnya)
+==============================================================================
+
+ BERKAS YANG BERUBAH PADA PUTARAN INI
+   Aplikasi (Flutter)
+     lib\peta.dart        BARU  - seluruh halaman peta, radar, rute, kantor
+     lib\kasir_lokal.dart       - tabel baru: toko (+titik & jadwal),
+                                  kunjungan, kantor, peta_gores;
+                                  perintah baru: toko_peta, kunjungan_*,
+                                  kantor_*, gores_*
+     main.dart                  - import peta.dart, tiga kartu Menu PRO baru,
+                                  pengaman "terkunci -> PRO", penanda kode
+                                  RTS-2026-10-03-12
+     pubspec.yaml.updated       - flutter_map ^8.3.2, latlong2 ^0.9.1,
+                                  versi 1.2.5+8
+
+   Server (PHP + SQL)
+     api\kantor.php                       BARU - daftar / simpan / hapus titik
+                                                 kantor (menyetel admin)
+     database\migrations\RTS_PANEL_KANTOR.sql  BARU - tabel rts_kantor
+
+   TIDAK ADA perubahan pada: api/produk.php, api/kasir.php, inbox.php,
+   halaman website lain, dan tabel database lain. Berkas lama tetap aman.
+
+ PERINTAH API (untuk catatan)
+   aplikasi -> kantor.php?aksi=daftar | simpan | hapus | hitung
+   mesin lokal HP -> toko_peta, kunjungan_simpan, kunjungan_hari_ini,
+                     kunjungan_daftar, kunjungan_hapus,
+                     kantor_daftar, kantor_segarkan, kantor_simpan,
+                     kantor_hapus, gores_daftar, gores_simpan,
+                     gores_hapus, gores_hapus_semua
+
+ TABEL BARU DI DALAM HP (SQLite, rts_panel_kasir.db - versi 3)
+   toko       + kolom latitude, longitude, kunjungan, hari
+   kunjungan  id_customer, nama, tanggal, jam, id_sales, nama_sales,
+              latitude, longitude, catatan
+   kantor     id_server, nama, alamat, district, latitude, longitude,
+              catatan, diubah_pada, dari_server
+   peta_gores nama, warna, tebal, titik (teks JSON), jumlah, id_sales, dibuat
+
+ TABEL BARU DI SERVER
+   rts_kantor  id, nama, alamat, district, latitude, longitude, catatan,
+               dibuat_oleh, dibuat_pada, diubah_oleh, diubah_pada
+
+ PEMAKAIAN UBIN PETA
+   Ubin peta diambil langsung dari peladen OpenStreetMap
+   (tile.openstreetmap.org), tile.openstreetmap.fr (lapisan bantuan), dan
+   tile.opentopomap.org. Nama aplikasi dikirim pada User-Agent sesuai
+   ketentuan pemakaian OpenStreetMap, dan tulisan "Peta: nama sumber"
+   ditampilkan pada sudut peta. Ketuk tulisan itu untuk membuka halaman
+   hak cipta OpenStreetMap.
+
+ RILIS
+   Nomor versi aplikasi : 1.2.5  (kode 8)
+   Halaman app_versi.php: Versi 1.2.5 | Kode 8 | Wajib: JANGAN
+   Penanda kode         : RTS-2026-10-03-12 (tampil pada halaman Pengaturan)
+
+==============================================================================
+ Selesai. Bila ada pesan galat, kirimkan bunyi pesannya (salin seluruh baris)
+ supaya dapat diperbaiki tepat sasaran.
+==============================================================================

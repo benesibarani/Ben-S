@@ -1,4 +1,64 @@
-PALING BARU - MENU PRO DIPISAH + PRODUK BERSAMA + STOK + PRINTER + TOKO
+PALING BARU - PUTARAN 12: TIGA MENU PRO PETA (OpenStreetMap)
+------------------------------------------------------------------------
+Permintaan yang dikerjakan pada putaran ini:
+  1. MAP CUSTOMER - peta OpenStreetMap (openstreetmap.org) melampirkan
+     seluruh customer lengkap dengan titik-titiknya, dapat DISARING
+     berwarna menurut HARI dan menurut FREKUENSI KUNJUNGAN
+     (Weekly / Bi-Weekly Ganjil / Bi-Weekly Genap).
+  2. RADAR CUSTOMER - menampilkan LIST customer di sekitar kita, lengkap
+     dengan JARAK dari posisi petugas. Tampilan: Nama Toko, Alamat, Jarak.
+  3. RUTE PLAN - membantu Sales mendapatkan URUTAN TOKO dari jarak ke titik
+     KANTOR, lengkap dengan FILTER BERWARNA. Ditambah:
+        a. TOOLS PENSIL untuk membuat garis rute perjalanan di atas peta.
+        b. LIST PLAN yang dapat DI-COPY PASTE berupa teks berisi
+           Nama Customer dan Id Customer (2 bentuk: LENGKAP & NAMA + KODE).
+        c. Tombol BUKA RUTE ke Google Maps (maksimal 10 titik sekali jalan).
+     Admin WAJIB menitikkan LOKASI KANTOR / MITRA lebih dahulu
+     (Menu PRO -> RUTE PLAN -> tombol GEDUNG -> tombol KANTOR).
+
+  PANDUAN LENGKAP (9 bagian: peta, radar, rute, pensil, salin plan,
+  lokasi kantor, daftar warna, kalau ada masalah, catatan teknis):
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PETA_RADAR_RUTE.txt
+
+  PAKET LENGKAP putaran ini (semua berkas sekaligus):
+    RTS_PANEL_PUTARAN_12.zip  (59 berkas di dalamnya)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_12.zip
+    PAKET KHUSUS MENU PETA (7 berkas inti, lebih kecil):
+    RTS_PANEL_PETA_RADAR_RUTE.zip  (7 berkas inti)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PETA_RADAR_RUTE.zip
+
+  BERKAS SERVER yang perlu diunggah ke public_html:
+    api/kantor.php  <-- BARU (API titik lokasi kantor / mitra)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/kantor.php
+
+  BERKAS DATABASE (jalankan di phpMyAdmin, tab SQL):
+    database/migrations/RTS_PANEL_KANTOR.sql  <-- BARU (tabel rts_kantor)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/database/migrations/RTS_PANEL_KANTOR.sql
+
+  BERKAS APLIKASI (dipasang dengan LANGKAH1_PASANG_SEMUA.ps1):
+    lib/peta.dart  <-- BARU (155.345 B) Peta Customer (OpenStreetMap) +
+                        Radar Customer + Rute Plan (pensil rute, salin daftar
+                        plan) + halaman Lokasi Kantor / Mitra
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
+    main.dart          (489.413 B) tiga kartu Menu PRO baru + pengaman
+                        "terkunci -> PRO" + penanda RTS-2026-10-03-12
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+    lib/kasir_lokal.dart (119.511 B) tabel kantor / kunjungan / peta_gores,
+                        titik koordinat & jadwal pada tabel toko, perintah
+                        toko_peta, kunjungan_*, kantor_*, gores_*
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
+    pubspec.yaml.updated (6.232 B) versi 1.2.5+8 + flutter_map + latlong2
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+    LANGKAH1_PASANG_SEMUA.ps1 (28.678 B) kini ikut menyalin lib\peta.dart
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/LANGKAH1_PASANG_SEMUA.ps1
+
+  RILIS PENUTUP PUTARAN INI
+    Nomor versi aplikasi : 1.2.5  (kode 8)
+    Halaman Versi Aplikasi: Versi 1.2.5 | Kode 8 | Wajib: JANGAN -> PUBLIKASIKAN
+    Penanda kode aplikasi : RTS-2026-10-03-12 (tampil pada Pengaturan)
+
+------------------------------------------------------------------------
+PUTARAN 11 - MENU PRO DIPISAH + PRODUK BERSAMA + STOK + PRINTER + TOKO
 ------------------------------------------------------------------------
 Permintaan yang dikerjakan pada putaran ini:
   1. MENU PRO dipisahkan dari MENU UTAMA (posisinya di bawah, bertanda PRO).

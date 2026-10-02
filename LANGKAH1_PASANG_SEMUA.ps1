@@ -8,9 +8,11 @@
 #     1. Memastikan folder proyek Flutter ditemukan
 #     2. Menyalin main.dart  ->  D:\Project\rts_panel_app\main.dart
 #                                D:\Project\rts_panel_app\lib\main.dart
-#     3. Menyalin pubspec.yaml (memuat sqflite + nomor versi 1.2.4+7)
-#     4. Menyalin lib\kasir.dart DAN lib\kasir_lokal.dart
-#        (kasir_lokal.dart = mesin kasir di dalam HP, berjalan tanpa internet)
+#     3. Menyalin pubspec.yaml (memuat sqflite + flutter_map + versi 1.2.5+8)
+#     4. Menyalin lib\kasir.dart, lib\kasir_lokal.dart, DAN lib\peta.dart
+#        (kasir_lokal.dart  = mesin kasir di dalam HP, berjalan tanpa internet)
+#        (peta.dart = PETA CUSTOMER, RADAR CUSTOMER, RUTE PLAN, dan LOKASI
+#                     KANTOR memakai OpenStreetMap)
 #     5. Menambahkan izin KAMERA pada AndroidManifest.xml (bila belum ada)
 #     6. Mengubah NAMA APLIKASI pada layar HP menjadi "RTS Panel"
 #        (sebelumnya tertulis rts_panel_app)
@@ -28,9 +30,9 @@
 #
 #  CARA PAKAI
 #  ----------
-#     1. Ekstrak paket RTS_PANEL_PUTARAN_10.zip ke Desktop
+#     1. Ekstrak paket RTS_PANEL_PUTARAN_12.zip ke Desktop
 #     2. Buka PowerShell, masuk ke folder hasil ekstrak, contoh:
-#            cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_10"
+#            cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_12"
 #     3. Jalankan:
 #            .\LANGKAH1_PASANG_SEMUA.ps1
 #     4. Bila muncul pesan "running scripts is disabled", jalankan:
@@ -110,7 +112,7 @@ if (-not (Test-Path $folderAplikasi)) {
     Write-Host ''
     Write-Host ' Skrip ini harus dijalankan dari DALAM folder hasil ekstrak paket.' -ForegroundColor Yellow
     Write-Host ' Contoh:' -ForegroundColor Yellow
-    Write-Host '     cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_10"' -ForegroundColor White
+    Write-Host '     cd "$env:USERPROFILE\Desktop\RTS_PANEL_PUTARAN_12"' -ForegroundColor White
     Write-Host '     .\LANGKAH1_PASANG_SEMUA.ps1' -ForegroundColor White
     Write-Host ''
     exit 1
@@ -119,6 +121,7 @@ if (-not (Test-Path $folderAplikasi)) {
 $berkasMain = Join-Path $folderAplikasi 'main.dart'
 $berkasKasir = Join-Path $folderAplikasi 'kasir.dart'
 $berkasKasirLokal = Join-Path $folderAplikasi 'kasir_lokal.dart'
+$berkasPeta = Join-Path $folderAplikasi 'peta.dart'
 $berkasPubspec = Join-Path $folderAplikasi 'pubspec.yaml'
 $berkasManifestPanduan = Join-Path $folderAplikasi 'android_manifest_tambahan.xml'
 $berkasMainActivity = Join-Path $folderAplikasi 'MainActivity.kt'
@@ -223,14 +226,28 @@ if (Test-Path $berkasKasirLokal) {
 } else {
     Awas 'kasir_lokal.dart TIDAK ada di folder paket!'
     Awas 'Tanpa berkas itu aplikasi GAGAL dibangun (lib\kasir.dart memanggilnya).'
-    Awas 'Pastikan memakai paket RTS_PANEL_PUTARAN_10.zip yang lengkap.'
+    Awas 'Pastikan memakai paket RTS_PANEL_PUTARAN_12.zip yang lengkap.'
+}
+
+# lib\peta.dart berisi TIGA MENU PRO PETA (OpenStreetMap): PETA CUSTOMER,
+# RADAR CUSTOMER, dan RUTE PLAN (lengkap dengan pensil rute + daftar plan yang
+# dapat disalin), serta halaman LOKASI KANTOR / MITRA untuk ADMIN & ASS.
+if (Test-Path $berkasPeta) {
+    $tujuanPeta = Join-Path $folderProyek 'lib\peta.dart'
+
+    if (Salin-DenganCadangan $berkasPeta $tujuanPeta) {
+        Baik 'lib\peta.dart dipasang  <-- Peta Customer, Radar Customer, Rute Plan.'
+    }
+} else {
+    Awas 'peta.dart TIDAK ada di folder paket!'
+    Awas 'Tanpa berkas itu aplikasi GAGAL dibangun (lib\main.dart memanggilnya).'
 }
 
 # =============================================================================
 # 3. pubspec.yaml
 # =============================================================================
 
-Judul '3. Memasang pubspec.yaml (sqflite + kamera barcode + printer + versi 1.2.3+6)'
+Judul '3. Memasang pubspec.yaml (sqflite + kamera barcode + printer + peta + versi 1.2.5+8)'
 
 $tujuanPubspec = Join-Path $folderProyek 'pubspec.yaml'
 
@@ -251,7 +268,8 @@ if (Salin-DenganCadangan $berkasPubspec $tujuanPubspec) {
     }
 
     foreach ($paketWajib in @('sqflite', 'path_provider', 'path:', 'mobile_scanner',
-            'esc_pos_utils_plus', 'print_bluetooth_thermal', 'permission_handler')) {
+            'esc_pos_utils_plus', 'print_bluetooth_thermal', 'permission_handler',
+            'flutter_map', 'latlong2')) {
         if ($isiPubspec -match [regex]::Escape($paketWajib)) {
             Baik "paket $paketWajib sudah ada di pubspec."
         } else {
@@ -640,13 +658,21 @@ Write-Host '     3. Tekan tombol PERBARUI DATABASE' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Periksa di aplikasi:' -ForegroundColor White
 Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-10-01-10' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda RTS-2026-10-03-12 (penanda lama dilewati)' -ForegroundColor Gray
 Write-Host '     Pembaruan   : kotak Pembaruan -> PERBARUI SEKARANG' -ForegroundColor Gray
 Write-Host '                   (berkas diunduh DI DALAM aplikasi, tanpa Chrome)' -ForegroundColor Gray
 Write-Host '     Profil      : tombol LANGGANAN PRO tampil + gambar QRIS tampil' -ForegroundColor Gray
 Write-Host '     Profil      : ketuk foto -> pilih dari galeri -> foto berubah' -ForegroundColor Gray
 Write-Host '     Beranda     : iklan banner + iklan native tampil (akun GRATIS)' -ForegroundColor Gray
 Write-Host '     Barang Bawaan: SIAPKAN DATA -> produk -> stok -> nota (tanpa internet)' -ForegroundColor Gray
+Write-Host '     Menu PRO    : Peta Customer, Radar Customer, Rute Plan tampil' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-03-12' -ForegroundColor Gray
+Write-Host ''
+Write-Host ' Di hosting (cPanel) - KHUSUS MENU PETA:' -ForegroundColor White
+Write-Host '     1. Unggah  api\kantor.php  ke folder api pada hosting' -ForegroundColor Gray
+Write-Host '     2. Jalankan  RTS_PANEL_KANTOR.sql  di phpMyAdmin' -ForegroundColor Gray
+Write-Host '     3. Masuk aplikasi sebagai ADMIN -> Menu PRO -> RUTE PLAN' -ForegroundColor Gray
+Write-Host '     4. Tekan tombol gedung -> KANTOR -> AMBIL TITIK DARI LOKASI SAYA' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Bila ada yang gagal, buka berkas BACA_DULU.txt bagian "KALAU ADA MASALAH".' -ForegroundColor Yellow
 Write-Host ''

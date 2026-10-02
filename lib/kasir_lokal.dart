@@ -154,7 +154,7 @@ class RtsKasirLokal {
 
     _db = await openDatabase(
       jalur,
-      version: 2,
+      version: 3,
       onCreate: (Database d, int v) async {
         for (final String sql in _perintahTabel()) {
           await d.execute(sql);
@@ -163,6 +163,8 @@ class RtsKasirLokal {
       onUpgrade: (Database d, int lama, int baru) async {
         // Database lama (versi 1) belum memakai kolom sku, belum punya tabel
         // toko, dan masih menyimpan kolom barcode_batang.
+        // Versi 3 menambahkan titik koordinat & jadwal kunjungan pada tabel
+        // toko, serta tabel kantor, kunjungan, dan peta_gores (pensil rute).
         await _perbaikiTabel(d);
       },
       onConfigure: (Database d) async {
@@ -209,9 +211,14 @@ class RtsKasirLokal {
         salesman TEXT NOT NULL DEFAULT '',
         hp TEXT NOT NULL DEFAULT '',
         tipe TEXT NOT NULL DEFAULT 'REGULER',
+        latitude TEXT NOT NULL DEFAULT '',
+        longitude TEXT NOT NULL DEFAULT '',
+        kunjungan TEXT NOT NULL DEFAULT '',
+        hari TEXT NOT NULL DEFAULT '',
         diperbarui TEXT NOT NULL DEFAULT ''
       )''',
       'CREATE INDEX IF NOT EXISTS idx_toko_nama ON toko(nama)',
+      ..._perintahPeta(),
       '''CREATE TABLE IF NOT EXISTS stok (
         id_sales TEXT NOT NULL,
         produk_id INTEGER NOT NULL,
@@ -342,6 +349,54 @@ class RtsKasirLokal {
     ];
   }
 
+  /// Tabel untuk menu PETA CUSTOMER, RADAR CUSTOMER, dan RUTE PLAN.
+  ///
+  ///   kantor     : titik lokasi kantor / mitra (diatur ADMIN, disalin dari
+  ///                server supaya rute tetap dapat dihitung tanpa internet)
+  ///   kunjungan  : riwayat "toko ini sudah saya kunjungi" beserta jamnya
+  ///   peta_gores : garis rute yang digambar memakai pensil pada peta
+  List<String> _perintahPeta() {
+    return <String>[
+      '''CREATE TABLE IF NOT EXISTS kantor (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_server INTEGER NOT NULL DEFAULT 0,
+        nama TEXT NOT NULL DEFAULT '',
+        alamat TEXT NOT NULL DEFAULT '',
+        district TEXT NOT NULL DEFAULT '',
+        latitude REAL NOT NULL DEFAULT 0,
+        longitude REAL NOT NULL DEFAULT 0,
+        catatan TEXT NOT NULL DEFAULT '',
+        diubah_pada TEXT NOT NULL DEFAULT '',
+        dari_server INTEGER NOT NULL DEFAULT 1,
+        diperbarui TEXT NOT NULL DEFAULT ''
+      )''',
+      '''CREATE TABLE IF NOT EXISTS kunjungan (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id_customer TEXT NOT NULL DEFAULT '',
+        nama TEXT NOT NULL DEFAULT '',
+        tanggal TEXT NOT NULL DEFAULT '',
+        jam TEXT NOT NULL DEFAULT '',
+        id_sales TEXT NOT NULL DEFAULT '',
+        nama_sales TEXT NOT NULL DEFAULT '',
+        latitude REAL NOT NULL DEFAULT 0,
+        longitude REAL NOT NULL DEFAULT 0,
+        catatan TEXT NOT NULL DEFAULT ''
+      )''',
+      'CREATE INDEX IF NOT EXISTS idx_kunjungan_tanggal ON kunjungan(tanggal)',
+      'CREATE INDEX IF NOT EXISTS idx_kunjungan_customer ON kunjungan(id_customer)',
+      '''CREATE TABLE IF NOT EXISTS peta_gores (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nama TEXT NOT NULL DEFAULT '',
+        warna INTEGER NOT NULL DEFAULT 0,
+        tebal REAL NOT NULL DEFAULT 4,
+        titik TEXT NOT NULL DEFAULT '',
+        jumlah INTEGER NOT NULL DEFAULT 0,
+        id_sales TEXT NOT NULL DEFAULT '',
+        dibuat TEXT NOT NULL DEFAULT ''
+      )''',
+    ];
+  }
+
   /// Membuat tabel yang belum ada (aman dipanggil berkali-kali).
   Future<void> siapkanTabel() async {
     final Database d = await db;
@@ -375,6 +430,17 @@ class RtsKasirLokal {
     await coba('ALTER TABLE produk ADD COLUMN perlu_kirim INTEGER NOT NULL DEFAULT 1');
     await coba("ALTER TABLE struk ADD COLUMN jenis_printer TEXT NOT NULL DEFAULT '58'");
     await coba('ALTER TABLE struk ADD COLUMN diameter_roll INTEGER NOT NULL DEFAULT 40');
+
+    // 1b. Kolom baru pada tabel toko (putaran 12 - peta, radar, dan rute).
+    await coba("ALTER TABLE toko ADD COLUMN latitude TEXT NOT NULL DEFAULT ''");
+    await coba("ALTER TABLE toko ADD COLUMN longitude TEXT NOT NULL DEFAULT ''");
+    await coba("ALTER TABLE toko ADD COLUMN kunjungan TEXT NOT NULL DEFAULT ''");
+    await coba("ALTER TABLE toko ADD COLUMN hari TEXT NOT NULL DEFAULT ''");
+
+    // 1c. Tabel baru untuk peta, radar, dan rute (aman bila sudah ada).
+    for (final String sql in _perintahPeta()) {
+      await coba(sql);
+    }
 
     // 2. Kolom barcode_batang DIHAPUS (barcode hanya ada pada bungkus).
     //    SQLite lama belum mendukung DROP COLUMN, jadi tabel dibangun ulang
@@ -981,6 +1047,66 @@ class RtsKasirLokal {
         await _pastikanBoleh();
 
         return _tokoSegarkan();
+
+      case 'toko_peta':
+        await _pastikanBoleh();
+
+        return _tokoPeta();
+
+      case 'kunjungan_simpan':
+        await _pastikanBoleh();
+
+        return _kunjunganSimpan(data);
+
+      case 'kunjungan_hari_ini':
+        await _pastikanBoleh();
+
+        return _kunjunganHariIni();
+
+      case 'kunjungan_daftar':
+        await _pastikanBoleh();
+
+        return _kunjunganDaftar(
+          _teks(data['id_customer'], 40),
+          _bulat(data['batas'] ?? 200),
+        );
+
+      case 'kunjungan_hapus':
+        await _pastikanBoleh();
+
+        return _kunjunganHapus(_bulat(data['id']));
+
+      case 'kantor_daftar':
+        return _kantorDaftar();
+
+      case 'kantor_segarkan':
+        return _kantorSegarkan();
+
+      case 'kantor_simpan':
+        return _kantorSimpan(data);
+
+      case 'kantor_hapus':
+        return _kantorHapus(data);
+
+      case 'gores_daftar':
+        await _pastikanBoleh();
+
+        return _goresDaftar();
+
+      case 'gores_simpan':
+        await _pastikanBoleh();
+
+        return _goresSimpan(data);
+
+      case 'gores_hapus':
+        await _pastikanBoleh();
+
+        return _goresHapus(_bulat(data['id']));
+
+      case 'gores_hapus_semua':
+        await _pastikanBoleh();
+
+        return _goresHapusSemua();
 
       case 'cadangan_info':
         return _cadanganInfo();
@@ -2900,6 +3026,12 @@ class RtsKasirLokal {
             'tipe': _teks(toko['tipe_customer'], 20).isEmpty
                 ? 'REGULER'
                 : _teks(toko['tipe_customer'], 20),
+            // Titik koordinat & jadwal kunjungan dipakai menu PETA CUSTOMER,
+            // RADAR CUSTOMER, dan RUTE PLAN.
+            'latitude': _teks(toko['latitude'], 30),
+            'longitude': _teks(toko['longitude'], 30),
+            'kunjungan': _teks(toko['kunjungan'], 40),
+            'hari': _teks(toko['hari'], 30),
             'diperbarui': waktu,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -2964,6 +3096,10 @@ class RtsKasirLokal {
         'salesman': '${b['salesman'] ?? ''}',
         'hp': '${b['hp'] ?? ''}',
         'tipe': '${b['tipe'] ?? 'REGULER'}',
+        'kunjungan': '${b['kunjungan'] ?? ''}',
+        'hari': '${b['hari'] ?? ''}',
+        'latitude': _angka(b['latitude']),
+        'longitude': _angka(b['longitude']),
       });
     }
 
@@ -2973,6 +3109,550 @@ class RtsKasirLokal {
       'items': items,
       'jumlah': items.length,
       'sinkron_pada': await _setelanBaca('toko_sinkron_pada', ''),
+    };
+  }
+
+  /* ------------------------------------------------------ peta, radar, rute */
+
+  /// Satu toko beserta titik koordinat dan jadwal kunjungannya.
+  Map<String, dynamic> _tokoBentukPeta(Map<String, Object?> b) {
+    final double lat = _angka(b['latitude']);
+    final double lng = _angka(b['longitude']);
+
+    return <String, dynamic>{
+      'id_customer': '${b['id_customer'] ?? ''}',
+      'nama': '${b['nama'] ?? ''}',
+      'alamat': '${b['alamat'] ?? ''}',
+      'district': '${b['district'] ?? ''}',
+      'salesman': '${b['salesman'] ?? ''}',
+      'hp': '${b['hp'] ?? ''}',
+      'tipe': '${b['tipe'] ?? 'REGULER'}',
+      'kunjungan': '${b['kunjungan'] ?? ''}',
+      'hari': '${b['hari'] ?? ''}',
+      'latitude': lat,
+      'longitude': lng,
+      'bertitik': lat != 0 && lng != 0,
+      'diperbarui': '${b['diperbarui'] ?? ''}',
+    };
+  }
+
+  /// Seluruh toko pada salinan di HP - dipakai PETA CUSTOMER, RADAR, RUTE PLAN.
+  Future<Map<String, dynamic>> _tokoPeta() async {
+    final Database d = await db;
+
+    final List<Map<String, Object?>> baris = await d.query(
+      'toko',
+      orderBy: 'nama ASC',
+      limit: 5000,
+    );
+
+    final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
+    int bertitik = 0;
+
+    for (final Map<String, Object?> b in baris) {
+      final Map<String, dynamic> satu = _tokoBentukPeta(b);
+
+      if (satu['bertitik'] == true) bertitik++;
+
+      items.add(satu);
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': '${items.length} toko pada salinan di HP, $bertitik sudah '
+          'memiliki titik koordinat.',
+      'items': items,
+      'jumlah': items.length,
+      'bertitik': bertitik,
+      'sinkron_pada': await _setelanBaca('toko_sinkron_pada', ''),
+    };
+  }
+
+  /* ------------------------------------------------------------ kunjungan */
+
+  Future<Map<String, dynamic>> _kunjunganSimpan(Map<String, dynamic> data) async {
+    final Database d = await db;
+    final String idCustomer = _teks(data['id_customer'], 40);
+
+    if (idCustomer.isEmpty) {
+      throw RtsKasirGalat('Toko belum dipilih.');
+    }
+
+    final String waktu = _waktu();
+
+    final int id = await d.insert('kunjungan', <String, Object?>{
+      'id_customer': idCustomer,
+      'nama': _teks(data['nama'], 150),
+      'tanggal': waktu.substring(0, 10),
+      'jam': waktu,
+      'id_sales': idSales,
+      'nama_sales': namaSales,
+      'latitude': _angka(data['latitude']),
+      'longitude': _angka(data['longitude']),
+      'catatan': _teks(data['catatan'], 200),
+    });
+
+    final Map<String, dynamic> hari = await _kunjunganHariIni();
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Kunjungan ${_teks(data['nama'], 60)} tercatat pada $waktu.',
+      'id': id,
+      'waktu': waktu,
+      'hari_ini': hari,
+    };
+  }
+
+  Future<Map<String, dynamic>> _kunjunganHariIni() async {
+    final Database d = await db;
+    final String tanggal = _waktu().substring(0, 10);
+
+    final List<Map<String, Object?>> baris = await d.query(
+      'kunjungan',
+      where: 'tanggal = ?',
+      whereArgs: <Object?>[tanggal],
+      orderBy: 'id DESC',
+    );
+
+    final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
+    final List<String> idCustomer = <String>[];
+
+    for (final Map<String, Object?> b in baris) {
+      final String id = '${b['id_customer'] ?? ''}';
+
+      if (id.isNotEmpty && !idCustomer.contains(id)) idCustomer.add(id);
+
+      items.add(<String, dynamic>{
+        'id': _bulat(b['id']),
+        'id_customer': id,
+        'nama': '${b['nama'] ?? ''}',
+        'jam': '${b['jam'] ?? ''}',
+        'catatan': '${b['catatan'] ?? ''}',
+      });
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': '$tanggal: ${items.length} kunjungan tercatat.',
+      'tanggal': tanggal,
+      'items': items,
+      'id_customer': idCustomer,
+      'jumlah': items.length,
+    };
+  }
+
+  Future<Map<String, dynamic>> _kunjunganDaftar(
+    String idCustomer,
+    int batas,
+  ) async {
+    final Database d = await db;
+    final int jumlah = batas < 1 ? 200 : (batas > 500 ? 500 : batas);
+
+    final List<Map<String, Object?>> baris = await d.query(
+      'kunjungan',
+      where: idCustomer.isEmpty ? null : 'id_customer = ?',
+      whereArgs: idCustomer.isEmpty ? null : <Object?>[idCustomer],
+      orderBy: 'id DESC',
+      limit: jumlah,
+    );
+
+    final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
+
+    for (final Map<String, Object?> b in baris) {
+      items.add(<String, dynamic>{
+        'id': _bulat(b['id']),
+        'id_customer': '${b['id_customer'] ?? ''}',
+        'nama': '${b['nama'] ?? ''}',
+        'tanggal': '${b['tanggal'] ?? ''}',
+        'jam': '${b['jam'] ?? ''}',
+        'nama_sales': '${b['nama_sales'] ?? ''}',
+        'catatan': '${b['catatan'] ?? ''}',
+      });
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': '${items.length} catatan kunjungan.',
+      'items': items,
+      'jumlah': items.length,
+    };
+  }
+
+  Future<Map<String, dynamic>> _kunjunganHapus(int id) async {
+    final Database d = await db;
+
+    await d.delete('kunjungan', where: 'id = ?', whereArgs: <Object?>[id]);
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Catatan kunjungan dihapus.',
+    };
+  }
+
+  /* ------------------------------------------------------- lokasi kantor */
+
+  Map<String, dynamic> _kantorBentuk(Map<String, Object?> b) {
+    return <String, dynamic>{
+      'id': _bulat(b['id']),
+      'id_server': _bulat(b['id_server']),
+      'nama': '${b['nama'] ?? ''}',
+      'alamat': '${b['alamat'] ?? ''}',
+      'district': '${b['district'] ?? ''}',
+      'latitude': _angka(b['latitude']),
+      'longitude': _angka(b['longitude']),
+      'catatan': '${b['catatan'] ?? ''}',
+      'diubah_pada': '${b['diubah_pada'] ?? ''}',
+      'dari_server': _bulat(b['dari_server']) == 1,
+    };
+  }
+
+  Future<Map<String, dynamic>> _kantorDaftar() async {
+    final Database d = await db;
+
+    final List<Map<String, Object?>> baris = await d.query(
+      'kantor',
+      orderBy: 'nama ASC',
+    );
+
+    final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
+
+    for (final Map<String, Object?> b in baris) {
+      items.add(_kantorBentuk(b));
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': '${items.length} titik lokasi kantor / mitra.',
+      'items': items,
+      'jumlah': items.length,
+      'sinkron_pada': await _setelanBaca('kantor_sinkron_pada', ''),
+      'pengelola': pengelola,
+    };
+  }
+
+  /// Menyalin titik lokasi kantor dari server (tabel `rts_kantor`).
+  /// Titik disimpan di HP supaya RUTE PLAN tetap dapat dihitung luring.
+  Future<Map<String, dynamic>> _kantorSegarkan() async {
+    if (baseUrl.isEmpty || token.isEmpty) {
+      throw RtsKasirGalat('Alamat server belum dikenal. Masuk kembali ke aplikasi.');
+    }
+
+    final Database d = await db;
+
+    final http.Response jawab = await http.get(
+      Uri.parse('$baseUrl/kantor.php?aksi=daftar'),
+      headers: <String, String>{
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    ).timeout(const Duration(seconds: 30));
+
+    final dynamic urai = jsonDecode(jawab.body);
+
+    if (urai is! Map || urai['success'] != true) {
+      throw RtsKasirGalat(
+        'Titik lokasi kantor tidak dapat dibaca dari server. Pastikan berkas '
+        'api/kantor.php sudah diunggah dan tabel rts_kantor sudah dibuat.',
+      );
+    }
+
+    final List<dynamic> data =
+        (urai['items'] is List) ? urai['items'] as List<dynamic> : <dynamic>[];
+
+    // Titik dari server diganti; titik yang dibuat di HP (bila ada) dibiarkan.
+    await d.delete('kantor', where: 'dari_server = 1');
+
+    final Batch kelompok = d.batch();
+    final String waktu = _waktu();
+
+    for (final dynamic satu in data) {
+      if (satu is! Map) continue;
+
+      final Map<String, dynamic> k = satu.cast<String, dynamic>();
+
+      kelompok.insert('kantor', <String, Object?>{
+        'id_server': _bulat(k['id']),
+        'nama': _teks(k['nama'], 120),
+        'alamat': _teks(k['alamat'], 255),
+        'district': _teks(k['district'], 120),
+        'latitude': _angka(k['latitude']),
+        'longitude': _angka(k['longitude']),
+        'catatan': _teks(k['catatan'], 200),
+        'diubah_pada': _teks(k['diubah_pada'], 30),
+        'dari_server': 1,
+        'diperbarui': waktu,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+
+    await kelompok.commit(noResult: true);
+    await _setelanTulis('kantor_sinkron_pada', waktu);
+
+    final Map<String, dynamic> daftar = await _kantorDaftar();
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Titik lokasi kantor disegarkan dari server: '
+          '${data.length} titik.',
+      'waktu': waktu,
+      ...daftar,
+    };
+  }
+
+  /// Menyimpan titik lokasi kantor / mitra (hanya ADMIN & ASS).
+  /// Titik disimpan di server (tabel `rts_kantor`) lalu disalin ke HP.
+  Future<Map<String, dynamic>> _kantorSimpan(Map<String, dynamic> data) async {
+    if (!pengelola) {
+      throw RtsKasirGalat(
+        'Titik lokasi kantor hanya dapat diatur oleh ADMIN atau ASS.',
+      );
+    }
+
+    if (baseUrl.isEmpty || token.isEmpty) {
+      throw RtsKasirGalat('Alamat server belum dikenal. Masuk kembali ke aplikasi.');
+    }
+
+    final String nama = _teks(data['nama'], 120);
+    final String alamat = _teks(data['alamat'], 255);
+    final String district = _teks(data['district'], 120);
+    final String catatan = _teks(data['catatan'], 200);
+    final double lat = _angka(data['latitude']);
+    final double lng = _angka(data['longitude']);
+
+    if (nama.isEmpty) {
+      throw RtsKasirGalat('Nama kantor / mitra belum diisi.');
+    }
+
+    if (lat == 0 && lng == 0) {
+      throw RtsKasirGalat(
+        'Titik lokasi belum ada. Tekan AMBIL TITIK DARI LOKASI SAYA atau isi '
+        'lintang dan bujur kantor.',
+      );
+    }
+
+    final Database d = await db;
+    final int id = _bulat(data['id']);
+    final int idServer = _bulat(data['id_server']);
+    final String waktu = _waktu();
+    int idServerBaru = idServer;
+
+    try {
+      final http.Response jawab = await http.post(
+        Uri.parse('$baseUrl/kantor.php?aksi=simpan'),
+        headers: <String, String>{
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'id': idServer,
+          'nama': nama,
+          'alamat': alamat,
+          'district': district,
+          'latitude': lat,
+          'longitude': lng,
+          'catatan': catatan,
+        }),
+      ).timeout(const Duration(seconds: 30));
+
+      final dynamic urai = jsonDecode(jawab.body);
+
+      if (urai is! Map || urai['success'] != true) {
+        throw RtsKasirGalat(
+          urai is Map && urai['message'] != null
+              ? '${urai['message']}'
+              : 'Titik lokasi kantor gagal disimpan di server.',
+        );
+      }
+
+      idServerBaru = _bulat(urai['id']);
+
+      if (idServerBaru < 1 && urai['kantor'] is Map) {
+        idServerBaru = _bulat((urai['kantor'] as Map)['id']);
+      }
+    } on RtsKasirGalat {
+      rethrow;
+    } catch (_) {
+      throw RtsKasirGalat(
+        'Titik lokasi kantor perlu disimpan saat ada internet. Sambungkan '
+        'internet, lalu tekan SIMPAN kembali.',
+      );
+    }
+
+    final Map<String, Object?> nilai = <String, Object?>{
+      'id_server': idServerBaru,
+      'nama': nama,
+      'alamat': alamat,
+      'district': district,
+      'latitude': lat,
+      'longitude': lng,
+      'catatan': catatan,
+      'diubah_pada': waktu,
+      'dari_server': 1,
+      'diperbarui': waktu,
+    };
+
+    if (id > 0) {
+      await d.update(
+        'kantor',
+        nilai,
+        where: 'id = ?',
+        whereArgs: <Object?>[id],
+      );
+    } else {
+      await d.insert('kantor', nilai);
+    }
+
+    final Map<String, dynamic> daftar = await _kantorDaftar();
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Titik lokasi "$nama" tersimpan di server dan di HP.',
+      'id_server': idServerBaru,
+      ...daftar,
+    };
+  }
+
+  /// Menghapus titik lokasi kantor (hanya ADMIN & ASS).
+  Future<Map<String, dynamic>> _kantorHapus(Map<String, dynamic> data) async {
+    if (!pengelola) {
+      throw RtsKasirGalat(
+        'Titik lokasi kantor hanya dapat dihapus oleh ADMIN atau ASS.',
+      );
+    }
+
+    final Database d = await db;
+    final int id = _bulat(data['id']);
+    final int idServer = _bulat(data['id_server']);
+
+    if (idServer > 0 && baseUrl.isNotEmpty && token.isNotEmpty) {
+      try {
+        await http.post(
+          Uri.parse('$baseUrl/kantor.php?aksi=hapus'),
+          headers: <String, String>{
+            'Accept': 'application/json',
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(<String, dynamic>{'id': idServer}),
+        ).timeout(const Duration(seconds: 30));
+      } catch (_) {
+        throw RtsKasirGalat(
+          'Penghapusan titik kantor perlu internet. Sambungkan internet, lalu '
+          'coba lagi.',
+        );
+      }
+    }
+
+    await d.delete('kantor', where: 'id = ?', whereArgs: <Object?>[id]);
+
+    final Map<String, dynamic> daftar = await _kantorDaftar();
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Titik lokasi kantor dihapus.',
+      ...daftar,
+    };
+  }
+
+  /* -------------------------------------------- goresan pensil rute (HP) */
+
+  Future<Map<String, dynamic>> _goresDaftar() async {
+    final Database d = await db;
+
+    final List<Map<String, Object?>> baris = await d.query(
+      'peta_gores',
+      orderBy: 'id DESC',
+    );
+
+    final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
+
+    for (final Map<String, Object?> b in baris) {
+      items.add(<String, dynamic>{
+        'id': _bulat(b['id']),
+        'nama': '${b['nama'] ?? ''}',
+        'warna': _bulat(b['warna']),
+        'tebal': _angka(b['tebal']),
+        'titik': '${b['titik'] ?? ''}',
+        'jumlah': _bulat(b['jumlah']),
+        'dibuat': '${b['dibuat'] ?? ''}',
+      });
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': '${items.length} goresan rute tersimpan di HP.',
+      'items': items,
+      'jumlah': items.length,
+    };
+  }
+
+  Future<Map<String, dynamic>> _goresSimpan(Map<String, dynamic> data) async {
+    final Database d = await db;
+    final dynamic titik = data['titik'];
+    final List<dynamic> daftar = (titik is List) ? titik : <dynamic>[];
+
+    final List<List<double>> rapi = <List<double>>[];
+
+    for (final dynamic satu in daftar) {
+      if (satu is! List || satu.length < 2) continue;
+
+      rapi.add(<double>[_angka(satu[0]), _angka(satu[1])]);
+
+      if (rapi.length >= 2000) break;
+    }
+
+    if (rapi.length < 2) {
+      throw RtsKasirGalat('Goresan terlalu pendek untuk disimpan.');
+    }
+
+    String nama = _teks(data['nama'], 80);
+
+    if (nama.isEmpty) nama = 'Goresan ${_waktu()}';
+
+    final int id = await d.insert('peta_gores', <String, Object?>{
+      'nama': nama,
+      'warna': _bulat(data['warna']),
+      'tebal': _angka(data['tebal']) <= 0 ? 4 : _angka(data['tebal']),
+      'titik': jsonEncode(rapi),
+      'jumlah': rapi.length,
+      'id_sales': idSales,
+      'dibuat': _waktu(),
+    });
+
+    final Map<String, dynamic> daftarGores = await _goresDaftar();
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Goresan "$nama" tersimpan (${rapi.length} titik).',
+      'id': id,
+      ...daftarGores,
+    };
+  }
+
+  Future<Map<String, dynamic>> _goresHapus(int id) async {
+    final Database d = await db;
+
+    await d.delete('peta_gores', where: 'id = ?', whereArgs: <Object?>[id]);
+
+    final Map<String, dynamic> daftarGores = await _goresDaftar();
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Goresan rute dihapus.',
+      ...daftarGores,
+    };
+  }
+
+  Future<Map<String, dynamic>> _goresHapusSemua() async {
+    final Database d = await db;
+
+    await d.delete('peta_gores');
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Seluruh goresan rute di HP dihapus.',
+      'items': <Map<String, dynamic>>[],
+      'jumlah': 0,
     };
   }
 

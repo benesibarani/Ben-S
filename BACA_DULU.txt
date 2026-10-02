@@ -1,5 +1,63 @@
 ==============================================================================
  RTS PANEL BY BENE
+ TUTORIAL PUTARAN 12 - TIGA MENU PRO PETA (OpenStreetMap):
+ PETA CUSTOMER, RADAR CUSTOMER, dan RUTE PLAN (+ PENSIL rute & SALIN plan)
+==============================================================================
+
+ ============================================================================
+  PUTARAN 12 - TIGA MENU PRO PETA YANG SUDAH DIKERJAKAN (3 Oktober 2026)
+ ============================================================================
+
+  1. PETA CUSTOMER  - peta OpenStreetMap melampirkan SELURUH toko lengkap
+     dengan titik-titiknya. Titik dapat DISARING menurut HARI kunjungan dan
+     menurut FREKUENSI KUNJUNGAN (Weekly / Bi-Weekly Ganjil / Bi-Weekly
+     Genap). Warna penanda dapat dipilih: menurut HARI atau menurut
+     FREKUENSI. Ada pula legenda, pencarian nama/kode toko, tiga pilihan
+     tampilan peta, jarak dari kantor, dan tombol KUNJUNGI.
+
+  2. RADAR CUSTOMER - menampilkan DAFTAR customer di sekitar petugas, urut
+     dari yang paling dekat, lengkap dengan JARAK. Tampilannya:
+     Nama Toko, Alamat, Jarak (+ arah mata angin). Pilihan jarak maksimal:
+     100 m, 250 m, 500 m, 1 km, 3 km, 5 km, atau Semua.
+
+  3. RUTE PLAN      - membantu sales mendapatkan URUTAN TOKO dari jarak ke
+     titik KANTOR, lengkap dengan filter warna. Ditambah dua permintaan
+     Bapak:
+        a. TOOLS PENSIL untuk membuat garis rute perjalanan di atas peta
+           (5 warna, dapat dibatalkan, disimpan di HP, dan dimuat kembali).
+        b. DAFTAR PLAN yang dapat DI-COPY PASTE berupa teks berisi
+           NAMA CUSTOMER dan ID CUSTOMER (dua bentuk: LENGKAP dan
+           NAMA & KODE), serta tombol BUKA RUTE ke Google Maps.
+
+  ADMIN WAJIB MENITIKKAN LOKASI KANTOR / MITRA lebih dahulu, karena titik
+  itulah yang menjadi awal perhitungan urutan rute. Caranya ada di dalam
+  aplikasi: Menu PRO -> RUTE PLAN -> tombol GEDUNG -> tombol KANTOR ->
+  AMBIL TITIK DARI LOKASI SAYA -> SIMPAN. Boleh lebih dari satu kantor.
+
+  LANGKAH PALING PENTING (3 langkah):
+     A. Unggah api/kantor.php ke public_html/api, lalu jalankan
+        RTS_PANEL_KANTOR.sql di phpMyAdmin (tab SQL).
+     B. Jalankan .\LANGKAH1_PASANG_SEMUA.ps1 dari paket
+        RTS_PANEL_PUTARAN_12.zip -> skrip menyalin main.dart, lib\kasir.dart,
+        lib\kasir_lokal.dart, lib\peta.dart, dan pubspec.yaml, lalu
+        menjalankan flutter clean + flutter pub get.
+     C. flutter run -d CPH1937, lalu titipkan titik KANTOR (lihat di atas).
+
+  PENJELASAN LENGKAP + CARA UJI: berkas PETA_RADAR_RUTE.txt (9 bagian:
+  peta, radar, rute, pensil, salin plan, lokasi kantor, daftar warna,
+  kalau ada masalah, catatan teknis).
+
+  Nomor versi naik menjadi 1.2.5 / kode 8 (pubspec.yaml.updated sudah memuat
+  version: 1.2.5+8, dan penanda aplikasi RTS-2026-10-03-12). Pada halaman
+  Versi Aplikasi di panel, isi: Versi 1.2.5, Kode 8, Wajib JANGAN ->
+  PUBLIKASIKAN.
+
+  PENTING: pubspec.yaml menambah DUA paket baru (flutter_map dan latlong2).
+  Keduanya 100% Dart - tidak ada kode Android/Gradle tambahan. Bila muncul
+  pesan "requires Flutter SDK version ...", jalankan flutter upgrade lalu
+  flutter pub get kembali.
+
+==============================================================================
  TUTORIAL PUTARAN 11 - MENU PRO DIPISAH, PRODUK BERSAMA (TABEL `produk`),
  STOK DAPAT DIHAPUS/DICADANGKAN, JENIS PRINTER, DAN PILIH TOKO master_toko
 ==============================================================================
