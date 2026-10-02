@@ -41,7 +41,7 @@ Permintaan yang dikerjakan pada putaran ini:
                         plan) + halaman Lokasi Kantor / Mitra
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
     main.dart          (489.413 B) tiga kartu Menu PRO baru + pengaman
-                        "terkunci -> PRO" + penanda RTS-2026-10-03-12
+                        "terkunci -> PRO" + penanda RTS-2026-10-03-13
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
     lib/kasir_lokal.dart (119.511 B) tabel kantor / kunjungan / peta_gores,
                         titik koordinat & jadwal pada tabel toko, perintah
@@ -55,7 +55,7 @@ Permintaan yang dikerjakan pada putaran ini:
   RILIS PENUTUP PUTARAN INI
     Nomor versi aplikasi : 1.2.5  (kode 8)
     Halaman Versi Aplikasi: Versi 1.2.5 | Kode 8 | Wajib: JANGAN -> PUBLIKASIKAN
-    Penanda kode aplikasi : RTS-2026-10-03-12 (tampil pada Pengaturan)
+    Penanda kode aplikasi : RTS-2026-10-03-13 (tampil pada Pengaturan)
 
 ------------------------------------------------------------------------
 PUTARAN 11 - MENU PRO DIPISAH + PRODUK BERSAMA + STOK + PRINTER + TOKO

@@ -1633,7 +1633,8 @@ class _RtsLembarSaringState extends State<_RtsLembarSaring> {
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
-                onChanged: (String n) => setState(() => _cari = n),
+                // Catatan: isi kota pencarian dibaca dari _cari.text saat
+                // tombol TERAPKAN ditekan, jadi tidak perlu onChanged.
               ),
               const SizedBox(height: 16),
               Row(

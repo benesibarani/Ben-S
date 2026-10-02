@@ -10,10 +10,19 @@
 #      "Apakah folder proyek saya sudah berisi kode paling baru?"
 #
 #  Pemeriksaan pada putaran ini ditambah:
-#     - lib\kasir.dart dan lib\kasir_lokal.dart: panjang berkas, jumlah baris,
-#       dan KESEIMBANGAN KURUNG. Berkas yang terpotong (misalnya karena
-#       salinan yang tidak lengkap) selalu menyisakan kurung tidak
-#       berpasangan - jadi hal itu ketahuan SEBELUM membangun aplikasi.
+#     - lib\kasir.dart, lib\kasir_lokal.dart, dan lib\peta.dart: panjang
+#       berkas, jumlah baris, dan KESEIMBANGAN KURUNG. Berkas yang terpotong
+#       (misalnya karena salinan yang tidak lengkap) selalu menyisakan kurung
+#       tidak berpasangan - jadi hal itu ketahuan SEBELUM membangun aplikasi.
+#     - lib\peta.dart: halaman Peta Customer / Radar / Rute Plan / Lokasi
+#       Kantor, ubin OpenStreetMap, penyaring warna, alat pensil, dan salin
+#       daftar plan.
+#     - langkah 6e: menjalankan  flutter analyze  - memeriksa GALAT KODE
+#       (jenis nilai yang tidak cocok, nama yang salah tulis) dalam hitungan
+#       detik, tanpa perlu membangun aplikasi. Kesalahan seperti
+#       "A value of type 'String' can't be assigned to a variable of type
+#       'TextEditingController'" ketahuan di sini, bukan sesudah 3-4 menit
+#       menunggu build.
 #     - pubspec.yaml: paket penunjang kasir luring (sqflite dll).
 #     - android\app\build.gradle.kts: angka compileSdk (harus 37).
 #     - berkas Kotlin: jumlah MainActivity.kt (harus SATU) dan tanda +
@@ -41,7 +50,7 @@
 #  dengan perintah "flutter clean".
 # =============================================================================
 
-$harapanKode = 'RTS-2026-10-01-10'
+$harapanKode = 'RTS-2026-10-03-13'
 
 function TulisJudul($teks) {
     Write-Host ""
@@ -335,7 +344,7 @@ function Periksa-KurungDart($jalur) {
     return $hasil
 }
 
-foreach ($namaBerkas in @('lib\kasir.dart', 'lib\kasir_lokal.dart')) {
+foreach ($namaBerkas in @('lib\kasir.dart', 'lib\kasir_lokal.dart', 'lib\peta.dart')) {
     if (-not (Test-Path $namaBerkas)) {
         TulisHasil $false "$namaBerkas ADA (wajib ada)"
         $bermasalah++
@@ -409,12 +418,41 @@ if (Test-Path 'lib\kasir_lokal.dart') {
     }
 }
 
+if (Test-Path 'lib\peta.dart') {
+    $isiPeta = [System.IO.File]::ReadAllText('lib\peta.dart')
+
+    $tandaPeta = @(
+        @{ Nama = "halaman PETA CUSTOMER";                    Pola = "class RtsPetaCustomerPage" },
+        @{ Nama = "halaman RADAR CUSTOMER";                   Pola = "class RtsRadarPage" },
+        @{ Nama = "halaman RUTE PLAN";                        Pola = "class RtsRutePage" },
+        @{ Nama = "halaman LOKASI KANTOR / MITRA";            Pola = "class RtsKantorPage" },
+        @{ Nama = "peta memakai OpenStreetMap";               Pola = "tile.openstreetmap.org" },
+        @{ Nama = "penyaring warna per HARI & FREKUENSI";     Pola = "Warna menurut FREKUENSI" },
+        @{ Nama = "alat PENSIL garis rute";                   Pola = "_mulaiGores" },
+        @{ Nama = "salin daftar plan (Nama + Id Customer)";   Pola = "SALIN NAMA & KODE" },
+        @{ Nama = "titik kantor dari server (kantor_segarkan)"; Pola = "kantor_segarkan" }
+    )
+
+    foreach ($satu in $tandaPeta) {
+        $adaTanda = $isiPeta -match [regex]::Escape($satu.Pola)
+
+        TulisHasil $adaTanda $satu.Nama
+
+        if (-not $adaTanda) { $bermasalah++ }
+    }
+}
+else {
+    TulisHasil $false "lib\peta.dart ADA (wajib ada - menu peta)"
+    Write-Host "            Jalankan .\LANGKAH1_PASANG_SEMUA.ps1 dari paket terbaru." -ForegroundColor Yellow
+    $bermasalah++
+}
+
 # -----------------------------------------------------------------------------
 # 6b. Paket kasir luring pada pubspec.yaml
 # -----------------------------------------------------------------------------
 TulisJudul "6b. Paket kasir luring pada pubspec.yaml"
 
-foreach ($satu in @('sqflite', 'path_provider', 'path:', 'mobile_scanner', 'esc_pos_utils_plus', 'print_bluetooth_thermal')) {
+foreach ($satu in @('sqflite', 'path_provider', 'path:', 'mobile_scanner', 'esc_pos_utils_plus', 'print_bluetooth_thermal', 'flutter_map', 'latlong2')) {
     $adaPaket = $isiPubspec -match [regex]::Escape($satu)
 
     TulisHasil $adaPaket "paket $satu"
@@ -516,6 +554,53 @@ if ($tandaPlus -ne 0) {
 }
 
 # -----------------------------------------------------------------------------
+# 6e. PEMERIKSA PALING PENTING - flutter analyze (mencari GALAT kode)
+# -----------------------------------------------------------------------------
+TulisJudul "6e. Pemeriksaan kode Dart (flutter analyze)"
+
+$adaFlutter = $null -ne (Get-Command flutter -ErrorAction SilentlyContinue)
+
+if (-not $adaFlutter) {
+    Write-Host "   [LEWAT] perintah 'flutter' tidak ditemukan di jendela PowerShell ini." -ForegroundColor Yellow
+    Write-Host "           Buka PowerShell dari dalam folder proyek (Open in Terminal)," -ForegroundColor Yellow
+    Write-Host "           lalu jalankan skrip ini lagi." -ForegroundColor Yellow
+}
+else {
+    Write-Host "   Menjalankan: flutter analyze   (30-90 detik, tidak membangun APK)" -ForegroundColor Gray
+
+    $keluaran = & flutter analyze 2>&1
+    $teks = ($keluaran | Out-String)
+
+    $adaGalatKode = ($teks -match '(?m)^\s*error\s') -or ($teks -match 'Error:')
+
+    if (-not $adaGalatKode) {
+        TulisHasil $true "flutter analyze: TIDAK ADA GALAT kode (kode siap dibangun)"
+
+        if ($teks -match 'No issues found') {
+            Write-Host "            Pesan dari Flutter: No issues found! (bersih)" -ForegroundColor Gray
+        }
+    }
+    else {
+        Write-Host "   [BELUM] flutter analyze menemukan GALAT kode berikut:" -ForegroundColor Red
+        Write-Host ""
+
+        foreach ($barisGalat in $keluaran) {
+            $teksBaris = "$barisGalat"
+
+            if ($teksBaris -match 'error' -or $teksBaris -match 'Error') {
+                Write-Host ("            " + $teksBaris.Trim()) -ForegroundColor Yellow
+            }
+        }
+
+        Write-Host ""
+        Write-Host "            Sebab tersering: satu baris yang jenis nilainya tidak cocok" -ForegroundColor Yellow
+        Write-Host "            (misalnya teks disimpan ke kotak isian). Salin SELURUH baris" -ForegroundColor Yellow
+        Write-Host "            'Error: ...' di atas, kirimkan untuk diperbaiki." -ForegroundColor Yellow
+        $bermasalah++
+    }
+}
+
+# -----------------------------------------------------------------------------
 # 7. Kesimpulan dan langkah berikutnya
 # -----------------------------------------------------------------------------
 
@@ -523,6 +608,7 @@ TulisJudul "KESIMPULAN"
 
 if ($bermasalah -eq 0) {
     Write-Host "   SEMUA BENAR. Folder proyek sudah memuat kode terbaru." -ForegroundColor Green
+    Write-Host "   (Termasuk pemeriksaan flutter analyze - kode siap dibangun.)" -ForegroundColor Green
     Write-Host ""
     Write-Host "   Langkah berikutnya:" -ForegroundColor White
     Write-Host "     1. flutter clean" -ForegroundColor Gray
@@ -536,10 +622,10 @@ else {
     Write-Host "   ADA $bermasalah hal yang belum benar (lihat tanda [BELUM] di atas)." -ForegroundColor Red
     Write-Host ""
     Write-Host "   Langkah perbaikan - JANGAN MENGHAPUS FOLDER PROYEK:" -ForegroundColor White
-    Write-Host "     1. Ekstrak RTS_PANEL_PUTARAN_10.zip ke Desktop" -ForegroundColor Gray
+    Write-Host "     1. Ekstrak RTS_PANEL_PUTARAN_12.zip ke Desktop" -ForegroundColor Gray
     Write-Host "     2. Jalankan .\LANGKAH1_PASANG_SEMUA.ps1 dari folder hasil ekstrak" -ForegroundColor Gray
     Write-Host "        (skrip itu menimpa main.dart, lib\kasir.dart, lib\kasir_lokal.dart," -ForegroundColor Gray
-    Write-Host "         pubspec.yaml, berkas Android, dan memperbaiki compileSdk)" -ForegroundColor Gray
+    Write-Host "         lib\peta.dart, pubspec.yaml, berkas Android, dan memperbaiki compileSdk)" -ForegroundColor Gray
     Write-Host "     3. Jalankan skrip ini lagi - semua harus [ADA] / [BENAR]" -ForegroundColor Gray
     Write-Host "     4. flutter clean  ->  flutter pub get  ->  flutter run -d CPH1937" -ForegroundColor Gray
     Write-Host ""

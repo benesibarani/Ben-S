@@ -658,7 +658,7 @@ Write-Host '     3. Tekan tombol PERBARUI DATABASE' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Periksa di aplikasi:' -ForegroundColor White
 Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda RTS-2026-10-03-12 (penanda lama dilewati)' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda RTS-2026-10-03-13 (penanda lama dilewati)' -ForegroundColor Gray
 Write-Host '     Pembaruan   : kotak Pembaruan -> PERBARUI SEKARANG' -ForegroundColor Gray
 Write-Host '                   (berkas diunduh DI DALAM aplikasi, tanpa Chrome)' -ForegroundColor Gray
 Write-Host '     Profil      : tombol LANGGANAN PRO tampil + gambar QRIS tampil' -ForegroundColor Gray
@@ -666,7 +666,7 @@ Write-Host '     Profil      : ketuk foto -> pilih dari galeri -> foto berubah' 
 Write-Host '     Beranda     : iklan banner + iklan native tampil (akun GRATIS)' -ForegroundColor Gray
 Write-Host '     Barang Bawaan: SIAPKAN DATA -> produk -> stok -> nota (tanpa internet)' -ForegroundColor Gray
 Write-Host '     Menu PRO    : Peta Customer, Radar Customer, Rute Plan tampil' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-10-03-12' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-03-13' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Di hosting (cPanel) - KHUSUS MENU PETA:' -ForegroundColor White
 Write-Host '     1. Unggah  api\kantor.php  ke folder api pada hosting' -ForegroundColor Gray

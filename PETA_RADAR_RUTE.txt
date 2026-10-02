@@ -404,6 +404,26 @@
     Setelah menekan SALIN LENGKAP / SALIN NAMA & KODE, buka WhatsApp, tekan
     lama kotak ketik, lalu pilih TEMPEL.
 
+10. GALAT BUILD  "A value of type 'String' can't be assigned to a variable of
+    type 'TextEditingController'" (lib/peta.dart baris 1636)
+    Ini galat pada lembar PENYARING PETA CUSTOMER yang sudah DIPERBAIKI pada
+    paket dengan penanda RTS-2026-10-03-13. Pastikan Bapak memakai paket
+    RTS_PANEL_PUTARAN_12.zip yang paling baru, lalu jalankan
+    .\LANGKAH1_PASANG_SEMUA.ps1 kembali (berkas lama dicadangkan otomatis).
+    Cara memeriksa lebih cepat: jalankan  flutter analyze  - kesalahan kode
+    ditampilkan dalam hitungan detik, tidak perlu menunggu build penuh.
+    Skrip  PERIKSA_KODE_APLIKASI.ps1  pada paket ini sekarang MENJALANKAN
+    flutter analyze sendiri, jadi cukup jalankan skrip itu sebelum membangun:
+    seluruh berkas diperiksa dan galat kode ditampilkan beserta barisnya.
+
+11. PERINGATAN KUNING TENTANG "Kotlin Gradle Plugin (KGP)" SAAT BUILD
+    Itu PERINGATAN, bukan galat - build tetap berjalan seperti biasa. Isinya:
+    kelak Flutter versi baru akan mewajibkan susunan Gradle model baru
+    ("Built-in Kotlin"), dan paket firebase_core masih memakai cara lama.
+    Sebaiknya JANGAN diubah sekarang selama aplikasi masih dapat dibangun;
+    tunggu pembaruan paket firebase_core. Bila nanti muncul galat (bukan
+    peringatan) tentang hal ini, kirimkan bunyi pesannya.
+
 
 ==============================================================================
  BAGIAN 9 - CATATAN TEKNIS (untuk pembaruan berikutnya)
@@ -418,7 +438,7 @@
                                   kantor_*, gores_*
      main.dart                  - import peta.dart, tiga kartu Menu PRO baru,
                                   pengaman "terkunci -> PRO", penanda kode
-                                  RTS-2026-10-03-12
+                                  RTS-2026-10-03-13
      pubspec.yaml.updated       - flutter_map ^8.3.2, latlong2 ^0.9.1,
                                   versi 1.2.5+8
 
@@ -461,7 +481,7 @@
  RILIS
    Nomor versi aplikasi : 1.2.5  (kode 8)
    Halaman app_versi.php: Versi 1.2.5 | Kode 8 | Wajib: JANGAN
-   Penanda kode         : RTS-2026-10-03-12 (tampil pada halaman Pengaturan)
+   Penanda kode         : RTS-2026-10-03-13 (tampil pada halaman Pengaturan)
 
 ==============================================================================
  Selesai. Bila ada pesan galat, kirimkan bunyi pesannya (salin seluruh baris)

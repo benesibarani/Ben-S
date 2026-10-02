@@ -48,9 +48,29 @@
   kalau ada masalah, catatan teknis).
 
   Nomor versi naik menjadi 1.2.5 / kode 8 (pubspec.yaml.updated sudah memuat
-  version: 1.2.5+8, dan penanda aplikasi RTS-2026-10-03-12). Pada halaman
+  version: 1.2.5+8, dan penanda aplikasi RTS-2026-10-03-13). Pada halaman
   Versi Aplikasi di panel, isi: Versi 1.2.5, Kode 8, Wajib JANGAN ->
   PUBLIKASIKAN.
+
+  ============================================================================
+   PERBAIKAN GALAT BUILD (3 Oktober 2026, penanda RTS-2026-10-03-13)
+  ============================================================================
+
+   Galat build yang berbunyi:
+
+       lib/peta.dart:1636:65: Error: A value of type 'String' can't be
+       assigned to a variable of type 'TextEditingController'.
+
+   SUDAH DIPERBAIKI. Sebabnya satu baris pada lembar PENYARING PETA CUSTOMER:
+   isi kotak pencarian tersimpan di _cari (jenis TextEditingController), tetapi
+   ada baris onChanged yang mencoba menimpanya dengan teks biasa. Baris itu
+   dihapus - sekarang isi kotak pencarian dibaca dari _cari.text saat tombol
+   TERAPKAN ditekan. Bila Bapak memakai paket RTS_PANEL_PUTARAN_12.zip yang
+   BARU (penanda RTS-2026-10-03-13), galat itu tidak muncul lagi.
+
+   TIPS: sebelum membangun, jalankan perintah  flutter analyze  di folder
+   proyek. Perintah itu memeriksa seluruh kode dalam hitungan detik (tidak
+   perlu menunggu 3-4 menit) dan langsung menunjukkan baris yang bermasalah.
 
   PENTING: pubspec.yaml menambah DUA paket baru (flutter_map dan latlong2).
   Keduanya 100% Dart - tidak ada kode Android/Gradle tambahan. Bila muncul
