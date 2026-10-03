@@ -42,7 +42,20 @@ publish_to: 'none'
 #   yang dapat DISALIN berisi nama customer dan id customer). Ditambahkan pula
 #   halaman LOKASI KANTOR / MITRA untuk ADMIN & ASS, serta tombol TANDAI
 #   KUNJUNGI beserta riwayat kunjungan yang tersimpan di HP.
-version: 1.2.5+8
+#
+#   Kode 9 (1.2.6) memuat PEMBUKAAN AKUN PRO SESUDAH TOP UP:
+#     - jawaban "belum boleh" dari pemeriksaan PRO hanya berlaku 3 MENIT
+#       (tadinya 6 jam), sehingga akun yang baru diperpanjang / baru disetujui
+#       ADMIN langsung terbuka. Jawaban "boleh" tetap 6 jam supaya kasir tetap
+#       jalan tanpa internet.
+#     - status PRO diperiksa ulang setiap aplikasi dibuka dan setiap kembali
+#       dari latar belakang.
+#     - TOMBOL BARU pada menu SINKRONISASI: "SINKRON AKUN" untuk memeriksa
+#       ulang status akun ke server (langganan + sesi + izin PRO di HP).
+#     - Tombol SINKRONKAN SEKARANG juga ikut menyegarkan status akun.
+#     - Pada sisi server (api/langganan_inti.php): tanggal `pro_selesai` sudah
+#       cukup menjadikan akun PRO, walaupun kolom penanda `akun_pro` belum ada.
+version: 1.2.6+9
 
 environment:
   sdk: '>=3.5.0 <4.0.0'

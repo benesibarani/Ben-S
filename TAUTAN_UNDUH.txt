@@ -1,4 +1,49 @@
-PALING BARU - PUTARAN 12: TIGA MENU PRO PETA (OpenStreetMap)
+PALING BARU - PUTARAN 13: AKUN PRO LANGSUNG TERBUKA SESUDAH TOP UP
+------------------------------------------------------------------------
+Permintaan yang dikerjakan pada putaran ini:
+  1. PERBAIKAN: akun sales yang sudah top up dan sudah disetujui ADMIN tetap
+     terkunci fitur PRO-nya. Dua sebab, keduanya sudah diperbaiki:
+        a. DI APLIKASI - jawaban "belum boleh" tadinya disimpan 6 JAM; kini
+           hanya 3 MENIT lalu diperiksa ulang, dan status diperiksa ulang
+           setiap aplikasi dibuka / kembali dari latar belakang.
+        b. DI SERVER - akun dianggap PRO hanya bila kolom `akun_pro` = 1;
+           kini tanggal `pro_selesai` sendiri sudah cukup (api/langganan_inti.php).
+  2. FITUR BARU: menu Sinkronisasi memuat KARTU STATUS AKUN + TOMBOL
+     "SINKRON AKUN" untuk memeriksa ulang status akun ke server (langganan +
+     sesi + izin PRO di HP). Tombol SINKRONKAN SEKARANG juga ikut
+     menyegarkan status akun.
+
+  PANDUAN LENGKAP (sebab + penawar + cara memeriksa):
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/MENU_LANGGANAN_PRO.txt
+    (lihat BAGIAN 0 - AKUN SALES MASIH TERKUNCI SESUDAH TOP UP)
+
+  PAKET LENGKAP putaran ini:
+    RTS_PANEL_PUTARAN_13.zip  (semua berkas sekaligus)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_13.zip
+    PAKET KECIL khusus perbaikan akun PRO (5 berkas inti):
+    RTS_PANEL_SINKRON_AKUN.zip
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_SINKRON_AKUN.zip
+
+  BERKAS SERVER yang perlu diunggah ke public_html/api:
+    api/langganan_inti.php  <-- DIPERBAIKI (status PRO dari tanggal langganan)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/langganan_inti.php
+
+  BERKAS APLIKASI (dipasang dengan LANGKAH1_PASANG_SEMUA.ps1):
+    main.dart  <-- tombol SINKRON AKUN + kartu status akun + pemeriksaan PRO
+                   otomatis saat aplikasi dibuka/kembali
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+    lib/kasir_lokal.dart  <-- jawaban "belum boleh" hanya berlaku 3 menit
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
+    pubspec.yaml.updated  (version: 1.2.6+9)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+
+  RILIS PENUTUP PUTARAN INI
+    Nomor versi aplikasi : 1.2.6  (kode 9)
+    Halaman Versi Aplikasi: Versi 1.2.6 | Kode 9 | Wajib: JANGAN -> PUBLIKASIKAN
+    Penanda kode aplikasi : RTS-2026-10-03-14 (tampil pada Pengaturan)
+
+------------------------------------------------------------------------
+PUTARAN 12 - TIGA MENU PRO PETA (OpenStreetMap)
 ------------------------------------------------------------------------
 Permintaan yang dikerjakan pada putaran ini:
   1. MAP CUSTOMER - peta OpenStreetMap (openstreetmap.org) melampirkan

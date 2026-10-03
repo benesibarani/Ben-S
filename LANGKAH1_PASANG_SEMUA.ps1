@@ -679,12 +679,13 @@ Write-Host '     flutter run -d CPH1937' -ForegroundColor White
 Write-Host ''
 Write-Host ' Di hosting (cPanel) - WAJIB dikerjakan supaya langganan PRO bekerja:' -ForegroundColor White
 Write-Host '     1. Unggah isi folder 1_SERVER_unggah_ke_hosting ke public_html' -ForegroundColor Gray
+Write-Host '        (termasuk api\langganan_inti.php - perbaikan status PRO)' -ForegroundColor Gray
 Write-Host '     2. Buka https://rts.benedic-s.com/langganan_admin.php' -ForegroundColor Gray
 Write-Host '     3. Tekan tombol PERBARUI DATABASE' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Periksa di aplikasi:' -ForegroundColor White
 Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda RTS-2026-10-03-13 (penanda lama dilewati)' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda RTS-2026-10-03-14 (penanda lama dilewati)' -ForegroundColor Gray
 Write-Host '     Pembaruan   : kotak Pembaruan -> PERBARUI SEKARANG' -ForegroundColor Gray
 Write-Host '                   (berkas diunduh DI DALAM aplikasi, tanpa Chrome)' -ForegroundColor Gray
 Write-Host '     Profil      : tombol LANGGANAN PRO tampil + gambar QRIS tampil' -ForegroundColor Gray
@@ -692,7 +693,10 @@ Write-Host '     Profil      : ketuk foto -> pilih dari galeri -> foto berubah' 
 Write-Host '     Beranda     : iklan banner + iklan native tampil (akun GRATIS)' -ForegroundColor Gray
 Write-Host '     Barang Bawaan: SIAPKAN DATA -> produk -> stok -> nota (tanpa internet)' -ForegroundColor Gray
 Write-Host '     Menu PRO    : Peta Customer, Radar Customer, Rute Plan tampil' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-10-03-13' -ForegroundColor Gray
+Write-Host '     Sinkronisasi: tombol SINKRON AKUN tampil di bagian atas' -ForegroundColor Gray
+Write-Host '     Akun sales  : sesudah top up + SETUJUI ADMIN, tekan SINKRON AKUN' -ForegroundColor Gray
+Write-Host '                   -> status berubah PRO dan menu PRO langsung terbuka' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-03-14' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Di hosting (cPanel) - KHUSUS MENU PETA:' -ForegroundColor White
 Write-Host '     1. Unggah  api\kantor.php  ke folder api pada hosting' -ForegroundColor Gray

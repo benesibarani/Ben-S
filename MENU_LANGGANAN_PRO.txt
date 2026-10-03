@@ -34,6 +34,86 @@
 
 
 ==============================================================================
+ BAGIAN 0 - AKUN SALES MASIH TERKUNCI SESUDAH TOP UP? (SUDAH DIPERBAIKI)
+==============================================================================
+
+ Kejadian yang Bapak laporkan:
+   "User sales sudah top up dan ADMIN sudah setujui, tetapi status akun sales
+    tetap terkunci untuk fitur PRO-nya."
+
+ Ada DUA sebab, dan keduanya SUDAH DIPERBAIKI pada putaran ini
+ (versi aplikasi 1.2.6, kode 9, penanda RTS-2026-10-03-14).
+
+ SEBAB 1 - DI APLIKASI: jawaban lama disimpan terlalu lama
+ ------------------------------------------------------------------------
+ Aplikasi memeriksa hak PRO ke server, lalu MENYIMPAN jawabannya di dalam HP
+ supaya kasir tetap jalan tanpa internet. Sebelumnya jawaban "belum boleh"
+ (GRATIS) dianggap masih berlaku sampai 6 JAM. Akibatnya, walaupun pembayaran
+ sudah disetujui ADMIN, menu PRO tetap terkunci sampai 6 jam berlalu.
+
+ Sesudah diperbaiki:
+   - jawaban "belum boleh" hanya berlaku 3 MENIT, lalu aplikasi memeriksa
+     ulang sendiri ke server;
+   - jawaban "boleh" tetap 6 jam (supaya kasir tetap jalan tanpa internet);
+   - status juga diperiksa ulang setiap aplikasi dibuka dan setiap kembali
+     dari latar belakang - jadi cukup keluar dari aplikasi lalu masuk lagi.
+
+ SEBAB 2 - DI SERVER: penanda akun_pro belum ada di database
+ ------------------------------------------------------------------------
+ Sebelumnya akun dianggap PRO hanya bila kolom penanda `akun_pro` bernilai 1.
+ Bila kolom itu belum ada pada tabel sales_users, pembayaran yang disetujui
+ tetap terbaca GRATIS.
+
+ Sesudah diperbaiki (api/langganan_inti.php):
+   - tanggal `pro_selesai` SENDIRI sudah cukup untuk menjadikan akun PRO,
+     jadi pembayaran yang sudah disetujui ADMIN langsung membuka fitur PRO;
+   - tombol PERBARUI DATABASE pada halaman ini tetap dianjurkan ditekan sekali
+     supaya seluruh kolom langganan (`akun_pro`, `pro_mulai`, `pro_selesai`,
+     `trial_mulai`, `trial_selesai`, `foto_profil`) tersedia di database.
+
+ BAGIAN 0B - TOMBOL BARU "SINKRON AKUN" (menu Sinkronisasi di aplikasi)
+ ------------------------------------------------------------------------
+ Menu UTAMA -> Sinkronisasi kini memuat KARTU STATUS AKUN di bagian paling
+ atas:
+
+     Status Akun                                     [ PRO / GRATIS ]
+     Berlaku sampai 02-11-2026 (sisa 30 hari)
+     [ SINKRON AKUN ]
+
+ Menekan SINKRON AKUN membuat aplikasi:
+   1. membaca ulang keadaan langganan dari server (langganan.php),
+   2. memperbarui data akun pada sesi (session_check.php),
+   3. menyegarkan izin PRO yang tersimpan di dalam HP,
+   4. menampilkan hasilnya, misalnya:
+        "Akun PRO AKTIF sampai 02-11-2026 (sisa 30 hari). Seluruh menu PRO
+         sudah dapat dibuka."
+   5. menghilangkan kunci pada kartu menu PRO tanpa perlu memasang ulang.
+
+ Tombol SINKRONKAN SEKARANG pada halaman yang sama juga ikut menyegarkan
+ status akun, jadi tombol mana saja dapat dipakai.
+
+ LANGKAH PEMASANGAN PUTARAN INI
+ ------------------------------------------------------------------------
+   1. Unggah  api\langganan_inti.php  (beserta berkas server lain pada paket)
+      ke folder public_html/api.
+   2. Buka https://rts.benedic-s.com/langganan_admin.php, tekan
+      PERBARUI DATABASE sekali.
+   3. Di komputer: ekstrak paket, jalankan .\LANGKAH1_PASANG_SEMUA.ps1,
+      lalu flutter clean -> flutter pub get -> flutter run -d CPH1937.
+   4. Di HP sales: buka menu Sinkronisasi -> tekan SINKRON AKUN. Bila
+      pembayarannya sudah disetujui ADMIN, status langsung berubah PRO.
+
+ CARA MEMERIKSA BAHWA PEMBAYARAN BENAR-BENAR SUDAH DISETUJUI
+ ------------------------------------------------------------------------
+   - Buka langganan_admin.php. Pada baris user tersebut harus tampil lencana
+     PRO beserta tanggal berlakunya (bukan GRATIS).
+   - Bila pernyataan pembayarannya masih ada pada daftar "Pernyataan
+     pembayaran QRIS", berarti tombol SETUJUI belum ditekan.
+   - Pada aplikasi sales: Sinkronisasi -> SINKRON AKUN. Bila jawabannya
+     "Status akun di server masih GRATIS", berarti langkah ADMIN di atas
+     belum selesai.
+
+==============================================================================
  BAGIAN 1 - BERKAS YANG PERLU DIUNGGAH KE HOSTING (3 BERKAS)
 ==============================================================================
 

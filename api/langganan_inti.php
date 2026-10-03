@@ -448,7 +448,7 @@ if (!function_exists('rts_lg_status')) {
      */
     function rts_lg_status(array $baris): array
     {
-        $akunPro = (int) ($baris['akun_pro'] ?? 0) === 1;
+        $flagPro = (int) ($baris['akun_pro'] ?? 0) === 1;
 
         $proMulai = trim((string) ($baris['pro_mulai'] ?? ''));
         $proSelesai = trim((string) ($baris['pro_selesai'] ?? ''));
@@ -458,10 +458,19 @@ if (!function_exists('rts_lg_status')) {
         $proWaktu = $proSelesai === '' ? 0 : (int) strtotime($proSelesai);
         $trialWaktu = $trialSelesai === '' ? 0 : (int) strtotime($trialSelesai);
 
+        // Akun dianggap BERHAK PRO bila:
+        //   a. kolom penanda `akun_pro` bernilai 1, ATAU
+        //   b. ada tanggal `pro_selesai` (bukti masa langganan pernah dibeli).
+        // Bagian (b) sangat penting: bila kolom `akun_pro` belum ada / belum
+        // berisi 1 di database, pembayaran yang SUDAH disetujui ADMIN tetap
+        // terbaca PRO dan tidak membuat akun sales terkunci.
+        $akunPro = $flagPro || $proWaktu > 0;
+
         // Langganan tanpa tanggal berakhir (diberikan manual oleh Admin lewat
         // halaman akun_pro.php) dianggap berlaku terus.
-        $proTanpaBatas = $akunPro && $proWaktu === 0;
-        $proAktif = $akunPro && ($proTanpaBatas || $proWaktu > time());
+        $proTanpaBatas = $flagPro && $proWaktu === 0;
+
+        $proAktif = $proTanpaBatas || $proWaktu > time();
 
         $trialAktif = (!$proAktif) && $trialWaktu > time();
 
@@ -489,6 +498,7 @@ if (!function_exists('rts_lg_status')) {
         return [
             'pro' => $proAktif || $trialAktif,
             'akun_pro' => ($proAktif || $trialAktif) ? 1 : 0,
+            'penanda_akun_pro' => $flagPro ? 1 : 0,
             'sumber' => $sumber,
             'label' => ($proAktif || $trialAktif) ? 'PRO' : 'GRATIS',
             'pro_aktif' => $proAktif,

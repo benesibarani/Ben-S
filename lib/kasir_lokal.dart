@@ -83,6 +83,18 @@ class RtsKasirLokal {
   /// Lama hasil pemeriksaan PRO dianggap masih segar (tidak diperiksa ulang).
   static const int segarJam = 6;
 
+  /// Masa segar khusus jawaban "BELUM BOLEH" (akun GRATIS / masa PRO habis).
+  ///
+  /// Sengaja dibuat pendek: akun yang baru diperpanjang atau baru disetujui
+  /// ADMIN tidak boleh tetap terkunci karena jawaban lama masih dianggap
+  /// segar. Sesudah [segarTolakMenit] menit, aplikasi memeriksa ulang ke
+  /// server secara otomatis.
+  static const int segarTolakMenit = 3;
+
+  /// Bila server tidak dapat dihubungi (tidak ada internet), percobaan
+  /// berikutnya ditunda selama ini supaya menu tidak menunggu lama.
+  static const int tundaGagalMenit = 2;
+
   Database? _db;
   bool _perbaikanSudah = false;
   String baseUrl = '';
@@ -91,6 +103,7 @@ class RtsKasirLokal {
 
   Map<String, dynamic> _aksesSimpan = <String, dynamic>{};
   DateTime? _aksesDiperiksa;
+  DateTime? _aksesGagal;
 
   /* ------------------------------------------------------------------ akun */
 
@@ -661,15 +674,28 @@ class RtsKasirLokal {
 
     final DateTime sekarang = DateTime.now();
 
-    if (!paksa &&
-        _aksesSimpan.isNotEmpty &&
-        _aksesDiperiksa != null &&
-        sekarang.difference(_aksesDiperiksa!).inHours < segarJam) {
-      return _aksesSimpan;
+    // Hasil yang tersimpan langsung dipakai HANYA bila masih segar:
+    //  - jawaban "boleh"       : [segarJam] jam (supaya tetap jalan luring),
+    //  - jawaban "belum boleh" : [segarTolakMenit] menit saja.
+    // Masa segar yang pendek untuk jawaban "belum boleh" inilah yang membuat
+    // akun yang BARU diperpanjang / BARU disetujui ADMIN langsung terbuka.
+    if (!paksa && _aksesSimpan.isNotEmpty && _aksesDiperiksa != null) {
+      final int segarMenit =
+          _aksesSimpan['boleh'] == true ? segarJam * 60 : segarTolakMenit;
+
+      if (sekarang.difference(_aksesDiperiksa!).inMinutes < segarMenit) {
+        return _aksesSimpan;
+      }
     }
 
-    // 1. Coba periksa ke server.
-    if (baseUrl.isNotEmpty && token.isNotEmpty) {
+    // 1. Coba periksa ke server. Bila percobaan sebelumnya baru saja gagal
+    //    (misalnya tidak ada internet), percobaan berikutnya ditunda
+    //    [tundaGagalMenit] menit supaya menu tidak menunggu lama.
+    final bool bolehCobaKeServer = paksa ||
+        _aksesGagal == null ||
+        sekarang.difference(_aksesGagal!).inMinutes >= tundaGagalMenit;
+
+    if (bolehCobaKeServer && baseUrl.isNotEmpty && token.isNotEmpty) {
       try {
         final Uri uri = Uri.parse('$baseUrl/kasir.php?aksi=akses');
         final http.Response jawab = await http.get(
@@ -691,6 +717,7 @@ class RtsKasirLokal {
           if (isi.isNotEmpty) {
             _aksesSimpan = isi;
             _aksesDiperiksa = sekarang;
+            _aksesGagal = null;
 
             await _setelanTulis('akses_simpan', jsonEncode(isi));
             await _setelanTulis('akses_pada', _waktu());
@@ -699,7 +726,9 @@ class RtsKasirLokal {
           }
         }
       } catch (_) {
-        // tidak ada internet: lanjut memakai simpanan di bawah
+        // Tidak ada internet: waktu kegagalan dicatat supaya percobaan
+        // berikutnya tidak menunggu lama, lalu lanjut memakai simpanan.
+        _aksesGagal = sekarang;
       }
     }
 
@@ -741,18 +770,32 @@ class RtsKasirLokal {
           'boleh': false,
           'label': 'GRATIS',
           'pesan': 'Masa berlaku perlu diperiksa ulang. Sambungkan internet '
-              'sekali, lalu buka menu Langganan PRO.',
+              'sekali, lalu buka menu Sinkronisasi dan tekan SINKRON AKUN.',
+          'perlu_segarkan': true,
         };
       }
 
-      return _aksesSimpan;
+      // Jawaban "belum boleh" yang tersimpan tetap dipakai, tetapi diberi
+      // keterangan supaya pengguna tahu cara menyegarkan status akunnya.
+      return <String, dynamic>{
+        ..._aksesSimpan,
+        'boleh': false,
+        'label': '${_aksesSimpan['label'] ?? 'GRATIS'}',
+        'pesan': '${_aksesSimpan['pesan'] ?? 'Fitur Barang Bawaan & Kasir '
+            'tersedia untuk Akun PRO.'} Bila pembayaran sudah disetujui ADMIN, '
+            'buka menu Sinkronisasi lalu tekan SINKRON AKUN.',
+        'perlu_segarkan': true,
+      };
     }
 
     return <String, dynamic>{
       'boleh': false,
       'label': 'GRATIS',
       'pesan': 'Perlu sambungan internet SEKALI untuk memeriksa langganan. '
-          'Setelah itu aplikasi dapat dipakai tanpa internet.',
+          'Setelah itu aplikasi dapat dipakai tanpa internet. Bila pembayaran '
+          'sudah disetujui ADMIN, buka menu Sinkronisasi lalu tekan '
+          'SINKRON AKUN.',
+      'perlu_segarkan': true,
     };
   }
 

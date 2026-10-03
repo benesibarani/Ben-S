@@ -965,7 +965,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-03-13';
+const String rtsKodeAplikasi = 'RTS-2026-10-03-14';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -1793,13 +1793,22 @@ class DashboardPage extends StatefulWidget {
 ///   5. Keterangan    : versi aplikasi dan server yang dipakai
 ///
 /// Keterangan lengkap akun dipindahkan ke halaman Profil agar beranda bersih.
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage>
+    with WidgetsBindingObserver {
   RtsUser get user => widget.user;
   String get token => widget.token;
+
+  /// True bila pemeriksaan di HP menyatakan akun ini berhak memakai fitur PRO.
+  ///
+  /// Dipakai supaya kartu menu PRO langsung terbuka sesudah pembayaran
+  /// disetujui ADMIN, walaupun data akun pada sesi masih yang lama.
+  bool _proLuring = false;
 
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
 
     // Dijalankan setelah tampilan pertama selesai dibangun, supaya pemeriksaan
     // versi dan laporan cuaca tidak menghambat pembukaan beranda.
@@ -1811,7 +1820,88 @@ class _DashboardPageState extends State<DashboardPage> {
       });
 
       RtsPembaruan.periksaOtomatis(context);
+
+      // Sekali saat beranda dibuka: periksa apakah akun sudah berhak PRO.
+      unawaited(_periksaHakPro());
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Saat aplikasi dibuka kembali dari latar belakang (misalnya sesudah sales
+  /// membayar dan ADMIN menyetujui pembayarannya), status PRO langsung
+  /// diperiksa ulang supaya menu PRO tidak menunggu lama.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState keadaan) {
+    if (keadaan != AppLifecycleState.resumed) return;
+
+    unawaited(_periksaHakPro());
+  }
+
+  /// Memeriksa hak PRO dari simpanan di HP / server, lalu menyimpan hasilnya
+  /// pada sesi supaya seluruh halaman memakai keadaan yang terbaru.
+  Future<void> _periksaHakPro({bool lapor = false}) async {
+    if (_akunPro) {
+      if (lapor && mounted) {
+        rtsShowMessage(
+          context,
+          'Akun PRO sudah aktif. Seluruh menu PRO dapat dibuka.',
+          success: true,
+        );
+      }
+
+      return;
+    }
+
+    bool boleh = false;
+
+    try {
+      // Keterangan akun (alamat server + token) diserahkan lebih dahulu
+      // supaya pemeriksaan PRO ini dapat menghubungi server.
+      await RtsKasirLokal.aku.atur(
+        baseUrl: RtsConfig.baseUrl,
+        token: token,
+        pengguna: user.toJson(),
+      );
+
+      final Map<String, dynamic> akses = await RtsKasirLokal.aku.akses();
+
+      boleh = akses['boleh'] == true;
+    } catch (_) {
+      boleh = false;
+    }
+
+    if (!mounted) return;
+
+    if (!boleh) {
+      if (lapor) {
+        rtsShowMessage(
+          context,
+          'Akun ini masih terbaca GRATIS. Pastikan pembayaran sudah disetujui '
+          'ADMIN, lalu tekan SINKRON AKUN pada menu Sinkronisasi.',
+        );
+      }
+
+      return;
+    }
+
+    setState(() => _proLuring = true);
+
+    // Data akun pada sesi diperbarui (tersimpan di HP) supaya halaman Kasir,
+    // Peta, dan lain-lain juga melihat status PRO ini.
+    await RtsSesi.simpan(token, user.copyWith(akunPro: true));
+
+    if (!mounted || !lapor) return;
+
+    rtsShowMessage(
+      context,
+      'Akun PRO sudah aktif. Seluruh menu PRO dapat dibuka.',
+      success: true,
+    );
   }
 
   @override
@@ -2323,18 +2413,31 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   /// True bila akun ini sedang berhak memakai fitur PRO.
-  /// Sumber: data server (login / session_check) atau pemeriksaan luring
-  /// yang tersimpan di HP (30 hari).
-  bool get _akunPro => RtsTingkatAkun.pro || RtsLangganan.sekarang.pro;
+  /// Sumber: data server (login / session_check), keadaan langganan terakhir,
+  /// atau pemeriksaan yang tersimpan di HP (30 hari).
+  bool get _akunPro =>
+      RtsTingkatAkun.pro || RtsLangganan.sekarang.pro || _proLuring;
 
   /// Memeriksa hak PRO termasuk simpanan pemeriksaan luring.
+  ///
+  /// Bila hasilnya "boleh", keadaan itu langsung disimpan supaya kunci pada
+  /// kartu menu PRO hilang tanpa perlu membuka ulang aplikasi. Inilah yang
+  /// membuat akun yang BARU diperpanjang langsung terbuka.
   Future<bool> _bolehPro() async {
     if (_akunPro) return true;
 
     try {
       final Map<String, dynamic> akses = await RtsKasirLokal.aku.akses();
 
-      return akses['boleh'] == true;
+      if (akses['boleh'] != true) return false;
+
+      _proLuring = true;
+
+      unawaited(RtsSesi.simpan(token, user.copyWith(akunPro: true)));
+
+      if (mounted) setState(() {});
+
+      return true;
     } catch (_) {
       return false;
     }
@@ -2362,7 +2465,9 @@ class _DashboardPageState extends State<DashboardPage> {
           'menu ini, aktifkan Langganan PRO '
           '(Rp${rtsRupiah(RtsLangganan.sekarang.harga)} / '
           '${RtsLangganan.sekarang.durasiHari} hari) atau pakai uji coba '
-          '${RtsLangganan.sekarang.trialHari} hari GRATIS.',
+          '${RtsLangganan.sekarang.trialHari} hari GRATIS.\n\n'
+          'Sudah top up / sudah bayar? Buka menu Sinkronisasi lalu tekan '
+          'SINKRON AKUN supaya status PRO dari server langsung dibaca.',
           style: const TextStyle(fontSize: 13.5, height: 1.5),
         ),
         actions: <Widget>[
@@ -5083,6 +5188,10 @@ class _SyncPageState extends State<SyncPage> {
   bool menyinkron = false;
   String? pesanGalat;
 
+  /// Keadaan tombol SINKRON AKUN (status PRO / GRATIS).
+  bool menyinkronAkun = false;
+  String pesanAkun = '';
+
   @override
   void initState() {
     super.initState();
@@ -5115,6 +5224,10 @@ class _SyncPageState extends State<SyncPage> {
     final DateTime mulai = DateTime.now();
 
     try {
+      // Status akun (PRO / GRATIS) disegarkan lebih dahulu, supaya akun yang
+      // baru diperpanjang langsung terbuka lewat tombol ini juga.
+      await _sinkronAkun(lapor: false);
+
       // Data customer pada cakupan akun.
       final Map<String, dynamic> dataCustomer = await api.get('customers.php', {
         'page': '1',
@@ -5196,6 +5309,8 @@ class _SyncPageState extends State<SyncPage> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
                     children: [
+                      _buildKartuAkun(),
+                      const SizedBox(height: 14),
                       _buildKartuServer(server),
                       const SizedBox(height: 14),
                       const RtsIklanAsli(),
@@ -5247,6 +5362,230 @@ class _SyncPageState extends State<SyncPage> {
     );
   }
 
+  /// Menyegarkan STATUS AKUN dari server.
+  ///
+  /// Inilah yang dipakai sales sesudah top up dan ADMIN menyetujui: keadaan
+  /// langganan (langganan.php lewat session_check.php), data akun, dan izin
+  /// PRO yang tersimpan di dalam HP diperiksa ulang, sehingga seluruh menu
+  /// PRO langsung terbuka tanpa perlu memasang ulang aplikasi.
+  Future<void> _sinkronAkun({bool lapor = true}) async {
+    if (menyinkronAkun) return;
+
+    if (mounted) {
+      setState(() {
+        menyinkronAkun = true;
+        pesanAkun = '';
+      });
+    }
+
+    try {
+      final Map<String, dynamic> balasan = await api.get('session_check.php');
+
+      final RtsUser terbaru = RtsUser.fromJson(
+        ((balasan['user'] as Map?) ?? const {}).cast<String, dynamic>(),
+      );
+
+      final RtsLangganan baru = RtsLangganan.dariBalasan(balasan);
+
+      await RtsSesi.simpan(widget.token, terbaru);
+      await RtsLangganan.simpanKeSesi(baru);
+
+      // Pemeriksaan izin PRO yang tersimpan di dalam HP disegarkan supaya
+      // jawaban lama ("belum boleh") tidak dipakai lagi. Keterangan akun
+      // diserahkan lebih dahulu supaya pemeriksaan ini menghubungi server.
+      Map<String, dynamic> akses = <String, dynamic>{};
+
+      try {
+        await RtsKasirLokal.aku.atur(
+          baseUrl: RtsConfig.baseUrl,
+          token: widget.token,
+          pengguna: terbaru.toJson(),
+        );
+
+        akses = await RtsKasirLokal.aku.akses(paksa: true);
+      } catch (_) {
+        akses = <String, dynamic>{};
+      }
+
+      final bool pro =
+          baru.proAktif || baru.trialAktif || akses['boleh'] == true;
+
+      String kabar;
+
+      if (baru.proAktif) {
+        final String sampai =
+            baru.berlakuSampai.isEmpty ? '' : ' sampai ${baru.berlakuSampai}';
+        final String sisa =
+            baru.sisaHari > 0 ? ' (sisa ${baru.sisaHari} hari)' : '';
+
+        kabar = 'Akun PRO AKTIF$sampai$sisa. Seluruh menu PRO sudah dapat '
+            'dibuka.';
+      } else if (baru.trialAktif) {
+        final String sisa = baru.sisaTrialHari > 0
+            ? ' (sisa ${baru.sisaTrialHari} hari)'
+            : '';
+
+        kabar = 'Uji coba PRO masih berjalan$sisa. Seluruh menu PRO dapat '
+            'dibuka.';
+      } else if (pro) {
+        kabar = 'Akun PRO sudah aktif menurut pemeriksaan di HP. Seluruh menu '
+            'PRO dapat dibuka.';
+      } else {
+        kabar = 'Status akun di server masih GRATIS. Bila pembayaran sudah '
+            'dikirim, pastikan ADMIN sudah menekan SETUJUI pada halaman '
+            'langganan_admin.php, lalu tekan SINKRON AKUN sekali lagi.';
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        menyinkronAkun = false;
+        pesanAkun = kabar;
+      });
+
+      if (lapor) rtsShowMessage(context, kabar, success: pro);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        menyinkronAkun = false;
+        pesanAkun = error.message;
+      });
+
+      if (lapor) rtsShowMessage(context, error.message);
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        menyinkronAkun = false;
+        pesanAkun = 'Tidak dapat menyegarkan status akun. Periksa sambungan '
+            'internet, lalu coba lagi.';
+      });
+
+      if (lapor) rtsShowMessage(context, pesanAkun);
+    }
+  }
+
+  /// Kartu STATUS AKUN + tombol SINKRON AKUN.
+  ///
+  /// Tombol inilah yang ditekan sales sesudah top up: aplikasi memeriksa
+  /// ulang ke server, sehingga akun yang sudah diperpanjang / disetujui ADMIN
+  /// langsung terbuka fitur PRO-nya.
+  Widget _buildKartuAkun() {
+    final RtsLangganan lg = RtsLangganan.sekarang;
+    final bool pro = lg.proAktif || lg.trialAktif || RtsTingkatAkun.pro;
+
+    final Color warna = pro ? rtsGreen : rtsMaroon;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: warna.withValues(alpha: 0.35), width: 1.4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                pro
+                    ? Icons.workspace_premium_rounded
+                    : Icons.lock_outline_rounded,
+                color: warna,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Status Akun',
+                  style: TextStyle(
+                    color: rtsTextPrimary,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: warna.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  RtsTingkatAkun.label,
+                  style: TextStyle(
+                    color: warna,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 9),
+          Text(
+            lg.keteranganMasa,
+            style: const TextStyle(color: rtsTextSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 7),
+          const Text(
+            'Sesudah top up, tekan tombol di bawah ini supaya status akun '
+            'dibaca ulang dari server. Akun yang sudah disetujui ADMIN '
+            'langsung terbuka seluruh menu PRO-nya.',
+            style: TextStyle(color: rtsTextSecondary, fontSize: 11.5),
+          ),
+          const SizedBox(height: 13),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: rtsGreen,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              onPressed: menyinkronAkun ? null : () => _sinkronAkun(),
+              icon: menyinkronAkun
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.verified_user_rounded, size: 20),
+              label: Text(
+                menyinkronAkun ? 'MEMERIKSA STATUS AKUN...' : 'SINKRON AKUN',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.9,
+                ),
+              ),
+            ),
+          ),
+          if (pesanAkun.isNotEmpty) ...[
+            const SizedBox(height: 11),
+            Text(
+              pesanAkun,
+              style: TextStyle(
+                color: warna,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildTopBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 16, 6),
@@ -5270,7 +5609,7 @@ class _SyncPageState extends State<SyncPage> {
                   ),
                 ),
                 Text(
-                  'Tarik data terbaru dari server',
+                  'Tarik data terbaru + periksa status akun',
                   style: TextStyle(color: rtsTextSecondary, fontSize: 11.5),
                 ),
               ],

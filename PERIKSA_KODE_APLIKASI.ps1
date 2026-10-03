@@ -53,7 +53,7 @@
 #  dengan perintah "flutter clean".
 # =============================================================================
 
-$harapanKode = 'RTS-2026-10-03-13'
+$harapanKode = 'RTS-2026-10-03-14'
 
 function TulisJudul($teks) {
     Write-Host ""
@@ -193,7 +193,9 @@ $bagian = @(
     @{ Nama = "modul iklan (RtsIklan)";                    Pola = "class RtsIklan" },
     @{ Nama = "pembaruan otomatis (RtsPembaruan)";         Pola = "class RtsPembaruan" },
     @{ Nama = "beranda baru (_DashboardPageState)";        Pola = "class _DashboardPageState" },
-    @{ Nama = "aturan iklan akun PRO";                     Pola = "RtsTingkatAkun" }
+    @{ Nama = "aturan iklan akun PRO";                     Pola = "RtsTingkatAkun" },
+    @{ Nama = "tombol SINKRON AKUN (menu Sinkronisasi)";   Pola = "SINKRON AKUN" },
+    @{ Nama = "status PRO diperiksa ulang saat app dibuka"; Pola = "_periksaHakPro" }
 )
 
 foreach ($satu in $bagian) {
@@ -415,7 +417,9 @@ if (Test-Path 'lib\kasir_lokal.dart') {
         @{ Nama = "database di dalam HP (sqflite)";     Pola = "package:sqflite/sqflite.dart" },
         @{ Nama = "sinkron produk dari server";         Pola = "sinkron_produk" },
         @{ Nama = "cadangkan data";                     Pola = "cadangan_info" },
-        @{ Nama = "izin PRO berlaku luring 30 hari";    Pola = "batasLuringHari" }
+        @{ Nama = "izin PRO berlaku luring 30 hari";    Pola = "batasLuringHari" },
+        @{ Nama = "jawaban GRATIS hanya 3 menit (segar)"; Pola = "segarTolakMenit" },
+        @{ Nama = "pemeriksaan ulang setelah gagal";    Pola = "tundaGagalMenit" }
     )
 
     foreach ($satu in $tandaLokal) {

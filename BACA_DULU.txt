@@ -1,5 +1,68 @@
 ==============================================================================
  RTS PANEL BY BENE
+ TUTORIAL PUTARAN 13 - AKUN PRO LANGSUNG TERBUKA SESUDAH TOP UP
+ (+ TOMBOL SINKRON AKUN PADA MENU SINKRONISASI)
+==============================================================================
+
+ ============================================================================
+  PUTARAN 13 - AKUN PRO TERKUNCI SESUDAH TOP UP: SUDAH DIPERBAIKI
+  (3 Oktober 2026)
+ ============================================================================
+
+  Keluhan Bapak:
+    "Ketika user sales sudah top up dan ADMIN sudah setujui, status akun sales
+     tetap terkunci untuk fitur PRO-nya."
+
+  DUA SEBAB, KEDUANYA SUDAH DIPERBAIKI:
+
+   1. DI APLIKASI - jawaban "belum boleh" disimpan terlalu lama.
+      Aplikasi menyimpan hasil pemeriksaan PRO di dalam HP supaya kasir tetap
+      jalan tanpa internet. Jawaban "belum boleh" (GRATIS) tadinya dianggap
+      masih berlaku sampai 6 JAM, sehingga pembayaran yang sudah disetujui
+      ADMIN tetap terkunci.
+      SEKARANG: jawaban "belum boleh" hanya berlaku 3 MENIT, lalu aplikasi
+      memeriksa ulang sendiri. Jawaban "boleh" tetap 6 jam (agar tetap jalan
+      tanpa internet). Status juga diperiksa ulang setiap aplikasi dibuka dan
+      setiap kembali dari latar belakang.
+
+   2. DI SERVER - penanda akun_pro belum ada di database.
+      Akun tadinya dianggap PRO hanya bila kolom `akun_pro` bernilai 1.
+      SEKARANG: tanggal `pro_selesai` (tanggal berakhir langganan) SENDIRI
+      sudah cukup untuk menjadikan akun PRO - jadi pembayaran yang sudah
+      disetujui ADMIN langsung membuka fitur PRO.
+      Perbaikannya ada di berkas  api/langganan_inti.php.
+
+  FITUR BARU YANG BAPAK MINTA: menu Sinkronisasi kini memuat KARTU STATUS
+  AKUN + TOMBOL "SINKRON AKUN" di bagian paling atas. Menekannya membuat
+  aplikasi memeriksa ulang ke server (langganan + sesi + izin PRO di HP),
+  lalu menampilkan hasilnya, misalnya:
+
+      Status Akun                                     [ PRO / GRATIS ]
+      Berlaku sampai 02-11-2026 (sisa 30 hari)
+      [ SINKRON AKUN ]
+      "Akun PRO AKTIF sampai 02-11-2026 (sisa 30 hari). Seluruh menu PRO
+       sudah dapat dibuka."
+
+  Tombol SINKRONKAN SEKARANG pada menu yang sama juga ikut menyegarkan status
+  akun. Jadi sales yang sudah top up cukup menekan salah satu tombol itu
+  (tanpa perlu memasang ulang aplikasi).
+
+  LANGKAH PEMASANGAN (3 langkah):
+     A. Unggah api/langganan_inti.php (dan berkas server lain pada paket) ke
+        public_html/api, lalu buka langganan_admin.php dan tekan
+        PERBARUI DATABASE SEKALI.
+     B. Jalankan .\LANGKAH1_PASANG_SEMUA.ps1 dari paket RTS_PANEL_PUTARAN_13.zip,
+        lalu  flutter clean  ->  flutter pub get.
+     C. Di HP sales: menu Sinkronisasi -> tekan SINKRON AKUN.
+
+  PENJELASAN LENGKAP: berkas MENU_LANGGANAN_PRO.txt, bagian
+  "BAGIAN 0 - AKUN SALES MASIH TERKUNCI SESUDAH TOP UP".
+
+  Nomor versi naik menjadi 1.2.6 / kode 9 (pubspec.yaml.updated memuat
+  version: 1.2.6+9, penanda aplikasi RTS-2026-10-03-14). Pada halaman Versi
+  Aplikasi di panel, isi: Versi 1.2.6, Kode 9, Wajib JANGAN -> PUBLIKASIKAN.
+
+==============================================================================
  TUTORIAL PUTARAN 12 - TIGA MENU PRO PETA (OpenStreetMap):
  PETA CUSTOMER, RADAR CUSTOMER, dan RUTE PLAN (+ PENSIL rute & SALIN plan)
 ==============================================================================
