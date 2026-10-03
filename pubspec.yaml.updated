@@ -55,7 +55,19 @@ publish_to: 'none'
 #     - Tombol SINKRONKAN SEKARANG juga ikut menyegarkan status akun.
 #     - Pada sisi server (api/langganan_inti.php): tanggal `pro_selesai` sudah
 #       cukup menjadikan akun PRO, walaupun kolom penanda `akun_pro` belum ada.
-version: 1.2.6+9
+#
+#   Kode 10 (1.2.7) menuntaskan AKUN PRO YANG SUDAH DIATAS KERTAS (database
+#   sudah PRO) TETAPI MENU PRO MASIH TERKUNCI:
+#     - lib/kasir_lokal.dart: bila DATA AKUN DARI SERVER menyatakan PRO
+#       (akun_pro = 1 pada login / session_check), fitur PRO langsung
+#       dibolehkan - jawaban lama "belum boleh" yang tersimpan di HP tidak
+#       lagi mengunci menu.
+#     - main.dart: setiap kartu Menu PRO yang ditekan memeriksa ULANG ke
+#       server (session_check.php) bila jawaban di HP masih "belum boleh",
+#       lalu membuka kartunya begitu server menyatakan PRO.
+#     - Kartu menu PRO juga diserahkan data akun yang paling baru, sehingga
+#       halaman Kasir / Peta memakai keadaan yang sama dengan Beranda.
+version: 1.2.7+10
 
 environment:
   sdk: '>=3.5.0 <4.0.0'

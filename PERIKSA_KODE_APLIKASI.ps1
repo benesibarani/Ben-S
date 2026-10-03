@@ -53,7 +53,7 @@
 #  dengan perintah "flutter clean".
 # =============================================================================
 
-$harapanKode = 'RTS-2026-10-03-14'
+$harapanKode = 'RTS-2026-10-03-15'
 
 function TulisJudul($teks) {
     Write-Host ""
@@ -195,7 +195,8 @@ $bagian = @(
     @{ Nama = "beranda baru (_DashboardPageState)";        Pola = "class _DashboardPageState" },
     @{ Nama = "aturan iklan akun PRO";                     Pola = "RtsTingkatAkun" },
     @{ Nama = "tombol SINKRON AKUN (menu Sinkronisasi)";   Pola = "SINKRON AKUN" },
-    @{ Nama = "status PRO diperiksa ulang saat app dibuka"; Pola = "_periksaHakPro" }
+    @{ Nama = "status PRO diperiksa ulang saat app dibuka"; Pola = "_periksaHakPro" },
+    @{ Nama = "penyegar status akun (tanya ke server)";    Pola = "class RtsAkunSegar" }
 )
 
 foreach ($satu in $bagian) {
@@ -419,7 +420,8 @@ if (Test-Path 'lib\kasir_lokal.dart') {
         @{ Nama = "cadangkan data";                     Pola = "cadangan_info" },
         @{ Nama = "izin PRO berlaku luring 30 hari";    Pola = "batasLuringHari" },
         @{ Nama = "jawaban GRATIS hanya 3 menit (segar)"; Pola = "segarTolakMenit" },
-        @{ Nama = "pemeriksaan ulang setelah gagal";    Pola = "tundaGagalMenit" }
+        @{ Nama = "pemeriksaan ulang setelah gagal";    Pola = "tundaGagalMenit" },
+        @{ Nama = "data akun server = bukti PRO";       Pola = "bool get proSesi" }
     )
 
     foreach ($satu in $tandaLokal) {

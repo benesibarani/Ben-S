@@ -71,6 +71,41 @@
      supaya seluruh kolom langganan (`akun_pro`, `pro_mulai`, `pro_selesai`,
      `trial_mulai`, `trial_selesai`, `foto_profil`) tersedia di database.
 
+ BAGIAN 0A - DATABASE SUDAH PRO, TETAPI MENU PRO MASIH TERKUNCI
+ ------------------------------------------------------------------------
+ Kejadian: pada tabel sales_users baris user tersebut sudah
+ `akun_pro = 1` dengan `pro_mulai` dan `pro_selesai` terisi (PRO selesai
+ 2027-01-11), status di aplikasi pun tampak PRO, TETAPI ketika kartu menu
+ PRO ditekan tetap muncul tawaran langganan / halaman terkunci.
+
+ Sebabnya: jawaban lama "belum boleh" (dari masa akun masih GRATIS atau masa
+ uji coba sudah habis) masih tersimpan di dalam HP dan dipakai lebih dahulu
+ daripada data akun terbaru dari server.
+
+ Penawar yang sudah dipasang pada versi 1.2.7 (kode 10, penanda
+ RTS-2026-10-03-15):
+   1. DATA AKUN DARI SERVER MENJADI BUKTI PRO DI DALAM HP.
+      Bila `akun_pro` = 1 pada data akun (hasil login / session_check), maka
+      seluruh fitur PRO langsung dibolehkan, tanpa memakai jawaban lama.
+      (lib/kasir_lokal.dart - proSesi)
+   2. SETIAP KARTU MENU PRO YANG DITEKAN MEMERIKSA ULANG KE SERVER.
+      Bila jawaban di HP masih "belum boleh", aplikasi bertanya langsung ke
+      server (session_check.php). Begitu server menyatakan PRO, kartu itu
+      LANGSUNG TERBUKA tanpa keluar aplikasi.
+      (main.dart - RtsAkunSegar + _bolehPro)
+   3. Status diperiksa otomatis saat aplikasi dibuka dan kembali dari latar
+      belakang, serta lewat tombol SINKRON AKUN pada menu Sinkronisasi.
+
+ URUTAN PEMASANGAN YANG BENAR (3 langkah, jangan dibalik):
+   A. Unggah api/langganan_inti.php ke public_html/api, lalu di
+      langganan_admin.php tekan PERBARUI DATABASE sekali.
+   B. Di komputer: ekstrak RTS_PANEL_PUTARAN_14.zip, jalankan
+      .\LANGKAH1_PASANG_SEMUA.ps1, lalu flutter clean -> flutter pub get.
+   C. Bangun + pasang ke HP:  flutter run -d CPH1937
+      Penting: aplikasi di HP HARUS versi baru. Periksa pada halaman
+      Pengaturan - penanda kode harus RTS-2026-10-03-15. Selama HP masih
+      memakai aplikasi lama, perbaikan ini belum ikut terpasang.
+
  BAGIAN 0B - TOMBOL BARU "SINKRON AKUN" (menu Sinkronisasi di aplikasi)
  ------------------------------------------------------------------------
  Menu UTAMA -> Sinkronisasi kini memuat KARTU STATUS AKUN di bagian paling

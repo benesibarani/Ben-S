@@ -965,7 +965,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-03-14';
+const String rtsKodeAplikasi = 'RTS-2026-10-03-15';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -1868,11 +1868,19 @@ class _DashboardPageState extends State<DashboardPage>
         pengguna: user.toJson(),
       );
 
-      final Map<String, dynamic> akses = await RtsKasirLokal.aku.akses();
+      final Map<String, dynamic> akses =
+          await RtsKasirLokal.aku.akses(paksa: true);
 
       boleh = akses['boleh'] == true;
     } catch (_) {
       boleh = false;
+    }
+
+    // Jawaban di HP masih "belum boleh": bertanya langsung ke server sekali.
+    // Inilah penawar utama bila pembayaran sudah disetujui ADMIN tetapi
+    // jawaban lama masih tersimpan di HP.
+    if (!boleh) {
+      boleh = await RtsAkunSegar.periksa(token);
     }
 
     if (!mounted) return;
@@ -2426,21 +2434,56 @@ class _DashboardPageState extends State<DashboardPage>
   Future<bool> _bolehPro() async {
     if (_akunPro) return true;
 
+    bool boleh = false;
+
     try {
-      final Map<String, dynamic> akses = await RtsKasirLokal.aku.akses();
+      // Keterangan akun diserahkan lebih dahulu supaya pemeriksaan dapat
+      // menghubungi server (paksa: true = jangan memakai jawaban lama).
+      await RtsKasirLokal.aku.atur(
+        baseUrl: RtsConfig.baseUrl,
+        token: token,
+        pengguna: user.toJson(),
+      );
 
-      if (akses['boleh'] != true) return false;
+      final Map<String, dynamic> akses =
+          await RtsKasirLokal.aku.akses(paksa: true);
 
-      _proLuring = true;
-
-      unawaited(RtsSesi.simpan(token, user.copyWith(akunPro: true)));
-
-      if (mounted) setState(() {});
-
-      return true;
+      boleh = akses['boleh'] == true;
     } catch (_) {
-      return false;
+      boleh = false;
     }
+
+    // Masih "belum boleh": periksa langsung ke server (sesi + langganan).
+    if (!boleh) {
+      boleh = await RtsAkunSegar.periksa(token);
+
+      if (boleh) {
+        try {
+          await RtsKasirLokal.aku.atur(
+            baseUrl: RtsConfig.baseUrl,
+            token: token,
+            pengguna: (RtsSesi.user ?? user).toJson(),
+          );
+
+          await RtsKasirLokal.aku.akses(paksa: true);
+        } catch (_) {
+          // pemeriksaan di HP gagal disegarkan: kartu tetap dibuka
+        }
+      }
+    }
+
+    if (!mounted) return boleh;
+
+    if (!boleh) return false;
+
+    _proLuring = true;
+    setState(() {});
+
+    if (!RtsTingkatAkun.pro) {
+      unawaited(RtsSesi.simpan(token, user.copyWith(akunPro: true)));
+    }
+
+    return true;
   }
 
   /// Kartu PRO yang ditekan akun GRATIS: dijelaskan dan ditawarkan langganan.
@@ -2536,7 +2579,7 @@ class _DashboardPageState extends State<DashboardPage>
           builder: (_) => RtsBarangBawaanPage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
-            pengguna: user.toJson(),
+            pengguna: (RtsSesi.user ?? user).toJson(),
           ),
         ),
       );
@@ -2549,7 +2592,7 @@ class _DashboardPageState extends State<DashboardPage>
           builder: (_) => RtsKasirPage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
-            pengguna: user.toJson(),
+            pengguna: (RtsSesi.user ?? user).toJson(),
           ),
         ),
       );
@@ -2562,7 +2605,7 @@ class _DashboardPageState extends State<DashboardPage>
           builder: (_) => RtsPiutangPage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
-            pengguna: user.toJson(),
+            pengguna: (RtsSesi.user ?? user).toJson(),
           ),
         ),
       );
@@ -2575,7 +2618,7 @@ class _DashboardPageState extends State<DashboardPage>
           builder: (_) => RtsPrinterPage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
-            pengguna: user.toJson(),
+            pengguna: (RtsSesi.user ?? user).toJson(),
           ),
         ),
       );
@@ -2588,7 +2631,7 @@ class _DashboardPageState extends State<DashboardPage>
           builder: (_) => RtsPetaCustomerPage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
-            pengguna: user.toJson(),
+            pengguna: (RtsSesi.user ?? user).toJson(),
           ),
         ),
       );
@@ -2601,7 +2644,7 @@ class _DashboardPageState extends State<DashboardPage>
           builder: (_) => RtsRadarPage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
-            pengguna: user.toJson(),
+            pengguna: (RtsSesi.user ?? user).toJson(),
           ),
         ),
       );
@@ -2614,7 +2657,7 @@ class _DashboardPageState extends State<DashboardPage>
           builder: (_) => RtsRutePage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
-            pengguna: user.toJson(),
+            pengguna: (RtsSesi.user ?? user).toJson(),
           ),
         ),
       );
@@ -14004,6 +14047,61 @@ class RtsLangganan {
     );
 
     await RtsSesi.simpan(RtsSesi.token, terbaru);
+
+    // Pemeriksaan PRO yang tersimpan di dalam HP ikut diperbarui, supaya
+    // seluruh menu PRO langsung terbuka tanpa menunggu jawaban lama kedaluwarsa.
+    try {
+      await RtsKasirLokal.aku.atur(
+        baseUrl: RtsConfig.baseUrl,
+        token: RtsSesi.token,
+        pengguna: terbaru.toJson(),
+      );
+
+      await RtsKasirLokal.aku.akses(paksa: true);
+    } catch (_) {
+      // keterangan akun gagal diserahkan: tidak menghalangi pemakaian
+    }
+  }
+}
+
+/* ========================================================================= */
+/* PENYEGAR STATUS AKUN (dipakai Beranda & menu Sinkronisasi)                */
+/* ========================================================================= */
+
+/// Memeriksa ulang keadaan akun (PRO / GRATIS) LANGSUNG KE SERVER.
+///
+/// Dipakai saat aplikasi mendapati jawaban lama "belum boleh" padahal
+/// pembayaran sudah disetujui ADMIN. Hasilnya disimpan pada sesi dan pada
+/// pemeriksaan di dalam HP, sehingga:
+///   1. kartu menu PRO langsung terbuka tanpa memasang ulang aplikasi;
+///   2. halaman Kasir / Peta yang memakai pemeriksaan di HP juga terbuka.
+class RtsAkunSegar {
+  const RtsAkunSegar._();
+
+  /// Mengembalikan true bila akun ini PRO menurut server.
+  static Future<bool> periksa(String token) async {
+    if (token.isEmpty) return false;
+
+    try {
+      final ApiClient api = ApiClient(token: token);
+      final Map<String, dynamic> balasan = await api.get('session_check.php');
+
+      final RtsUser terbaru = RtsUser.fromJson(
+        ((balasan['user'] as Map?) ?? const {}).cast<String, dynamic>(),
+      );
+
+      final RtsLangganan baru = RtsLangganan.dariBalasan(balasan);
+
+      await RtsSesi.simpan(token, terbaru);
+      await RtsLangganan.simpanKeSesi(baru);
+
+      return baru.proAktif ||
+          baru.trialAktif ||
+          terbaru.akunPro ||
+          RtsTingkatAkun.pro;
+    } catch (_) {
+      return false;
+    }
   }
 }
 

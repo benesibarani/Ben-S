@@ -1,4 +1,49 @@
-PALING BARU - PUTARAN 13: AKUN PRO LANGSUNG TERBUKA SESUDAH TOP UP
+PALING BARU - PUTARAN 14: MENU PRO TERBUKA WALAU DATABASE SUDAH PRO
+------------------------------------------------------------------------
+Keluhan: database sudah PRO (akun_pro = 1, pro_selesai terisi) dan status di
+aplikasi sudah PRO, tetapi menu-menu PRO tetap tidak dapat dibuka.
+
+Sebab: jawaban lama "belum boleh" yang tersimpan di HP dipakai lebih dahulu
+daripada data akun terbaru dari server.
+
+Penawar (3 lapis):
+  1. Data akun dari server (akun_pro = 1 pada login / session_check) menjadi
+     BUKTI PRO di dalam HP - jawaban lama tidak lagi mengunci menu.
+  2. Setiap kartu Menu PRO yang ditekan memeriksa ULANG ke server dan langsung
+     terbuka begitu server menyatakan PRO (tanpa keluar aplikasi).
+  3. Status akun diperiksa saat aplikasi dibuka / kembali dari latar belakang,
+     dan lewat tombol SINKRON AKUN pada menu Sinkronisasi.
+
+PENTING: aplikasi di HP harus versi baru. Periksa penanda kode pada halaman
+Pengaturan - harus tertulis  RTS-2026-10-03-15.
+
+  PANDUAN LENGKAP:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
+    (lihat TUTORIAL PUTARAN 14)
+
+  PAKET LENGKAP putaran ini:
+    RTS_PANEL_PUTARAN_14.zip  (semua berkas sekaligus)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_14.zip
+
+  BERKAS APLIKASI (dipasang dengan LANGKAH1_PASANG_SEMUA.ps1):
+    main.dart
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+    lib/kasir_lokal.dart  <-- data akun server menjadi bukti PRO
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
+    pubspec.yaml.updated  (version: 1.2.7+10)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+
+  BERKAS SERVER (unggah ke public_html/api):
+    api/langganan_inti.php  (perbaikan status PRO dari tanggal langganan)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/langganan_inti.php
+
+  RILIS PENUTUP PUTARAN INI
+    Nomor versi aplikasi : 1.2.7  (kode 10)
+    Halaman Versi Aplikasi: Versi 1.2.7 | Kode 10 | Wajib: JANGAN -> PUBLIKASIKAN
+    Penanda kode aplikasi : RTS-2026-10-03-15 (tampil pada Pengaturan)
+
+------------------------------------------------------------------------
+PUTARAN 13 - AKUN PRO LANGSUNG TERBUKA SESUDAH TOP UP
 ------------------------------------------------------------------------
 Permintaan yang dikerjakan pada putaran ini:
   1. PERBAIKAN: akun sales yang sudah top up dan sudah disetujui ADMIN tetap

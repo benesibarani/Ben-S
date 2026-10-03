@@ -123,6 +123,28 @@ class RtsKasirLokal {
 
   bool get pengelola => role == 'ADMIN' || role == 'ASS';
 
+  /// Membaca nilai benar dari balasan server (1 / true / 'ya').
+  static bool _benar(dynamic nilai) {
+    if (nilai == true) return true;
+    if (nilai == false || nilai == null) return false;
+
+    final String teks = nilai.toString().trim().toLowerCase();
+
+    return teks == '1' || teks == 'true' || teks == 'ya';
+  }
+
+  /// True bila DATA AKUN DARI SERVER (login / session_check / SINKRON AKUN)
+  /// menyatakan akun ini PRO.
+  ///
+  /// Inilah bukti terkuat yang dimiliki aplikasi: data itu datang dari server
+  /// pada saat login atau pemeriksaan sesi. Bila akun sudah disetujui ADMIN
+  /// tetapi jawaban lama di HP masih "belum boleh", data ini yang menanganinya
+  /// sehingga menu PRO langsung terbuka.
+  bool get proSesi => pengelola || _benar(pengguna['akun_pro']);
+
+  /// Label tingkat akun menurut data yang tersimpan di HP.
+  String get labelSesi => proSesi ? 'PRO' : 'GRATIS';
+
   /// Mengisi keterangan akun. Dipanggil setiap halaman kasir dibuka.
   Future<void> atur({
     String? baseUrl,
@@ -673,6 +695,27 @@ class RtsKasirLokal {
     }
 
     final DateTime sekarang = DateTime.now();
+
+    // 0. BUKTI DARI DATA AKUN (paling kuat, berasal dari server).
+    //    Login dan pemeriksaan sesi mengirim `akun_pro` dari database. Bila
+    //    nilainya 1, akun ini PRO - jadi jawaban lama "belum boleh" yang
+    //    tersimpan di HP TIDAK boleh lagi mengunci menu PRO.
+    if (proSesi) {
+      _aksesSimpan = <String, dynamic>{
+        'boleh': true,
+        'label': 'PRO',
+        'mode': 'SESI',
+        'pesan': '',
+        'sisa_hari': _aksesSimpan['sisa_hari'] ?? 0,
+      };
+      _aksesDiperiksa = sekarang;
+      _aksesGagal = null;
+
+      await _setelanTulis('akses_simpan', jsonEncode(_aksesSimpan));
+      await _setelanTulis('akses_pada', _waktu());
+
+      return _aksesSimpan;
+    }
 
     // Hasil yang tersimpan langsung dipakai HANYA bila masih segar:
     //  - jawaban "boleh"       : [segarJam] jam (supaya tetap jalan luring),

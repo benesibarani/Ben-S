@@ -1,5 +1,70 @@
 ==============================================================================
  RTS PANEL BY BENE
+ TUTORIAL PUTARAN 14 - MENU PRO TERBUKA WALAU DATABASE SUDAH PRO
+ (PENAWAR: data akun dari server menjadi bukti PRO di dalam HP)
+==============================================================================
+
+ ============================================================================
+  PUTARAN 14 - DATABASE SUDAH PRO, TETAPI MENU PRO MASIH TERKUNCI
+  (3 Oktober 2026)
+ ============================================================================
+
+  Kejadian yang Bapak laporkan:
+    "Akun Sales di atas nama BENEDICTUS sudah akun PRO (akun_pro = 1,
+     pro_mulai terisi, pro_selesai terisi). Di aplikasi juga statusnya sudah
+     akun PRO. Tapi ketika diklik, menu-menu akun PRO tidak bisa terbuka."
+
+  SEBABNYA
+  --------
+  Aplikasi menyimpan hasil pemeriksaan PRO di dalam HP supaya kasir tetap
+  jalan tanpa internet. Jawaban LAMA "belum boleh" (dari masa akun masih
+  GRATIS / uji coba sudah habis) masih tersimpan, dan jawaban itu dipakai
+  lebih dahulu daripada data akun terbaru dari server. Akibatnya menu PRO
+  tetap terkunci walaupun database sudah PRO.
+
+  PENAWARNYA (3 lapis, sudah dipasang pada putaran ini)
+  -----------------------------------------------------
+   1. DATA AKUN DARI SERVER MENJADI BUKTI PRO DI DALAM HP.
+      Bila `akun_pro` = 1 pada data akun (hasil login / session_check),
+      maka seluruh fitur PRO langsung dibolehkan - jawaban lama "belum boleh"
+      tidak dipakai lagi. (lib/kasir_lokal.dart: proSesi)
+
+   2. SETIAP KARTU MENU PRO YANG DITEKAN MEMERIKSA ULANG KE SERVER.
+      Bila pemeriksaan di HP masih menjawab "belum boleh", aplikasi bertanya
+      langsung ke server (session_check.php). Begitu server menyatakan PRO,
+      kartu itu LANGSUNG TERBUKA (tidak perlu keluar aplikasi).
+      (main.dart: RtsAkunSegar + _bolehPro)
+
+   3. STATUS AKUN DIPERIKSA SAAT APLIKASI DIBUKA DAN KEMBALI DARI LATAR
+      BELAKANG, serta melalui tombol SINKRON AKUN pada menu Sinkronisasi.
+      Halaman Kasir / Peta juga diberi data akun yang paling baru supaya
+      keadaannya sama dengan Beranda.
+
+  YANG PERLU BAPAK LAKUKAN (WAJIB memasang aplikasi baru)
+  -------------------------------------------------------
+     A. Unggah berkas server pada paket (api/langganan_inti.php) ke
+        public_html/api, lalu buka langganan_admin.php dan tekan
+        PERBARUI DATABASE sekali.
+     B. Ekstrak RTS_PANEL_PUTARAN_14.zip, jalankan
+        .\LANGKAH1_PASANG_SEMUA.ps1, lalu flutter clean -> flutter pub get.
+     C. Bangun + pasang ke HP:  flutter run -d CPH1937
+        (INI YANG PALING PENTING: aplikasi di HP harus versi baru. Selama HP
+         masih memakai aplikasi lama, perbaikannya belum ikut terpasang.)
+     D. Di HP: buka aplikasi sekali (status diperiksa otomatis). Bila masih
+        terkunci, buka Sinkronisasi -> SINKRON AKUN. Kartu Menu PRO akan
+        terbuka tanpa memasang ulang aplikasi.
+
+  CARA MEMASTIKAN APLIKASI DI HP SUDAH VERSI BARU
+  ------------------------------------------------
+     Buka Pengaturan -> lihat penanda kode aplikasi. Harus tertulis
+     RTS-2026-10-03-15. Bila masih RTS-2026-10-03-13 atau lebih lama,
+     berarti aplikasi baru belum terpasang di HP.
+
+  Nomor versi naik menjadi 1.2.7 / kode 10 (pubspec.yaml.updated memuat
+  version: 1.2.7+10). Pada halaman Versi Aplikasi di panel, isi:
+  Versi 1.2.7, Kode 10, Wajib JANGAN -> PUBLIKASIKAN.
+
+==============================================================================
  TUTORIAL PUTARAN 13 - AKUN PRO LANGSUNG TERBUKA SESUDAH TOP UP
  (+ TOMBOL SINKRON AKUN PADA MENU SINKRONISASI)
 ==============================================================================
