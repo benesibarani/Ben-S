@@ -26,6 +26,10 @@
 #       "A value of type 'String' can't be assigned to a variable of type
 #       'TextEditingController'" ketahuan di sini, bukan sesudah 3-4 menit
 #       menunggu build.
+#     - PUTARAN 15: menu GSP (GspMenuPage, Tambahkan GSP / Hapus GSP),
+#       pengiriman GSP beserta 3 foto (_kirimGsp -> request_create_gsp.php),
+#       tombol MINIMIZE pada Menu Utama / Menu PRO, serta penyaring peta yang
+#       seragam (RtsPetaSaring) dan penawar galat peta (rtsPetaTitikSah).
 #     - pubspec.yaml: paket penunjang kasir luring (sqflite dll).
 #     - android\app\build.gradle.kts: angka compileSdk (harus 37).
 #     - berkas Kotlin: jumlah MainActivity.kt (harus SATU) dan tanda +
@@ -53,7 +57,7 @@
 #  dengan perintah "flutter clean".
 # =============================================================================
 
-$harapanKode = 'RTS-2026-10-03-15'
+$harapanKode = 'RTS-2026-10-03-16'
 
 function TulisJudul($teks) {
     Write-Host ""
@@ -196,7 +200,14 @@ $bagian = @(
     @{ Nama = "aturan iklan akun PRO";                     Pola = "RtsTingkatAkun" },
     @{ Nama = "tombol SINKRON AKUN (menu Sinkronisasi)";   Pola = "SINKRON AKUN" },
     @{ Nama = "status PRO diperiksa ulang saat app dibuka"; Pola = "_periksaHakPro" },
-    @{ Nama = "penyegar status akun (tanya ke server)";    Pola = "class RtsAkunSegar" }
+    @{ Nama = "penyegar status akun (tanya ke server)";    Pola = "class RtsAkunSegar" },
+    @{ Nama = "menu GSP pada Menu Utama";                  Pola = "class GspMenuPage" },
+    @{ Nama = "sub-menu TAMBAHKAN GSP";                    Pola = "Tambahkan GSP" },
+    @{ Nama = "sub-menu HAPUS GSP";                        Pola = "Hapus GSP" },
+    @{ Nama = "pengiriman GSP + 3 foto";                   Pola = "request_create_gsp.php" },
+    @{ Nama = "formulir foto GSP (KTP/luar/dalam)";        Pola = "_barisFotoGsp" },
+    @{ Nama = "Menu Utama & Menu PRO dapat dilipat";       Pola = "rtsSimpanLipatMenu" },
+    @{ Nama = "tombol MINIMIZE pada judul menu";           Pola = "MINIMIZE" }
 )
 
 foreach ($satu in $bagian) {
@@ -445,7 +456,14 @@ if (Test-Path 'lib\peta.dart') {
         @{ Nama = "penyaring warna per HARI & FREKUENSI";     Pola = "Warna menurut FREKUENSI" },
         @{ Nama = "alat PENSIL garis rute";                   Pola = "_mulaiGores" },
         @{ Nama = "salin daftar plan (Nama + Id Customer)";   Pola = "SALIN NAMA & KODE" },
-        @{ Nama = "titik kantor dari server (kantor_segarkan)"; Pola = "kantor_segarkan" }
+        @{ Nama = "titik kantor dari server (kantor_segarkan)"; Pola = "kantor_segarkan" },
+        @{ Nama = "penyaring seragam Hari+Frekuensi";          Pola = "class RtsPetaSaring" },
+        @{ Nama = "daftar penyaring Hari (Semua..Sabtu)";      Pola = "rtsPetaHariPilih" },
+        @{ Nama = "daftar penyaring Frekuensi (BW Ganjil)";    Pola = "rtsPetaFrekuensiPilih" },
+        @{ Nama = "penyaring dapat DIMINIMIZE (peta luas)";    Pola = "MINIMIZE" },
+        @{ Nama = "penawar galat titik koordinat";             Pola = "rtsPetaTitikSah" },
+        @{ Nama = "kamera peta yang aman";                     Pola = "rtsPetaAturKamera" },
+        @{ Nama = "catatan jumlah toko bertitik salah";        Pola = "_titikSalah" }
     )
 
     foreach ($satu in $tandaPeta) {

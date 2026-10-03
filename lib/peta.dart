@@ -356,6 +356,79 @@ Color rtsPetaWarnaHari(String hari) {
   return rtsPetaKosong;
 }
 
+/// True bila angka lintang/bujur masuk akal dan dapat dipakai peta.
+///
+/// Data pada Master Customer kadang memuat angka yang salah tulis, misalnya
+/// bujur 98683. Titik seperti itu membuat peta GAGAL ditampilkan dengan pesan
+///   "Failed assertion: line ... 'east <= maxLongitude'"
+/// sehingga peta Rute Plan kosong / berat. Titik yang tidak masuk batas Bumi
+/// dibuang lebih dahulu, jadi peta tidak pernah menerima angka liar.
+bool rtsPetaTitikSah(double lat, double lng) {
+  if (lat.isNaN || lng.isNaN) return false;
+  if (lat.isInfinite || lng.isInfinite) return false;
+  if (lat < -90 || lat > 90) return false;
+  if (lng < -180 || lng > 180) return false;
+  if (lat == 0 && lng == 0) return false;
+
+  return true;
+}
+
+/// Menggeser peta supaya seluruh titik masuk layar.
+///
+/// Titik yang tidak sah (lihat [rtsPetaTitikSah]) dibuang di sini juga, jadi
+/// pemanggil tidak perlu khawatir. Bila tidak ada titik yang dapat dipakai,
+/// peta tidak digeser sama sekali.
+void rtsPetaAturKamera(MapController kontrol, List<LatLng> titik) {
+  final List<LatLng> sah = titik
+      .where((LatLng p) => rtsPetaTitikSah(p.latitude, p.longitude))
+      .toList();
+
+  if (sah.isEmpty) return;
+
+  double minLat = sah.first.latitude;
+  double maksLat = sah.first.latitude;
+  double minLng = sah.first.longitude;
+  double maksLng = sah.first.longitude;
+
+  for (final LatLng p in sah) {
+    minLat = math.min(minLat, p.latitude);
+    maksLat = math.max(maksLat, p.latitude);
+    minLng = math.min(minLng, p.longitude);
+    maksLng = math.max(maksLng, p.longitude);
+  }
+
+  final LatLng pusat = LatLng(
+    ((minLat + maksLat) / 2).clamp(-85.0, 85.0),
+    ((minLng + maksLng) / 2).clamp(-180.0, 180.0),
+  );
+
+  final double sebaran = math.max(maksLat - minLat, maksLng - minLng);
+
+  double zoom = 15;
+
+  if (sebaran > 1.5) {
+    zoom = 8;
+  } else if (sebaran > 0.7) {
+    zoom = 9;
+  } else if (sebaran > 0.35) {
+    zoom = 10;
+  } else if (sebaran > 0.18) {
+    zoom = 11;
+  } else if (sebaran > 0.09) {
+    zoom = 12;
+  } else if (sebaran > 0.045) {
+    zoom = 13;
+  } else if (sebaran > 0.02) {
+    zoom = 14;
+  }
+
+  try {
+    kontrol.move(pusat, zoom);
+  } catch (_) {
+    // peta belum siap: pengaturan tampilan dilewati
+  }
+}
+
 bool rtsPetaHariCocok(String nilai, String hari) {
   if (hari == 'Semua') return true;
 
@@ -451,7 +524,8 @@ class RtsToko {
   final double latitude;
   final double longitude;
 
-  bool get adaTitik => latitude != 0 && longitude != 0;
+  /// True bila toko ini memiliki titik koordinat yang SAH untuk peta.
+  bool get adaTitik => rtsPetaTitikSah(latitude, longitude);
   bool get isGsp => tipe.toUpperCase() == 'GSP';
   LatLng get titik => LatLng(latitude, longitude);
 
@@ -500,7 +574,8 @@ class RtsKantor {
   final String catatan;
   final String diubahPada;
 
-  bool get adaTitik => latitude != 0 && longitude != 0;
+  /// True bila kantor ini memiliki titik koordinat yang SAH untuk peta.
+  bool get adaTitik => rtsPetaTitikSah(latitude, longitude);
   LatLng get titik => LatLng(latitude, longitude);
 
   factory RtsKantor.dariPeta(Map<String, dynamic> j) {
@@ -787,6 +862,185 @@ Widget rtsPetaAtribusi(String namaSumber) {
 /* HALAMAN 1 : PETA CUSTOMER                                                 */
 /* ------------------------------------------------------------------------- */
 
+/// Daftar pilihan "Hari" yang seragam untuk semua halaman peta.
+const List<String> rtsPetaHariPilih = <String>[
+  'Semua',
+  'Senin',
+  'Selasa',
+  'Rabu',
+  'Kamis',
+  'Jumat',
+  'Sabtu',
+];
+
+/// Daftar pilihan "Frekuensi Kunjungan" yang seragam untuk semua halaman peta.
+const List<String> rtsPetaFrekuensiPilih = <String>[
+  'Semua',
+  'Weekly',
+  'BW Ganjil',
+  'BW Genap',
+];
+
+/// Penyaring Hari + Frekuensi yang SERAGAM pada Peta Customer, Radar Customer,
+/// dan Rute Plan. Panelnya dapat dilipat (tombol MINIMIZE / FILTER) supaya
+/// peta dapat tampil lebih luas.
+class RtsPetaSaring extends StatefulWidget {
+  const RtsPetaSaring({
+    super.key,
+    required this.hari,
+    required this.frekuensi,
+    required this.onUbah,
+    this.ringkasan = '',
+    this.terbukaAwal = true,
+    this.onTerbuka,
+  });
+
+  final String hari;
+  final String frekuensi;
+
+  /// Dipanggil setiap Hari atau Frekuensi diganti.
+  final void Function(String hari, String frekuensi) onUbah;
+
+  /// Teks kecil di kanan judul, misalnya "456 toko".
+  final String ringkasan;
+
+  /// True = panel mulai dalam keadaan TERBUKA.
+  final bool terbukaAwal;
+
+  /// Memberi tahu halaman pemanggil saat panel dilipat / dibuka, supaya tata
+  /// letak lain (misalnya tinggi peta) dapat menyesuaikan.
+  final void Function(bool terbuka)? onTerbuka;
+
+  @override
+  State<RtsPetaSaring> createState() => _RtsPetaSaringState();
+}
+
+class _RtsPetaSaringState extends State<RtsPetaSaring> {
+  late bool _terbuka = widget.terbukaAwal;
+
+  void _ubah(bool buka) {
+    setState(() => _terbuka = buka);
+    widget.onTerbuka?.call(buka);
+  }
+
+  Widget _chip(String teks, bool aktif, Color warna, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ChoiceChip(
+        label: Text(
+          teks,
+          style: TextStyle(
+            fontSize: 11,
+            color: aktif ? Colors.white : rtsKsTeks,
+          ),
+        ),
+        selected: aktif,
+        onSelected: (_) => onTap(),
+        selectedColor: warna,
+        backgroundColor: Colors.white,
+        side: BorderSide(color: aktif ? warna : rtsKsGaris),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color warnaHari = rtsPetaWarnaHari(widget.hari);
+    final bool hariSemua = widget.hari == 'Semua';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            const Icon(Icons.filter_alt_outlined, size: 16, color: rtsKsMaroon),
+            const SizedBox(width: 5),
+            Expanded(
+              child: Text(
+                _terbuka
+                    ? 'Penyaring toko: Hari & Frekuensi'
+                    : 'Hari: ${widget.hari}  |  Frekuensi: ${widget.frekuensi}',
+                style: rtsPetaJudulKecil,
+              ),
+            ),
+            if (widget.ringkasan.isNotEmpty)
+              Text(
+                widget.ringkasan,
+                style: const TextStyle(fontSize: 11, color: rtsKsTeks2),
+              ),
+            TextButton.icon(
+              onPressed: () => _ubah(!_terbuka),
+              icon: Icon(
+                _terbuka
+                    ? Icons.unfold_less_rounded
+                    : Icons.unfold_more_rounded,
+                size: 16,
+              ),
+              label: Text(
+                _terbuka ? 'MINIMIZE' : 'FILTER',
+                style: const TextStyle(fontSize: 10.5),
+              ),
+            ),
+          ],
+        ),
+        if (_terbuka)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: <Widget>[
+                for (final String h in rtsPetaHariPilih)
+                  _chip(
+                    h == 'Semua' ? 'Semua hari' : h,
+                    widget.hari == h,
+                    h == 'Semua' ? rtsKsMaroon : rtsPetaWarnaHari(h),
+                    () => widget.onUbah(h, widget.frekuensi),
+                  ),
+              ],
+            ),
+          ),
+        if (_terbuka)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              hariSemua
+                  ? 'Frekuensi kunjungan:'
+                  : 'Frekuensi untuk hari ${widget.hari}:',
+              style: const TextStyle(fontSize: 10.5, color: rtsKsTeks2),
+            ),
+          ),
+        if (_terbuka)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: <Widget>[
+                for (final String f in rtsPetaFrekuensiPilih)
+                  _chip(
+                    f == 'Semua' ? 'Semua frekuensi' : f,
+                    widget.frekuensi == f,
+                    f == 'Weekly'
+                        ? rtsPetaWeekly
+                        : (f == 'BW Ganjil'
+                            ? rtsPetaGanjil
+                            : (f == 'BW Genap' ? rtsPetaGenap : rtsKsMaroon)),
+                    () => widget.onUbah(widget.hari, f),
+                  ),
+                if (!hariSemua)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'warna chip = warna hari $warnaHari',
+                      style: const TextStyle(fontSize: 9.5, color: rtsKsTeks2),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 4),
+      ],
+    );
+  }
+}
+
 class RtsPetaCustomerPage extends StatefulWidget {
   const RtsPetaCustomerPage({
     super.key,
@@ -961,48 +1215,17 @@ class _RtsPetaCustomerPageState extends State<RtsPetaCustomerPage> {
 
   /// Mengatur peta supaya seluruh penanda yang tampil masuk ke layar.
   void _aturTampilan() {
-    final List<RtsToko> daftar = _tampil;
+    final List<LatLng> titik = <LatLng>[];
 
-    if (daftar.isEmpty) return;
-
-    double minLat = daftar.first.latitude;
-    double maksLat = daftar.first.latitude;
-    double minLng = daftar.first.longitude;
-    double maksLng = daftar.first.longitude;
-
-    for (final RtsToko t in daftar) {
-      minLat = math.min(minLat, t.latitude);
-      maksLat = math.max(maksLat, t.latitude);
-      minLng = math.min(minLng, t.longitude);
-      maksLng = math.max(maksLng, t.longitude);
+    for (final RtsToko t in _tampil) {
+      if (t.adaTitik) titik.add(t.titik);
     }
 
-    final LatLng pusat = LatLng((minLat + maksLat) / 2, (minLng + maksLng) / 2);
-    final double sebaran = math.max(maksLat - minLat, maksLng - minLng);
-
-    double zoom = 15;
-
-    if (sebaran > 1.5) {
-      zoom = 8;
-    } else if (sebaran > 0.7) {
-      zoom = 9;
-    } else if (sebaran > 0.35) {
-      zoom = 10;
-    } else if (sebaran > 0.18) {
-      zoom = 11;
-    } else if (sebaran > 0.09) {
-      zoom = 12;
-    } else if (sebaran > 0.045) {
-      zoom = 13;
-    } else if (sebaran > 0.02) {
-      zoom = 14;
+    for (final RtsKantor k in _kantor) {
+      if (k.adaTitik) titik.add(k.titik);
     }
 
-    try {
-      _kontrol.move(pusat, zoom);
-    } catch (_) {
-      // peta belum siap: pengaturan tampilan dilewati
-    }
+    rtsPetaAturKamera(_kontrol, titik);
   }
 
   List<RtsToko> get _tampil {
@@ -1318,11 +1541,26 @@ class _RtsPetaCustomerPageState extends State<RtsPetaCustomerPage> {
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
                     'Catatan: $_tanpaTitik toko belum memiliki titik koordinat '
-                    '(latitude/longitude) pada Master Customer, jadi belum dapat '
-                    'tampil di peta. Minta Admin melengkapi titiknya.',
+                    'yang SAH (latitude/longitude kosong, 0, atau salah tulis '
+                    'misalnya 98683) pada Master Customer, jadi belum dapat '
+                    'tampil di peta. Minta Admin melengkapi / memperbaiki '
+                    'titiknya.',
                     style: const TextStyle(fontSize: 11, color: rtsKsKuning),
                   ),
                 ),
+              RtsPetaSaring(
+                hari: _hari,
+                frekuensi: _frekuensi,
+                ringkasan: '${daftar.length} toko tampil',
+                onUbah: (String h, String f) {
+                  setState(() {
+                    _hari = h;
+                    _frekuensi = f;
+                  });
+
+                  _aturTampilan();
+                },
+              ),
               Row(
                 children: <Widget>[
                   Expanded(
@@ -2175,6 +2413,9 @@ class _RtsRadarPageState extends State<RtsRadarPage> {
   Set<String> _sudah = <String>{};
   Position? _posisi;
   int _radius = 500;
+  String _hari = 'Semua';
+  String _frekuensi = 'Semua';
+  bool _saringBuka = true;
   String _pesanLokasi = '';
   int _sumber = 0;
 
@@ -2292,6 +2533,10 @@ class _RtsRadarPageState extends State<RtsRadarPage> {
     final List<MapEntry<RtsToko, double>> daftar = <MapEntry<RtsToko, double>>[];
 
     for (final RtsToko t in _toko) {
+      if (!t.adaTitik) continue;
+      if (!rtsPetaHariCocok(t.hari, _hari)) continue;
+      if (!rtsPetaFrekuensiCocok(t.kunjungan, _frekuensi)) continue;
+
       final double jarak =
           rtsPetaJarakMeter(p.latitude, p.longitude, t.latitude, t.longitude);
 
@@ -2326,6 +2571,34 @@ class _RtsRadarPageState extends State<RtsRadarPage> {
 
       rtsKsPesan(context, e.pesan, galat: true);
     }
+  }
+
+  /// Toko yang lolos penyaring Hari + Frekuensi (tanpa batas jarak).
+  List<RtsToko> get _saring {
+    return _toko.where((RtsToko t) {
+      if (!t.adaTitik) return false;
+      if (!rtsPetaHariCocok(t.hari, _hari)) return false;
+      if (!rtsPetaFrekuensiCocok(t.kunjungan, _frekuensi)) return false;
+
+      return true;
+    }).toList();
+  }
+
+  /// Menampilkan titik saya + seluruh toko yang lolos penyaring.
+  void _aturTampilan() {
+    final List<LatLng> titik = <LatLng>[];
+
+    final Position? p = _posisi;
+
+    if (p != null && rtsPetaTitikSah(p.latitude, p.longitude)) {
+      titik.add(LatLng(p.latitude, p.longitude));
+    }
+
+    for (final RtsToko t in _saring) {
+      titik.add(t.titik);
+    }
+
+    rtsPetaAturKamera(_kontrol, titik);
   }
 
   String _teksRadius() {
@@ -2403,6 +2676,21 @@ class _RtsRadarPageState extends State<RtsRadarPage> {
                     style: const TextStyle(fontSize: 11, color: rtsKsTeks2),
                   ),
                 ),
+              RtsPetaSaring(
+                hari: _hari,
+                frekuensi: _frekuensi,
+                ringkasan: '${dekat.length} toko',
+                terbukaAwal: _saringBuka,
+                onTerbuka: (bool buka) => setState(() => _saringBuka = buka),
+                onUbah: (String h, String f) {
+                  setState(() {
+                    _hari = h;
+                    _frekuensi = f;
+                  });
+
+                  _aturTampilan();
+                },
+              ),
               Text(
                 'Jarak maksimal: ${_teksRadius()} - ${dekat.length} toko ditemukan',
                 style: const TextStyle(
@@ -2444,7 +2732,7 @@ class _RtsRadarPageState extends State<RtsRadarPage> {
           ),
         ),
         SizedBox(
-          height: 210,
+          height: _saringBuka ? 210 : 300,
           child: Stack(
             children: <Widget>[
               FlutterMap(
@@ -2920,6 +3208,10 @@ class _RtsRutePageState extends State<RtsRutePage> {
     return 0;
   }
 
+  /// Jumlah toko yang titik koordinatnya SALAH / kosong pada Master Customer.
+  int get _titikSalah =>
+      _toko.where((RtsToko t) => !t.adaTitik).length;
+
   double _panjangRute(List<RtsToko> rencana) {
     if (rencana.isEmpty) return 0;
 
@@ -2934,6 +3226,8 @@ class _RtsRutePageState extends State<RtsRutePage> {
     }
 
     for (final RtsToko t in rencana) {
+      if (!t.adaTitik) continue;
+
       if (latSebelum != null && lngSebelum != null) {
         total += rtsPetaJarakMeter(latSebelum, lngSebelum, t.latitude, t.longitude);
       }
@@ -2950,52 +3244,18 @@ class _RtsRutePageState extends State<RtsRutePage> {
 
     final RtsKantor? kantor = _kantorDipilih;
 
-    if (kantor != null) titik.add(kantor.titik);
+    if (kantor != null && kantor.adaTitik) titik.add(kantor.titik);
 
     for (final RtsToko t in _rencana) {
-      titik.add(t.titik);
+      if (t.adaTitik) titik.add(t.titik);
     }
 
-    if (titik.isEmpty) return;
-
-    double minLat = titik.first.latitude;
-    double maksLat = titik.first.latitude;
-    double minLng = titik.first.longitude;
-    double maksLng = titik.first.longitude;
-
-    for (final LatLng l in titik) {
-      minLat = math.min(minLat, l.latitude);
-      maksLat = math.max(maksLat, l.latitude);
-      minLng = math.min(minLng, l.longitude);
-      maksLng = math.max(maksLng, l.longitude);
+    // Titik goresan pensil juga ikut ditampilkan bila ada.
+    for (final LatLng l in _goresan) {
+      if (rtsPetaTitikSah(l.latitude, l.longitude)) titik.add(l);
     }
 
-    final LatLng pusat = LatLng((minLat + maksLat) / 2, (minLng + maksLng) / 2);
-    final double sebaran = math.max(maksLat - minLat, maksLng - minLng);
-
-    double zoom = 15;
-
-    if (sebaran > 1.5) {
-      zoom = 8;
-    } else if (sebaran > 0.7) {
-      zoom = 9;
-    } else if (sebaran > 0.35) {
-      zoom = 10;
-    } else if (sebaran > 0.18) {
-      zoom = 11;
-    } else if (sebaran > 0.09) {
-      zoom = 12;
-    } else if (sebaran > 0.045) {
-      zoom = 13;
-    } else if (sebaran > 0.02) {
-      zoom = 14;
-    }
-
-    try {
-      _kontrol.move(pusat, zoom);
-    } catch (_) {
-      // peta belum siap
-    }
+    rtsPetaAturKamera(_kontrol, titik);
   }
 
   Color _warnaToko(RtsToko t) {
@@ -3902,72 +4162,18 @@ class _RtsRutePageState extends State<RtsRutePage> {
                     _aturTampilan();
                   },
                 ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: <Widget>[
-                    for (final String h in rtsPetaHari)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: ChoiceChip(
-                          label: Text(
-                            h,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _hari == h ? Colors.white : rtsKsTeks,
-                            ),
-                          ),
-                          selected: _hari == h,
-                          onSelected: (_) {
-                            setState(() {
-                              _hari = h;
-                              _urutanManual = <String>[];
-                            });
-                            _aturTampilan();
-                          },
-                          selectedColor: rtsKsMaroon,
-                          backgroundColor: Colors.white,
-                          side: BorderSide(
-                            color: _hari == h ? rtsKsMaroon : rtsKsGaris,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 5),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: <Widget>[
-                    for (final String f in rtsPetaFrekuensi)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: ChoiceChip(
-                          label: Text(
-                            f == 'Bi-Weekly Ganjil' ? 'BW Ganjil' : (f == 'Bi-Weekly Genap' ? 'BW Genap' : f),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _frekuensi == f ? Colors.white : rtsKsTeks,
-                            ),
-                          ),
-                          selected: _frekuensi == f,
-                          onSelected: (_) {
-                            setState(() {
-                              _frekuensi = f;
-                              _urutanManual = <String>[];
-                            });
-                            _aturTampilan();
-                          },
-                          selectedColor: rtsPetaGanjil,
-                          backgroundColor: Colors.white,
-                          side: BorderSide(
-                            color: _frekuensi == f ? rtsPetaGanjil : rtsKsGaris,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+              RtsPetaSaring(
+                hari: _hari,
+                frekuensi: _frekuensi,
+                onUbah: (String h, String f) {
+                  setState(() {
+                    _hari = h;
+                    _frekuensi = f;
+                    _urutanManual = <String>[];
+                  });
+
+                  _aturTampilan();
+                },
               ),
               const SizedBox(height: 4),
               Row(
@@ -3998,6 +4204,19 @@ class _RtsRutePageState extends State<RtsRutePage> {
             ],
           ),
         ),
+        if (_titikSalah > 0)
+          Container(
+            width: double.infinity,
+            color: const Color(0xfffff4e0),
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+            child: Text(
+              'Catatan: $_titikSalah toko memiliki titik koordinat yang SALAH '
+              'atau kosong pada Master Customer (misalnya 98683), jadi tidak '
+              'tampil di peta dan tidak ikut dihitung panjang rute. Minta ADMIN '
+              'membetulkan titiknya di menu Master Customer.',
+              style: const TextStyle(fontSize: 11, color: rtsKsKuning),
+            ),
+          ),
         if (_pensil)
           Container(
             width: double.infinity,

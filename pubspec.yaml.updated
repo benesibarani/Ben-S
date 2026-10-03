@@ -67,7 +67,25 @@ publish_to: 'none'
 #       lalu membuka kartunya begitu server menyatakan PRO.
 #     - Kartu menu PRO juga diserahkan data akun yang paling baru, sehingga
 #       halaman Kasir / Peta memakai keadaan yang sama dengan Beranda.
-version: 1.2.7+10
+#   Kode 11 (1.2.8) memuat MENU BARU GSP & PEMBENAHAN PETA:
+#     - MENU UTAMA bertambah GSP (Galan Strategist Partner) dengan dua
+#       pilihan: TAMBAHKAN GSP (formulir seperti Pengajuan Baru + FOTO KTP,
+#       FOTO LUAR TOKO, dan FOTO DALAM TOKO) dan HAPUS GSP (seperti Hapus
+#       Toko pada Pengajuan Baru). Keduanya dikirim ke tabel pengajuan_gsp
+#       lewat berkas server baru api/request_create_gsp.php, lalu diperiksa
+#       ADMIN / ASS pada menu Pengajuan seperti pengajuan biasa.
+#     - MENU PRO dan MENU UTAMA pada Beranda dapat DIMINIMIZE (dilipat) supaya
+#       tampilan HP ringkas. Pilihan lipatan diingat di HP.
+#     - PENYARING peta DISERAGAMKAN pada Peta Customer, Radar Customer, dan
+#       Rute Plan: HARI (Semua hari / Senin - Sabtu) dan FREKUENSI (Semua
+#       frekuensi / Weekly / BW Ganjil / BW Genap), panelnya dapat DIMINIMIZE
+#       supaya peta tampil lebih luas.
+#     - GALAT PETA RUTE PLAN diperbaiki. Penyebabnya titik koordinat yang
+#       salah tulis pada Master Customer (misalnya bujur 98683) sehingga peta
+#       gagal dibuka ("east <= maxLongitude") dan panjang rute melonjak
+#       (12390,7 km). Kini titik yang tidak sah DISARING lebih dahulu, dan
+#       jumlahnya diberitahukan pada layar supaya dapat dibetulkan ADMIN.
+version: 1.2.8+11
 
 environment:
   sdk: '>=3.5.0 <4.0.0'

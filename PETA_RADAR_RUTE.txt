@@ -1,12 +1,77 @@
 ==============================================================================
- RTS PANEL BY BENE - TIGA MENU PETA (PUTARAN 12)
+ RTS PANEL BY BENE - TIGA MENU PETA
  PETA CUSTOMER - RADAR CUSTOMER - RUTE PLAN
  Berkas : PETA_RADAR_RUTE.txt
- Tanggal : 3 Oktober 2026
+ Putaran 15 - 4 Oktober 2026
 ==============================================================================
+
+ BAGIAN 0  APA YANG BARU PADA PUTARAN 15 (WAJIB DIBACA)
+
+   1. PENYARING SERAGAM DI KETIGA HALAMAN PETA.
+      Peta Customer, Radar Customer, dan Rute Plan sekarang memakai panel
+      penyaring yang SAMA persis:
+
+          HARI       : Semua hari | Senin | Selasa | Rabu | Kamis | Jumat |
+                       Sabtu
+          FREKUENSI  : Semua frekuensi | Weekly | BW Ganjil | BW Genap
+
+      Sebelumnya hanya Rute Plan yang punya penyaring Hari & Frekuensi,
+      sedangkan Radar Customer belum memilikinya dan Peta Customer memakai
+      panel yang berbeda. Sekarang ketiganya sama, sehingga hasil yang
+      terlihat di peta selalu cocok satu dengan yang lain.
+
+   2. PANEL PENYARING DAPAT DIMINIMIZE (PETA TAMPIL LEBIH LUAS).
+      Pada judul panel ada tombol:
+          MINIMIZE  -> melipat panel supaya peta tampil lebih luas
+          FILTER    -> membuka panel kembali
+      Saat terlipat, judulnya berubah menjadi ringkasan pilihan, misalnya:
+          "Hari: Senin  |  Frekuensi: BW Ganjil"
+      Pada RADAR CUSTOMER, tinggi peta otomatis bertambah dari 210 menjadi
+      300 titik saat panel dilipat, jadi peta memang terlihat lebih besar.
+
+   3. GALAT PETA RUTE PLAN DIPERBAIKI (layar merah / "east <= maxLongitude").
+
+      Pesan galat yang muncul:
+          Failed assertion: line 117 pos 16: 'east <= maxLongitude'
+          Terjadi kesalahan pada tampilan aplikasi
+          36 toko - panjang rute +-12390,7 km
+
+      SEBABNYA: ADA TITIK KOORDINAT YANG SALAH TULIS PADA MASTER CUSTOMER.
+      Untuk Kota Medan, titik yang benar kira-kira lintang 3,5 dan bujur 98,6.
+      Batas yang sah: lintang -90 sampai 90, bujur -180 sampai 180. Bila satu
+      toko saja terisi bujur 98683 (kurang tanda titik desimal / kelebihan
+      angka), maka:
+          - peta menerima angka di luar batas Bumi lalu GAGAL DIBUKA -
+            itulah tulisan "east <= maxLongitude" dan layar merah;
+          - panjang rute dihitung dari titik liar itu sehingga muncul angka
+            ngawur +-12390,7 km (angka 98683 itu sendiri tampak pada layar).
+
+      PENAWARNYA (sudah dipasang):
+          a. Setiap titik DIPERIKSA lebih dahulu (rtsPetaTitikSah). Titik
+             kosong, 0, atau di luar batas Bumi DIBUANG sebelum masuk peta,
+             jadi peta tidak pernah lagi menerima angka liar.
+          b. Ketiga peta memakai satu cara pengaturan kamera yang sama dan
+             aman (rtsPetaAturKamera).
+          c. Peta Customer dan Rute Plan menampilkan CATATAN KUNING berisi
+             jumlah toko yang titiknya salah, supaya ADMIN dapat membetulkan
+             di menu Master Customer.
+          d. Panjang rute hanya dihitung dari titik yang sah, sehingga
+             angkanya kembali wajar.
+
+      CARA MEMBETULKAN TITIK TOKO:
+          Menu Utama - Master Customer - cari toko yang disebut pada catatan
+          kuning - perbaiki kolom latitude / longitude. Cara lain: menu
+          Pengajuan - Ganti Alamat - centang "Sesuai koordinat sekarang" saat
+          berdiri di depan toko.
+
+   4. Penanda kode aplikasi pada putaran ini:  RTS-2026-10-03-16
+      (nomor versi 1.2.8, kode 11). Periksa pada menu Pengaturan.
 
  Isi berkas ini:
 
+ Isi berkas ini:
+
+   BAGIAN 0  APA YANG BARU PADA PUTARAN 15 (penyaring seragam + galat peta)
    BAGIAN 1  APA YANG BARU (ringkas)
    BAGIAN 2  CARA MEMASANG (3 langkah, +-10 menit)
    BAGIAN 3  PETA CUSTOMER

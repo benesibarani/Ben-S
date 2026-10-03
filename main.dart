@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -965,7 +966,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-03-15';
+const String rtsKodeAplikasi = 'RTS-2026-10-03-16';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -1804,11 +1805,18 @@ class _DashboardPageState extends State<DashboardPage>
   /// disetujui ADMIN, walaupun data akun pada sesi masih yang lama.
   bool _proLuring = false;
 
+  /// Menu Utama dan Menu PRO di Beranda dapat dilipat (MINIMIZE) supaya
+  /// tampilan HP tidak terlalu penuh. Pilihan ini diingat di HP.
+  bool _menuUtamaTerbuka = true;
+  bool _menuProTerbuka = true;
+
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addObserver(this);
+
+    unawaited(_muatLipatMenu());
 
     // Dijalankan setelah tampilan pertama selesai dibangun, supaya pemeriksaan
     // versi dan laporan cuaca tidak menghambat pembukaan beranda.
@@ -1840,6 +1848,46 @@ class _DashboardPageState extends State<DashboardPage>
     if (keadaan != AppLifecycleState.resumed) return;
 
     unawaited(_periksaHakPro());
+  }
+
+  /// Membaca pilihan lipatan menu yang tersimpan di HP.
+  Future<void> _muatLipatMenu() async {
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      final bool utama = prefs.getBool('rts_lipat_menu_utama') ?? true;
+      final bool pro = prefs.getBool('rts_lipat_menu_pro') ?? true;
+
+      if (!mounted) return;
+
+      setState(() {
+        _menuUtamaTerbuka = utama;
+        _menuProTerbuka = pro;
+      });
+    } catch (_) {
+      // Simpanan tidak terbaca: menu tetap ditampilkan seluruhnya.
+    }
+  }
+
+  /// Tombol MINIMIZE / BUKA pada judul bagian menu.
+  Widget _tombolLipat({required bool terbuka, required VoidCallback onTap}) {
+    return TextButton.icon(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        foregroundColor: rtsMaroon,
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        minimumSize: const Size(0, 32),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      icon: Icon(
+        terbuka ? Icons.unfold_less_rounded : Icons.unfold_more_rounded,
+        size: 17,
+      ),
+      label: Text(
+        terbuka ? 'MINIMIZE' : 'BUKA',
+        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800),
+      ),
+    );
   }
 
   /// Memeriksa hak PRO dari simpanan di HP / server, lalu menyimpan hasilnya
@@ -1930,20 +1978,67 @@ class _DashboardPageState extends State<DashboardPage>
                       const SizedBox(height: 14),
                       const RtsBannerIklan(),
                       const SizedBox(height: 18),
-                      const RtsSectionTitle('Menu Utama'),
-                      const SizedBox(height: 10),
-                      _buildMenuGrid(context, _menuUtama),
-                      const SizedBox(height: 20),
-                      const RtsSectionTitle('Menu PRO'),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Fitur Barang Bawaan, Kasir, Piutang, Peta Customer, '
-                        'Radar Customer, Rute Plan, dan Printer - tersedia '
-                        'untuk akun PRO.',
-                        style: TextStyle(color: rtsTextSecondary, fontSize: 12),
+                      RtsSectionTitle(
+                        'Menu Utama',
+                        trailing: _tombolLipat(
+                          terbuka: _menuUtamaTerbuka,
+                          onTap: () {
+                            final bool baru = !_menuUtamaTerbuka;
+
+                            setState(() => _menuUtamaTerbuka = baru);
+                            unawaited(rtsSimpanLipatMenu('utama', baru));
+                          },
+                        ),
                       ),
                       const SizedBox(height: 10),
-                      _buildMenuGrid(context, _menuPro),
+                      if (_menuUtamaTerbuka)
+                        _buildMenuGrid(context, _menuUtama)
+                      else
+                        const Text(
+                          'Menu Utama disembunyikan agar Beranda lebih ringkas. '
+                          'Tekan BUKA untuk menampilkan kembali.',
+                          style: TextStyle(
+                            color: rtsTextSecondary,
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
+                      const SizedBox(height: 20),
+                      RtsSectionTitle(
+                        'Menu PRO',
+                        trailing: _tombolLipat(
+                          terbuka: _menuProTerbuka,
+                          onTap: () {
+                            final bool baru = !_menuProTerbuka;
+
+                            setState(() => _menuProTerbuka = baru);
+                            unawaited(rtsSimpanLipatMenu('pro', baru));
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      if (_menuProTerbuka) ...[
+                        const Text(
+                          'Fitur Barang Bawaan, Kasir, Piutang, Peta Customer, '
+                          'Radar Customer, Rute Plan, dan Printer - tersedia '
+                          'untuk akun PRO.',
+                          style: TextStyle(
+                            color: rtsTextSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildMenuGrid(context, _menuPro),
+                      ] else
+                        const Text(
+                          'Menu PRO disembunyikan agar Beranda lebih ringkas. '
+                          'Tekan BUKA untuk menampilkan kembali.',
+                          style: TextStyle(
+                            color: rtsTextSecondary,
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
                       const SizedBox(height: 18),
                       const RtsIklanAsli(),
                       _buildFooterInfo(),
@@ -2187,6 +2282,11 @@ class _DashboardPageState extends State<DashboardPage>
       title: 'Pengajuan',
       subtitle: 'Ajukan & tinjau',
       icon: Icons.assignment_outlined,
+    ),
+    _MenuData(
+      title: 'GSP',
+      subtitle: 'Galan Strategist Partner',
+      icon: Icons.handshake_outlined,
     ),
     _MenuData(
       title: 'Notifikasi',
@@ -2573,6 +2673,15 @@ class _DashboardPageState extends State<DashboardPage>
       return;
     }
 
+    if (menu == 'GSP') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => GspMenuPage(user: user, token: token),
+        ),
+      );
+      return;
+    }
+
     if (menu == 'Barang Bawaan') {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -2744,6 +2853,20 @@ class _DashboardPageState extends State<DashboardPage>
         (route) => false,
       );
     }
+  }
+}
+
+/// Mengingat pilihan lipatan menu pada Beranda (Menu Utama / Menu PRO).
+Future<void> rtsSimpanLipatMenu(String bagian, bool terbuka) async {
+  try {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    await prefs.setBool(
+      bagian == 'pro' ? 'rts_lipat_menu_pro' : 'rts_lipat_menu_utama',
+      terbuka,
+    );
+  } catch (_) {
+    // Gagal menyimpan bukan masalah besar: menu tetap dapat dipakai.
   }
 }
 
@@ -7160,6 +7283,197 @@ class RequestPageData {
 /* HALAMAN DAFTAR PENGAJUAN                                                   */
 /* ------------------------------------------------------------------------- */
 
+/* ------------------------------------------------------------------------- */
+/* GSP - GALAN STRATEGIST PARTNER                                            */
+/* ------------------------------------------------------------------------- */
+
+/// Menu GSP: dua pilihan, yaitu menambah GSP baru atau menghapus GSP
+/// (mengembalikan GSP menjadi toko REGULER). Kedua pengajuan dikirim ke ADMIN
+/// dan ASS melalui menu Pengajuan, sama seperti Pengajuan Baru biasa.
+class GspMenuPage extends StatelessWidget {
+  const GspMenuPage({super.key, required this.user, required this.token});
+
+  final RtsUser user;
+  final String token;
+
+  Future<void> _buka(BuildContext context, {required bool tambah}) async {
+    final bool? terkirim = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => RequestFormPage(
+          user: user,
+          token: token,
+          gsp: true,
+          gspJenis: tambah ? 'PENAMBAHAN' : 'PENGHAPUSAN',
+        ),
+      ),
+    );
+
+    if (terkirim == true && context.mounted) {
+      rtsShowMessage(
+        context,
+        'Pengajuan GSP sudah dikirim ke ADMIN dan ASS.',
+        success: true,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          const RtsBackground(overlayOpacity: 0.93),
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 16, 6),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.arrow_back_rounded,
+                          color: rtsTextPrimary,
+                        ),
+                      ),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'GSP',
+                              style: TextStyle(
+                                color: rtsTextPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              'Galan Strategist Partner',
+                              style: TextStyle(
+                                color: rtsTextSecondary,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 6, 20, 28),
+                    children: [
+                      _kartu(
+                        context,
+                        judul: 'Tambahkan GSP',
+                        keterangan: 'Usulkan toko dari Master Customer menjadi '
+                            'GSP. Wajib melampirkan foto KTP, foto luar toko, '
+                            'dan foto dalam toko.',
+                        ikon: Icons.add_business_rounded,
+                        onTap: () => _buka(context, tambah: true),
+                      ),
+                      const SizedBox(height: 13),
+                      _kartu(
+                        context,
+                        judul: 'Hapus GSP',
+                        keterangan: 'Usulkan GSP dikembalikan menjadi toko '
+                            'REGULER. Caranya sama seperti Hapus Toko pada '
+                            'Pengajuan Baru.',
+                        ikon: Icons.remove_circle_outline_rounded,
+                        onTap: () => _buka(context, tambah: false),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Pengajuan akan diperiksa ADMIN dan ASS pada menu '
+                        'Pengajuan. Sesudah disetujui, status GSP pada Master '
+                        'Customer berubah dengan sendirinya.',
+                        style: TextStyle(
+                          color: rtsTextSecondary,
+                          fontSize: 11.5,
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      const RtsIklanAsli(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _kartu(
+    BuildContext context, {
+    required String judul,
+    required String keterangan,
+    required IconData ikon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.96),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: rtsCardBorder),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(0xfffaecee),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(ikon, color: rtsMaroon, size: 24),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      judul,
+                      style: const TextStyle(
+                        color: rtsTextPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      keterangan,
+                      style: const TextStyle(
+                        color: rtsTextSecondary,
+                        fontSize: 11.5,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: rtsTextSecondary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class RequestListPage extends StatefulWidget {
   const RequestListPage({
     super.key,
@@ -9503,6 +9817,8 @@ class RequestFormPage extends StatefulWidget {
     required this.token,
     this.customer,
     this.jenisAwal,
+    this.gsp = false,
+    this.gspJenis = 'PENAMBAHAN',
   });
 
   final RtsUser user;
@@ -9513,6 +9829,13 @@ class RequestFormPage extends StatefulWidget {
 
   /// Jenis awal yang dipilih, misalnya saat datang dari detail customer.
   final String? jenisAwal;
+
+  /// Mode GSP: isian memakai formulir GSP (foto KTP, luar toko, dalam toko)
+  /// dan dikirim ke api/request_create_gsp.php (tabel pengajuan_gsp).
+  final bool gsp;
+
+  /// PENAMBAHAN = Tambahkan GSP, PENGHAPUSAN = Hapus GSP.
+  final String gspJenis;
 
   @override
   State<RequestFormPage> createState() => _RequestFormPageState();
@@ -9551,6 +9874,20 @@ class _RequestFormPageState extends State<RequestFormPage> {
 
   bool menyimpan = false;
 
+  /// Penanda mode GSP (Tambahkan GSP / Hapus GSP).
+  bool get modeGsp => widget.gsp;
+
+  bool get gspTambah =>
+      widget.gsp && widget.gspJenis.toUpperCase() != 'PENGHAPUSAN';
+
+  /// Foto GSP yang dilampirkan: KTP, luar toko, dan dalam toko.
+  XFile? fotoKtp;
+  XFile? fotoLuar;
+  XFile? fotoDalam;
+
+  final TextEditingController nomorHpController = TextEditingController();
+  final ImagePicker pemilihFoto = ImagePicker();
+
   bool get adaCustomer => customer != null;
 
   @override
@@ -9569,6 +9906,7 @@ class _RequestFormPageState extends State<RequestFormPage> {
     alamatBaruController.dispose();
     picController.dispose();
     alasanController.dispose();
+    nomorHpController.dispose();
     super.dispose();
   }
 
@@ -9643,7 +9981,15 @@ class _RequestFormPageState extends State<RequestFormPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _CustomerPickerSheet(api: api),
+      builder: (_) => _CustomerPickerSheet(
+        api: api,
+        tipe: modeGsp ? (gspTambah ? 'REGULER' : 'GSP') : '',
+        judul: modeGsp
+            ? (gspTambah
+                ? 'Pilih Toko untuk Dijadikan GSP'
+                : 'Pilih Toko GSP yang Dihapus')
+            : 'Pilih Toko',
+      ),
     );
 
     if (dipilih == null || !mounted) return;
@@ -9856,6 +10202,11 @@ class _RequestFormPageState extends State<RequestFormPage> {
   Future<void> _kirim() async {
     FocusScope.of(context).unfocus();
 
+    if (modeGsp) {
+      await _kirimGsp();
+      return;
+    }
+
     final Customer? data = customer;
     final String alasan = alasanController.text.trim();
     final String namaBaru = namaBaruController.text.trim();
@@ -9968,6 +10319,164 @@ class _RequestFormPageState extends State<RequestFormPage> {
     }
   }
 
+  /// Mengirim pengajuan GSP beserta foto KTP, luar toko, dan dalam toko.
+  ///
+  /// Berkas dikirim sebagai form-data (multipart) ke
+  /// api/request_create_gsp.php, lalu disimpan pada tabel pengajuan_gsp.
+  Future<void> _kirimGsp() async {
+    final Customer? data = customer;
+
+    if (data == null) {
+      rtsShowMessage(context, 'Pilih dulu toko pada kolom Nama Toko.');
+      return;
+    }
+
+    if (gspTambah) {
+      if (picController.text.trim().isEmpty) {
+        rtsShowMessage(context, 'Nama PIC (penanggung jawab) wajib diisi.');
+        return;
+      }
+
+      if (nomorHpController.text.trim().isEmpty) {
+        rtsShowMessage(context, 'Nomor HP PIC wajib diisi.');
+        return;
+      }
+
+      if (lintang == null || bujur == null) {
+        rtsShowMessage(
+          context,
+          'Titik lokasi belum terbaca. Centang "Sesuai koordinat sekarang" '
+          'lalu tunggu sampai titik terbaca.',
+        );
+        return;
+      }
+
+      if (fotoKtp == null || fotoLuar == null || fotoDalam == null) {
+        rtsShowMessage(
+          context,
+          'Foto KTP, foto luar toko, dan foto dalam toko wajib dilampirkan.',
+        );
+        return;
+      }
+    }
+
+    setState(() => menyimpan = true);
+
+    try {
+      final Uri alamatGsp = Uri.parse(
+        '${RtsConfig.baseUrl}/request_create_gsp.php',
+      );
+
+      final http.MultipartRequest permintaan =
+          http.MultipartRequest('POST', alamatGsp);
+
+      permintaan.headers['Accept'] = 'application/json';
+      permintaan.headers['Authorization'] = 'Bearer ${widget.token}';
+
+      permintaan.fields['jenis'] = gspTambah ? 'PENAMBAHAN' : 'PENGHAPUSAN';
+      permintaan.fields['id_customer'] = data.idCustomer;
+      permintaan.fields['nama_toko'] = data.namaToko;
+      permintaan.fields['alamat'] = alamatBaruController.text.trim().isEmpty
+          ? data.alamat
+          : alamatBaruController.text.trim();
+      permintaan.fields['pic'] = picController.text.trim();
+      permintaan.fields['nomor_hp'] = nomorHpController.text.trim();
+      permintaan.fields['koordinat'] =
+          (lintang != null && bujur != null) ? '$lintang,$bujur' : '';
+      permintaan.fields['alasan'] = alasanController.text.trim();
+
+      if (gspTambah) {
+        permintaan.files.add(
+          await http.MultipartFile.fromPath(
+            'foto_ktp',
+            fotoKtp!.path,
+            filename: 'foto_ktp.jpg',
+          ),
+        );
+        permintaan.files.add(
+          await http.MultipartFile.fromPath(
+            'foto_luar',
+            fotoLuar!.path,
+            filename: 'foto_luar.jpg',
+          ),
+        );
+        permintaan.files.add(
+          await http.MultipartFile.fromPath(
+            'foto_dalam',
+            fotoDalam!.path,
+            filename: 'foto_dalam.jpg',
+          ),
+        );
+      }
+
+      final http.StreamedResponse aliran =
+          await permintaan.send().timeout(const Duration(seconds: 120));
+
+      final String isi = await aliran.stream.bytesToString();
+
+      Map<String, dynamic> balasan = <String, dynamic>{};
+
+      if (isi.trim().isNotEmpty) {
+        try {
+          final dynamic urai = jsonDecode(isi);
+
+          if (urai is Map) balasan = urai.cast<String, dynamic>();
+        } catch (_) {
+          // Balasan bukan JSON: dipakai keterangan bawaan di bawah.
+        }
+      }
+
+      if (!mounted) return;
+      setState(() => menyimpan = false);
+
+      if (aliran.statusCode < 200 || aliran.statusCode >= 300) {
+        rtsShowMessage(
+          context,
+          (balasan['message'] ??
+                  'Pengajuan GSP gagal dikirim (kode ${aliran.statusCode}).')
+              .toString(),
+        );
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Pengajuan GSP Terkirim',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+          content: Text(
+            (balasan['message'] ??
+                    'Pengajuan GSP berhasil dikirim dan menunggu pemeriksaan.')
+                .toString(),
+            style: const TextStyle(fontSize: 13.5),
+          ),
+          actions: [
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: rtsMaroon),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => menyimpan = false);
+      rtsShowMessage(
+        context,
+        'Terjadi gangguan saat mengirim pengajuan GSP. Periksa jaringan '
+        'internet lalu coba lagi.',
+      );
+    }
+  }
+
   /* ------------------------------------------------------------------ tampilan */
 
   @override
@@ -9986,18 +10495,38 @@ class _RequestFormPageState extends State<RequestFormPage> {
                     children: [
                       _buildRingkasanPengirim(),
                       const SizedBox(height: 18),
-                      const RtsSectionTitle('Jenis Pengajuan'),
-                      const SizedBox(height: 11),
-                      _buildJenisCard(),
-                      const SizedBox(height: 18),
-                      const RtsSectionTitle('Data Toko'),
-                      const SizedBox(height: 11),
-                      _buildDataCard(),
-                      if (adaCustomer) ...[
-                        const SizedBox(height: 18),
-                        const RtsSectionTitle('Perubahan yang Diajukan'),
+                      if (modeGsp) ...[
+                        RtsSectionTitle(
+                          gspTambah
+                              ? 'Toko yang Diusulkan Menjadi GSP'
+                              : 'Toko GSP yang Diajukan Dihapus',
+                        ),
                         const SizedBox(height: 11),
-                        _buildPerubahanCard(),
+                        _buildKotakPilihToko(),
+                        if (adaCustomer) ...[
+                          const SizedBox(height: 14),
+                          _buildInfoTerkunci(customer!),
+                        ],
+                        const SizedBox(height: 18),
+                        RtsSectionTitle(
+                          gspTambah ? 'Data GSP Baru' : 'Data GSP',
+                        ),
+                        const SizedBox(height: 11),
+                        _buildKartuGsp(),
+                      ] else ...[
+                        const RtsSectionTitle('Jenis Pengajuan'),
+                        const SizedBox(height: 11),
+                        _buildJenisCard(),
+                        const SizedBox(height: 18),
+                        const RtsSectionTitle('Data Toko'),
+                        const SizedBox(height: 11),
+                        _buildDataCard(),
+                        if (adaCustomer) ...[
+                          const SizedBox(height: 18),
+                          const RtsSectionTitle('Perubahan yang Diajukan'),
+                          const SizedBox(height: 11),
+                          _buildPerubahanCard(),
+                        ],
                       ],
                       const SizedBox(height: 18),
                       const RtsSectionTitle('Keterangan'),
@@ -10844,6 +11373,279 @@ class _RequestFormPageState extends State<RequestFormPage> {
 
   /* ------------------------------------------------------------- keterangan */
 
+  /// Kartu isian khusus GSP: PIC, nomor HP, alamat, titik lokasi, dan foto.
+  Widget _buildKartuGsp() {
+    final Customer? data = customer;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        RtsCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                gspTambah
+                    ? 'Isi data GSP baru (toko pengganti). Foto KTP, foto luar '
+                        'toko, dan foto dalam toko wajib dilampirkan.'
+                    : 'Toko GSP ini akan diusulkan kembali menjadi toko '
+                        'REGULER. Foto tidak diperlukan.',
+                style: const TextStyle(
+                  color: rtsTextSecondary,
+                  fontSize: 11.5,
+                  height: 1.45,
+                ),
+              ),
+              if (data != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Toko: ${data.namaToko} - ${data.idCustomer}',
+                  style: const TextStyle(
+                    color: rtsTextPrimary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 13),
+              _buildField(
+                controller: picController,
+                label: 'Nama PIC',
+                hint: 'Penanggung jawab toko',
+                icon: Icons.person_outline_rounded,
+                maxLines: 1,
+              ),
+              const SizedBox(height: 12),
+              _buildField(
+                controller: nomorHpController,
+                label: 'Nomor HP PIC',
+                hint: '08xxxxxxxxxx',
+                icon: Icons.phone_outlined,
+                maxLines: 1,
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 12),
+              _buildField(
+                controller: alamatBaruController,
+                label: 'Alamat Lengkap',
+                hint: 'Jalan, nomor, kelurahan',
+                icon: Icons.location_on_outlined,
+                maxLines: 2,
+                readOnly: pakaiKoordinat,
+                suffix: pakaiKoordinat
+                    ? null
+                    : IconButton(
+                        tooltip: 'Isi alamat dari titik lokasi sekarang',
+                        onPressed: sedangCariLokasi
+                            ? null
+                            : () => _ubahPakaiKoordinat(true),
+                        icon: const Icon(
+                          Icons.my_location_rounded,
+                          color: rtsMaroon,
+                          size: 21,
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 12),
+              _buildCentangKoordinat(),
+              const SizedBox(height: 12),
+              _buildPanelLokasi(),
+            ],
+          ),
+        ),
+        if (gspTambah) ...[
+          const SizedBox(height: 16),
+          const RtsSectionTitle('Foto GSP'),
+          const SizedBox(height: 11),
+          RtsCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Ketiga foto wajib diisi sebelum pengajuan dapat dikirim.',
+                  style: TextStyle(
+                    color: rtsTextSecondary,
+                    fontSize: 11.5,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _barisFotoGsp(label: 'Foto KTP', kunci: 'ktp', berkas: fotoKtp),
+                _barisFotoGsp(
+                  label: 'Foto Luar Toko',
+                  kunci: 'luar',
+                  berkas: fotoLuar,
+                ),
+                _barisFotoGsp(
+                  label: 'Foto Dalam Toko',
+                  kunci: 'dalam',
+                  berkas: fotoDalam,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Satu baris lampiran foto GSP.
+  Widget _barisFotoGsp({
+    required String label,
+    required String kunci,
+    required XFile? berkas,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Container(
+        padding: const EdgeInsets.all(11),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.97),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: berkas == null ? rtsCardBorder : rtsGreen,
+            width: berkas == null ? 1 : 1.4,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: const Color(0xfff8f4ef),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: berkas == null
+                  ? const Icon(
+                      Icons.photo_camera_outlined,
+                      color: rtsTextSecondary,
+                      size: 22,
+                    )
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        File(berkas.path),
+                        fit: BoxFit.cover,
+                        width: 46,
+                        height: 46,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: rtsTextPrimary,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    berkas == null
+                        ? 'Belum ada foto'
+                        : 'Foto siap dikirim',
+                    style: TextStyle(
+                      color: berkas == null ? rtsTextSecondary : rtsGreen,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: menyimpan
+                  ? null
+                  : () => unawaited(_ambilFotoGsp(kunci, label)),
+              child: Text(
+                berkas == null ? 'AMBIL' : 'GANTI',
+                style: const TextStyle(fontSize: 11.5),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Mengambil satu foto GSP dari kamera atau galeri.
+  Future<void> _ambilFotoGsp(String kunci, String label) async {
+    final String? pilihan = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Text(
+                label.toUpperCase(),
+                style: const TextStyle(
+                  color: rtsTextPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_rounded, color: rtsMaroon),
+              title: const Text('Ambil dari Kamera'),
+              onTap: () => Navigator.of(sheetContext).pop('kamera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded, color: rtsMaroon),
+              title: const Text('Pilih dari Galeri'),
+              onTap: () => Navigator.of(sheetContext).pop('galeri'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (pilihan == null) return;
+
+    try {
+      final XFile? berkas = await pemilihFoto.pickImage(
+        source: pilihan == 'kamera' ? ImageSource.camera : ImageSource.gallery,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 75,
+      );
+
+      if (berkas == null || !mounted) return;
+
+      setState(() {
+        if (kunci == 'ktp') {
+          fotoKtp = berkas;
+        } else if (kunci == 'luar') {
+          fotoLuar = berkas;
+        } else {
+          fotoDalam = berkas;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      rtsShowMessage(
+        context,
+        'Tidak dapat membuka kamera/galeri. Periksa izin aplikasi pada '
+        'Pengaturan HP.',
+      );
+    }
+  }
+
   Widget _buildKeteranganCard() {
     return RtsCard(
       child: Column(
@@ -11102,6 +11904,7 @@ class _RequestFormPageState extends State<RequestFormPage> {
     required IconData icon,
     int maxLines = 1,
     bool readOnly = false,
+    TextInputType? keyboardType,
     Widget? suffix,
     String? catatan,
   }) {
@@ -11112,6 +11915,7 @@ class _RequestFormPageState extends State<RequestFormPage> {
           controller: controller,
           maxLines: maxLines,
           readOnly: readOnly,
+          keyboardType: keyboardType,
           style: TextStyle(
             fontSize: 14.5,
             color: readOnly ? rtsTextSecondary : rtsTextPrimary,
@@ -11166,9 +11970,19 @@ class _RequestFormPageState extends State<RequestFormPage> {
 
 /// Lembar pencarian toko. Mengembalikan customer yang dipilih, atau null.
 class _CustomerPickerSheet extends StatefulWidget {
-  const _CustomerPickerSheet({required this.api});
+  const _CustomerPickerSheet({
+    required this.api,
+    this.tipe = '',
+    this.judul = 'Pilih Toko',
+  });
 
   final ApiClient api;
+
+  /// Penyaring tipe customer: REGULER | GSP. Kosong berarti semua.
+  final String tipe;
+
+  /// Judul lembar pemilih toko.
+  final String judul;
 
   @override
   State<_CustomerPickerSheet> createState() => _CustomerPickerSheetState();
@@ -11210,6 +12024,7 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
         'q': kataKunci.trim(),
         'page': '1',
         'limit': '30',
+        if (widget.tipe.isNotEmpty) 'tipe': widget.tipe,
       });
 
       if (!mounted) return;
@@ -11258,27 +12073,30 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
               ),
             ),
             const SizedBox(height: 14),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  Icon(Icons.storefront_outlined, color: rtsMaroon, size: 21),
-                  SizedBox(width: 10),
+                  const Icon(Icons.storefront_outlined,
+                      color: rtsMaroon, size: 21),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Pilih Toko',
-                          style: TextStyle(
+                          widget.judul,
+                          style: const TextStyle(
                             color: rtsTextPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                         Text(
-                          'Cari berdasarkan nama toko, ID customer, atau salesman',
-                          style: TextStyle(
+                          widget.tipe.isEmpty
+                              ? 'Cari berdasarkan nama toko, ID customer, atau salesman'
+                              : 'Hanya menampilkan tipe ${widget.tipe} - cari nama toko atau ID customer',
+                          style: const TextStyle(
                             color: rtsTextSecondary,
                             fontSize: 11.5,
                           ),
@@ -11286,7 +12104,7 @@ class _CustomerPickerSheetState extends State<_CustomerPickerSheet> {
                       ],
                     ),
                   ),
-                  Icon(Icons.lock_outline_rounded,
+                  const Icon(Icons.lock_outline_rounded,
                       color: rtsTextSecondary, size: 18),
                 ],
               ),

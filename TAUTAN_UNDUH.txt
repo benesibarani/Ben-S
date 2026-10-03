@@ -1,4 +1,62 @@
-PALING BARU - PUTARAN 14: MENU PRO TERBUKA WALAU DATABASE SUDAH PRO
+PALING BARU - PUTARAN 15: MENU GSP + PETA DIPERBAIKI + MENU DAPAT DIMINIMIZE
+------------------------------------------------------------------------
+Isi putaran ini (4 permintaan Bapak):
+  1. MENU BARU GSP (Galan Strategist Partner) pada MENU UTAMA:
+       - TAMBAHKAN GSP : formulir seperti Pengajuan Baru + FOTO KTP,
+                         FOTO LUAR TOKO, dan FOTO DALAM TOKO.
+       - HAPUS GSP     : seperti Hapus Toko (pilih toko, tulis alasan).
+     Keduanya disimpan ke tabel pengajuan_gsp (di situlah kolom foto berada),
+     lalu diperiksa ADMIN/ASS pada menu Pengajuan seperti biasa.
+  2. MENU PRO dan MENU UTAMA pada Beranda dapat DIMINIMIZE (dilipat) supaya
+     tampilan HP ringkas. Pilihan lipatan diingat di HP.
+  3. PENYARING PETA DISERAGAMKAN pada Peta Customer, Radar Customer, dan
+     Rute Plan: HARI (Semua hari / Senin - Sabtu) dan FREKUENSI (Semua
+     frekuensi / Weekly / BW Ganjil / BW Genap). Panel penyaring dapat
+     DIMINIMIZE supaya peta tampil lebih luas.
+  4. GALAT PETA RUTE PLAN DIPERBAIKI. Sebabnya titik koordinat yang salah
+     tulis pada Master Customer (misalnya bujur 98683) sehingga peta gagal
+     dibuka ("east <= maxLongitude") dan panjang rute melonjak (12390,7 km).
+     Kini titik yang tidak sah disaring lebih dahulu, dan jumlah toko yang
+     perlu dibetulkan ditampilkan pada layar.
+
+PENTING: aplikasi di HP harus versi baru. Periksa penanda kode pada halaman
+Pengaturan - harus tertulis  RTS-2026-10-03-16.
+
+  PANDUAN LENGKAP:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
+    (lihat TUTORIAL PUTARAN 15)
+    Khusus menu GSP:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/MENU_GSP.txt
+    Khusus peta (penyaring + perbaikan galat):
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PETA_RADAR_RUTE.txt
+
+  PAKET LENGKAP putaran ini:
+    RTS_PANEL_PUTARAN_15.zip  (semua berkas sekaligus)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_15.zip
+    PAKET KECIL khusus GSP + peta (6 berkas inti):
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_GSP_PETA.zip
+
+  BERKAS APLIKASI (dipasang dengan LANGKAH1_PASANG_SEMUA.ps1):
+    main.dart  (menu GSP + minimize Menu PRO/Utama)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+    lib/peta.dart  (penyaring seragam + perbaikan galat peta)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
+    pubspec.yaml.updated  (version: 1.2.8+11)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+
+  BERKAS SERVER (unggah ke public_html/api):
+    api/request_create_gsp.php  (BARU - melayani pengajuan GSP + 3 foto)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/request_create_gsp.php
+    Bila belum pernah diunggah: api/requests.php, api/request_action.php,
+    api/request_apply.php, api/customers.php (semuanya ada di dalam paket).
+
+  RILIS PENUTUP PUTARAN INI
+    Nomor versi aplikasi : 1.2.8  (kode 11)
+    Halaman Versi Aplikasi: Versi 1.2.8 | Kode 11 | Wajib: JANGAN -> PUBLIKASIKAN
+    Penanda kode aplikasi : RTS-2026-10-03-16 (tampil pada Pengaturan)
+
+------------------------------------------------------------------------
+PUTARAN 14: MENU PRO TERBUKA WALAU DATABASE SUDAH PRO
 ------------------------------------------------------------------------
 Keluhan: database sudah PRO (akun_pro = 1, pro_selesai terisi) dan status di
 aplikasi sudah PRO, tetapi menu-menu PRO tetap tidak dapat dibuka.

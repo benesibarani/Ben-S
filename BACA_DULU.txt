@@ -1,7 +1,165 @@
 ==============================================================================
  RTS PANEL BY BENE
- TUTORIAL PUTARAN 14 - MENU PRO TERBUKA WALAU DATABASE SUDAH PRO
- (PENAWAR: data akun dari server menjadi bukti PRO di dalam HP)
+ TUTORIAL PUTARAN 15 - MENU GSP, PETA DIPERBAIKI, MENU DAPAT DIMINIMIZE
+==============================================================================
+
+ ============================================================================
+  PUTARAN 15 - 4 PERMINTAAN BAPAK PADA PUTARAN INI
+  (4 Oktober 2026)
+ ============================================================================
+
+  ISI PUTARAN INI
+  ---------------
+   1. MENU GSP (Galan Strategist Partner) pada MENU UTAMA
+      + sub-menu TAMBAHKAN GSP  (formulir seperti Pengajuan Baru, ditambah
+        foto KTP, foto luar toko, dan foto dalam toko)
+      + sub-menu HAPUS GSP      (caranya seperti Hapus Toko pada Pengajuan
+        Baru: memilih toko, lalu menulis alasan)
+
+   2. MENU PRO dan MENU UTAMA pada Beranda DAPAT DIMINIMIZE (dilipat),
+      supaya tampilan HP tidak terlalu penuh. Cara melipat: tekan tombol
+      MINIMIZE pada judul bagian menu. Pilihan itu DIINGAT di HP, jadi
+      Beranda tetap ringkas walau aplikasi ditutup lalu dibuka lagi.
+
+   3. PENYARING PETA DISERAGAMKAN. Peta Customer, Radar Customer, dan Rute
+      Plan sekarang memakai penyaring yang SAMA:
+         HARI       : Semua hari, Senin, Selasa, Rabu, Kamis, Jumat, Sabtu
+         FREKUENSI  : Semua frekuensi, Weekly, BW Ganjil, BW Genap
+      Panel penyaring itu juga dapat DIMINIMIZE (tombol MINIMIZE / FILTER)
+      sehingga peta tampil lebih luas. Pada Radar Customer, peta otomatis
+      bertambah tinggi saat panel penyaring dilipat.
+
+   4. GALAT PETA RUTE PLAN DIPERBAIKI (penjelasan lengkap di bawah).
+
+ ============================================================================
+  SEBAB GALAT PETA RUTE PLAN (layar merah / tulisan "east <= maxLongitude")
+ ============================================================================
+
+  Pesan galat yang muncul pada Bapak:
+
+     Failed assertion: line 117 pos 16: 'east <= maxLongitude'
+     Terjadi kesalahan pada tampilan aplikasi
+     36 toko - panjang rute +-12390,7 km
+
+  SEBABNYA: ADA TITIK KOORDINAT YANG SALAH TULIS PADA MASTER CUSTOMER.
+
+  Titik koordinat yang benar untuk Kota Medan kurang lebih:
+     lintang (latitude)  : 3,5      (batas yang sah: -90 sampai 90)
+     bujur   (longitude) : 98,6     (batas yang sah: -180 sampai 180)
+
+  Bila satu toko saja terisi bujur 98683 (kurang tanda titik desimal, atau
+  kelebihan angka), maka:
+     - peta MENERIMA angka di luar batas Bumi, lalu GAGAL DIBUKA
+       ("east <= maxLongitude") sehingga muncul layar merah;
+     - perhitungan panjang rute menjadi ngawur, misalnya +-12390,7 km
+       (dari situlah angka 98683 pada layar Bapak berasal).
+
+  PENAWARNYA (sudah dipasang pada lib/peta.dart)
+  ----------------------------------------------
+     a. SEBELUM dipakai, setiap titik diperiksa lebih dahulu
+        (rtsPetaTitikSah). Titik kosong, 0, atau di luar batas Bumi DIBUANG,
+        jadi peta tidak pernah menerima angka liar dan tidak lagi muncul
+        layar merah.
+     b. Ketiga peta (Customer, Radar, Rute) memakai satu cara pengaturan
+        kamera yang sama dan aman (rtsPetaAturKamera).
+     c. Pada Peta Customer dan Rute Plan ditampilkan CATATAN BERWARNA KUNING
+        yang menyebutkan berapa toko yang titiknya salah, supaya Bapak tahu
+        toko mana yang perlu dibetulkan di menu Master Customer.
+     d. Panjang rute dihitung hanya dari titik yang sah, sehingga angkanya
+        kembali wajar (bukan 12390 km lagi).
+
+  YANG PERLU BAPAK LAKUKAN UNTUK TITIK YANG SALAH
+  ------------------------------------------------
+     Buka menu Utama - Master Customer - cari toko yang muncul pada catatan
+     kuning - perbaiki kolom latitude / longitude (atau pakai menu Pengajuan
+     "Ganti Alamat" dengan pilihan "Sesuai koordinat sekarang" saat berdiri
+     di depan toko). Sesudah itu peta Rute Plan memuat seluruh toko.
+
+ ============================================================================
+  MENU GSP - CATATAN PENTING TENTANG DATABASE
+ ============================================================================
+
+  Bapak menulis agar GSP "disesuaikan dengan database pengajuan_sales".
+  Perlu kami tegaskan: kolom FOTO (link_foto_ktp, link_foto_luar,
+  link_foto_dalam) TIDAK ADA pada tabel pengajuan_sales. Kolom-kolom itu
+  hanya ada pada tabel pengajuan_gsp - dan itulah tabel yang dipakai
+  formulir GSP pada website Bapak (gsp.php).
+
+  Jadi pengajuan GSP dari HP disimpan ke tabel pengajuan_gsp, sedangkan
+  pengajuan toko biasa (Tambah Baru / Ganti Nama / Ganti Alamat / Hapus
+  Toko) tetap ke pengajuan_sales. Keduanya tetap muncul pada SATU daftar
+  yang sama, yaitu menu Pengajuan, sehingga ADMIN dan ASS dapat memeriksa
+  dan menyetujui seperti biasa.
+
+  Penjelasan panjang ada pada berkas MENU_GSP.txt.
+
+ ============================================================================
+  YANG PERLU BAPAK LAKUKAN (URUTANNYA)
+ ============================================================================
+
+   1. SERVER DULU (WAJIB - ada berkas server baru):
+        Unggah  api/request_create_gsp.php  ke folder public_html/api pada
+        hosting. Berkas ini yang melayani pengajuan GSP beserta 3 fotonya.
+        Bila Bapak juga belum pernah mengunggah api/requests.php,
+        api/request_action.php, api/request_apply.php, dan api/customers.php
+        dari putaran sebelumnya, unggah sekalian (semuanya ada di dalam
+        paket pada folder 1_SERVER_unggah_ke_hosting).
+        Catatan: memperbarui database TIDAK wajib pada putaran ini. Bila
+        kolom jenis_request pada pengajuan_gsp belum ada, pengajuan GSP
+        tetap tersimpan sebagai penambahan GSP.
+
+   2. APLIKASI:
+        Ekstrak RTS_PANEL_PUTARAN_15.zip, jalankan
+        .\LANGKAH1_PASANG_SEMUA.ps1  (menimpa berkas + membuat cadangan),
+        lalu jalankan:  flutter clean  ->  flutter pub get.
+
+   3. PERIKSA KODE (opsional tetapi disarankan):
+        .\PERIKSA_KODE_APLIKASI.ps1
+        Skrip ini akan mengatakan [ADA] / [BELUM] untuk setiap bagian baru
+        pada putaran ini.
+
+   4. BANGUN + PASANG KE HP:
+        flutter run -d CPH1937
+        Aplikasi di HP HARUS versi baru supaya menu GSP muncul.
+
+   5. PERIKSA PENANDA VERSI DI HP:
+        Buka Pengaturan - lihat penanda kode aplikasi. Harus tertulis
+        RTS-2026-10-03-16. Bila masih tertulis -15 atau lebih lama, aplikasi
+        di HP belum terganti.
+
+   6. HALAMAN VERSI APLIKASI (bila Bapak memakai pembaruan otomatis):
+        Isi dengan  Versi 1.2.8 | Kode 11 | Wajib: JANGAN  lalu
+        PUBLIKASIKAN.
+
+ ============================================================================
+  CARA MEMAKAI MENU GSP DI HP
+ ============================================================================
+
+  TAMBAHKAN GSP
+    1. Menu Utama - GSP - Tambahkan GSP.
+    2. Ketuk kolom "Nama Toko" - pilih toko REGULER yang akan dijadikan GSP
+       (daftar hanya menampilkan toko bertipe REGULER).
+    3. Isi Nama PIC, Nomor HP PIC, Alamat Lengkap (dapat diisi otomatis dari
+       titik lokasi dengan mencentang "Sesuai koordinat sekarang").
+    4. Ambil 3 foto: Foto KTP, Foto Luar Toko, Foto Dalam Toko
+       (boleh dari kamera atau dari galeri).
+    5. Isi Keterangan / alasan, lalu tekan tombol KIRIM.
+    6. Pengajuan masuk ke menu Pengajuan milik ADMIN/ASS. Sesudah DISETUJUI,
+       toko itu berubah menjadi GSP dengan sendirinya.
+
+  HAPUS GSP
+    1. Menu Utama - GSP - Hapus GSP.
+    2. Ketuk kolom "Nama Toko" - daftar hanya menampilkan toko yang SEDANG
+       GSP.
+    3. Isi keterangan/alasan, lalu KIRIM. Sesudah disetujui, toko itu kembali
+       menjadi REGULER (bukan dihapus dari Master Customer).
+
+  CATATAN
+    - Foto dikirim bersama pengajuan, jadi jangan mengirim ulang lewat
+      WhatsApp; semuanya sudah tersimpan di server (folder uploads/gsp).
+    - Ukuran foto maksimal 3 MB per foto. Aplikasi sudah mengecilkan foto
+      otomatis saat diambil dari kamera.
+
 ==============================================================================
 
  ============================================================================

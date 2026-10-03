@@ -1,0 +1,216 @@
+==============================================================================
+ RTS PANEL BY BENE
+ PANDUAN MENU GSP (GALAN STRATEGIST PARTNER)
+ Berkas : MENU_GSP.txt
+ Putaran 15 - 4 Oktober 2026
+==============================================================================
+
+ ============================================================================
+  0. RINGKASAN SATU MENIT
+ ============================================================================
+
+   Menu Utama di Beranda sekarang bertambah satu menu:  G S P
+   Di dalamnya ada DUA pilihan:
+
+       1. TAMBAHKAN GSP
+          Mengusulkan toko REGULER menjadi GSP. Formulirnya seperti
+          Pengajuan Baru, DITAMBAH tiga foto:
+              - Foto KTP
+              - Foto Luar Toko
+              - Foto Dalam Toko
+
+       2. HAPUS GSP
+          Mengusulkan GSP dikembalikan menjadi toko REGULER. Caranya sama
+          seperti Hapus Toko pada Pengajuan Baru (pilih toko, tulis alasan).
+
+   Kedua pengajuan itu masuk ke menu Pengajuan dan menunggu pemeriksaan
+   ADMIN / ASS. Sesudah DISETUJUI, status toko pada Master Customer berubah
+   dengan sendirinya (tidak perlu diubah manual).
+
+
+ ============================================================================
+  1. CATATAN PENTING TENTANG DATABASE (MOHON DIBACA)
+ ============================================================================
+
+   Bapak menulis: "menu GSP sesuaikan dengan database pengajuan_sales".
+
+   Setelah kami periksa seluruh kode, kolom foto TIDAK ADA pada tabel
+   pengajuan_sales. Kolom-kolom foto itu hanya ada pada tabel
+   pengajuan_gsp, yaitu tabel yang sudah dipakai formulir GSP pada website
+   Bapak (berkas gsp.php). Susunan kolomnya:
+
+       pengajuan_gsp
+       -------------
+       sales_email, sales_district, salesman,
+       toko_lama_nama, toko_lama_id,        (data GSP yang lama / diputus)
+       toko_baru_nama, toko_baru_id,        (data GSP yang baru)
+       alamat_lengkap, pic_nama, nomor_hp, koordinat,
+       link_foto_ktp, link_foto_luar, link_foto_dalam,
+       status_approval, tanggal_request
+       + kolom tambahan hasil migrasi:
+         jenis_request, processed_by, processed_at, approval_note
+
+   Karena itu:
+       - PENGajuan GSP dari HP  -> tabel pengajuan_gsp
+       - pengajuan toko biasa   -> tabel pengajuan_sales
+         (Tambah Baru / Ganti Nama / Ganti Alamat / Hapus Toko)
+
+   Walaupun tabelnya berbeda, keduanya muncul pada SATU daftar yang sama,
+   yaitu menu Pengajuan. Jadi ADMIN dan ASS tetap memeriksa dari satu tempat.
+   Halaman website (gsp.php, pengajuan_toko.php, inbox.php) juga sudah
+   membaca kedua tabel itu, sehingga riwayat GSP tetap terlihat di website.
+
+
+ ============================================================================
+  2. CARA MEMAKAI "TAMBAHKAN GSP" DI HP
+ ============================================================================
+
+   Langkah 1 : Menu Utama -> GSP -> Tambahkan GSP
+
+   Langkah 2 : Kolom "Nama Toko"
+               Ketuk kolom itu. Akan terbuka lembar pencarian toko yang
+               HANYA menampilkan toko bertipe REGULER (toko yang sudah GSP
+               tidak ikut ditampilkan, supaya tidak dobel). Ketik nama toko
+               atau ID customer untuk mencari cepat, lalu ketuk tokonya.
+
+   Langkah 3 : Data GSP Baru
+               a. Nama PIC       - nama penanggung jawab toko (wajib)
+               b. Nomor HP PIC   - nomor HP yang dapat dihubungi (wajib)
+               c. Alamat Lengkap - dapat diketik manual, atau centang
+                                   "Sesuai koordinat sekarang" lalu tunggu
+                                   sampai titik GPS terbaca (alamat terisi
+                                   sendiri dari titik tempat Bapak berdiri)
+               d. Titik koordinat tampil di layar sesudah terbaca
+                  (contoh: 3.595123, 98.672456)
+
+   Langkah 4 : Foto GSP (WAJIB KETIGANYA)
+               Ketuk tombol AMBIL pada setiap baris:
+                  - Foto KTP
+                  - Foto Luar Toko
+                  - Foto Dalam Toko
+               Setiap kali muncul dua pilihan: "Ambil dari Kamera" atau
+               "Pilih dari Galeri". Bila foto sudah ada, tombolnya berubah
+               menjadi GANTI. Tanda bingkai menjadi HIJAU bila foto sudah
+               siap dikirim.
+               Ukuran foto paling besar 3 MB. Aplikasi sudah mengecilkan
+               foto otomatis saat diambil dari kamera (lebar maksimal 1600
+               titik, mutu 75%), jadi biasanya hanya beberapa ratus KB.
+
+   Langkah 5 : Keterangan
+               Tulis alasan pengajuan (misalnya: "Toko ini dipilih menjadi
+               GSP pengganti bulan Oktober").
+
+   Langkah 6 : Tekan KIRIM.
+               Bila ada isian yang belum lengkap, aplikasi memberi tahu kolom
+               mana yang kurang. Bila semua sudah lengkap, muncul tulisan
+               "Pengajuan GSP Terkirim".
+
+   Sesudah itu pengajuan terlihat pada menu Pengajuan (ADMIN dan ASS
+   menerima pemberitahuan di HP-nya).
+
+
+ ============================================================================
+  3. CARA MEMAKAI "HAPUS GSP" DI HP
+ ============================================================================
+
+   1. Menu Utama -> GSP -> Hapus GSP.
+   2. Ketuk kolom "Nama Toko". Kali ini daftarnya HANYA menampilkan toko
+      yang SEDANG berstatus GSP.
+   3. Toko yang dipilih akan ditampilkan beserta alamat, hari, dan frekuensi
+      kunjungannya (terkunci - tidak dapat diubah dari sini).
+   4. Isi keterangan / alasan (misalnya: "GSP tidak melanjutkan kerja sama").
+   5. Tekan KIRIM.
+
+   PENTING: "Hapus GSP" TIDAK menghapus toko dari Master Customer. Toko itu
+   hanya kembali menjadi REGULER. Toko tetap ada, tetap punya ID customer,
+   dan tetap dapat dikunjungi sales.
+
+
+ ============================================================================
+  4. APA YANG TERJADI SESUDAH DISETUJUI
+ ============================================================================
+
+   ADMIN / ASS membuka menu Pengajuan -> memilih pengajuan GSP -> tekan
+   SETUJUI. Pada saat itu server menjalankan perubahan berikut:
+
+      - pengajuan jenis PENAMBAHAN  : toko pada kolom toko_baru_id diubah
+        menjadi GSP  (master_toko.tipe_customer = 'GSP')
+      - pengajuan jenis PENGHAPUSAN : toko pada kolom toko_lama_id diubah
+        kembali menjadi REGULER (master_toko.tipe_customer = 'REGULER')
+
+   Status pengajuan (Pending / Disetujui / Ditolak) tersimpan pada kolom
+   status_approval, dan siapa yang memproses tersimpan pada kolom
+   processed_by serta processed_at.
+
+   CATATAN: perubahan itu memakai kolom master_toko.tipe_customer. Bila
+   kolom itu belum ada di database, penyetujuan akan menolak dengan pesan
+   "Jalankan migrasi terlebih dahulu". Buka halaman langganan_admin.php pada
+   website lalu tekan PERBARUI DATABASE satu kali untuk menambahkannya.
+
+
+ ============================================================================
+  5. BERKAS SERVER YANG HARUS DIUNGGAH
+ ============================================================================
+
+   Unggah berkas berikut ke folder  public_html/api  pada hosting:
+
+      api/request_create_gsp.php   <-- BARU pada putaran ini.
+                                       Melayani pengajuan GSP beserta tiga
+                                       fotonya, memeriksa hak akses, dan
+                                       mengirim pemberitahuan ke ADMIN/ASS.
+
+   Bila belum pernah diunggah pada putaran sebelumnya, unggah juga:
+
+      api/requests.php         (daftar pengajuan, sudah membaca GSP)
+      api/request_action.php   (SETUJUI / TOLAK pengajuan)
+      api/request_apply.php    (penerapan perubahan ke Master Customer)
+      api/customers.php        (daftar toko + penyaring tipe REGULER / GSP)
+
+   Foto GSP disimpan di folder  uploads/gsp  pada hosting. Folder itu dibuat
+   sendiri oleh server bila belum ada. Berkas gambar diberi nama seperti:
+
+      gsp_penambahan_20261004_101530_a1b2c3.jpg
+
+   Pengajuan yang gagal (misalnya ada foto yang terlalu besar) TIDAK
+   meninggalkan berkas setengah jadi: foto yang sudah tersimpan dihapus
+   kembali oleh server.
+
+
+ ============================================================================
+  6. PERTANYAAN YANG SERING DITANYAKAN
+ ============================================================================
+
+   Apakah pengajuan GSP dari HP muncul di website juga?
+     Ya. Website membaca tabel pengajuan_gsp (gsp.php dan inbox.php).
+
+   Apakah GSP lama harus diisi saat menambah GSP?
+     Tidak. Menu "Tambahkan GSP" hanya mengusulkan satu toko REGULER menjadi
+     GSP. Bila kebiasaan di lapangan GSP baru MENGGANTIKAN GSP lama, kerjakan
+     dua langkah: kirim "Hapus GSP" untuk GSP lama, lalu kirim
+     "Tambahkan GSP" untuk toko penggantinya. ADMIN dapat menyetujui keduanya
+     dari menu Pengajuan.
+
+   Bolehkah foto diambil dari galeri, bukan kamera?
+     Boleh, keduanya disediakan.
+
+   Bagaimana bila salah memilih toko?
+     Sebelum menekan KIRIM: ketuk kolom Nama Toko sekali lagi lalu pilih toko
+     yang benar (kolom akan terganti). Sesudah terkirim: minta ADMIN menolak
+     pengajuan itu pada menu Pengajuan, lalu kirim pengajuan baru.
+
+   Kok menu GSP tidak muncul di Beranda saya?
+     Pastikan aplikasi di HP sudah versi baru. Buka Pengaturan dan periksa
+     penanda kode aplikasi harus  RTS-2026-10-03-16. Bila masih -15 atau
+     lebih lama, pasang aplikasi baru lebih dahulu (LANGKAH1_PASANG_SEMUA.ps1
+     -> flutter clean -> flutter pub get -> flutter run -d CPH1937).
+
+   Apa bedanya GSP dengan REGULER?
+     REGULER adalah toko biasa. GSP adalah toko mitra khusus (Galan
+     Strategist Partner) yang dipilih. Perbedaan ini disimpan pada kolom
+     master_toko.tipe_customer dan dipakai menu Kasir / Barang Bawaan serta
+     laporan pada website.
+
+==============================================================================
+  Selesai. Bila ada pertanyaan lain, kirimkan tangkapan layar dari HP supaya
+  dapat kami periksa lebih tepat.
+==============================================================================
