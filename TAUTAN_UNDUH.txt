@@ -1,3 +1,68 @@
+PALING BARU - PUTARAN 17: MENU "KELOLA AKUN TIM" UNTUK ASS (WEBSITE)
+------------------------------------------------------------------------
+Permintaan Bapak: "Untuk role ASS tolong tambahkan Menu untuk Mengedit,
+menghapus akun WSS, SMST, RTS, dan TF."
+
+Yang dikerjakan (DI WEBSITE - tidak ada aplikasi yang perlu dibangun ulang):
+  1. HALAMAN BARU kelola_akun_tim.php, muncul di sidebar bagian "KELOLA AKUN"
+     dengan nama "Kelola Akun Tim". Hanya ADMIN dan ASS yang melihat/membuka.
+     Isinya:
+        - MENGEDIT akun WSS / SMST / RTS / TF: nama, email, username, role,
+          salesman, district, status Aktif/Nonaktif, password, dan tambahan
+          masa PRO (isi 30 = tambah 30 hari)
+        - MENGHAPUS akun (ketik HAPUS untuk konfirmasi). Akun dihapus
+          permanen TETAPI seluruh datanya disalin lebih dahulu ke tabel arsip
+          sales_users_arsip
+        - MENAMBAH akun tim baru (WSS / SMST / RTS / TF)
+        - Daftar "Arsip Akun (30 terakhir)" + tombol PULIHKAN, jadi akun yang
+          salah dihapus masih dapat dikembalikan
+        - Kotak jumlah akun per role
+  2. BATAS KEWENANGAN: akun ADMIN dan ASS TIDAK PERNAH tampil dan tidak dapat
+     diubah/dihapus dari halaman ini; pemeriksaan dilakukan ulang di server.
+     Pengaman tambahan: tidak dapat menghapus akun yang sedang dipakai masuk,
+     tidak dapat menghapus bila satu role tinggal satu akun aktif, hapus
+     ditolak bila tabel arsip belum dibuat, setiap perubahan lewat POST +
+     token keamanan sesi, seluruh perintah database memakai prepared statement.
+  3. TABEL BARU sales_users_arsip dibuat dengan RTS_PANEL_ARSIP_AKUN.sql
+     (dijalankan sekali di phpMyAdmin, TIDAK menyentuh tabel sales_users).
+
+LANGKAH PEMASANGAN
+  1. phpMyAdmin -> database benedics_benes_sales -> tab SQL -> jalankan isi
+     RTS_PANEL_ARSIP_AKUN.sql
+  2. Unggah ke public_html: kelola_akun_tim.php (baru), sidebar.php (menu baru,
+     timpa yang lama), sidebar_updated.php (cadangan), district.php (bila belum
+     ada di hosting)
+  3. Masuk sebagai ASS atau ADMIN -> menu kiri "KELOLA AKUN" ->
+     "Kelola Akun Tim"
+  4. Tidak ada aplikasi Android yang perlu dibangun ulang.
+
+  PANDUAN LENGKAP:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/KELOLA_AKUN_TIM.txt
+    (lihat juga BACA_DULU.txt - TAMBAHAN PUTARAN 17)
+
+  PAKET LENGKAP putaran ini:
+    RTS_PANEL_PUTARAN_17.zip  (semua berkas sekaligus, 75 berkas)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_17.zip
+    PAKET KECIL khusus putaran ini (6 berkas saja):
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_KELOLA_AKUN_TIM.zip
+
+  BERKAS SERVER (unggah ke public_html):
+    kelola_akun_tim.php  <-- HALAMAN BARU (menu untuk ASS & ADMIN)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/kelola_akun_tim.php
+    sidebar.php  (menu baru "Kelola Akun Tim")
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/sidebar.php
+    district.php  (daftar Sales District - bila belum ada)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/district.php
+    RTS_PANEL_ARSIP_AKUN.sql  (pembuat tabel arsip - WAJIB dijalankan)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_ARSIP_AKUN.sql
+
+  RILIS PUTARAN INI
+    Aplikasi Android : tetap 1.3.0 (kode 13) penanda RTS-2026-10-04-18
+    Website          : menu baru untuk ASS (tidak mengubah versi aplikasi)
+
+------------------------------------------------------------------------
+PUTARAN 16: MENU "STRUK POM" (STRUK SPBU) BERJALAN LURING
+------------------------------------------------------------------------
 PALING BARU - PUTARAN 16: MENU "STRUK POM" (STRUK SPBU) BERJALAN LURING
 ------------------------------------------------------------------------
 Permintaan Bapak: "Menu dan fitur sama seperti aplikasi Play Store Struk POM

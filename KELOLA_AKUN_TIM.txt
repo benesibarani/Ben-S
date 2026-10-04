@@ -1,0 +1,217 @@
+==============================================================================
+ RTS PANEL BY BENE
+ PANDUAN - MENU "KELOLA AKUN TIM" UNTUK ADMIN DAN ASS
+ PUTARAN 17 - 4 Oktober 2026
+==============================================================================
+
+ ============================================================================
+  1. APA INI
+ ============================================================================
+
+ Ini MENU BARU DI WEBSITE (bukan di aplikasi Android) yang memberi ASS
+ (Assistant) kewenangan mengurus akun TIM SALES tanpa perlu meminta ADMIN:
+
+        MENGEDIT   : nama, email, username, role, salesman, district,
+                     status (Aktif/Nonaktif), password, dan masa PRO
+        MENGHAPUS  : akun dihapus PERMANEN, tetapi SELURUH datanya disalin
+                     lebih dahulu ke tabel arsip (masih bisa dipulihkan)
+        MENAMBAH   : membuat akun WSS / SMST / RTS / TF baru
+
+ MENU INI HANYA MENYENTUH AKUN DENGAN ROLE:
+        WSS  - Supervisor / wilayah
+        SMST - Sales Manager
+        RTS  - Sales / salesman
+        TF   - Team Force
+
+ Akun ADMIN dan ASS TIDAK PERNAH tampil dan TIDAK PERNAH dapat diubah atau
+ dihapus dari halaman ini - walau alamat halaman disunting dengan tangan.
+ Pemeriksaannya dilakukan ULANG di server, bukan sekadar disembunyikan.
+
+ SIAPA YANG BOLEH MASUK
+        ADMIN : boleh (semua pekerjaan pada halaman ini)
+        ASS   : boleh (semua pekerjaan pada halaman ini)
+        WSS / SMST / RTS / TF : DITOLAK (halaman menampilkan pesan "Akses
+                                ditolak" dan tidak ada data yang ditampilkan)
+
+
+ ============================================================================
+  2. LANGKAH PEMASANGAN (SEKALI SAJA)
+ ============================================================================
+
+  Ada DUA bagian: (A) tabel arsip di database, dan (B) berkas website.
+  Kerjakan (A) lebih dahulu supaya tombol Hapus langsung bekerja.
+
+  ---------------------------------------------------------------------------
+  A. MEMBUAT TABEL ARSIP DI DATABASE (phpMyAdmin)
+  ---------------------------------------------------------------------------
+     1. Masuk cPanel -> phpMyAdmin.
+     2. Klik database  benedics_benes_sales  pada daftar di kiri.
+     3. Klik tab "SQL".
+     4. Buka berkas  RTS_PANEL_ARSIP_AKUN.sql  (di dalam paket), salin SELURUH
+        isinya, tempelkan ke kotak SQL, lalu tekan "Go" / "Jalankan".
+     5. Bila muncul pesan "Duplicate column name 'aksi'" - itu BUKAN kesalahan;
+        artinya kolomnya sudah ada. Aman dilanjutkan.
+
+     Penting: berkas .sql ini TIDAK menyentuh tabel sales_users. Tidak ada
+     satu pun akun yang diubah atau dihapus olehnya. Ia hanya MEMBUAT tabel
+     baru bernama sales_users_arsip.
+
+  ---------------------------------------------------------------------------
+  B. MENGUNGGAH BERKAS WEBSITE
+  ---------------------------------------------------------------------------
+     Salin berkas berikut ke folder public_html (satu folder dengan
+     index.php, dashboard.php, dan sidebar.php):
+
+           1. kelola_akun_tim.php     <-- HALAMAN BARUNYA
+           2. sidebar.php             <-- menu baru "Kelola Akun Tim"
+           3. sidebar_updated.php     <-- sama isinya, sebagai cadangan
+           4. district.php            <-- bila BELUM ada di hosting
+                                          (daftar Sales District dari database)
+
+     Catatan: kelola_akun_tim.php tetap berjalan walaupun district.php belum
+     diunggah - di dalamnya sudah ada daftar district cadangan.
+
+
+ ============================================================================
+  3. CARA PAKAI DI WEBSITE
+ ============================================================================
+
+   Buka: https://rts.benedic-s.com  ->  masuk sebagai ASS atau ADMIN.
+   Pada menu kiri akan tampil bagian baru:
+
+        KELOLA AKUN
+          [ Kelola Akun Tim ]
+
+   Di halaman itu ada:
+     - EMPAT KOTAK jumlah akun per role (WSS / SMST / RTS / TF)
+     - TABEL DAFTAR AKUN TIM, lengkap dengan nama, username, role, salesman,
+       district, status, dan status PRO
+     - Tombol [ Tambah Akun Tim ] di kanan atas
+     - Tombol [ Edit ] dan [ Hapus ] pada setiap baris
+     - TABEL "Arsip Akun (30 terakhir)" di bawah, dengan tombol
+       [ Pulihkan ] untuk akun yang dihapus
+
+  ---------------------------------------------------------------------------
+  MENGEDIT AKUN
+  ---------------------------------------------------------------------------
+    1. Tekan [ Edit ] pada baris akun.
+    2. Ubah bagian yang perlu:
+         - Nama Lengkap, Email, Username
+         - Role (WSS / SMST / RTS / TF)
+         - Salesman, Sales District
+         - Status Akun: Aktif / Nonaktif
+         - Password Baru: kosongkan bila TIDAK ingin diganti
+         - Kotak PRO: isi 30 bila ingin menambah masa PRO 30 hari
+           (langsung menjadi PRO). Biarkan 0 bila tidak ingin mengubah.
+    3. Tekan "Simpan Perubahan".
+    4. Kabar hasilnya muncul di bagian atas halaman.
+
+    Gunakan status NONAKTIF bila hanya ingin menghentikan akun sementara -
+    akun tetap ada beserta seluruh riwayatnya, hanya tidak bisa dipakai masuk.
+
+  ---------------------------------------------------------------------------
+  MENGHAPUS AKUN
+  ---------------------------------------------------------------------------
+    1. Tekan [ Hapus ] pada baris akun.
+    2. Baca kotak peringatan: seluruh data akun disalin lebih dahulu ke tabel
+       arsip, jadi MASIH DAPAT DIPULIHKAN.
+    3. Ketik kata  HAPUS  (huruf besar) pada kotak konfirmasi.
+    4. Tekan "Hapus Permanen".
+
+    Penghapusan AKAN DITOLAK dengan pesan yang jelas bila:
+        a. Tabel arsip belum dibuat  -> jalankan bagian A di atas;
+        b. Akun itu satu-satunya akun AKTIF pada role tersebut -> buat akun
+           pengganti lebih dahulu, atau ubah statusnya menjadi Nonaktif;
+        c. Akun itu adalah akun yang sedang Bapak pakai masuk.
+
+    Catatan: yang terhapus adalah AKUNNYA (hak masuk). Data kunjungan/toko
+    yang pernah dicatat akun itu pada master_toko TIDAK ikut terhapus.
+
+  ---------------------------------------------------------------------------
+  MENAMBAH AKUN
+  ---------------------------------------------------------------------------
+    1. Tekan [ Tambah Akun Tim ] di kanan atas.
+    2. Isi: Nama Lengkap, Email (boleh kosong), Username, Password (minimal
+       6 karakter), Role, Salesman, Sales District, Status.
+    3. Tekan "Simpan Akun". Akun baru dapat langsung dipakai masuk.
+
+  ---------------------------------------------------------------------------
+  MEMULIHKAN AKUN YANG SUDAH DIHAPUS
+  ---------------------------------------------------------------------------
+    1. Lihat tabel "Arsip Akun (30 terakhir)" di bawah halaman.
+    2. Cari baris dengan keterangan tindakan DIHAPUS.
+    3. Tekan [ Pulihkan ].
+    4. Akun kembali masuk daftar dengan password yang SAMA seperti sebelumnya.
+       Bila passwordnya sudah lupa, buka tombol [ Edit ] lalu isi Password Baru.
+
+    Bila username-nya sudah dipakai akun lain, pemulihan ditolak dengan pesan
+    yang jelas - ubah dulu username akun yang memakai, baru pulihkan.
+
+
+ ============================================================================
+  4. KEAMANAN (APA YANG SUDAH DIJAGA)
+ ============================================================================
+
+   1. AKUN ADMIN & ASS TIDAK DAPAT DISENTUH dari halaman ini. Bukan hanya
+      disembunyikan dari daftar: setiap perintah edit/hapus diperiksa ulang di
+      server, dan akun yang role-nya bukan WSS/SMST/RTS/TF akan DITOLAK.
+   2. SELURUH perintah database memakai prepared statement (bind_param).
+      Tidak ada satu pun isian formulir yang ditempel langsung ke perintah SQL.
+   3. Setiap perubahan harus lewat POST + token keamanan sesi (csrf), sehingga
+      tidak bisa dipicu dari halaman/tautan lain.
+   4. Akun tidak dapat menghapus dirinya sendiri.
+   5. Satu role tidak boleh kehabisan akun aktif.
+   6. Setiap penghapusan & perubahan dicatat ke tabel arsip (siapa dan kapan).
+   7. Password TIDAK PERNAH ditampilkan pada halaman ini - hanya dapat diganti.
+   8. Halaman ini tidak menampilkan atau mengirim kredensial database apa pun.
+
+
+ ============================================================================
+  5. BILA ADA YANG TIDAK BERJALAN
+ ============================================================================
+
+   Menu "Kelola Akun Tim" tidak tampil di sidebar
+        Pastikan berkas sidebar.php yang BARU sudah diunggah, dan akun yang
+        dipakai masuk memang ADMIN atau ASS. Coba tekan Ctrl + F5 (muat ulang
+        tanpa simpanan).
+
+   Muncul "Akses ditolak"
+        Akun yang dipakai masuk bukan ADMIN atau ASS. Halaman ini memang bukan
+        untuk WSS, SMST, RTS, atau TF.
+
+   Muncul "Tabel arsip sales_users_arsip belum ada"
+        Jalankan RTS_PANEL_ARSIP_AKUN.sql di phpMyAdmin (langkah 2A di atas).
+        Selama tabel itu belum ada, tombol Hapus sengaja MENOLAK supaya tidak
+        ada data yang hilang tanpa salinan. Mengedit dan menambah tetap jalan.
+
+   Muncul "Akun ... satu-satunya akun aktif pada role tersebut"
+        Itu pengaman. Buat dulu akun baru dengan role yang sama, atau ubah
+        status akun itu menjadi Nonaktif.
+
+   Halaman tampil putih / pesan "config.php tidak ditemukan"
+        Berkas kelola_akun_tim.php harus berada di public_html, satu folder
+        dengan index.php dan dashboard.php.
+
+   Ingin mengembalikan menu (menghilangkan tombolnya)
+        Kembalikan berkas sidebar.php yang lama. Halaman kelola_akun_tim.php
+        boleh dibiarkan ada - tanpa menu, halaman itu tidak akan dibuka
+        siapa pun, dan isinya hanya dapat dibuka oleh ADMIN/ASS.
+
+
+ ============================================================================
+  6. BERKAS YANG DIKIRIM PADA PUTARAN INI
+ ============================================================================
+
+   1. kelola_akun_tim.php            halaman baru (menu untuk ASS & ADMIN)
+   2. sidebar.php                    menu "Kelola Akun Tim" (menggantikan lama)
+   3. sidebar_updated.php            salinan sama, sebagai cadangan
+   4. district.php                   daftar Sales District (bila belum ada)
+   5. RTS_PANEL_ARSIP_AKUN.sql       pembuat tabel arsip (wajib dijalankan)
+   6. KELOLA_AKUN_TIM.txt            panduan ini
+
+   Tidak ada perubahan pada aplikasi Android, tidak ada perubahan pada
+   tabel akun yang sudah ada, dan tidak ada aplikasi yang perlu dibangun ulang.
+
+ ============================================================================
+  Akhir panduan. Terima kasih - RTS Panel By Bene.
+ ============================================================================

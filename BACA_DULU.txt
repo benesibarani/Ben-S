@@ -1,10 +1,74 @@
 ==============================================================================
  RTS PANEL BY BENE
- TUTORIAL PUTARAN 16 - MENU BARU "STRUK POM" (STRUK SPBU) BERJALAN LURING
+ TUTORIAL PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS DI WEBSITE
+ (Putaran 16: MENU "STRUK POM" / STRUK SPBU BERJALAN LURING DI DALAM HP)
  (Putaran 15: MENU GSP, PETA DIPERBAIKI, MENU DAPAT DIMINIMIZE
   Tambahan 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR)
 ==============================================================================
 
+
+ ============================================================================
+  TAMBAHAN PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS (WEBSITE)
+  (4 Oktober 2026)
+ ============================================================================
+
+  Yang Bapak minta:
+    "Untuk role ASS tolong tambahkan Menu untuk Mengedit, menghapus akun WSS,
+     SMST, RTS, dan TF."
+
+  YANG SUDAH DIPASANG (DI WEBSITE - tidak ada perubahan pada APK)
+  -----------------------------------------------------------------
+   1. HALAMAN BARU: kelola_akun_tim.php
+      Menunya muncul di sidebar bagian baru "KELOLA AKUN" dengan nama
+      "Kelola Akun Tim". Hanya tampil dan hanya dapat dibuka oleh ADMIN & ASS.
+
+      Isi halaman:
+        - Empat kotak jumlah akun per role (WSS / SMST / RTS / TF)
+        - Tabel daftar akun tim + tombol [ Tambah Akun Tim ]
+        - Tombol [ Edit ] pada setiap baris: nama, email, username, role,
+          salesman, district, status (Aktif/Nonaktif), password, dan tambahan
+          masa PRO (isi 30 = tambah 30 hari)
+        - Tombol [ Hapus ] dengan kotak konfirmasi (ketik HAPUS). Akun DIHAPUS
+          PERMANEN, tetapi SELURUH datanya disalin lebih dahulu ke tabel arsip
+          `sales_users_arsip`
+        - Tabel "Arsip Akun (30 terakhir)" + tombol [ Pulihkan ], jadi akun
+          yang salah dihapus masih dapat dikembalikan
+        - Boleh MENAMBAH akun tim baru (WSS / SMST / RTS / TF)
+
+   2. BATAS KEWENANGAN YANG DIJAGA KETAT
+      Halaman ini HANYA menyentuh akun ber-role WSS, SMST, RTS, dan TF.
+      Akun ADMIN dan ASS tidak pernah tampil dan tidak dapat diubah/dihapus
+      dari halaman ini - walau alamat halaman disunting dengan tangan.
+      Pemeriksaannya dilakukan ULANG di server (bukan hanya disembunyikan).
+      Pengaman tambahan:
+        - Tidak dapat menghapus akun yang sedang dipakai masuk
+        - Tidak dapat menghapus bila satu role tinggal satu akun aktif
+        - Hapus ditolak bila tabel arsip belum dibuat, supaya tidak ada data
+          hilang tanpa salinan
+        - Setiap perubahan lewat POST + token keamanan sesi (csrf)
+        - Seluruh perintah database memakai prepared statement
+        - Password tidak pernah ditampilkan, hanya dapat diganti
+
+   3. TABEL ARSIP BARU: sales_users_arsip
+      Dibuat dengan berkas RTS_PANEL_ARSIP_AKUN.sql (dijalankan sekali di
+      phpMyAdmin). Berkas .sql itu TIDAK menyentuh tabel sales_users -
+      tidak ada satu pun akun yang diubah atau dihapus olehnya.
+
+  YANG PERLU BAPAK LAKUKAN
+  ------------------------
+   1. DATABASE (phpMyAdmin): jalankan RTS_PANEL_ARSIP_AKUN.sql pada database
+      benedics_benes_sales (tab SQL -> tempel isinya -> Go).
+   2. WEBSITE: unggah ke public_html:
+          kelola_akun_tim.php   (halaman baru)
+          sidebar.php           (menu baru - timpa yang lama)
+          sidebar_updated.php   (salinan sama, cadangan)
+          district.php          (bila belum ada di hosting)
+   3. Tidak ada aplikasi Android yang perlu dibangun ulang.
+   4. Masuk sebagai ASS atau ADMIN -> menu kiri "KELOLA AKUN" ->
+      "Kelola Akun Tim".
+
+  PANDUAN LENGKAP KHUSUS MENU INI:
+      KELOLA_AKUN_TIM.txt  (ada di dalam paket dan di tautan unduh)
  ============================================================================
   TAMBAHAN PUTARAN 16 - PERMINTAAN BAPAK PALING BARU
   (4 Oktober 2026)
