@@ -1,5 +1,7 @@
 ==============================================================================
  RTS PANEL BY BENE
+ (Putaran 18: MENU "UPLOAD DATA CUSTOMER" - CENTANG HAPUS DATABASE,
+  TEMPLATE DIAMBIL DARI DATABASE, DAN PANDUAN CSV YANG DETAIL)
  TUTORIAL PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS DI WEBSITE
  (Tambahan 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST)
  (Tambahan 17C: RTS = RETAIL SALESMAN, TF = TASK FORCE,
@@ -8,6 +10,85 @@
  (Putaran 15: MENU GSP, PETA DIPERBAIKI, MENU DAPAT DIMINIMIZE
   Tambahan 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR)
 ==============================================================================
+
+ ============================================================================
+  PUTARAN 18 - MENU "UPLOAD DATA CUSTOMER" DIPERBAIKI  (WEBSITE)
+  (4 Oktober 2026)
+ ============================================================================
+
+  Yang Bapak minta:
+    1. Tambahkan CENTANG untuk hapus database. Bila tidak dicentang dan ada
+       data yang sudah ada, data akan DITIMPA dengan yang baru diunggah.
+    2. Buat detail caranya + versi CSV yang diterima secara detail.
+    3. Templatenya diambil sedikit dari database, atau ditampilkan secara
+       visual (lampirkan 1 customer saja dari database).
+
+  YANG SUDAH DIKERJAKAN (2 berkas website: upload_customer.php dan
+  template_customer.csv)
+
+   1. KOTAK CENTANG HAPUS SEMUA DATA CUSTOMER LAMA
+        - Kini tampil untuk ADMIN dan ASS (sebelumnya hanya ADMIN).
+        - TIDAK dicentang  -> data dengan id_customer yang sudah ada
+                              DITIMPA, yang belum ada DITAMBAHKAN, dan
+                              customer lain yang tidak ada di berkas tetap
+                              aman (tidak diapa-apakan).
+        - DICENTANG        -> seluruh data lama DISALIN DULU ke tabel arsip
+                              master_toko_deleted, baru tabel dikosongkan,
+                              lalu data dari berkas dimasukkan.
+        - Pengaman: wajib mengetik HAPUS, ada pertanyaan ulang, tabel arsip
+          harus ada, dan bila berkas tidak memuat data sah maka penghapusan
+          dibatalkan.
+        - Bila tabel arsip belum ada, halaman menyediakan tombol
+          BUAT / PERIKSA TABEL ARSIP (aman ditekan berulang).
+        - Seluruh proses dalam SATU transaksi: bila ada baris bermasalah,
+          semuanya dibatalkan termasuk penghapusan.
+
+   2. HASIL UNGGAHAN LEBIH JELAS
+        Pesan hijau menyebutkan: berapa data BARU ditambahkan, berapa data
+        lama DITIMPA, contoh nomor ID-nya, berapa baris dilewati, dan berapa
+        data lama yang diarsipkan (bila kotak hapus dicentang).
+
+   3. PEMBACA CSV DIPERMUDAH (tidak mudah galat lagi)
+        - Pemisah koma (,) ATAU titik koma (;) - ditebak otomatis.
+        - Urutan kolom BEBAS; nama kolom boleh huruf besar/kecil/spasi.
+        - Singkatan lazim dimengerti: toko, nama, district, wilayah, status,
+          long, lat, kode_customer, frekuensi, dan lain-lain (daftar lengkap
+          ada di halaman dan di UPLOAD_CUSTOMER.txt).
+        - Kolom tambahan (id, created_at, no) DIABAIKAN, tidak jadi galat.
+        - Angka desimal gaya Indonesia (98,4522605) diperbaiki otomatis.
+        - ID customer berekor ".0" dari Excel dibersihkan otomatis.
+        - tipe_customer / status_aktif yang dikosongkan otomatis REGULER /
+          Aktif.
+
+   4. PANDUAN DETAIL DI DALAM HALAMAN + DI BERKAS UPLOAD_CUSTOMER.txt
+        Berisi aturan berkas CSV, TABEL 11 KOLOM lengkap dengan contoh dan
+        keterangannya, daftar nama kolom alternatif, contoh cara menyimpan
+        dari Excel (CSV UTF-8), serta daftar pesan galat dan cara
+        memperbaikinya.
+
+   5. TEMPLATE DIAMBIL DARI DATABASE + CONTOH DITAMPILKAN DI HALAMAN
+        - Tombol "Download Template dari Database (10 contoh)" mengambil 10
+          data NYATA dari tabel customer Bapak sendiri (bukan tulisan
+          contoh), jadi bentuk berkasnya pasti sama dengan yang diminta.
+        - Di halaman juga ditampilkan TABEL contoh isi CSV yang diambil
+          langsung dari database Bapak (3 data terakhir) beserta bentuk
+          aslinya dalam baris CSV.
+        - Tombol "Download SEMUA Data Customer (backup)" untuk menyimpan
+          seluruh data sebelum mencentang kotak hapus. Berkasnya berbentuk
+          sama sehingga dapat langsung diunggah kembali.
+        - Berkas template_customer.csv bawaan tetap ada (1 baris contoh).
+
+  YANG BAPAK LAKUKAN (2 BERKAS - TIDAK ADA PERUBAHAN DATABASE WAJIB)
+  ---------------------------------------------------------------------
+    1. Unggah ke public_html, TIMPA berkas lama:
+             upload_customer.php
+             template_customer.csv
+    2. Muat ulang halaman (Ctrl + F5).
+    3. Bila nanti mencentang kotak hapus dan muncul pesan tabel arsip
+       belum ada, cukup tekan tombol BUAT / PERIKSA TABEL ARSIP di halaman.
+       (Atau jalankan RTS_PANEL_ARSIP_CUSTOMER.sql di phpMyAdmin.)
+
+  PANDUAN LENGKAP: UPLOAD_CUSTOMER.txt
 
 
  ============================================================================

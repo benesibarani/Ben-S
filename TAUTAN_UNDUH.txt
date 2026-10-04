@@ -1,4 +1,63 @@
-PALING BARU - TAMBAHAN 17C: RTS = RETAIL SALESMAN, TF = TASK FORCE,
+PALING BARU - PUTARAN 18: MENU "UPLOAD DATA CUSTOMER" DIPERBAIKI
+------------------------------------------------------------------------
+Permintaan Bapak:
+  1. Tambahkan centang untuk hapus database; bila tidak dicentang dan ada
+     data yang sudah ada, data akan DITIMPA dengan yang baru diunggah.
+  2. Buat detail caranya + versi CSV yang diterima secara detail.
+  3. Templatenya diambil sedikit dari database / ditampilkan secara visual
+     (lampirkan 1 customer saja dari database).
+
+Yang dikerjakan (2 BERKAS WEBSITE: upload_customer.php, template_customer.csv):
+  1. Kotak centang "HAPUS SEMUA DATA CUSTOMER LAMA SEBELUM UPLOAD" kini
+     tampil untuk ADMIN dan ASS. Tidak dicentang = data ditimpa/ditambah,
+     customer lain tetap aman. Dicentang = data lama DISALIN DULU ke tabel
+     arsip master_toko_deleted, baru dihapus, lalu data berkas dimasukkan.
+     Ada pengaman: wajib ketik HAPUS, pertanyaan ulang, tabel arsip harus ada,
+     dan berkas tanpa data sah tidak akan mengosongkan database.
+  2. Hasil unggahan menyebutkan: berapa ditambahkan, berapa DITIMPA, contoh
+     nomor ID-nya, baris yang dilewati, dan jumlah data yang diarsipkan.
+  3. Pembaca CSV dipermudah: pemisah koma ATAU titik koma (otomatis), urutan
+     kolom bebas, nama kolom boleh huruf besar/spasi, singkatan lazim
+     dimengerti (toko, district, status, long, lat, kode_customer, ...),
+     kolom tambahan diabaikan, desimal gaya Indonesia (98,4522) diperbaiki,
+     dan tipe_customer/status_aktif yang kosong otomatis REGULER/Aktif.
+  4. Panduan DETAIL di halaman + berkas UPLOAD_CUSTOMER.txt: aturan CSV,
+     tabel 11 kolom beserta contoh & keterangan, nama kolom alternatif,
+     cara menyimpan dari Excel, daftar pesan galat dan cara memperbaikinya.
+  5. Tombol "Download Template dari Database (10 contoh)" mengambil data
+     NYATA dari database Bapak; contoh isi CSV juga ditampilkan langsung di
+     halaman (3 data terakhir + bentuk barisnya). Ada pula tombol
+     "Download SEMUA Data Customer (backup)" yang hasilnya dapat langsung
+     diunggah kembali.
+
+CARA PASANG: TIMPA 2 berkas di public_html -> upload_customer.php dan
+template_customer.csv, lalu muat ulang halaman (Ctrl + F5).
+Tidak ada perubahan database yang wajib. Bila kotak hapus dipakai dan tabel
+arsipnya belum ada, cukup tekan tombol "BUAT / PERIKSA TABEL ARSIP" di
+halaman (atau jalankan RTS_PANEL_ARSIP_CUSTOMER.sql di phpMyAdmin).
+
+  PANDUAN LENGKAP:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/UPLOAD_CUSTOMER.txt
+    (lihat juga BACA_DULU.txt - PUTARAN 18)
+
+  PAKET:
+    RTS_PANEL_PUTARAN_18.zip  (semua berkas, sudah memuat perubahan ini)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18.zip
+    RTS_PANEL_UPLOAD_CUSTOMER.zip  (berkas khusus menu Upload Customer)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_UPLOAD_CUSTOMER.zip
+
+  BERKAS YANG DIGANTI (unggah ke public_html):
+    upload_customer.php
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/upload_customer.php
+    template_customer.csv
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/template_customer.csv
+
+  BERKAS TAMBAHAN (opsional, untuk phpMyAdmin):
+    RTS_PANEL_ARSIP_CUSTOMER.sql
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_ARSIP_CUSTOMER.sql
+
+------------------------------------------------------------------------
+TAMBAHAN 17C: RTS = RETAIL SALESMAN, TF = TASK FORCE,
 WSS & SMST OTOMATIS "SEMUA DISTRICT"
 ------------------------------------------------------------------------
 Ketetapan Bapak:

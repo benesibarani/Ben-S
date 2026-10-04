@@ -1,0 +1,316 @@
+==============================================================================
+ RTS PANEL BY BENE
+ PANDUAN - MENU "UPLOAD DATA CUSTOMER" (WEBSITE)
+ PUTARAN 18 - 4 Oktober 2026
+==============================================================================
+
+ ============================================================================
+  1. APA YANG BARU PADA PUTARAN INI
+ ============================================================================
+
+ Bapak meminta tiga hal pada halaman Upload Data Customer:
+
+    1. Tambahkan CENTANG untuk menghapus database, dan bila TIDAK dicentang
+       maka data yang sudah ada akan DITIMPA dengan data baru dari berkas.
+    2. Buat penjelasan yang DETAIL tentang cara memakai halaman ini dan
+       bentuk berkas CSV yang diterima.
+    3. Templatenya diambil dari database (contoh nyata 1 customer), atau
+       ditampilkan secara visual di halaman.
+
+ KETIGANYA SUDAH DIKERJAKAN - hanya 2 berkas website yang berubah:
+        upload_customer.php     (halaman utama - semua perubahan ada di sini)
+        template_customer.csv   (berkas contoh bawaan - boleh diunggah ulang)
+
+
+ ============================================================================
+  2. KOTAK CENTANG "HAPUS SEMUA DATA CUSTOMER LAMA SEBELUM UPLOAD"
+ ============================================================================
+
+ ---- 2A. BILA KOTAK TIDAK DICENTANG (cara biasa / aman) --------------------
+
+    Data di berkas dicocokkan dengan database memakai ID CUSTOMER:
+
+        - ID sudah ada di database  ->  data lama DITIMPA dengan isi berkas
+        - ID belum ada              ->  data DITAMBAHKAN sebagai customer baru
+        - Customer yang TIDAK ada di berkas  ->  TIDAK diapa-apakan (aman)
+
+    Setelah selesai, halaman menampilkan hasilnya dengan jelas, contoh:
+
+        "Selesai. 120 data BARU ditambahkan, 348 data lama DITIMPA dengan isi
+         berkas baru. Contoh ID yang ditimpa: 3000032344, 3000032357,
+         3000032366 (dan lainnya). Contoh ID baru: 3000099001."
+
+    Jadi Bapak dapat langsung memeriksa: berapa yang ditimpa, berapa yang
+    ditambah, dan contoh nomornya.
+
+ ---- 2B. BILA KOTAK DICENTANG (menghapus database customer) -----------------
+
+    Urutannya dibuat aman, TIDAK langsung menghapus:
+
+        1. Seluruh isi tabel customer DISALIN LEBIH DAHULU ke tabel arsip
+           `master_toko_deleted` (lengkap dengan kolom asal, siapa yang
+           menghapus, keterangan "HAPUS SEMUA SEBELUM UPLOAD CSV <tanggal>",
+           dan waktu penghapusan).
+        2. Baru tabel customer dikosongkan.
+        3. Data dari berkas yang diunggah masuk sebagai data baru.
+        4. Seluruh pekerjaan ada dalam SATU transaksi. Bila ada satu baris
+           bermasalah, semuanya DIBATALKAN - data lama tetap utuh.
+
+    PENGAMAN TAMBAHAN pada kotak centang:
+        - Bapak WAJIB mengetik kata  HAPUS  (huruf besar) pada kotak
+          konfirmasi yang muncul. Bila belum diketik, proses dibatalkan.
+        - Muncul pertanyaan sekali lagi sebelum dikirim.
+        - Tabel arsip harus ada. Bila belum ada, penghapusan DIBATALKAN dan
+          halaman memberi tombol "BUAT / PERIKSA TABEL ARSIP".
+        - Bila berkas tidak memuat satu pun data yang sah, penghapusan
+          dibatalkan (jadi database tidak akan kosong percuma).
+
+    SARAN: sebelum mencentang, tekan tombol
+    "Download SEMUA Data Customer (backup)" lebih dahulu.
+
+    Kotak centang ini sekarang tampil untuk ADMIN dan ASS (sebelumnya hanya
+    ADMIN). Catatan: seluruh data lama tetap dapat dilihat di tabel arsip
+    `master_toko_deleted` (buka phpMyAdmin), jadi masih bisa dipulihkan.
+
+
+ ============================================================================
+  3. BENTUK BERKAS CSV YANG DITERIMA (DETAIL)
+ ============================================================================
+
+ ---- 3A. ATURAN UMUM -------------------------------------------------------
+
+    1. Jenis berkas        : CSV (comma separated values) / teks biasa,
+                             berekstensi .csv. Buka dengan Notepad pun bisa.
+    2. Baris pertama       : WAJIB berisi NAMA KOLOM (judul).
+                             Jangan menaruh komentar, judul laporan, atau
+                             baris kosong di atasnya.
+    3. Baris berikutnya    : data customer, satu baris = satu customer.
+    4. Pemisah kolom       : koma ( , ) - juga boleh titik koma ( ; ) bila
+                             berasal dari Excel bahasa Indonesia.
+                             Halaman menebak sendiri pemisah yang dipakai.
+    5. Urutan kolom        : BEBAS. Yang penting nama kolomnya ada.
+    6. Nama kolom          : tidak harus huruf kecil semua. Boleh
+                             "NAMA TOKO", "Nama Toko", "nama_toko" -
+                             semuanya dianggap sama. Singkatan lazim juga
+                             dimengerti (lihat daftar di bagian 3C).
+    7. Kolom tambahan      : DIABAIKAN (tidak ikut tersimpan) dan namanya
+                             ditampilkan pada pesan hasil. Jadi berkas yang
+                             memuat kolom id / created_at / keterangan tetap
+                             dapat diunggah.
+    8. Huruf & tanda baca  : simpan sebagai CSV UTF-8. Berkas dengan tanda
+                             BOM (hasil Excel) tetap diterima.
+    9. Tanda kutip         : pakai tanda kutip bila isinya memuat koma.
+                             Contoh: "JL. SUDIRMAN, NO 10"
+   10. Ukuran berkas       : maksimal 20 MB.
+   11. Baris kosong        : dilewati (tidak dianggap galat).
+   11b. Jumlah kolom       : setiap baris data harus punya jumlah kolom SAMA
+                             dengan baris nama kolom. Bila berbeda, unggahan
+                             dibatalkan dan halaman menyebutkan baris ke
+                             berapa serta sebab yang paling mungkin - supaya
+                             tidak ada data yang masuk ke kolom yang salah.
+   12. Angka desimal       : titik (98.4522605) maupun koma gaya Indonesia
+                             (98,4522605) keduanya dibaca dengan benar.
+                             PENTING: tanda koma di dalam isi kolom WAJIB diapit
+                             tanda kutip, karena koma adalah pemisah kolom:
+                                 benar : "98,4522605"
+                                 salah : 98,4522605   (koma dianggap pemisah)
+                             Excel mengapitnya sendiri bila berkas disimpan
+                             dari Excel.
+   13. Angka pada Excel    : bila ID customer berubah menjadi 3000032344.0,
+                             ekor ".0"-nya dibuang otomatis.
+
+ ---- 3B. DAFTAR KOLOM (11 KOLOM) -------------------------------------------
+
+  No  Nama kolom        Isi            Contoh                 Keterangan
+  --  ----------------  -------------  ---------------------  ---------------
+   1  id_customer       WAJIB         3000032344             Nomor unik
+                                                             customer. Bila
+                                                             sudah ada ->
+                                                             DITIMPA.
+   2  nama_toko         WAJIB         YASIR                  Nama toko.
+   3  tipe_customer     boleh kosong  REGULER                REGULER / GSP.
+                                                             Kosong =
+                                                             REGULER.
+   4  salesman          WAJIB         DONNY NOEGROHO / SMST  Nama sales,
+                                                             samakan dengan
+                                                             menu Kelola
+                                                             Akun Tim.
+   5  alamat            WAJIB         JL. PROKLAMASI NO 11   Alamat toko.
+   6  kunjungan         WAJIB         Bi-Weekly Ganjil       Frekuensi
+                                                             kunjungan:
+                                                             Weekly /
+                                                             Bi-Weekly Ganjil
+                                                             / Bi-Weekly
+                                                             Genap.
+   7  hari              WAJIB         Rabu                   Senin s/d
+                                                             Minggu.
+   8  sales_district    WAJIB         STABAT                 Nama district.
+   9  longitude         WAJIB         98.4522605             Titik peta
+                                                             (bujur).
+  10  latitude          WAJIB         3.7500542              Titik peta
+                                                             (lintang).
+  11  status_aktif      boleh kosong  Aktif                  Aktif /
+                                                             Nonaktif.
+                                                             Kosong = Aktif.
+
+ ---- 3C. NAMA KOLOM LAIN YANG TETAP DIMENGERTI -----------------------------
+
+    tipe            -> tipe_customer          district      -> sales_district
+    jenis           -> tipe_customer          distrik       -> sales_district
+    jenis_customer  -> tipe_customer          wilayah       -> sales_district
+    toko            -> nama_toko              long / lng    -> longitude
+    nama            -> nama_toko              bujur         -> longitude
+    nama_outlet     -> nama_toko              lat           -> latitude
+    outlet          -> nama_toko              lintang       -> latitude
+    kode_customer   -> id_customer            status        -> status_aktif
+    kode_toko       -> id_customer            sales         -> salesman
+    id_toko         -> id_customer            nama_sales    -> salesman
+    customer_id     -> id_customer            nama_salesman -> salesman
+    alamat_toko     -> alamat                 frekuensi     -> kunjungan
+    alamat_lengkap  -> alamat                 hari_kunjungan-> hari
+    address         -> alamat                 day           -> hari
+
+ ---- 3D. CONTOH SATU BARIS (dari database Bapak sendiri) -------------------
+
+    Hasilnya di dalam berkas CSV terlihat seperti ini (satu baris, tanpa
+    dipenggal). Baris pertama adalah nama kolom:
+
+ id_customer,nama_toko,tipe_customer,salesman,alamat,kunjungan,hari,sales_district,longitude,latitude,status_aktif
+ 3000032344,YASIR,REGULER,DONNY NOEGROHO / SMST,JL. PROKLAMASI NO 11,Bi-Weekly Ganjil,Rabu,STABAT,98.4522605,3.7500542,Aktif
+
+    Contoh di atas adalah bentuk ASLI data yang tersimpan di tabel customer
+    Bapak. Contoh NYATA yang sedang ada di database juga DITAMPILKAN
+    LANGSUNG DI HALAMAN (bagian "Contoh isi CSV - diambil langsung dari
+    database Bapak"), jadi Bapak dapat membandingkan sendiri.
+
+ ---- 3E. PESAN GALAT DAN CARA MEMPERBAIKINYA ------------------------------
+
+    "Kolom berikut belum ada pada baris pertama berkas: ..."
+        -> Nama kolom salah tulis atau ada yang terhapus. Perbaiki baris
+           pertama. Halaman menyebutkan kolom mana yang kurang.
+
+    "Nama kolom berikut muncul lebih dari sekali ..."
+        -> Ada dua kolom dengan arti yang sama (misalnya "toko" dan
+           "nama_toko"). Hapus salah satunya.
+
+    "Baris CSV ke-N jumlah kolomnya KURANG: ada X kolom, seharusnya Y ..."
+        -> Ada kolom yang belum diisi pada baris itu, atau tanda koma/kutipnya
+           kurang. Perbaiki baris tersebut.
+
+    "Baris CSV ke-N jumlah kolomnya KELEBIHAN: ada X kolom, seharusnya Y ..."
+        -> Biasanya karena ada tanda koma di dalam isi kolom yang tidak diapit
+           tanda kutip - umpamanya angka desimal 98,4522 atau alamat yang
+           memuat koma. Tulis seperti ini: "98,4522" dan "JL. SUDIRMAN, NO 10".
+        -> Bisa juga karena ada tanda koma berlebih di akhir baris.
+
+    "tipe_customer hanya boleh REGULER atau GSP ..."
+        -> Isi kolom tipe_customer selain kedua nilai itu. Kosongkan saja
+           bila ragu (otomatis REGULER).
+
+    "Tabel arsip master_toko_deleted belum ada ..."
+        -> Kotak hapus dicentang tetapi tabel arsip belum dibuat. Tekan
+           tombol "BUAT / PERIKSA TABEL ARSIP" di halaman, atau jalankan
+           berkas RTS_PANEL_ARSIP_CUSTOMER.sql di phpMyAdmin.
+
+    "Halaman sudah kadaluarsa ..."
+        -> Halaman dibiarkan terbuka terlalu lama. Muat ulang (Ctrl + F5),
+           lalu ulangi.
+
+    "Upload dibatalkan: ..."
+        -> Ada masalah di tengah proses. Tidak ada satu pun perubahan yang
+           tersimpan (data lama tetap utuh). Perbaiki berkas lalu ulangi.
+
+
+ ============================================================================
+  4. CARA MENGUNGGAH - LANGKAH DEMI LANGKAH
+ ============================================================================
+
+    1. Buka halaman Upload Data Customer di website.
+    2. Tekan tombol  "Download Template dari Database (10 contoh)".
+       Berkas berisi nama kolom + 10 customer nyata dari database Bapak.
+    3. Buka berkas itu dengan Excel atau WPS.
+    4. Hapus baris-baris contohnya, lalu isi dengan data Bapak.
+       JANGAN mengubah atau menghapus baris pertama (nama kolom).
+    5. Simpan kembali dengan format:  CSV UTF-8 (Comma delimited) (*.csv)
+       (di Excel: File > Save As > pilih jenis berkas itu).
+    6. Di halaman, tekan "Choose File" lalu pilih berkas tadi.
+    7. TENTUKAN: kotak "HAPUS SEMUA DATA CUSTOMER LAMA" dicentang atau tidak.
+         - TIDAK dicentang  -> data ditimpa/ditambah (aman, cara biasa)
+         - dicentang        -> semua data lama diarsipkan lalu dihapus dulu,
+                               ketik HAPUS pada kotak konfirmasi
+    8. Tekan "Upload dan Update Data", tunggu sampai muncul pesan hijau.
+    9. Pesan hijau memuat: berapa ditambahkan, berapa ditimpa, contoh nomor
+       ID-nya, dan (bila menghapus) berapa data yang diarsipkan.
+   10. Buka aplikasi Android lalu menu Sinkronisasi untuk menarik data baru.
+       (Petugas juga otomatis menerima pemberitahuan data customer diperbarui.)
+
+
+ ============================================================================
+  5. TOMBOL-TOMBOL UNDUH
+ ============================================================================
+
+    Download Template dari Database (10 contoh)
+        Berkas CSV berisi nama kolom + 10 data customer nyata dari database
+        Bapak. Paling mudah dipakai untuk mulai mengisi data.
+
+    Template Kosong (1 contoh kosong)
+        Nama kolom + 1 baris contoh. Dipakai bila database masih kosong.
+
+    Download SEMUA Data Customer (backup)
+        Seluruh isi tabel customer (tanpa batas) dalam bentuk CSV yang sama,
+        diberi nama backup_customer_<tanggal>_<jam>.csv.
+        Gunanya: menyimpan data lama lebih dahulu. Berkas hasilnya dapat
+        langsung diunggah kembali bila diperlukan.
+
+
+ ============================================================================
+  6. TABEL ARSIP master_toko_deleted
+ ============================================================================
+
+    Tabel ini tempat data customer lama disimpan sebelum dihapus. Isinya:
+    seluruh kolom customer + original_id + alasan_penghapusan +
+    dihapus_oleh + dihapus_at.
+
+    Halaman dapat membuat tabel ini sendiri: tekan tombol
+    "BUAT / PERIKSA TABEL ARSIP". Aman ditekan berulang kali (bila sudah ada
+    yang kurang hanya kolomnya yang ditambahkan).
+
+    Bila lebih suka lewat phpMyAdmin, jalankan berkas
+    RTS_PANEL_ARSIP_CUSTOMER.sql pada database benedics_benes_sales.
+
+    Melihat kembali data yang pernah dihapus (phpMyAdmin > SQL):
+
+        SELECT * FROM master_toko_deleted ORDER BY dihapus_at DESC LIMIT 50;
+
+
+ ============================================================================
+  7. YANG TIDAK BERUBAH (TETAP AMAN)
+ ============================================================================
+
+    - Hak akses: hanya ADMIN dan ASS yang dapat membuka halaman ini.
+    - Seluruh perintah database memakai prepared statement.
+    - Proses memakai transaksi, jadi tidak ada data setengah tersimpan.
+    - Pemberitahuan otomatis ke layar petugas tetap berjalan setelah unggahan.
+    - Halaman tidak menampilkan atau mengirim kredensial database apa pun.
+
+
+ ============================================================================
+  8. CARA PASANG (HANYA 2 BERKAS - TIDAK ADA PERUBAHAN DATABASE WAJIB)
+ ============================================================================
+
+    1. Unggah ke folder website (cPanel > File Manager > public_html),
+       TIMPA berkas lama:
+             upload_customer.php
+             template_customer.csv
+    2. Muat ulang halaman Upload Data Customer (Ctrl + F5).
+    3. Selesai. Tabel arsip (bila belum ada) dapat dibuat langsung dari
+       halaman memakai tombol yang tersedia - tidak perlu menjalankan SQL
+       sendiri.
+
+    Catatan: bila Bapak ingin mencoba dulu dengan aman, uji pada database
+    testing lebih dahulu (jangan langsung di produksi sebelum ada backup).
+
+
+ ============================================================================
+  RTS Panel By Bene - Putaran 18
+ ============================================================================
