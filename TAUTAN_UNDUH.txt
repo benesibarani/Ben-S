@@ -1,4 +1,50 @@
-PALING BARU - TAMBAHAN 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST
+PALING BARU - TAMBAHAN 17C: RTS = RETAIL SALESMAN, TF = TASK FORCE,
+WSS & SMST OTOMATIS "SEMUA DISTRICT"
+------------------------------------------------------------------------
+Ketetapan Bapak:
+  1. RTS = RETAIL SALESMAN
+  2. TF  = TASK FORCE - "Sales yang ditugaskan menjual Produk Perusahaan yang
+           dititipkan di Customer yang di-Cover WSS"
+  3. WSS & SMST -> otomatis "Semua District" saat disimpan.
+
+Yang dikerjakan (HANYA 1 BERKAS WEBSITE: kelola_akun_tim.php):
+  1. Kepanjangan role resmi sekarang:
+        WSS  = Warehouse Shoe Sale        (outlet sendiri, SETIAP district)
+        SMST = Sales Modern Small Trade   (outlet sendiri, SETIAP district)
+        RTS  = Retail Salesman            (dulu: Sales / Salesman)
+        TF   = Task Force                 (dulu: Team Force)
+  2. WSS & SMST OTOMATIS SEMUA DISTRICT, dijaga 3 lapis:
+        a. di layar   - kotak Sales District dikosongkan & DIMATIKAN sendiri
+                        begitu role WSS/SMST dipilih;
+        b. di server  - district dikosongkan ulang oleh server, jadi aturan
+                        tidak bisa dilanggar walau formulir dikirim cara lain;
+        c. keterangan - "Otomatis Semua District bila role WSS atau SMST" di
+                        bawah kotak, dan ditegaskan lagi pada pesan sukses.
+  3. TOMBOL BARU [ RAPIKAN JADI SEMUA DISTRICT ]: sekali tekan, semua akun
+     WSS/SMST sisa data lama dijadikan SEMUA DISTRICT - data district lamanya
+     disalin DULU ke tabel arsip (keterangan DIRAPIKAN), jadi masih dapat
+     dilihat kembali. Bila tabel arsip belum ada, perapian DIBATALKAN.
+
+CARA PASANG: TIMPA 1 berkas di public_html -> kelola_akun_tim.php,
+lalu muat ulang halaman (Ctrl + F5). TIDAK ada perubahan database, TIDAK ada
+perubahan sidebar, dan TIDAK perlu membangun ulang aplikasi Android.
+
+  PANDUAN LENGKAP:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/KELOLA_AKUN_TIM.txt
+    (lihat juga BACA_DULU.txt - TAMBAHAN PUTARAN 17C)
+
+  PAKET:
+    RTS_PANEL_PUTARAN_17C.zip  (semua berkas, sudah memuat tambahan ini)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_17C.zip
+    RTS_PANEL_KELOLA_AKUN_TIM_REVISI.zip  (6 berkas khusus menu ini)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_KELOLA_AKUN_TIM_REVISI.zip
+
+  BERKAS YANG DIGANTI (unggah ke public_html):
+    kelola_akun_tim.php
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/kelola_akun_tim.php
+
+------------------------------------------------------------------------
+TAMBAHAN 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST
 ------------------------------------------------------------------------
 Permintaan Bapak: "Ubah kepanjangan dari: WSS (Warehouse Shoe Sale),
 SMST (Sales Modern Small Trade). WSS punya outlet sendiri dan di setiap
@@ -9,8 +55,8 @@ Yang dibetulkan (HANYA 1 BERKAS WEBSITE: kelola_akun_tim.php):
   1. Kepanjangan role yang benar:
         WSS  = Warehouse Shoe Sale        (dulu salah: Supervisor / Wilayah)
         SMST = Sales Modern Small Trade   (dulu salah: Sales Manager / SM)
-        RTS  = Sales / Salesman
-        TF   = Team Force
+        RTS  = Sales / Salesman   (dibetulkan lagi di TAMBAHAN 17C:
+        TF   = Team Force          RTS = Retail Salesman, TF = Task Force)
   2. Keterangan setiap role sekarang tertulis di halaman:
         WSS  - outlet sendiri, ada di SETIAP district karena GROSIR
                -> cakupan SEMUA district
@@ -18,6 +64,7 @@ Yang dibetulkan (HANYA 1 BERKAS WEBSITE: kelola_akun_tim.php):
                -> cakupan SEMUA district
         RTS  - menangani district tertentu
         TF   - menangani district tertentu
+        (RTS & TF di atas adalah penulisan lama - lihat TAMBAHAN 17C)
   3. Empat kartu jumlah akun kini menampilkan kepanjangan role + cakupan
      districtnya, ditambah kartu "Keterangan Role", dan keterangan role
      langsung muncul di bawah kotak Role pada formulir Edit/Tambah.

@@ -187,9 +187,12 @@ if (!in_array($kat_role_login, ['ADMIN', 'ASS'], true)) {
             Punya outlet sendiri dan ada di SETIAP district karena MODERN
             TRADE.
 
-     RTS  = Sales / Salesman  (menangani district tertentu)
+     RTS  = Retail Salesman   (menangani district tertentu)
 
-     TF   = Team Force        (menangani district tertentu)
+     TF   = Task Force        (sales yang ditugaskan menjual produk perusahaan
+                               yang dititipkan di customer yang di-cover WSS)
+
+   WSS & SMST memakai cakupan SEMUA DISTRICT secara otomatis.
    -------------------------------------------------------------------------- */
 
 /* Kepanjangan resmi tiap role - SATU-SATUNYA sumber, jadi tidak ada
@@ -197,8 +200,8 @@ if (!in_array($kat_role_login, ['ADMIN', 'ASS'], true)) {
 $kat_panjang_role = [
     'WSS'  => 'Warehouse Shoe Sale',
     'SMST' => 'Sales Modern Small Trade',
-    'RTS'  => 'Sales / Salesman',
-    'TF'   => 'Team Force',
+    'RTS'  => 'Retail Salesman',
+    'TF'   => 'Task Force',
 ];
 
 /* Keterangan panjang - tampil pada kartu jumlah akun dan pada kotak Role. */
@@ -207,8 +210,9 @@ $kat_keterangan_role = [
             . '(Warehouse Shoe Sale).',
     'SMST' => 'Punya outlet sendiri dan ada di SETIAP district karena Modern '
             . 'Trade (Sales Modern Small Trade).',
-    'RTS'  => 'Sales / salesman yang menangani district tertentu.',
-    'TF'   => 'Team Force yang menangani district tertentu.',
+    'RTS'  => 'Retail salesman - menangani district tertentu.',
+    'TF'   => 'Sales yang ditugaskan menjual produk perusahaan yang dititipkan '
+            . 'di customer yang di-cover WSS.',
 ];
 
 /* Cakupan wilayah (untuk lencana pada daftar keterangan role). */
@@ -216,8 +220,13 @@ $kat_cakupan_role = [
     'WSS'  => 'SEMUA district',
     'SMST' => 'SEMUA district',
     'RTS'  => 'District tertentu',
-    'TF'   => 'District tertentu',
+    'TF'   => 'Mengikuti cakupan WSS',
 ];
+
+/* WSS dan SMST OTOMATIS memakai SEMUA DISTRICT, karena outletnya ada di
+   setiap district. Bila salah satu role ini dipilih, isian Sales District
+   dikosongkan sendiri - baik oleh halaman maupun oleh pemeriksaan di server. */
+$kat_role_semua_district = ['WSS', 'SMST'];
 
 $kat_role_boleh = ['WSS', 'SMST', 'RTS', 'TF'];
 
@@ -311,6 +320,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $kat_role = strtoupper(trim((string) ($_POST['role'] ?? '')));
             $kat_salesman = trim((string) ($_POST['salesman'] ?? ''));
             $kat_district = rts_district_rapikan($conn, (string) ($_POST['sales_district'] ?? ''));
+
+            /* WSS & SMST otomatis SEMUA DISTRICT (outletnya ada di setiap
+               district). Pemeriksaan ini dilakukan di SERVER, jadi tetap
+               berlaku walau pilihan dikirim dengan cara lain. */
+            if (in_array($kat_role, $kat_role_semua_district, true)) {
+                $kat_district = '';
+            }
             $kat_status = ((string) ($_POST['status_aktif'] ?? 'Aktif')) === 'Nonaktif' ? 'Nonaktif' : 'Aktif';
             $kat_password = (string) ($_POST['password'] ?? '');
 
@@ -410,6 +426,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $kat_kabar = 'Akun ' . htmlspecialchars($kat_username) . ' berhasil disimpan.';
                         }
 
+                        if (in_array($kat_role, $kat_role_semua_district, true)) {
+                            $kat_kabar .= ' Sales District dijadikan SEMUA DISTRICT '
+                                . '(WSS & SMST ada di setiap district).';
+                        }
+
                         /* Salinan perubahan ke arsip (bila tabel arsip sudah ada). */
                         if (rts_kelola_tabel_arsip_ada($conn)) {
                             rts_kelola_arsipkan($conn, $kat_id, 'DIUBAH', (string) ($_SESSION['username'] ?? ''));
@@ -427,6 +448,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $kat_role = strtoupper(trim((string) ($_POST['role'] ?? 'RTS')));
         $kat_salesman = trim((string) ($_POST['salesman'] ?? ''));
         $kat_district = rts_district_rapikan($conn, (string) ($_POST['sales_district'] ?? ''));
+
+        /* WSS & SMST otomatis SEMUA DISTRICT (outletnya ada di setiap district). */
+        if (in_array($kat_role, $kat_role_semua_district, true)) {
+            $kat_district = '';
+        }
         $kat_status = ((string) ($_POST['status_aktif'] ?? 'Aktif')) === 'Nonaktif' ? 'Nonaktif' : 'Aktif';
 
         if ($kat_nama === '' || $kat_username === '' || strlen($kat_password) < 6) {
@@ -459,9 +485,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($kat_stmt->execute()) {
                     $kat_kabar = 'Akun baru ' . htmlspecialchars($kat_username) . ' ('
                         . htmlspecialchars($kat_role) . ') berhasil dibuat dan dapat langsung masuk aplikasi.';
+
+                    if (in_array($kat_role, $kat_role_semua_district, true)) {
+                        $kat_kabar .= ' Sales District otomatis SEMUA DISTRICT '
+                            . '(WSS & SMST ada di setiap district).';
+                    }
                 } else {
                     $kat_galat = 'Gagal membuat akun: ' . htmlspecialchars($kat_stmt->error);
                     $kat_jenis_pesan = 'danger';
+                }
+            }
+        }
+    } elseif ($kat_aksi === 'rapikan') {
+        /* ------------------------------------------------------- RAPIKAN */
+        /* Menjadikan seluruh akun WSS & SMST sebagai SEMUA DISTRICT.
+           Data lamanya disalin lebih dahulu ke tabel arsip, jadi masih dapat
+           dilihat (dan dikembalikan) bila diperlukan. */
+        $kat_oleh = (string) ($_SESSION['username'] ?? '');
+
+        if (!rts_kelola_tabel_arsip_ada($conn)) {
+            $kat_galat = 'Tabel arsip `sales_users_arsip` belum ada, jadi perapian DIBATALKAN '
+                . 'supaya data district yang lama tidak hilang tanpa salinan.';
+            $kat_jenis_pesan = 'danger';
+        } else {
+            $kat_sasar = [];
+            $kat_h3 = @$conn->query("SELECT id, username FROM sales_users "
+                . "WHERE UPPER(role) IN ('WSS','SMST') "
+                . "AND TRIM(COALESCE(sales_district, '')) <> '' LIMIT 300");
+
+            if ($kat_h3 instanceof mysqli_result) {
+                while ($kat_b3 = $kat_h3->fetch_assoc()) {
+                    $kat_sasar[] = $kat_b3;
+                }
+
+                $kat_h3->free();
+            }
+
+            if (!$kat_sasar) {
+                $kat_kabar = 'Semua akun WSS & SMST sudah memakai SEMUA DISTRICT. '
+                    . 'Tidak ada yang perlu dirapikan.';
+            } else {
+                $kat_berhasil = 0;
+                $kat_gagal = 0;
+                $kat_kosong = '';
+
+                foreach ($kat_sasar as $kat_b3) {
+                    $kat_id3 = (int) $kat_b3['id'];
+
+                    /* Salinan SEBELUM diubah (memuat district yang lama). */
+                    if (!rts_kelola_arsipkan($conn, $kat_id3, 'DIRAPIKAN', $kat_oleh)) {
+                        $kat_gagal++;
+                        continue;
+                    }
+
+                    $kat_up = $conn->prepare('UPDATE sales_users SET sales_district = ? WHERE id = ?');
+                    $kat_up->bind_param('si', $kat_kosong, $kat_id3);
+
+                    if ($kat_up->execute()) {
+                        $kat_berhasil++;
+                    } else {
+                        $kat_gagal++;
+                    }
+                }
+
+                $kat_kabar = (int) $kat_berhasil . ' akun WSS/SMST dijadikan SEMUA DISTRICT.'
+                    . ' Data district lamanya tersimpan di tabel arsip dengan keterangan DIRAPIKAN.';
+
+                if ($kat_gagal > 0) {
+                    $kat_kabar .= ' ' . (int) $kat_gagal . ' akun gagal dirapikan.';
                 }
             }
         }
@@ -755,6 +846,18 @@ foreach ($kat_daftar as $kat_baris3) {
     }
 }
 
+/* Berapa akun WSS/SMST yang masih memakai district tertentu - dipakai untuk
+   menampilkan tombol "RAPIKAN JADI SEMUA DISTRICT". */
+$kat_perlu_rapi = 0;
+$kat_hitung_rapi = @$conn->query("SELECT COUNT(*) AS n FROM sales_users "
+    . "WHERE UPPER(role) IN ('WSS','SMST') "
+    . "AND TRIM(COALESCE(sales_district, '')) <> ''");
+
+if ($kat_hitung_rapi instanceof mysqli_result) {
+    $kat_perlu_rapi = (int) ($kat_hitung_rapi->fetch_assoc()['n'] ?? 0);
+    $kat_hitung_rapi->free();
+}
+
 /* Daftar district untuk kotak pilihan: nilai nyata dari database digabung
    dengan daftar bawaan (lihat district.php). Namanya sengaja berbeda dari
    $kat_district di atas supaya tidak tertukar dengan isian formulir. */
@@ -840,10 +943,32 @@ require_once __DIR__ . '/header.php';
         <?php endforeach; ?>
       </div>
       <div class="form-text mt-3 mb-0">
-        WSS dan SMST ada di SETIAP district (Grosir dan Modern Trade), jadi pada
-        kotak <b>Sales District</b> keduanya umumnya dibiarkan
-        <b>-- Semua District --</b>. RTS dan TF menangani district tertentu.
+        WSS dan SMST ada di SETIAP district (Grosir dan Modern Trade), jadi kedua
+        role itu <b>OTOMATIS memakai SEMUA DISTRICT</b> - kotak Sales District
+        dikosongkan sendiri saat role WSS atau SMST dipilih. RTS menangani
+        district tertentu, sedangkan TF menjual produk titipan di customer yang
+        di-cover WSS.
       </div>
+
+      <?php if ($kat_perlu_rapi > 0): ?>
+        <div class="alert alert-info mt-3 mb-0 d-flex justify-content-between
+                    align-items-center flex-wrap gap-2">
+          <div>
+            Ada <b><?= (int) $kat_perlu_rapi ?> akun WSS/SMST</b> yang masih memakai
+            district tertentu. Karena keduanya ada di setiap district, sebaiknya
+            dijadikan <b>SEMUA DISTRICT</b>. Data district lamanya disalin lebih
+            dahulu ke tabel arsip, jadi masih dapat dilihat kembali.
+          </div>
+          <form method="post"
+                onsubmit="return confirm('Jadikan seluruh akun WSS &amp; SMST sebagai SEMUA DISTRICT?')">
+            <input type="hidden" name="kat_aksi" value="rapikan">
+            <input type="hidden" name="kat_token" value="<?= kat_e($kat_token) ?>">
+            <button class="btn btn-sm btn-info">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> RAPIKAN JADI SEMUA DISTRICT
+            </button>
+          </form>
+        </div>
+      <?php endif; ?>
     </div>
   </div>
 
@@ -1043,7 +1168,7 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
               </div>
               <div class="col-md-6">
                 <label class="form-label">Sales District</label>
-                <select name="sales_district" class="form-select">
+                <select name="sales_district" class="form-select" data-kat-district>
                   <option value="">-- Semua District --</option>
                   <?php foreach ($kat_district_daftar as $kat_d): ?>
                     <option value="<?= kat_e($kat_d) ?>"
@@ -1052,6 +1177,9 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
                     </option>
                   <?php endforeach; ?>
                 </select>
+                <div class="form-text">
+                  Otomatis <b>Semua District</b> bila role WSS atau SMST.
+                </div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Status Akun</label>
@@ -1185,12 +1313,15 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
             </div>
             <div class="col-md-6">
               <label class="form-label">Sales District</label>
-              <select name="sales_district" class="form-select">
+              <select name="sales_district" class="form-select" data-kat-district>
                 <option value="">-- Semua District --</option>
                 <?php foreach ($kat_district_daftar as $kat_d): ?>
                   <option value="<?= kat_e($kat_d) ?>"><?= kat_e($kat_d) ?></option>
                 <?php endforeach; ?>
               </select>
+              <div class="form-text">
+                Otomatis <b>Semua District</b> bila role WSS atau SMST.
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label">Status</label>
@@ -1217,10 +1348,29 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
   document.querySelectorAll('[data-kat-role]').forEach(function (kotak) {
     var keterangan = kotak.parentElement.querySelector('[data-kat-ket]');
 
+    var bentuk = kotak.closest('form');
+    var distrik = bentuk ? bentuk.querySelector('[data-kat-district]') : null;
+
     function perbarui() {
-      if (!keterangan) return;
-      var pilihan = kotak.options[kotak.selectedIndex];
-      keterangan.innerHTML = pilihan ? (pilihan.getAttribute('data-ket') || '') : '';
+      if (keterangan) {
+        var pilihan = kotak.options[kotak.selectedIndex];
+        keterangan.innerHTML = pilihan ? (pilihan.getAttribute('data-ket') || '') : '';
+      }
+
+      /* WSS & SMST = SEMUA DISTRICT: kotak district dikosongkan dan dimatikan,
+         karena keduanya ada di setiap district. */
+      if (distrik) {
+        var semuaDistrict = (kotak.value === 'WSS' || kotak.value === 'SMST');
+
+        if (semuaDistrict) {
+          distrik.value = '';
+          distrik.setAttribute('disabled', 'disabled');
+          distrik.classList.add('bg-light');
+        } else {
+          distrik.removeAttribute('disabled');
+          distrik.classList.remove('bg-light');
+        }
+      }
     }
 
     kotak.addEventListener('change', perbarui);

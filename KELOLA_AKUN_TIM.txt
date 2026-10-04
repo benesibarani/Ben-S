@@ -1,7 +1,7 @@
 ==============================================================================
  RTS PANEL BY BENE
  PANDUAN - MENU "KELOLA AKUN TIM" UNTUK ADMIN DAN ASS
- PUTARAN 17 - 4 Oktober 2026
+ PUTARAN 17 + TAMBAHAN 17C - 4 Oktober 2026
 ==============================================================================
 
  ============================================================================
@@ -28,11 +28,13 @@
                TRADE.
                Cakupan: SEMUA district.
 
-        RTS  = Sales / Salesman
+        RTS  = RETAIL SALESMAN
                Cakupan: district tertentu.
 
-        TF   = Team Force
-               Cakupan: district tertentu.
+        TF   = TASK FORCE
+               Sales yang ditugaskan menjual Produk Perusahaan yang dititipkan
+               di Customer yang di-cover WSS.
+               Cakupan: mengikuti cakupan WSS.
 
  Di halaman Kelola Akun Tim tersedia satu bagian bernama "Keterangan Role"
  yang menampilkan keempat keterangan di atas, jadi tidak perlu menghafal.
@@ -116,8 +118,9 @@
                   karena Grosir
            SMST - Sales Modern Small Trade - outlet sendiri, ada di SETIAP
                   district karena Modern Trade
-           RTS  - Sales / Salesman - district tertentu
-           TF   - Team Force - district tertentu
+           RTS  - Retail Salesman - district tertentu
+           TF   - Task Force - sales yang ditugaskan menjual produk
+                  perusahaan yang dititipkan di customer yang di-cover WSS
      - Pada formulir Edit dan Tambah, begitu Role dipilih, keterangannya
        langsung muncul di bawah kotak Role.
      - Kotak pilihan Role memakai kepanjangan resmi, contoh:
@@ -131,8 +134,9 @@
     2. Ubah bagian yang perlu:
          - Nama Lengkap, Email, Username
          - Role (WSS / SMST / RTS / TF). Keterangan role muncul di bawahnya.
-           Untuk WSS dan SMST, Sales District umumnya dibiarkan
-           "-- Semua District --" karena outletnya ada di setiap district.
+           Bila role WSS atau SMST yang dipilih, kotak Sales District
+           DIMATIKAN dan dikosongkan sendiri - artinya otomatis SEMUA
+           DISTRICT, karena outlet WSS & SMST ada di setiap district.
          - Salesman, Sales District
          - Status Akun: Aktif / Nonaktif
          - Password Baru: kosongkan bila TIDAK ingin diganti
@@ -168,13 +172,37 @@
     1. Tekan [ Tambah Akun Tim ] di kanan atas.
     2. Isi: Nama Lengkap, Email (boleh kosong), Username, Password (minimal
        6 karakter), Role, Salesman, Sales District, Status.
+       Catatan: bila role WSS atau SMST yang dipilih, kotak Sales District
+       dimatikan dan dikosongkan sendiri (otomatis SEMUA DISTRICT).
     3. Tekan "Simpan Akun". Akun baru dapat langsung dipakai masuk.
+
+  ---------------------------------------------------------------------------
+  RAPIKAN JADI SEMUA DISTRICT (WSS & SMST)
+  ---------------------------------------------------------------------------
+    Bila masih ada akun WSS/SMST yang memakai district tertentu (misalnya
+    sisa data lama), halaman ini menampilkan kotak biru:
+
+        "Ada N akun WSS/SMST yang masih memakai district tertentu ..."
+        dengan tombol  [ RAPIKAN JADI SEMUA DISTRICT ].
+
+    1. Tekan tombol tersebut, lalu setujui pertanyaannya.
+    2. Seluruh akun WSS & SMST dijadikan SEMUA DISTRICT sekaligus (maksimal
+       300 akun sekali tekan).
+    3. SEBELUM diubah, data district lamanya DISALIN LEBIH DAHULU ke tabel
+       arsip dengan keterangan tindakan DIRAPIKAN, jadi masih dapat dilihat
+       kembali kapan saja.
+    4. Bila tabel arsip belum dibuat, perapian DIBATALKAN dan halaman
+       menampilkan pesan - supaya tidak ada data district yang hilang tanpa
+       salinan.
+
+    Bila semua akun WSS/SMST sudah SEMUA DISTRICT, tombolnya tidak muncul.
 
   ---------------------------------------------------------------------------
   MEMULIHKAN AKUN YANG SUDAH DIHAPUS
   ---------------------------------------------------------------------------
     1. Lihat tabel "Arsip Akun (30 terakhir)" di bawah halaman.
-    2. Cari baris dengan keterangan tindakan DIHAPUS.
+    2. Cari baris dengan keterangan tindakan DIHAPUS (atau DIRAPIKAN bila
+       berasal dari perapian district).
     3. Tekan [ Pulihkan ].
     4. Akun kembali masuk daftar dengan password yang SAMA seperti sebelumnya.
        Bila passwordnya sudah lupa, buka tombol [ Edit ] lalu isi Password Baru.
@@ -199,6 +227,9 @@
    6. Setiap penghapusan & perubahan dicatat ke tabel arsip (siapa dan kapan).
    7. Password TIDAK PERNAH ditampilkan pada halaman ini - hanya dapat diganti.
    8. Halaman ini tidak menampilkan atau mengirim kredensial database apa pun.
+   9. Aturan "WSS & SMST = SEMUA DISTRICT" diperiksa ULANG DI SERVER, jadi
+      tetap berlaku walau formulir dikirim dengan cara lain (bukan sekadar
+      dimatikan di layar).
 
 
  ============================================================================

@@ -2,11 +2,80 @@
  RTS PANEL BY BENE
  TUTORIAL PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS DI WEBSITE
  (Tambahan 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST)
+ (Tambahan 17C: RTS = RETAIL SALESMAN, TF = TASK FORCE,
+                WSS & SMST OTOMATIS "SEMUA DISTRICT")
  (Putaran 16: MENU "STRUK POM" / STRUK SPBU BERJALAN LURING DI DALAM HP)
  (Putaran 15: MENU GSP, PETA DIPERBAIKI, MENU DAPAT DIMINIMIZE
   Tambahan 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR)
 ==============================================================================
 
+
+ ============================================================================
+  TAMBAHAN PUTARAN 17C - RTS = RETAIL SALESMAN, TF = TASK FORCE,
+  WSS & SMST OTOMATIS "SEMUA DISTRICT"  (WEBSITE)
+  (4 Oktober 2026)
+ ============================================================================
+
+  Yang Bapak tetapkan:
+    1. RTS = RETAIL SALESMAN
+    2. TF  = TASK FORCE
+             "Sales yang ditugaskan menjual Produk Perusahaan yang
+              dititipkan di Customer yang di-Cover WSS"
+    3. WSS & SMST -> otomatis "Semua District" saat disimpan.
+
+  YANG SUDAH DIKERJAKAN  (hanya 1 berkas website: kelola_akun_tim.php)
+  ---------------------------------------------------------------------
+   1. KEPANJANGAN ROLE resmi sekarang:
+          WSS  = Warehouse Shoe Sale
+                 outlet sendiri, ada di SETIAP district karena GROSIR
+          SMST = Sales Modern Small Trade
+                 outlet sendiri, ada di SETIAP district karena MODERN TRADE
+          RTS  = Retail Salesman        (dulu: Sales / Salesman)
+          TF   = Task Force             (dulu: Team Force)
+                 Sales yang ditugaskan menjual produk perusahaan yang
+                 dititipkan di customer yang di-cover WSS.
+
+   2. WSS & SMST OTOMATIS "SEMUA DISTRICT" (3 lapis sekaligus):
+        a. Di layar  - begitu role WSS atau SMST dipilih pada formulir
+                       Edit / Tambah, kotak Sales District dikosongkan dan
+                       DIMATIKAN sendiri (otomatis), jadi tidak mungkin
+                       terisi district tertentu.
+        b. Di server - walau formulir dikirim dengan cara lain, server
+                       mengosongkan district untuk WSS & SMST. Jadi
+                       aturannya tidak bisa dilanggar dari luar halaman.
+        c. Keterangan di bawah kotak Sales District: "Otomatis Semua
+                       District bila role WSS atau SMST", dan kotak pesan
+                       setelah menyimpan menegaskan district sudah
+                       dijadikan SEMUA DISTRICT.
+
+   3. TOMBOL BARU "RAPIKAN JADI SEMUA DISTRICT"
+        Bila masih ada akun WSS/SMST sisa data lama yang memakai district
+        tertentu, halaman menampilkan kotak biru berisi jumlah akunnya dan
+        tombol  [ RAPIKAN JADI SEMUA DISTRICT ].
+          - Sekali tekan, seluruh akun WSS & SMST dijadikan SEMUA DISTRICT
+            (maksimal 300 akun sekali tekan).
+          - Data district LAMANYA disalin DULU ke tabel arsip dengan
+            keterangan DIRAPIKAN, jadi masih dapat dilihat kembali.
+          - Bila tabel arsip belum dibuat, perapian DIBATALKAN supaya tidak
+            ada data yang hilang tanpa salinan.
+
+   4. Keterangan role pada kartu "Keterangan Role" dan pada kotak Role ikut
+      diperbarui (RTS = Retail Salesman, TF = Task Force + penjelasan
+      lengkap), dan TF diberi cakupan "Mengikuti cakupan WSS".
+
+  YANG BAPAK LAKUKAN (CUMA 1 LANGKAH - TIDAK PERLU MIGRASI DATABASE)
+  ---------------------------------------------------------------------
+    1. Unggah 1 berkas ini ke folder website Bapak (cPanel > File Manager >
+       public_html), TIMPA berkas yang lama:
+             kelola_akun_tim.php
+       (Berkas website lain TIDAK perlu diunggah lagi.)
+    2. Muat ulang halaman Kelola Akun Tim di peramban (Ctrl + F5).
+    3. Bila muncul kotak biru "Ada N akun WSS/SMST yang masih memakai
+       district tertentu", tekan tombol  RAPIKAN JADI SEMUA DISTRICT
+       satu kali saja. Selesai.
+
+  Catatan: tabel arsip `sales_users_arsip` tetap dipakai seperti biasa -
+  TIDAK ada perubahan struktur database pada tambahan ini.
 
 
  ============================================================================
