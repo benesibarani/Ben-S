@@ -1,0 +1,1009 @@
+{
+  "sumber": "ATCS Dishub Kota Medan (https://atcsdishub.medan.go.id/streaming)",
+  "diambil": "2026-10-04",
+  "pola_stream": "https://atcsdishub.medan.go.id/stream/{KODE}/stream.m3u8",
+  "pola_poster": "https://atcsdishub.medan.go.id/poster/{NAMA}_{NOMOR}_{LEBAR}.jpg",
+  "catatan": "Data resmi terbuka dari situs ITS/ATCS Dishub Kota Medan. Tautan dapat berubah bila Dishub mengganti nomor atau nama kamera - gunakan periksa_cctv.php untuk menyegarkan daftar.",
+  "jumlah": 111,
+  "kamera": [
+    {
+      "kode": "L1RADENSALEHBALAIKOTA",
+      "nomor": 1,
+      "nama": "RADEN SALEH - BALAI KOTA",
+      "alias": "Simpang Lapangan Merdeka",
+      "url": "https://atcsdishub.medan.go.id/stream/L1RADENSALEHBALAIKOTA/stream.m3u8",
+      "lat": 3.590017,
+      "lon": 98.67763
+    },
+    {
+      "kode": "L2AHMADYANIPULAUPINANG",
+      "nomor": 2,
+      "nama": "AHMAD YANI - PULAU PINANG",
+      "alias": "Simpang Lonsum",
+      "url": "https://atcsdishub.medan.go.id/stream/L2AHMADYANIPULAUPINANG/stream.m3u8",
+      "lat": 3.588852,
+      "lon": 98.678276
+    },
+    {
+      "kode": "L3KESAWANPALANGMERAH",
+      "nomor": 3,
+      "nama": "KESAWAN - PALANG MERAH",
+      "alias": "Simpang Kesawan",
+      "url": "https://atcsdishub.medan.go.id/stream/L3KESAWANPALANGMERAH/stream.m3u8",
+      "lat": 3.584566,
+      "lon": 98.680644
+    },
+    {
+      "kode": "L4KATAMSOANIIDRUS",
+      "nomor": 4,
+      "nama": "KATAMSO - ANI IDRUS",
+      "alias": "Simpang Waspada",
+      "url": "https://atcsdishub.medan.go.id/stream/L4KATAMSOANIIDRUS/stream.m3u8",
+      "lat": 3.581282,
+      "lon": 98.682542
+    },
+    {
+      "kode": "L5PANDUCIREBON",
+      "nomor": 5,
+      "nama": "PANDU - CIREBON",
+      "alias": "Simpang Tirtanadi",
+      "url": "https://atcsdishub.medan.go.id/stream/L5PANDUCIREBON/stream.m3u8",
+      "lat": 3.582234,
+      "lon": 98.684669
+    },
+    {
+      "kode": "L6KATAMSOMASJIDRAYA",
+      "nomor": 6,
+      "nama": "KATAMSO - MASJID RAYA",
+      "alias": "Simpang Istana Maimun",
+      "url": "https://atcsdishub.medan.go.id/stream/L6KATAMSOMASJIDRAYA/stream.m3u8",
+      "lat": 3.575387,
+      "lon": 98.684861
+    },
+    {
+      "kode": "L7SM.RAJAAMALIUN",
+      "nomor": 7,
+      "nama": "SM.RAJA - AMALIUN",
+      "alias": "Simpang Mesjid Raya",
+      "url": "https://atcsdishub.medan.go.id/stream/L7SM.RAJAAMALIUN/stream.m3u8",
+      "lat": 3.575927,
+      "lon": 98.68759
+    },
+    {
+      "kode": "L8GURUPATIMPUSADAMMALIK",
+      "nomor": 8,
+      "nama": "GURU PATIMPUS - ADAM MALIK",
+      "alias": "Simpang Majestik",
+      "url": "https://atcsdishub.medan.go.id/stream/L8GURUPATIMPUSADAMMALIK/stream.m3u8",
+      "lat": 3.593382,
+      "lon": 98.668696
+    },
+    {
+      "kode": "L9PENGADILANKPT.MAULANALUBIS",
+      "nomor": 9,
+      "nama": "PENGADILAN - KPT.MAULANA LUBIS",
+      "alias": "Simpang Wisma Benteng",
+      "url": "https://atcsdishub.medan.go.id/stream/L9PENGADILANKPT.MAULANALUBIS/stream.m3u8",
+      "lat": 3.589639,
+      "lon": 98.673152
+    },
+    {
+      "kode": "L10PERDANAIMAMBONJOL",
+      "nomor": 10,
+      "nama": "PERDANA - IMAM BONJOL",
+      "alias": "Simpang Lap. Benteng 1",
+      "url": "https://atcsdishub.medan.go.id/stream/L10PERDANAIMAMBONJOL/stream.m3u8",
+      "lat": 3.586873,
+      "lon": 98.673646
+    },
+    {
+      "kode": "L11IMAMBONJOLZAINULARIFIN",
+      "nomor": 11,
+      "nama": "IMAM BONJOL - ZAINUL ARIFIN",
+      "alias": "Simpang HDTI",
+      "url": "https://atcsdishub.medan.go.id/stream/L11IMAMBONJOLZAINULARIFIN/stream.m3u8",
+      "lat": 3.583652,
+      "lon": 98.675175
+    },
+    {
+      "kode": "L12SUPRAPTOMULTATULI",
+      "nomor": 12,
+      "nama": "SUPRAPTO - MULTATULI",
+      "alias": "Simpang Pizza Hut Multatuli",
+      "url": "https://atcsdishub.medan.go.id/stream/L12SUPRAPTOMULTATULI/stream.m3u8",
+      "lat": 3.578632,
+      "lon": 98.678245
+    },
+    {
+      "kode": "L13IMAMBONJOLSUPRAPTO",
+      "nomor": 13,
+      "nama": "IMAM BONJOL - SUPRAPTO",
+      "alias": "Simpang Air Mancur Imanuel",
+      "url": "https://atcsdishub.medan.go.id/stream/L13IMAMBONJOLSUPRAPTO/stream.m3u8",
+      "lat": 3.577874,
+      "lon": 98.67712
+    },
+    {
+      "kode": "L14DIPONEGOROZAINULARIFIN",
+      "nomor": 14,
+      "nama": "DIPONEGORO - ZAINUL ARIFIN",
+      "alias": "Simpang BII Zainul Arifin",
+      "url": "https://atcsdishub.medan.go.id/stream/L14DIPONEGOROZAINULARIFIN/stream.m3u8",
+      "lat": 3.583472,
+      "lon": 98.672695
+    },
+    {
+      "kode": "L15DIPONEGOROKARTINI",
+      "nomor": 15,
+      "nama": "DIPONEGORO - KARTINI",
+      "alias": "Simpang Kartini",
+      "url": "https://atcsdishub.medan.go.id/stream/L15DIPONEGOROKARTINI/stream.m3u8",
+      "lat": 3.579803,
+      "lon": 98.672473
+    },
+    {
+      "kode": "L16SUDIRMANDIPONEGORO",
+      "nomor": 16,
+      "nama": "SUDIRMAN - DIPONEGORO",
+      "alias": "Simpang Rumah Dinas Walikota",
+      "url": "https://atcsdishub.medan.go.id/stream/L16SUDIRMANDIPONEGORO/stream.m3u8",
+      "lat": 3.575237,
+      "lon": 98.672013
+    },
+    {
+      "kode": "L17SUDIRMANCIKDITIRO",
+      "nomor": 17,
+      "nama": "SUDIRMAN - CIK DITIRO",
+      "alias": "Simpang Rumah Dinas Gubernur",
+      "url": "https://atcsdishub.medan.go.id/stream/L17SUDIRMANCIKDITIRO/stream.m3u8",
+      "lat": 3.575057,
+      "lon": 98.670079
+    },
+    {
+      "kode": "L18KATAMSOJUANDA",
+      "nomor": 18,
+      "nama": "KATAMSO - JUANDA",
+      "alias": "Simpang Istana Plaza",
+      "url": "https://atcsdishub.medan.go.id/stream/L18KATAMSOJUANDA/stream.m3u8",
+      "lat": 3.572413,
+      "lon": 98.685623
+    },
+    {
+      "kode": "L19JUANDAPOLONIA",
+      "nomor": 19,
+      "nama": "JUANDA - POLONIA",
+      "alias": "Simpang Polonia",
+      "url": "https://atcsdishub.medan.go.id/stream/L19JUANDAPOLONIA/stream.m3u8",
+      "lat": 3.572138,
+      "lon": 98.677818
+    },
+    {
+      "kode": "L20SMRAJAHALAT",
+      "nomor": 20,
+      "nama": "SM.RAJA - HALAT",
+      "alias": "Simpang SM Raja Halat",
+      "url": "https://atcsdishub.medan.go.id/stream/L20SMRAJAHALAT/stream.m3u8",
+      "lat": 3.572422,
+      "lon": 98.689281
+    },
+    {
+      "kode": "L21SMRAJAPELANGI",
+      "nomor": 21,
+      "nama": "SM.RAJA - PELANGI",
+      "alias": "Simpang SM Raja Pelangi",
+      "url": "https://atcsdishub.medan.go.id/stream/L21SMRAJAPELANGI/stream.m3u8",
+      "lat": 3.562739,
+      "lon": 98.69295
+    },
+    {
+      "kode": "L22SMRAJAPMH",
+      "nomor": 22,
+      "nama": "SM.RAJA - AH.NASUTION",
+      "alias": "Simpang PMH / AH Nasution",
+      "url": "https://atcsdishub.medan.go.id/stream/L22SMRAJAPMH/stream.m3u8",
+      "lat": 3.539185,
+      "lon": 98.700927
+    },
+    {
+      "kode": "L23AMPLAS",
+      "nomor": 23,
+      "nama": "SM.RAJA - PANGLIMA DENAI",
+      "alias": "Simpang Amplas",
+      "url": "https://atcsdishub.medan.go.id/stream/L23AMPLAS/stream.m3u8",
+      "lat": 3.536032,
+      "lon": 98.718024
+    },
+    {
+      "kode": "L24UNILAND",
+      "nomor": 24,
+      "nama": "MT.HARYONO - IRIAN BARAT",
+      "alias": "Simpang Uniland",
+      "url": "https://atcsdishub.medan.go.id/stream/L24UNILAND/stream.m3u8",
+      "lat": 3.586019,
+      "lon": 98.683005
+    },
+    {
+      "kode": "L25MEDANMALL",
+      "nomor": 25,
+      "nama": "MT.HARYONO - SUTOMO",
+      "alias": "Simpang Medan Mall",
+      "url": "https://atcsdishub.medan.go.id/stream/L25MEDANMALL/stream.m3u8",
+      "lat": 3.58709,
+      "lon": 98.685733
+    },
+    {
+      "kode": "L26MTHARYONOTHAMRIN",
+      "nomor": 26,
+      "nama": "MT HARYONO - MH.THAMRIN",
+      "alias": "Simpang Thamrin Sumatera",
+      "url": "https://atcsdishub.medan.go.id/stream/L26MTHARYONOTHAMRIN/stream.m3u8",
+      "lat": 3.588905,
+      "lon": 98.690301
+    },
+    {
+      "kode": "L27TVRI",
+      "nomor": 27,
+      "nama": "PUTRI HIJAU - GURU PATIMPUS",
+      "alias": "Simpang TVRI",
+      "url": "https://atcsdishub.medan.go.id/stream/L27TVRI/stream.m3u8",
+      "lat": 3.595682,
+      "lon": 98.675844
+    },
+    {
+      "kode": "L29SUDIRMANUJUNG",
+      "nomor": 29,
+      "nama": "SUDIRMAN - S.PARMAN",
+      "alias": "Simpang Sudirman Ujung",
+      "url": "https://atcsdishub.medan.go.id/stream/L29SUDIRMANUJUNG/stream.m3u8",
+      "lat": 3.577219,
+      "lon": 98.666707
+    },
+    {
+      "kode": "L30MONGONSIDIPATTIMURA",
+      "nomor": 30,
+      "nama": "MONGONSIDI - PATIMURA",
+      "alias": "Simpang Monginsidi Pattimura",
+      "url": "https://atcsdishub.medan.go.id/stream/L30MONGONSIDIPATTIMURA/stream.m3u8",
+      "lat": 3.572711,
+      "lon": 98.661863
+    },
+    {
+      "kode": "L31JAMINGINTINGISMUD",
+      "nomor": 31,
+      "nama": "JAMIN GINTING - ISKANDAR MUDA",
+      "alias": "Simpang JM.GINTING - ISMUD",
+      "url": "https://atcsdishub.medan.go.id/stream/L31JAMINGINTINGISMUD/stream.m3u8",
+      "lat": 3.571738,
+      "lon": 98.660966
+    },
+    {
+      "kode": "L32JAMINGINTINGDRMANSYUR",
+      "nomor": 32,
+      "nama": "JAMIN GINTING - DR.MANSYUR",
+      "alias": "Simpang Dr. Mansyur Jamin Ginting",
+      "url": "https://atcsdishub.medan.go.id/stream/L32JAMINGINTINGDRMANSYUR/stream.m3u8",
+      "lat": 3.567371,
+      "lon": 98.660766
+    },
+    {
+      "kode": "L33SMRAJAHMJHONI",
+      "nomor": 33,
+      "nama": "SM.RAJA - HM.JONI",
+      "alias": "Simpang HM Joni",
+      "url": "https://atcsdishub.medan.go.id/stream/L33SMRAJAHMJHONI/stream.m3u8",
+      "lat": 3.568577,
+      "lon": 98.691037
+    },
+    {
+      "kode": "L34SMRAJAALFALAH",
+      "nomor": 34,
+      "nama": "SM.RAJA - ALFALAH",
+      "alias": "Simpang Al Falah",
+      "url": "https://atcsdishub.medan.go.id/stream/L34SMRAJAALFALAH/stream.m3u8",
+      "lat": 3.546411,
+      "lon": 98.698567
+    },
+    {
+      "kode": "L35NASUTIONBAJAK",
+      "nomor": 35,
+      "nama": "AH.NASUTION - BAJAK",
+      "alias": "Simpang Bajak Nasution",
+      "url": "https://atcsdishub.medan.go.id/stream/L35NASUTIONBAJAK/stream.m3u8",
+      "lat": 3.538458,
+      "lon": 98.698181
+    },
+    {
+      "kode": "L36MEDANPLAZA",
+      "nomor": 36,
+      "nama": "GATOT SUBROTO - ISKANDAR MUDA",
+      "alias": "Simpang Medan Plaza",
+      "url": "https://atcsdishub.medan.go.id/stream/L36MEDANPLAZA/stream.m3u8",
+      "lat": 3.590632,
+      "lon": 98.661412
+    },
+    {
+      "kode": "L37SEIWAMPU",
+      "nomor": 37,
+      "nama": "GATOT SUBROTO - WAHID HASYIM",
+      "alias": "Simpang Sei Wampu",
+      "url": "https://atcsdishub.medan.go.id/stream/L37SEIWAMPU/stream.m3u8",
+      "lat": 3.589985,
+      "lon": 98.658193
+    },
+    {
+      "kode": "L38AYAHANDA",
+      "nomor": 38,
+      "nama": "GATOT SUBROTO - AYAHANDA",
+      "alias": "Simpang Ayahanda Gatsu",
+      "url": "https://atcsdishub.medan.go.id/stream/L38AYAHANDA/stream.m3u8",
+      "lat": 3.590227,
+      "lon": 98.653231
+    },
+    {
+      "kode": "L39SEISIKAMBING",
+      "nomor": 39,
+      "nama": "GATOT SUBROTO - KAPTEN MUSLIM",
+      "alias": "Simpang Sei Sikambing",
+      "url": "https://atcsdishub.medan.go.id/stream/L39SEISIKAMBING/stream.m3u8",
+      "lat": 3.590731,
+      "lon": 98.643873
+    },
+    {
+      "kode": "L40ISMUDGAJAHMADA",
+      "nomor": 40,
+      "nama": "ISKANDAR MUDA - GAJAH MADA",
+      "alias": "Simpang Ismud Gajah Mada",
+      "url": "https://atcsdishub.medan.go.id/stream/L40ISMUDGAJAHMADA/stream.m3u8",
+      "lat": 3.584606,
+      "lon": 98.661183
+    },
+    {
+      "kode": "L41ISMUDHASANUDDIN",
+      "nomor": 41,
+      "nama": "ISKANDAR MUDA - HASANUDDIN",
+      "alias": "Simpang Hasanuddin Ismud",
+      "url": "https://atcsdishub.medan.go.id/stream/L41ISMUDHASANUDDIN/stream.m3u8",
+      "lat": 3.583064,
+      "lon": 98.661179
+    },
+    {
+      "kode": "L42ISMUDABDLUBIS",
+      "nomor": 42,
+      "nama": "ISKANDAR MUDA - ABDULLAH LUBIS",
+      "alias": "Simpang Ismud Abd Lubis",
+      "url": "https://atcsdishub.medan.go.id/stream/L42ISMUDABDLUBIS/stream.m3u8",
+      "lat": 3.576719,
+      "lon": 98.660867
+    },
+    {
+      "kode": "L43KEJAKSAANSPARMAN",
+      "nomor": 43,
+      "nama": "KEJAKSAAN - S.PARMAN",
+      "alias": "Simpang Kejaksaan S.Parman",
+      "url": "https://atcsdishub.medan.go.id/stream/L43KEJAKSAANSPARMAN/stream.m3u8",
+      "lat": 3.587442,
+      "lon": 98.667349
+    },
+    {
+      "kode": "L44GAHARUPERINTIS",
+      "nomor": 44,
+      "nama": "GAHARU - PERINTIS KEMERDEKAAN",
+      "alias": "Simpang Gaharu Perintis",
+      "url": "https://atcsdishub.medan.go.id/stream/L44GAHARUPERINTIS/stream.m3u8",
+      "lat": 3.596985,
+      "lon": 98.678228
+    },
+    {
+      "kode": "L45NOUMENSEN",
+      "nomor": 45,
+      "nama": "PERINTIS KEMERDEKAAN - SUTOMO",
+      "alias": "Simpang Nommensen",
+      "url": "https://atcsdishub.medan.go.id/stream/L45NOUMENSEN/stream.m3u8",
+      "lat": 3.598246,
+      "lon": 98.68148
+    },
+    {
+      "kode": "L46SUTOMOYAMIN",
+      "nomor": 46,
+      "nama": "SUTOMO - HM.YAMIN",
+      "alias": "Simpang Sutomo Yamin",
+      "url": "https://atcsdishub.medan.go.id/stream/L46SUTOMOYAMIN/stream.m3u8",
+      "lat": 3.595062,
+      "lon": 98.682539
+    },
+    {
+      "kode": "L47GLUGUR",
+      "nomor": 47,
+      "nama": "PUTRI HIJAU - YOS SUDARSO",
+      "alias": "Simpang Glugur",
+      "url": "https://atcsdishub.medan.go.id/stream/L47GLUGUR/stream.m3u8",
+      "lat": 3.606797,
+      "lon": 98.673962
+    },
+    {
+      "kode": "L48BILALYOSSUDARSO",
+      "nomor": 48,
+      "nama": "YOS SUDARSO - PEMBANGUNAN",
+      "alias": "Simpang Bilal Yos Sudarso",
+      "url": "https://atcsdishub.medan.go.id/stream/L48BILALYOSSUDARSO/stream.m3u8",
+      "lat": 3.622397,
+      "lon": 98.669957
+    },
+    {
+      "kode": "L49BRAYAN",
+      "nomor": 49,
+      "nama": "YOS SUDARSO - PERTEMPURAN",
+      "alias": "Simpang Brayan",
+      "url": "https://atcsdishub.medan.go.id/stream/L49BRAYAN/stream.m3u8",
+      "lat": 3.628387,
+      "lon": 98.669315
+    },
+    {
+      "kode": "L50GAJAHMADAWAHIDHASYIM",
+      "nomor": 50,
+      "nama": "GAJAH MADA - WAHID HASYIM",
+      "alias": "Simpang Gajah Mada Wahid Hasyim",
+      "url": "https://atcsdishub.medan.go.id/stream/L50GAJAHMADAWAHIDHASYIM/stream.m3u8",
+      "lat": 3.58487,
+      "lon": 98.65713
+    },
+    {
+      "kode": "L51GRIYA",
+      "nomor": 51,
+      "nama": "KAPTEN MUSLIM - AMIR HAMZAH",
+      "alias": "Simpang Griya",
+      "url": "https://atcsdishub.medan.go.id/stream/L51GRIYA/stream.m3u8",
+      "lat": 3.604875,
+      "lon": 98.645706
+    },
+    {
+      "kode": "L52SUNGGALKASUARI",
+      "nomor": 52,
+      "nama": "SUNGGAL - KASUARI",
+      "alias": "Simpang Sunggal Kasuari",
+      "url": "https://atcsdishub.medan.go.id/stream/L52SUNGGALKASUARI/stream.m3u8",
+      "lat": 3.584456,
+      "lon": 98.641315
+    },
+    {
+      "kode": "L53THAMRINYAMIN",
+      "nomor": 53,
+      "nama": "MH.THAMRIN - HM.YAMIN",
+      "alias": "Simpang Thamrin Yamin",
+      "url": "https://atcsdishub.medan.go.id/stream/L53THAMRINYAMIN/stream.m3u8",
+      "lat": 3.596883,
+      "lon": 98.687526
+    },
+    {
+      "kode": "L54KEJAKSAANTUMAR",
+      "nomor": 54,
+      "nama": "KEJAKSAAN - TENGKU UMAR",
+      "alias": "Simpang Kejaksaan T. Umar",
+      "url": "https://atcsdishub.medan.go.id/stream/L54KEJAKSAANTUMAR/stream.m3u8",
+      "lat": 3.587017,
+      "lon": 98.671538
+    },
+    {
+      "kode": "L55JUANDAWALIKOTA",
+      "nomor": 55,
+      "nama": "JUANDA - WALIKOTA",
+      "alias": "Simpang Juanda Walikota",
+      "url": "https://atcsdishub.medan.go.id/stream/L55JUANDAWALIKOTA/stream.m3u8",
+      "lat": 3.573545,
+      "lon": 98.671207
+    },
+    {
+      "kode": "L56RAHMADSYAH",
+      "nomor": 56,
+      "nama": "SM.RAJA - RAHMADSYAH",
+      "alias": "Simpang Rahmadsyah",
+      "url": "https://atcsdishub.medan.go.id/stream/L56RAHMADSYAH/stream.m3u8",
+      "lat": 3.57965,
+      "lon": 98.685787
+    },
+    {
+      "kode": "L57STMAHNASUTION",
+      "nomor": 57,
+      "nama": "AH.NASUTION - STM TRITURA",
+      "alias": "Simpang STM Tritura",
+      "url": "https://atcsdishub.medan.go.id/stream/L57STMAHNASUTION/stream.m3u8",
+      "lat": 3.537974,
+      "lon": 98.691329
+    },
+    {
+      "kode": "L59SUGGAL",
+      "nomor": 59,
+      "nama": "GAGAK HITAM - SUNGGAL",
+      "alias": "Simpang Sunggal Gagak Hitam",
+      "url": "https://atcsdishub.medan.go.id/stream/L59SUGGAL/stream.m3u8",
+      "lat": 3.578528,
+      "lon": 98.626623
+    },
+    {
+      "kode": "L60ASOKA",
+      "nomor": 60,
+      "nama": "GAGAK HITAM - ASOKA",
+      "alias": "Simpang Asoka Ringroad",
+      "url": "https://atcsdishub.medan.go.id/stream/L60ASOKA/stream.m3u8",
+      "lat": 3.562668,
+      "lon": 98.62617
+    },
+    {
+      "kode": "L61SETIABUDIINDUSTRI",
+      "nomor": 61,
+      "nama": "SETIA BUDI - INDUSTRI",
+      "alias": "Simpang Setia Budi Industri",
+      "url": "https://atcsdishub.medan.go.id/stream/L61SETIABUDIINDUSTRI/stream.m3u8",
+      "lat": 3.545806,
+      "lon": 98.626069
+    },
+    {
+      "kode": "L62SIMPANGPOS",
+      "nomor": 62,
+      "nama": "JAMIN GINTING - AH.NASUTION",
+      "alias": "Simpang Pos",
+      "url": "https://atcsdishub.medan.go.id/stream/L62SIMPANGPOS/stream.m3u8",
+      "lat": 3.540614,
+      "lon": 98.654322
+    },
+    {
+      "kode": "L63KARYAWISATA",
+      "nomor": 63,
+      "nama": "AH.NASUTION - KARYA WISATA",
+      "alias": "Simpang Karya Wisata",
+      "url": "https://atcsdishub.medan.go.id/stream/L63KARYAWISATA/stream.m3u8",
+      "lat": 3.541596,
+      "lon": 98.662692
+    },
+    {
+      "kode": "L64KATAMSOPELANGI",
+      "nomor": 64,
+      "nama": "KATAMSO - PELANGI",
+      "alias": "Simpang Katamso Pelangi",
+      "url": "https://atcsdishub.medan.go.id/stream/L64KATAMSOPELANGI/stream.m3u8",
+      "lat": 3.562775,
+      "lon": 98.689911
+    },
+    {
+      "kode": "L65KATAMSOSAKTILUBIS",
+      "nomor": 65,
+      "nama": "KATAMSO - SAKTI LUBIS",
+      "alias": "Simpang Katamso Sakti Lubis",
+      "url": "https://atcsdishub.medan.go.id/stream/L65KATAMSOSAKTILUBIS/stream.m3u8",
+      "lat": 3.553113,
+      "lon": 98.688722
+    },
+    {
+      "kode": "L66SUTOMOSUTRISNO",
+      "nomor": 66,
+      "nama": "SUTOMO - SUTRISNO",
+      "alias": "Simpang Sutomo Sutrisno",
+      "url": "https://atcsdishub.medan.go.id/stream/L66SUTOMOSUTRISNO/stream.m3u8",
+      "lat": 3.580155,
+      "lon": 98.688875
+    },
+    {
+      "kode": "L67THAMRINSUTRISNO",
+      "nomor": 67,
+      "nama": "MH.THAMRIN - SUTRISNO",
+      "alias": "Simpang Thamrin Sutrisno",
+      "url": "https://atcsdishub.medan.go.id/stream/L67THAMRINSUTRISNO/stream.m3u8",
+      "lat": 3.581166,
+      "lon": 98.693558
+    },
+    {
+      "kode": "L68THAMRINASIA",
+      "nomor": 68,
+      "nama": "MH.THAMRIN - ASIA",
+      "alias": "Simpang Thamrin Asia",
+      "url": "https://atcsdishub.medan.go.id/stream/L68THAMRINASIA/stream.m3u8",
+      "lat": 3.585013,
+      "lon": 98.692019
+    },
+    {
+      "kode": "L69SUTOMOMERBABU",
+      "nomor": 69,
+      "nama": "SUTOMO - MARBABU",
+      "alias": "Simpang Sutomo Merbabu",
+      "url": "https://atcsdishub.medan.go.id/stream/L69SUTOMOMERBABU/stream.m3u8",
+      "lat": 3.58558,
+      "lon": 98.686394
+    },
+    {
+      "kode": "L70GAHARUBAMBU2",
+      "nomor": 70,
+      "nama": "GAHARU - BAMBU II",
+      "alias": "Simpang Gaharu Bambu II",
+      "url": "https://atcsdishub.medan.go.id/stream/L70GAHARUBAMBU2/stream.m3u8",
+      "lat": 3.607136,
+      "lon": 98.676952
+    },
+    {
+      "kode": "L71SUTOMOBAMBU2",
+      "nomor": 71,
+      "nama": "SUTOMO - BAMBU II",
+      "alias": "Simpang Sutomo Bambu II",
+      "url": "https://atcsdishub.medan.go.id/stream/L71SUTOMOBAMBU2/stream.m3u8",
+      "lat": 3.607197,
+      "lon": 98.679983
+    },
+    {
+      "kode": "L72KRAKATAUPASAR3",
+      "nomor": 72,
+      "nama": "KRAKATAU - PASAR III",
+      "alias": "Simpang Krakatau Pasar III",
+      "url": "https://atcsdishub.medan.go.id/stream/L72KRAKATAUPASAR3/stream.m3u8",
+      "lat": 3.616788,
+      "lon": 98.680869
+    },
+    {
+      "kode": "L73KRAKATAUBILAL",
+      "nomor": 73,
+      "nama": "KRAKATAU - BILAL",
+      "alias": "Simpang Krakatau Bilal",
+      "url": "https://atcsdishub.medan.go.id/stream/L73KRAKATAUBILAL/stream.m3u8",
+      "lat": 3.622813,
+      "lon": 98.681036
+    },
+    {
+      "kode": "L74KRAKATUSIDORUKUN",
+      "nomor": 74,
+      "nama": "KRAKATAU - SIDORUKUN",
+      "alias": "Simpang Sidorukun",
+      "url": "https://atcsdishub.medan.go.id/stream/L74KRAKATUSIDORUKUN/stream.m3u8",
+      "lat": 3.625986,
+      "lon": 98.681066
+    },
+    {
+      "kode": "L75ABDLUBISWAHIDHASYIM",
+      "nomor": 75,
+      "nama": "ABDULLAH LUBIS - WAHID HASYIM",
+      "alias": "Simpang Wahid Hasyim Abd Lubis",
+      "url": "https://atcsdishub.medan.go.id/stream/L75ABDLUBISWAHIDHASYIM/stream.m3u8",
+      "lat": 3.576846,
+      "lon": 98.657322
+    },
+    {
+      "kode": "L76KRAKATAUCEMARA",
+      "nomor": 76,
+      "nama": "KRAKATAU - CEMARA",
+      "alias": "Simpang Krakatau Cemara",
+      "url": "https://atcsdishub.medan.go.id/stream/L76KRAKATAUCEMARA/stream.m3u8",
+      "lat": 3.629786,
+      "lon": 98.681084
+    },
+    {
+      "kode": "L77SKIPPABRIKTENUN",
+      "nomor": 77,
+      "nama": "SEKIP - PABRIK TENUN",
+      "alias": "Simpang Sekip Pabrik Tenun",
+      "url": "https://atcsdishub.medan.go.id/stream/L77SKIPPABRIKTENUN/stream.m3u8",
+      "lat": 3.598343,
+      "lon": 98.663713
+    },
+    {
+      "kode": "L78ABDLUBISSEISERAYU",
+      "nomor": 78,
+      "nama": "ABDULLAH LUBIS - SEI BLUTU",
+      "alias": "Simpang Sei Serayu",
+      "url": "https://atcsdishub.medan.go.id/stream/L78ABDLUBISSEISERAYU/stream.m3u8",
+      "lat": 3.577011,
+      "lon": 98.65234
+    },
+    {
+      "kode": "L79GAJAHMADADARUSSALAM",
+      "nomor": 79,
+      "nama": "GAJAH MADA - DARUSSALAM",
+      "alias": "Simpang Darussalam Gajah Mada",
+      "url": "https://atcsdishub.medan.go.id/stream/L79GAJAHMADADARUSSALAM/stream.m3u8",
+      "lat": 3.585001,
+      "lon": 98.65306
+    },
+    {
+      "kode": "L80MANGONSIDIDRCIPTO",
+      "nomor": 80,
+      "nama": "MANGONSIDI - DR.CIPTO",
+      "alias": "Simpang Dr. Cipto",
+      "url": "https://atcsdishub.medan.go.id/stream/L80MANGONSIDIDRCIPTO/stream.m3u8",
+      "lat": 3.571215,
+      "lon": 98.666358
+    },
+    {
+      "kode": "L81HMYAMINPERINTIS",
+      "nomor": 81,
+      "nama": "HM.YAMIN - PERINTIS",
+      "alias": "Simpang Yamin Perintis",
+      "url": "https://atcsdishub.medan.go.id/stream/L81HMYAMINPERINTIS/stream.m3u8",
+      "lat": 3.598586,
+      "lon": 98.691666
+    },
+    {
+      "kode": "L82GATSUASRAMA",
+      "nomor": 82,
+      "nama": "GATOT SUBROTO - ASRAMA",
+      "alias": "Simpang Manhattan / Gatsu Asrama",
+      "url": "https://atcsdishub.medan.go.id/stream/L82GATSUASRAMA/stream.m3u8",
+      "lat": 3.591602,
+      "lon": 98.627216
+    },
+    {
+      "kode": "L83ARHAKIMWILIAISKANDAR",
+      "nomor": 83,
+      "nama": "HM.YAMIN - WILLIAM ISKANDAR",
+      "alias": "Simpang Aksara / William Iskandar",
+      "url": "https://atcsdishub.medan.go.id/stream/L83ARHAKIMWILIAISKANDAR/stream.m3u8",
+      "lat": 3.597988,
+      "lon": 98.706443
+    },
+    {
+      "kode": "L84PINANGBARIS",
+      "nomor": 84,
+      "nama": "GATOT SUBROTO - PINANG BARIS",
+      "alias": "Simpang Kampung Lalang / Pinang Baris",
+      "url": "https://atcsdishub.medan.go.id/stream/L84PINANGBARIS/stream.m3u8",
+      "lat": 3.597952,
+      "lon": 98.608962
+    },
+    {
+      "kode": "L85GAPERTAASRAMA",
+      "nomor": 85,
+      "nama": "SUMARSONO - ASRAMA",
+      "alias": "Simpang Gaperta Asrama",
+      "url": "https://atcsdishub.medan.go.id/stream/L85GAPERTAASRAMA/stream.m3u8",
+      "lat": 3.605167,
+      "lon": 98.627991
+    },
+    {
+      "kode": "L86MANDALA",
+      "nomor": 86,
+      "nama": "LETDA SUJONO - MANDALA",
+      "alias": "Simpang Mandala",
+      "url": "https://atcsdishub.medan.go.id/stream/L86MANDALA/stream.m3u8",
+      "lat": 3.597734,
+      "lon": 98.711723
+    },
+    {
+      "kode": "L87RSADAMMALIK",
+      "nomor": 87,
+      "nama": "JAMIN GINTING - RS. ADAM MALIK",
+      "alias": "Simpang RS Adam Malik",
+      "url": "https://atcsdishub.medan.go.id/stream/L87RSADAMMALIK/stream.m3u8",
+      "lat": 3.514036,
+      "lon": 98.615334
+    },
+    {
+      "kode": "L88SELAYANG",
+      "nomor": 88,
+      "nama": "JAMIN GINTING - SELAYANG",
+      "alias": "Simpang Selayang",
+      "url": "https://atcsdishub.medan.go.id/stream/L88SELAYANG/stream.m3u8",
+      "lat": 3.520051,
+      "lon": 98.619046
+    },
+    {
+      "kode": "L89PEMDA",
+      "nomor": 89,
+      "nama": "SETIA BUDI - FLAMBOYAN RAYA",
+      "alias": "Simpang Pemda Flamboyan",
+      "url": "https://atcsdishub.medan.go.id/stream/L89PEMDA/stream.m3u8",
+      "lat": 3.541019,
+      "lon": 98.622381
+    },
+    {
+      "kode": "L90SIMALINGKAR",
+      "nomor": 90,
+      "nama": "JAMIN GINTING - SIMALINGKAR",
+      "alias": "Simpang Simalingkar",
+      "url": "https://atcsdishub.medan.go.id/stream/L90SIMALINGKAR/stream.m3u8",
+      "lat": 3.526387,
+      "lon": 98.633127
+    },
+    {
+      "kode": "L91SEJATI",
+      "nomor": 91,
+      "nama": "AR.HAKIM - SEJATI",
+      "alias": "Simpang Aksara Sejati",
+      "url": "https://atcsdishub.medan.go.id/stream/L91SEJATI/stream.m3u8",
+      "lat": 3.59477,
+      "lon": 98.706302
+    },
+    {
+      "kode": "L92WAHIDIN",
+      "nomor": 92,
+      "nama": "AR.HAKIM - WAHIDIN",
+      "alias": "Simpang Wahidin",
+      "url": "https://atcsdishub.medan.go.id/stream/L92WAHIDIN/stream.m3u8",
+      "lat": 3.589175,
+      "lon": 98.706065
+    },
+    {
+      "kode": "L93SUKAIRAMAI",
+      "nomor": 93,
+      "nama": "AR.HAKIM - DENAI",
+      "alias": "Simpang Sukaramai",
+      "url": "https://atcsdishub.medan.go.id/stream/L93SUKAIRAMAI/stream.m3u8",
+      "lat": 3.582116,
+      "lon": 98.703968
+    },
+    {
+      "kode": "L94PENGADILANKEJAKASAAN",
+      "nomor": 94,
+      "nama": "PENGADILAN - KEJAKSAAN",
+      "alias": "Simpang Lapangan Benteng 2",
+      "url": "https://atcsdishub.medan.go.id/stream/L94PENGADILANKEJAKASAAN/stream.m3u8",
+      "lat": 3.586967,
+      "lon": 98.67296
+    },
+    {
+      "kode": "L95SETIABUDIDRMANSYUR",
+      "nomor": 95,
+      "nama": "SETIA BUDI - DR.MANSYUR",
+      "alias": "Simpang Setia Budi Dr. Mansyur",
+      "url": "https://atcsdishub.medan.go.id/stream/L95SETIABUDIDRMANSYUR/stream.m3u8",
+      "lat": 3.56764,
+      "lon": 98.6421
+    },
+    {
+      "kode": "L96DEPANRSBUNDATHAMRIN",
+      "nomor": 96,
+      "nama": "SEI BATANGHARI (RS BUNDA THAMRIN)",
+      "alias": "Ruas Depan RS Bunda Thamrin",
+      "url": "https://atcsdishub.medan.go.id/stream/L96DEPANRSBUNDATHAMRIN/stream.m3u8",
+      "lat": 3.584898,
+      "lon": 98.651012
+    },
+    {
+      "kode": "L97SEIULARBARU",
+      "nomor": 97,
+      "nama": "SEI BATANGHARI - JALAN SEI ULAR",
+      "alias": "Ruas Sei Ular Baru",
+      "url": "https://atcsdishub.medan.go.id/stream/L97SEIULARBARU/stream.m3u8",
+      "lat": 3.584918,
+      "lon": 98.64766
+    },
+    {
+      "kode": "L98TITIBOBROK",
+      "nomor": 98,
+      "nama": "SETIA BUDI - TITI BOBROK",
+      "alias": "Ruas Titi Bobrok",
+      "url": "https://atcsdishub.medan.go.id/stream/L98TITIBOBROK/stream.m3u8",
+      "lat": 3.58338,
+      "lon": 98.643043
+    },
+    {
+      "kode": "L99PINTU4USU",
+      "nomor": 99,
+      "nama": "DR.MANSYUR - PINTU 4 USU",
+      "alias": "Ruas Pintu 4 Kampus USU",
+      "url": "https://atcsdishub.medan.go.id/stream/L99PINTU4USU/stream.m3u8",
+      "lat": 3.567222,
+      "lon": 98.655914
+    },
+    {
+      "kode": "L100PINTU2USU",
+      "nomor": 100,
+      "nama": "DR.MANSYUR - PINTU 2 USU",
+      "alias": "Ruas Pintu 2 Kampus USU",
+      "url": "https://atcsdishub.medan.go.id/stream/L100PINTU2USU/stream.m3u8",
+      "lat": 3.567272,
+      "lon": 98.65951
+    },
+    {
+      "kode": "L101SMRAJASAUDARA",
+      "nomor": 101,
+      "nama": "SM.RAJA - SAUDARA",
+      "alias": "Ruas SM. Raja Simpang Jl. Saudara",
+      "url": "https://atcsdishub.medan.go.id/stream/L101SMRAJASAUDARA/stream.m3u8",
+      "lat": 3.5583,
+      "lon": 98.694468
+    },
+    {
+      "kode": "L103JAWAVETERAN",
+      "nomor": 103,
+      "nama": "JAWA - VETERAN",
+      "alias": "Ruas Jawa Veteran",
+      "url": "https://atcsdishub.medan.go.id/stream/L103JAWAVETERAN/stream.m3u8",
+      "lat": 3.590569,
+      "lon": 98.681309
+    },
+    {
+      "kode": "L104VETERANTIMOR",
+      "nomor": 104,
+      "nama": "VETERAN - TIMOR",
+      "alias": "Ruas Veteran Timor",
+      "url": "https://atcsdishub.medan.go.id/stream/L104VETERANTIMOR/stream.m3u8",
+      "lat": 3.590831,
+      "lon": 98.68277
+    },
+    {
+      "kode": "L105HMTHAMRIN",
+      "nomor": 105,
+      "nama": "MH.THAMRIN - DEPAN YP.SUTOMO",
+      "alias": "Ruas Thamrin Depan YP Sutomo",
+      "url": "https://atcsdishub.medan.go.id/stream/L105HMTHAMRIN/stream.m3u8",
+      "lat": 3.593075,
+      "lon": 98.689005
+    },
+    {
+      "kode": "L106KEJAKSAAN",
+      "nomor": 106,
+      "nama": "KEJAKSAAN - DEPAN KPU MEDAN",
+      "alias": "Ruas Depan KPU Kota Medan",
+      "url": "https://atcsdishub.medan.go.id/stream/L106KEJAKSAAN/stream.m3u8",
+      "lat": 3.586844,
+      "lon": 98.66891
+    },
+    {
+      "kode": "L107PUTRIHIJAUHMYAMIN",
+      "nomor": 107,
+      "nama": "PUTRI HIJAU - HM.YAMIN",
+      "alias": "Ruas Putri Hijau Depan BRI",
+      "url": "https://atcsdishub.medan.go.id/stream/L107PUTRIHIJAUHMYAMIN/stream.m3u8",
+      "lat": 3.593045,
+      "lon": 98.67671932
+    },
+    {
+      "kode": "L108YOSSUDARSODARMAWANGSA",
+      "nomor": 108,
+      "nama": "YOS SUDARSO - UNIV. DHARMAWANGSA",
+      "alias": "Ruas Depan Univ. Dharmawangsa",
+      "url": "https://atcsdishub.medan.go.id/stream/L108YOSSUDARSODARMAWANGSA/stream.m3u8",
+      "lat": 3.614151,
+      "lon": 98.672605
+    },
+    {
+      "kode": "L109SUTOMOTUGUKB",
+      "nomor": 109,
+      "nama": "SUTOMO - TAMAN TUGU KB",
+      "alias": "Ruas Sutomo Depan Tugu KB",
+      "url": "https://atcsdishub.medan.go.id/stream/L109SUTOMOTUGUKB/stream.m3u8",
+      "lat": 3.609963,
+      "lon": 98.680319
+    },
+    {
+      "kode": "L110PERINTISTIMOR",
+      "nomor": 110,
+      "nama": "PERINTIS KEMERDEKAAN - TIMOR",
+      "alias": "Ruas Perintis Timor",
+      "url": "https://atcsdishub.medan.go.id/stream/L110PERINTISTIMOR/stream.m3u8",
+      "lat": 3.598441,
+      "lon": 98.679525
+    },
+    {
+      "kode": "L111JAWA",
+      "nomor": 111,
+      "nama": "JAWA - CENTRE POINT MALL",
+      "alias": "Ruas Depan Mall Centre Point",
+      "url": "https://atcsdishub.medan.go.id/stream/L111JAWA/stream.m3u8",
+      "lat": 3.591695,
+      "lon": 98.680486
+    },
+    {
+      "kode": "L113GATOTSUBRTONIBUNG",
+      "nomor": 113,
+      "nama": "GATOT SUBROTO - NIBUNG",
+      "alias": "Ruas Gatsu Sp. Nibung",
+      "url": "https://atcsdishub.medan.go.id/stream/L113GATOTSUBRTONIBUNG/stream.m3u8",
+      "lat": 3.591893,
+      "lon": 98.664773
+    },
+    {
+      "kode": "L114RADENSALEH",
+      "nomor": 114,
+      "nama": "RADEN SALEH - KANTOR WALIKOTA",
+      "alias": "Ruas Depan Kantor Walikota",
+      "url": "https://atcsdishub.medan.go.id/stream/L114RADENSALEH/stream.m3u8",
+      "lat": 3.589758,
+      "lon": 98.675192
+    },
+    {
+      "kode": "L115ZAINULARIFIN",
+      "nomor": 115,
+      "nama": "ZAINUL ARIFIN - SUN PLAZA",
+      "alias": "Ruas Depan Sun Plaza Medan",
+      "url": "https://atcsdishub.medan.go.id/stream/L115ZAINULARIFIN/stream.m3u8",
+      "lat": 3.583655,
+      "lon": 98.671259
+    }
+  ]
+}

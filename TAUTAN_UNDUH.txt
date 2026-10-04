@@ -1,4 +1,51 @@
-PALING BARU - TAMBAHAN 18C: DISTRICT OUTLET TF IKUT MASUK
+PALING BARU - PERTANYAAN BAPAK: "BAGAIMANA MENGETAHUI TAUTAN VIDEO CCTV?"
+MENU "CCTV ONLINE" UNTUK AKUN PRO - TAHAP 1 (MENGETAHUI TAUTAN)
+------------------------------------------------------------------------
+Jawaban singkat: tautan video SETIAP kamera memakai pola tetap
+
+    https://atcsdishub.medan.go.id/stream/<KODE>/stream.m3u8
+
+<KODE> = huruf L + nomor kamera + nama persimpangan tanpa spasi/tanda hubung
+(titik tetap), contoh: L1RADENSALEHBALAIKOTA, L3KESAWANPALANGMERAH,
+L7SM.RAJAAMALIUN, L31JAMINGINTINGISMUD.
+Tautan itu daftar putar HLS = video LANGSUNG, terbuka untuk umum, dapat
+diputar di HP/komputer/VLC. Sudah saya uji: isinya terus bertambah mengikuti
+waktu sekarang -> benar siaran hidup.
+
+Agar daftar 111 kamera (nama + koordinat) tidak perlu dihafal, saya buatkan:
+
+  periksa_cctv.php     (letakkan di public_html, boleh dihapus sesudahnya)
+      periksa_cctv.php                -> keadaan & petunjuk
+      periksa_cctv.php?ambil=1        -> ambil daftar kamera dari API ATCS
+      periksa_cctv.php?paksa=1&ambil=1-> ambil ulang (memaksa)
+      periksa_cctv.php?uji=10         -> uji 10 tautan (HIDUP / MATI)
+      periksa_cctv.php?uji=semua      -> uji SEMUA tautan
+      periksa_cctv.php?unduh=1        -> unduh data/cctv_medan.json
+
+Hasilnya: data/cctv_medan.json -> berkas ini yang nantinya dibaca aplikasi
+pada menu CCTV Online. Bila Dishub menambah/mengganti kamera, cukup buka
+?paksa=1&ambil=1 - APLIKASI TIDAK PERLU DIBANGUN ULANG.
+
+Tahap 2 (menunggu izin Bapak): menu "CCTV Online" di MENU PRO - daftar kamera
+dari server, dapat dicari & diurutkan menurut jarak, diputar langsung di
+aplikasi + tombol peta & perbesar.
+
+  BERKAS BARU:
+    periksa_cctv.php  (alat pengambil daftar + uji tautan)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/periksa_cctv.php
+    cctv_medan.json   (daftar 111 kamera + koordinat)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/cctv_medan.json
+    cctv_medan.m3u    (daftar putar siap dibuka di VLC)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/cctv_medan.m3u
+    RTS_PANEL_CCTV_MEDAN.zip  (paket 3 berkas di atas)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_CCTV_MEDAN.zip
+
+  PANDUAN LENGKAP: BACA_DULU.txt (blok "PERTANYAAN BAPAK - BAGAIMANA
+  MENGETAHUI TAUTAN VIDEO CCTV?" di bagian paling atas)
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
+
+------------------------------------------------------------------------
+TAMBAHAN 18C (sebelum ini): DISTRICT OUTLET TF IKUT MASUK
 "LIST SALES DISTRICT" PADA HALAMAN PENDAFTARAN (daftar.php)
 ------------------------------------------------------------------------
 Permintaan Bapak:
