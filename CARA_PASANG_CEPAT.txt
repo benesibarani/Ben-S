@@ -5,17 +5,27 @@
 
  Paket ini untuk Bapak yang SUDAH pernah memasang RTS_PANEL_PUTARAN_18D.zip.
  Isinya hanya berkas yang BARU atau BERUBAH untuk menu "CCTV Online".
- Kalau belum yakin, pakai saja paket lengkap RTS_PANEL_PUTARAN_18E.zip.
+ Kalau belum yakin, pakai saja paket lengkap RTS_PANEL_PUTARAN_18F.zip.
+
+ ISI MENU CCTV ONLINE:
+   - TIGA TAMPILAN seperti halaman resmi ATCS Dishub: DAFTAR, GRID KAMERA
+     (kotak bergambar + tombol Play), dan PETA (seluruh kamera sebagai titik);
+   - tombol PERIKSA -> lencana SIAP / TIDAK TERSEDIA (berlaku 10 menit);
+   - kotak pencarian + urutan Nama / Nomor / TERDEKAT (dari posisi HP);
+   - video HLS diputar langsung di dalam aplikasi + layar penuh + tombol peta;
+   - tombol HEMAT KUOTA untuk mematikan gambar kamera pada tampilan Grid;
+   - khusus AKUN PRO (dikunci di aplikasi + diperiksa ulang di server).
 
  ISI PAKET
  --------
-   1_SERVER_unggah_ke_hosting/api/cctv.php          <-- BARU (wajib)
+   1_SERVER_unggah_ke_hosting/api/cctv.php          <-- WAJIB (daftar kamera,
+                                                            segarkan, hidup, uji)
    1_SERVER_unggah_ke_hosting/api/api_bootstrap.php  (bila belum ada)
    1_SERVER_unggah_ke_hosting/api/kolom.php          (bila belum ada)
    1_SERVER_unggah_ke_hosting/api/langganan_inti.php (bila belum ada)
    1_SERVER_unggah_ke_hosting/periksa_cctv.php       + data/cctv_medan.json
    2_APLIKASI_copy_ke_proyek/main.dart               <-- menu CCTV Online
-   2_APLIKASI_copy_ke_proyek/cctv.dart               <-- BARU
+   2_APLIKASI_copy_ke_proyek/cctv.dart               <-- BARU (3 tampilan)
    2_APLIKASI_copy_ke_proyek/pubspec.yaml            <-- tambah video_player
    2_APLIKASI_copy_ke_proyek/ (berkas pendukung lain yang sudah ada)
    3_SKRIP_POWERSHELL/LANGKAH1_PASANG_SEMUA.ps1       <-- juru salin otomatis
@@ -53,12 +63,14 @@
    3. Kalau muncul "Daftar kamera tidak dapat diambil", tekan ikon awan
       (SEGARKAN) di kanan atas - atau buka di peramban:
           https://<alamat-situs>/periksa_cctv.php?ambil=1
+   4. Tekan tombol PERIKSA supaya muncul lencana SIAP / TIDAK TERSEDIA
+      (seperti tombol READY pada situs Dishub).
 
  PEMERIKSAAN SESUDAH PASANG
  --------------------------
    Buka di peramban:  https://<alamat-situs>/periksa_cctv.php
        harus tertulis 111 kamera dan ada contoh tautan HIDUP.
    Di komputer: jalankan .\PERIKSA_KODE_APLIKASI.ps1
-       harus tertulis kode aplikasi  RTS-2026-10-04-18E.
+       harus tertulis kode aplikasi  RTS-2026-10-04-18F.
 
  BACAAN LENGKAP: CCTV_MEDAN.txt (bagian "TAHAP 2" di paling atas)

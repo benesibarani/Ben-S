@@ -21,6 +21,10 @@
  *    segarkan  ambil ulang daftar dari situs ATCS, lalu simpan
  *    uji       menguji tautan beberapa kamera (parameter kode=KODE,KODE)
  *              atau jumlah=N (menguji N kamera pertama)
+ *    hidup     memeriksa SEMUA kamera (hidup / tidak) seperti tombol READY
+ *              pada halaman resmi ATCS. Hasilnya disimpan 10 menit supaya
+ *              aplikasi tidak membebani hosting. Parameter paksa=1 untuk
+ *              memaksa memeriksa ulang.
  *
  *  ATURAN
  *  ------
@@ -120,6 +124,32 @@ function rts_cctv_kunci(): array
 function rts_cctv_potong(string $teks, int $batas): string
 {
     return function_exists('mb_substr') ? mb_substr($teks, 0, $batas) : substr($teks, 0, $batas);
+}
+
+/**
+ * Menyusun alamat gambar (poster) kamera.
+ *
+ * Halaman resmi ATCS menampilkan gambar dengan pola:
+ *     https://atcsdishub.medan.go.id/poster/<NAMA_BERKAS>
+ * Jadi bila nilai poster yang tersimpan belum berupa alamat penuh, di sini
+ * ditambahkan awalan /poster/ tersebut. Bila poster kosong, hasilnya kosong
+ * (aplikasi akan memakai gambar pengganti).
+ */
+function rts_cctv_poster(string $poster): string
+{
+    $poster = trim($poster);
+
+    if ($poster === '') {
+        return '';
+    }
+
+    if (stripos($poster, 'http') === 0) {
+        return $poster;
+    }
+
+    $nama = preg_replace('#^poster/#i', '', ltrim($poster, '/'));
+
+    return 'https://atcsdishub.medan.go.id/poster/' . $nama;
 }
 
 /** Membuat kode kamera dari nomor + nama (pola resmi ATCS). */
@@ -266,11 +296,7 @@ function rts_cctv_ambil_atcs(): array
             );
 
             $langsung = (string) rts_cctv_nilai($perangkat, ['url_hls', 'url_stream', 'url', 'hls', 'stream']);
-            $poster = (string) rts_cctv_nilai($perangkat, ['poster', 'url_poster']);
-
-            if ($poster !== '' && strpos($poster, 'http') !== 0) {
-                $poster = 'https://atcsdishub.medan.go.id/' . ltrim($poster, '/');
-            }
+            $poster = rts_cctv_poster((string) rts_cctv_nilai($perangkat, ['poster', 'url_poster']));
 
             $kode = '';
 
@@ -337,7 +363,7 @@ function rts_cctv_rapikan(array $kamera): array
             'nama' => (string) rts_cctv_nilai($satu, ['nama'], $kode),
             'alias' => (string) rts_cctv_nilai($satu, ['alias'], ''),
             'url' => $url,
-            'poster' => (string) rts_cctv_nilai($satu, ['poster'], ''),
+            'poster' => rts_cctv_poster((string) rts_cctv_nilai($satu, ['poster'], '')),
             'lat' => (float) rts_cctv_nilai($satu, ['lat', 'latitude'], 0),
             'lon' => (float) rts_cctv_nilai($satu, ['lon', 'longitude', 'lng'], 0),
         ];
@@ -381,6 +407,194 @@ function rts_cctv_simpan(array $kamera): bool
         rts_cctv_berkas(),
         json_encode($isi, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
     );
+}
+
+/* ------------------------------------------------------------------------- */
+/* PEMERIKSAAN KAMERA HIDUP (SEPERTI TOMBOL "READY" PADA HALAMAN RESMI ATCS) */
+/* ------------------------------------------------------------------------- */
+
+/** Berkas simpanan hasil pemeriksaan kamera hidup. */
+function rts_cctv_berkas_hidup(): string
+{
+    return dirname(__DIR__) . '/data/cctv_hidup.json';
+}
+
+/**
+ * Membaca hasil pemeriksaan yang tersimpan.
+ *
+ * @param int $umurDetik 0 = terima berapa pun umurnya
+ */
+function rts_cctv_baca_hidup(int $umurDetik = 600): ?array
+{
+    $berkas = rts_cctv_berkas_hidup();
+
+    if (!is_file($berkas)) {
+        return null;
+    }
+
+    $isi = json_decode((string) @file_get_contents($berkas), true);
+
+    if (!is_array($isi) || !isset($isi['kamera']) || !is_array($isi['kamera'])) {
+        return null;
+    }
+
+    $waktu = (int) ($isi['waktu'] ?? 0);
+
+    if ($umurDetik > 0 && (time() - $waktu) > $umurDetik) {
+        return null;
+    }
+
+    return $isi;
+}
+
+/** Menyimpan hasil pemeriksaan kamera hidup. */
+function rts_cctv_simpan_hidup(array $kamera, string $diperiksa): bool
+{
+    $folder = dirname(__DIR__) . '/data';
+
+    if (!is_dir($folder)) {
+        @mkdir($folder, 0755, true);
+    }
+
+    if (!is_dir($folder)) {
+        return false;
+    }
+
+    return (bool) @file_put_contents(
+        rts_cctv_berkas_hidup(),
+        json_encode(
+            ['waktu' => time(), 'diperiksa' => $diperiksa, 'kamera' => $kamera],
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+        )
+    );
+}
+
+/**
+ * Memeriksa BANYAK kamera sekaligus (serentak) supaya tidak lambat.
+ *
+ * @return array{kamera: array<string,array{hidup:bool,kode_http:int}>, diperiksa: string, belum: int}
+ */
+function rts_cctv_uji_semua(array $kamera, int $serentak = 12, int $batasDetik = 20): array
+{
+    $hasil = [];
+    $mulai = microtime(true);
+
+    // Tanpa curl serentak: periksa sejumlah kecil kamera satu per satu.
+    if (!function_exists('curl_multi_init')) {
+        foreach (array_slice($kamera, 0, 12) as $satu) {
+            $uji = rts_cctv_uji((string) $satu['url']);
+
+            $hasil[(string) $satu['kode']] = [
+                'hidup' => (bool) $uji['hidup'],
+                'kode_http' => (int) $uji['kode_http'],
+            ];
+        }
+
+        return [
+            'kamera' => $hasil,
+            'diperiksa' => date('d-m-Y H:i'),
+            'belum' => max(0, count($kamera) - count($hasil)),
+        ];
+    }
+
+    $menunggu = array_values($kamera);
+    $jalan = [];
+    $multi = curl_multi_init();
+
+    $tambah = static function () use (&$menunggu, &$jalan, $multi, $serentak): void {
+        while ($menunggu && count($jalan) < $serentak) {
+            $satu = array_shift($menunggu);
+            $c = curl_init((string) $satu['url']);
+
+            curl_setopt_array($c, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 6,
+                CURLOPT_CONNECTTIMEOUT => 4,
+                CURLOPT_HTTPHEADER => ['Range: bytes=0-600', 'Accept: */*'],
+                CURLOPT_USERAGENT => 'RTS-Panel-CCTV/1.0',
+            ]);
+
+            curl_multi_add_handle($multi, $c);
+
+            $jalan[spl_object_id($c)] = ['kode' => (string) $satu['kode'], 'ch' => $c];
+        }
+    };
+
+    $tambah();
+
+    do {
+        curl_multi_exec($multi, $aktif);
+
+        if ($aktif) {
+            curl_multi_select($multi, 0.25);
+        }
+
+        while ($selesai = curl_multi_info_read($multi)) {
+            $c = $selesai['handle'];
+            $kunci = spl_object_id($c);
+
+            if (isset($jalan[$kunci])) {
+                $kodeHttp = (int) curl_getinfo($c, CURLINFO_RESPONSE_CODE);
+                $isi = (string) curl_multi_getcontent($c);
+
+                $hasil[$jalan[$kunci]['kode']] = [
+                    'hidup' => in_array($kodeHttp, [200, 206], true) && stripos($isi, '#EXTM3U') !== false,
+                    'kode_http' => $kodeHttp,
+                ];
+
+                curl_multi_remove_handle($multi, $c);
+                curl_close($c);
+
+                unset($jalan[$kunci]);
+            }
+        }
+
+        $tambah();
+    } while ($jalan && (microtime(true) - $mulai) < $batasDetik);
+
+    // Sisa yang belum selesai (waktu habis) ditutup tanpa dicatat.
+    foreach ($jalan as $satu) {
+        curl_multi_remove_handle($multi, $satu['ch']);
+        curl_close($satu['ch']);
+    }
+
+    curl_multi_close($multi);
+
+    return [
+        'kamera' => $hasil,
+        'diperiksa' => date('d-m-Y H:i'),
+        'belum' => max(0, count($kamera) - count($hasil)),
+    ];
+}
+
+/**
+ * Boleh mencoba mengambil gambar (poster) dari situs ATCS?
+ *
+ * Dipakai supaya berkas daftar kamera lama (tanpa gambar) dapat dilengkapi
+ * sendiri. Percobaan dibatasi satu kali setiap 6 jam agar hosting tidak
+ * dibebani bila gambar memang tidak tersedia.
+ */
+function rts_cctv_boleh_cari_poster(int $jedaDetik = 21600): bool
+{
+    $folder = dirname(__DIR__) . '/data';
+
+    if (!is_dir($folder)) {
+        @mkdir($folder, 0755, true);
+    }
+
+    if (!is_dir($folder) || !is_writable($folder)) {
+        return false;
+    }
+
+    $berkas = $folder . '/cctv_poster_coba';
+
+    if (is_file($berkas) && (time() - (int) @filemtime($berkas)) < $jedaDetik) {
+        return false;
+    }
+
+    @touch($berkas);
+
+    return true;
 }
 
 /** Menguji satu tautan kamera (hidup / tidak). */
@@ -436,6 +650,42 @@ $data = rts_cctv_baca_berkas();
 $kamera = rts_cctv_rapikan($data['kamera'] ?? []);
 $pesanKhusus = '';
 
+/*
+ * Berkas daftar kamera yang dibuat sebelum menu ini ada BELUM memuat gambar
+ * (poster) kamera. Karena itu, sekali setiap 6 jam, daftar dilengkapi sendiri
+ * dari situs ATCS - supaya tab "Grid Kamera" pada aplikasi punya gambarnya.
+ * Bila hosting tidak dapat menghubungi situs ATCS, aplikasi tetap berjalan
+ * dengan gambar pengganti.
+ */
+if ($aksi === 'daftar' && $kamera !== []) {
+    $kurangGambar = 0;
+
+    foreach ($kamera as $satu) {
+        if ((string) ($satu['poster'] ?? '') === '') {
+            $kurangGambar++;
+        }
+    }
+
+    if ($kurangGambar > 0 && rts_cctv_boleh_cari_poster()) {
+        $dariAtcs = rts_cctv_ambil_atcs();
+
+        if ($dariAtcs) {
+            $lengkap = rts_cctv_rapikan($dariAtcs);
+
+            if ($lengkap !== []) {
+                $kamera = $lengkap;
+                rts_cctv_simpan($kamera);
+                $data = [
+                    'sumber' => 'ATCS Dishub Kota Medan',
+                    'pola' => 'https://atcsdishub.medan.go.id/stream/{KODE}/stream.m3u8',
+                    'diperbarui' => date('d-m-Y H:i'),
+                    'kamera' => $kamera,
+                ];
+            }
+        }
+    }
+}
+
 if ($aksi === 'segarkan' || ($kamera === [] && $aksi === 'daftar')) {
     $dariAtcs = rts_cctv_ambil_atcs();
 
@@ -477,6 +727,60 @@ if ($aksi === 'segarkan' || ($kamera === [] && $aksi === 'daftar')) {
             ['perlu_berkas' => true]
         );
     }
+}
+
+if ($aksi === 'hidup') {
+    $paksa = rts_api_param('paksa', '0') === '1';
+    $simpanan = $paksa ? null : rts_cctv_baca_hidup(600);
+
+    if (is_array($simpanan)) {
+        $kameraHidup = (array) ($simpanan['kamera'] ?? []);
+        $diperiksa = (string) ($simpanan['diperiksa'] ?? '');
+    } else {
+        $periksa = rts_cctv_uji_semua($kamera);
+        $kameraHidup = (array) $periksa['kamera'];
+        $diperiksa = (string) $periksa['diperiksa'];
+
+        rts_cctv_simpan_hidup($kameraHidup, $diperiksa);
+    }
+
+    $butir = [];
+    $jumlahHidup = 0;
+
+    foreach ($kamera as $satu) {
+        $kode = (string) $satu['kode'];
+
+        if (!isset($kameraHidup[$kode])) {
+            continue;
+        }
+
+        $hidup = !empty($kameraHidup[$kode]['hidup']);
+
+        if ($hidup) {
+            $jumlahHidup++;
+        }
+
+        $butir[] = [
+            'kode' => $kode,
+            'hidup' => $hidup,
+            'kode_http' => (int) ($kameraHidup[$kode]['kode_http'] ?? 0),
+        ];
+    }
+
+    rts_api_response(
+        true,
+        $jumlahHidup . ' dari ' . count($butir) . ' kamera siap diputar'
+            . ($diperiksa === '' ? '.' : ' (diperiksa ' . $diperiksa . ').'),
+        [
+            'data' => [
+                'diperiksa' => $diperiksa,
+                'jumlah' => count($butir),
+                'hidup' => $jumlahHidup,
+                'belum' => max(0, count($kamera) - count($butir)),
+                'kamera' => $butir,
+            ],
+        ]
+    );
 }
 
 if ($aksi === 'uji') {
@@ -532,6 +836,35 @@ if (!$kamera) {
     rts_api_fail('Daftar kamera kosong. Jalankan periksa_cctv.php?ambil=1 pada website.', 503);
 }
 
+/*
+ * Bila hasil pemeriksaan kamera hidup masih baru (di bawah 10 menit), status
+ * itu langsung dititipkan pada setiap kamera - jadi aplikasi dapat menampilkan
+ * lencana SIAP / TIDAK TERSEDIA tanpa memanggil server dua kali.
+ */
+$hidupPeta = [];
+$diperiksaHidup = '';
+$simpananHidup = rts_cctv_baca_hidup(600);
+
+if (is_array($simpananHidup)) {
+    $diperiksaHidup = (string) ($simpananHidup['diperiksa'] ?? '');
+
+    foreach ((array) ($simpananHidup['kamera'] ?? []) as $kode => $satu) {
+        $hidupPeta[(string) $kode] = !empty($satu['hidup']) ? 1 : 0;
+    }
+}
+
+$jumlahPoster = 0;
+
+foreach ($kamera as $urutan => $satu) {
+    $kode = (string) $satu['kode'];
+
+    $kamera[$urutan]['hidup'] = array_key_exists($kode, $hidupPeta) ? $hidupPeta[$kode] : null;
+
+    if ((string) ($satu['poster'] ?? '') !== '') {
+        $jumlahPoster++;
+    }
+}
+
 rts_api_response(
     true,
     $pesanKhusus !== ''
@@ -544,6 +877,9 @@ rts_api_response(
             'pola' => (string) ($data['pola'] ?? ''),
             'diperbarui' => (string) ($data['diperbarui'] ?? ''),
             'akun_pro' => $akunPro ? 1 : 0,
+            'ada_poster' => $jumlahPoster > 0 ? 1 : 0,
+            'jumlah_poster' => $jumlahPoster,
+            'hidup_diperiksa' => $diperiksaHidup,
             'dari_situs' => $pesanKhusus !== '' && strpos($pesanKhusus, 'berhasil diperbarui') !== false ? 1 : 0,
             'kamera' => $kamera,
         ],

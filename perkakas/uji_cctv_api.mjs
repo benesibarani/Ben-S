@@ -9,7 +9,7 @@
  *  Yang dikerjakan:
  *    1. Menyiapkan folder kerja /home/user/uji (perkakas uji) berisi salinan
  *       api/cctv.php + api/langganan_inti.php + bootstrap tiruan + data kamera.
- *    2. Menjalankan 8 keadaan pengujian memakai PHP 8.2 asli (php-wasm).
+ *    2. Menjalankan keadaan-keadaan pengujian memakai PHP 8.2 asli (php-wasm).
  *    3. Memeriksa kode HTTP, isi balasan JSON, dan memastikan berkas data
  *       TIDAK berubah saat hanya membaca daftar.
  *
@@ -53,6 +53,10 @@ function siapkan() {
   fs.copyFileSync(REPO + '/perkakas/uji_tes_cctv_api.php', UJI + '/tes_cctv_api.php');
   fs.copyFileSync(REPO + '/cctv_medan.json', UJI + '/data/cctv_medan.json');
   fs.writeFileSync(UJI + '/config.php', "<?php\n// Tiruan: database uji diambil dari RtsUjiDb.\n");
+
+  // Tanda bahwa percobaan mengambil gambar (poster) baru saja dilakukan, supaya
+  // api/cctv.php TIDAK memanggil situs ATCS pada setiap keadaan pengujian.
+  fs.writeFileSync(UJI + '/data/cctv_poster_coba', '');
 }
 
 /* --------------------------------------------------------------- menjalankan */
@@ -349,6 +353,159 @@ console.log('\n[9] Berkas data belum ada + ATCS tidak dapat dihubungi -> pesan b
   periksa('success=false', !!hasil.balasan && hasil.balasan.success === false);
   periksa('perlu_berkas = true', !!hasil.balasan && hasil.balasan.perlu_berkas === true, JSON.stringify(hasil.balasan));
   periksa('pesan menunjuk periksa_cctv.php?ambil=1', !!hasil.balasan && hasil.balasan.message.includes('periksa_cctv.php?ambil=1'));
+}
+
+/* ----------------------------------- 10. aksi=hidup (periksa semua kamera) */
+
+console.log('\n[10] aksi=hidup -> memeriksa semua kamera (seperti tombol READY di situs ATCS)');
+{
+  const hasil = jalankan({
+    metode: 'GET',
+    token,
+    token_ada: true,
+    user: userPro,
+    langganan: langgananPro,
+    get: { aksi: 'hidup' },
+  });
+
+  const data = hasil.balasan && hasil.balasan.data;
+
+  periksa('kode HTTP 200', hasil.kode === 200, 'kode=' + hasil.kode);
+  periksa('success=true', !!hasil.balasan && hasil.balasan.success === true);
+  periksa('ada data.jumlah (jumlah kamera diperiksa)', !!data && typeof data.jumlah === 'number' && data.jumlah >= 12, JSON.stringify(data && data.jumlah));
+  periksa('ada data.hidup (angka)', !!data && typeof data.hidup === 'number');
+  periksa('data.belum = 111 - jumlah', !!data && data.belum === 111 - data.jumlah, JSON.stringify(data && [data.jumlah, data.belum]));
+  periksa('pesan menyebut "siap diputar"', !!hasil.balasan && /siap diputar/i.test(hasil.balasan.message), hasil.balasan && hasil.balasan.message);
+  periksa('di kotak uji ini ATCS tidak dapat dihubungi -> belum ada yang hidup', !!data && data.hidup === 0);
+  periksa(
+    'setiap hasil punya kode + hidup (bool) + kode_http (angka)',
+    !!data && Array.isArray(data.kamera) && data.kamera.every((k) => typeof k.kode === 'string' && typeof k.hidup === 'boolean' && typeof k.kode_http === 'number'),
+  );
+  periksa('berkas simpanan hasil pemeriksaan dibuat (data/cctv_hidup.json)', fs.existsSync(UJI + '/data/cctv_hidup.json'));
+}
+
+/* ------------------------------------ 11. aksi=hidup kedua -> pakai simpanan */
+
+console.log('\n[11] aksi=hidup kedua (tanpa paksa) -> memakai simpanan, tidak memeriksa ulang');
+{
+  const berkas = UJI + '/data/cctv_hidup.json';
+  const sebelum = fs.readFileSync(berkas);
+
+  const hasil = jalankan({
+    metode: 'GET',
+    token,
+    token_ada: true,
+    user: userPro,
+    langganan: langgananPro,
+    get: { aksi: 'hidup' },
+  });
+
+  const sesudah = fs.readFileSync(berkas);
+  const data = hasil.balasan && hasil.balasan.data;
+
+  periksa('kode HTTP 200', hasil.kode === 200, 'kode=' + hasil.kode);
+  periksa('jumlah hasil sama dengan pemeriksaan pertama', !!data && data.jumlah >= 12);
+  periksa('berkas simpanan TIDAK berubah (memakai simpanan)', Buffer.compare(sebelum, sesudah) === 0);
+  periksa('ada keterangan waktu diperiksa pada pesan', !!hasil.balasan && /diperiksa/i.test(hasil.balasan.message), hasil.balasan && hasil.balasan.message);
+}
+
+/* --------------------------- 12. daftar menitipkan status hidup + poster itu */
+
+console.log('\n[12] aksi=daftar setelah pemeriksaan -> status hidup ikut dikirim');
+{
+  const hasil = jalankan({
+    metode: 'GET',
+    token,
+    token_ada: true,
+    user: userPro,
+    langganan: langgananPro,
+    get: { aksi: 'daftar' },
+  });
+
+  const data = hasil.balasan && hasil.balasan.data;
+  const kamera = (data && data.kamera) || [];
+
+  periksa('kode HTTP 200', hasil.kode === 200, 'kode=' + hasil.kode);
+  periksa('setiap kamera punya kolom hidup (0/1)', kamera.length === 111 && kamera.every((k) => k.hidup === 0 || k.hidup === 1));
+  periksa('data.hidup_diperiksa terisi', !!data && typeof data.hidup_diperiksa === 'string' && data.hidup_diperiksa.length > 5, JSON.stringify(data && data.hidup_diperiksa));
+  periksa('data.ada_poster = 0 (berkas lama belum ada gambar)', !!data && data.ada_poster === 0, JSON.stringify(data && [data.ada_poster, data.jumlah_poster]));
+}
+
+/* --------------------------------- 13. alamat gambar (poster) dirapikan */
+
+console.log('\n[13] Alamat gambar kamera dirapikan (pola /poster/ milik situs ATCS)');
+{
+  const cadangan = fs.readFileSync(UJI + '/data/cctv_medan.json');
+
+  const contoh = {
+    sumber: 'uji',
+    kamera: [
+      { kode: 'UJI1', nomor: 1, nama: 'NAMA SATU', alias: 'Simpang Satu', url: 'https://atcsdishub.medan.go.id/stream/UJI1/stream.m3u8', poster: 'poster/NAMA_1_1166.jpg', lat: 3.59, lon: 98.67 },
+      { kode: 'UJI2', nomor: 2, nama: 'NAMA DUA', alias: 'Simpang Dua', url: 'https://atcsdishub.medan.go.id/stream/UJI2/stream.m3u8', poster: 'NAMA_2_800.jpg', lat: 3.58, lon: 98.68 },
+      { kode: 'UJI3', nomor: 3, nama: 'NAMA TIGA', alias: 'Simpang Tiga', url: 'https://atcsdishub.medan.go.id/stream/UJI3/stream.m3u8', poster: 'https://contoh.id/gambar.jpg', lat: 3.57, lon: 98.69 },
+      { kode: 'UJI4', nomor: 4, nama: 'NAMA EMPAT', alias: 'Simpang Empat', url: 'https://atcsdishub.medan.go.id/stream/UJI4/stream.m3u8', lat: 3.56, lon: 98.70 },
+    ],
+  };
+
+  fs.writeFileSync(UJI + '/data/cctv_medan.json', JSON.stringify(contoh));
+
+  const hasil = jalankan({
+    metode: 'GET',
+    token,
+    token_ada: true,
+    user: userPro,
+    langganan: langgananPro,
+    get: { aksi: 'daftar' },
+  });
+
+  const kamera = (hasil.balasan && hasil.balasan.data && hasil.balasan.data.kamera) || [];
+  const cari = (kode) => kamera.find((k) => k.kode === kode) || {};
+
+  periksa('kode HTTP 200', hasil.kode === 200, 'kode=' + hasil.kode);
+  periksa('poster "poster/NAMA_1_1166.jpg" -> alamat penuh /poster/', cari('UJI1').poster === 'https://atcsdishub.medan.go.id/poster/NAMA_1_1166.jpg', JSON.stringify(cari('UJI1').poster));
+  periksa('poster "NAMA_2_800.jpg" -> alamat penuh /poster/', cari('UJI2').poster === 'https://atcsdishub.medan.go.id/poster/NAMA_2_800.jpg', JSON.stringify(cari('UJI2').poster));
+  periksa('poster yang sudah berupa alamat penuh tidak diubah', cari('UJI3').poster === 'https://contoh.id/gambar.jpg', JSON.stringify(cari('UJI3').poster));
+  periksa('poster kosong tetap kosong', cari('UJI4').poster === '', JSON.stringify(cari('UJI4').poster));
+  periksa('data.ada_poster = 1 karena 3 dari 4 punya gambar', !!(hasil.balasan && hasil.balasan.data) && hasil.balasan.data.ada_poster === 1);
+  periksa('kamera tanpa poster tetap punya kolom hidup', 'hidup' in cari('UJI4'), JSON.stringify(cari('UJI4')));
+
+  fs.writeFileSync(UJI + '/data/cctv_medan.json', cadangan);
+}
+
+/* ---------------------- 14. pelengkapan gambar otomatis (paling banyak 1x/6 jam) */
+
+console.log('\n[14] Daftar lama tanpa gambar -> server mencoba melengkapinya sendiri (dibatasi)');
+{
+  const tanda = UJI + '/data/cctv_poster_coba';
+
+  fs.rmSync(tanda, { force: true });
+
+  const hasil = jalankan({
+    metode: 'GET',
+    token,
+    token_ada: true,
+    user: userPro,
+    langganan: langgananPro,
+    get: { aksi: 'daftar' },
+  });
+
+  periksa('kode HTTP 200 (aplikasi tidak menunggu selamanya)', hasil.kode === 200, 'kode=' + hasil.kode);
+  periksa('daftar lama tetap dipakai walau ATCS tidak dapat dihubungi', !!(hasil.balasan && hasil.balasan.data) && hasil.balasan.data.jumlah === 111);
+  periksa('tanda pembatas waktu dibuat (data/cctv_poster_coba)', fs.existsSync(tanda));
+
+  const waktuTanda = fs.statSync(tanda).mtimeMs;
+
+  const kedua = jalankan({
+    metode: 'GET',
+    token,
+    token_ada: true,
+    user: userPro,
+    langganan: langgananPro,
+    get: { aksi: 'daftar' },
+  });
+
+  periksa('panggilan kedua tetap 200', kedua.kode === 200, 'kode=' + kedua.kode);
+  periksa('panggilan kedua TIDAK mencoba lagi (hemat beban hosting)', fs.statSync(tanda).mtimeMs === waktuTanda);
 }
 
 /* --------------------------------------------------------------- ringkasan */

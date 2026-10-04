@@ -1,7 +1,7 @@
 // ============================================================================
 //  RTS PANEL BY BENE - FITUR PRO : CCTV ONLINE (KAMERA LALU LINTAS MEDAN)
 //  Berkas : lib/cctv.dart
-//  Versi  : 1   (4 Oktober 2026)
+//  Versi  : 2   (4 Oktober 2026)
 //
 //  ISI BERKAS INI (dipisah dari main.dart supaya pembaruan berikutnya cukup
 //  mengganti satu berkas):
@@ -10,6 +10,14 @@
 //            daftar dibaca dari server (api/cctv.php), dapat DICARI, dapat
 //            diurutkan menurut NAMA / NOMOR / JARAK dari posisi HP, dan
 //            disimpan di dalam HP supaya tetap terbaca walau tanpa internet.
+//            TIGA TAMPILAN (seperti halaman resmi ATCS Dishub, yang memakai
+//            tab "Peta" dan "Grid Kamera"), jadi Bapak dapat memilih:
+//               DAFTAR  - daftar memanjang, satu kamera satu baris;
+//               GRID    - kotak-kotak berisi GAMBAR kamera + tombol PUTAR;
+//               PETA    - SEMUA kamera sebagai titik pada satu peta.
+//            Di tampilan GRID dan PETA ada lencana SIAP / TIDAK TERSEDIA
+//            (sama seperti lencana READY / MAINTENANCE pada situs Dishub),
+//            yang diperiksa lewat tombol PERIKSA.
 //     2. RtsCctvPutarPage - PEMUTAR VIDEO (langsung di dalam aplikasi)
 //            memutar siaran HLS (.m3u8), ada tombol play/pause, bisukan,
 //            LAYAR PENUH, peta, salin tautan, dan jalan keluar "buka di
@@ -63,6 +71,29 @@ const String rtsCctvHalaman = 'https://atcsdishub.medan.go.id/streaming';
 const String rtsCctvKunciSimpan = 'rts_cctv_simpan';
 const String rtsCctvKunciWaktu = 'rts_cctv_waktu';
 
+/// Kunci penyimpanan hasil pemeriksaan "kamera siap / tidak" di dalam HP.
+const String rtsCctvKunciSiap = 'rts_cctv_siap';
+const String rtsCctvKunciSiapWaktu = 'rts_cctv_siap_waktu';
+
+/// Alamat gambar (poster) kamera.
+///
+/// Halaman resmi ATCS menampilkan gambar kamera dengan pola:
+///     https://atcsdishub.medan.go.id/poster/<NAMA BERKAS>
+/// Jadi nilai poster yang belum berupa alamat penuh ditambahi awalan itu.
+/// Gambar hanya pelengkap: bila gagal dimuat, kartu memakai gambar pengganti.
+String rtsCctvPosterUrl(String poster) {
+  final String nilai = poster.trim();
+
+  if (nilai.isEmpty) return '';
+  if (nilai.toLowerCase().startsWith('http')) return nilai;
+
+  final String nama = nilai
+      .replaceFirst(RegExp(r'^poster/', caseSensitive: false), '')
+      .replaceFirst(RegExp(r'^/+'), '');
+
+  return 'https://atcsdishub.medan.go.id/poster/$nama';
+}
+
 /* ------------------------------------------------------------------------- */
 /* MODEL DATA                                                                */
 /* ------------------------------------------------------------------------- */
@@ -78,6 +109,7 @@ class RtsCctvKamera {
     this.poster = '',
     this.lat = 0,
     this.lon = 0,
+    this.siap,
   });
 
   final String kode;
@@ -89,6 +121,13 @@ class RtsCctvKamera {
   final double lat;
   final double lon;
 
+  /// Hasil pemeriksaan terakhir: true = siap diputar, false = tidak tersedia,
+  /// null = belum diperiksa. Dikirim server (api/cctv.php?aksi=hidup).
+  final bool? siap;
+
+  /// Alamat gambar kamera (kosong bila belum ada).
+  String get posterUrl => rtsCctvPosterUrl(poster);
+
   /// Titik peta kamera tersedia dan masuk akal.
   bool get adaTitik => rtsPetaTitikSah(lat, lon);
 
@@ -96,6 +135,12 @@ class RtsCctvKamera {
 
   /// Tulisan untuk daftar: alias dipakai bila ada, kalau tidak nama.
   String get keterangan => alias.trim().isEmpty ? nama : alias;
+
+  /// Judul pada tampilan GRID (sama dengan halaman resmi ATCS: nama alias).
+  String get judul => keterangan;
+
+  /// Baris lokasi pada tampilan GRID (kosong bila tidak ada nama lokasi).
+  String get lokasi => alias.trim().isEmpty ? '' : nama;
 
   factory RtsCctvKamera.dari(Map<dynamic, dynamic> isi) {
     final Object? nomorMentah = isi['nomor'];
@@ -111,8 +156,22 @@ class RtsCctvKamera {
       poster: '${isi['poster'] ?? ''}',
       lat: _angka(isi['lat']),
       lon: _angka(isi['lon'] ?? isi['lng']),
+      siap: _hidup(isi['hidup']),
     );
   }
+
+  /// Menyalin kamera dengan hasil pemeriksaan (siap/tidak) yang baru.
+  RtsCctvKamera salin({bool? siap}) => RtsCctvKamera(
+        kode: kode,
+        nomor: nomor,
+        nama: nama,
+        alias: alias,
+        url: url,
+        poster: poster,
+        lat: lat,
+        lon: lon,
+        siap: siap ?? this.siap,
+      );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'kode': kode,
@@ -123,12 +182,26 @@ class RtsCctvKamera {
         'poster': poster,
         'lat': lat,
         'lon': lon,
+        'hidup': siap == null ? null : (siap! ? 1 : 0),
       };
 
   static double _angka(Object? nilai) {
     if (nilai is num) return nilai.toDouble();
 
     return double.tryParse('${nilai ?? ''}') ?? 0;
+  }
+
+  /// Membaca nilai hidup (1 = siap, 0 = tidak tersedia, kosong = belum).
+  static bool? _hidup(Object? nilai) {
+    if (nilai == null || nilai == '') return null;
+    if (nilai == true || nilai == 1) return true;
+    if (nilai == false || nilai == 0) return false;
+
+    final String teks = '$nilai';
+    if (teks == '1' || teks.toLowerCase() == 'true') return true;
+    if (teks == '0' || teks.toLowerCase() == 'false') return false;
+
+    return null;
   }
 }
 
@@ -192,11 +265,49 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
   String _urut = 'Nama';
   Position? _saya;
 
+  /// Tampilan yang sedang dipakai: Daftar, Grid Kamera, atau Peta.
+  String _tampilan = 'Daftar';
+
+  final MapController _kontrolPeta = MapController();
+
+  /// Memeriksa seluruh kamera (tombol PERIKSA seperti tombol READY di situs
+  /// resmi ATCS). Hasilnya dititipkan server pada setiap kamera.
+  bool _memeriksa = false;
+
+  /// Waktu pemeriksaan terakhir (dari server), ditampilkan di atas tampilan.
+  String _diperiksaSiap = '';
+
+  /// Server pernah mengirim penanda siap/tidak (atau gambar sudah ada).
+  bool _adaSiapServer = false;
+
+  /// Menampilkan gambar kamera pada tampilan Grid (dapat dimatikan untuk
+  /// menghemat kuota data - lencana SIAP dan tombol Play tetap bekerja).
+  bool _pakaiGambar = true;
+
+  static const List<String> _pilihanTampilan = <String>[
+    'Daftar',
+    'Grid',
+    'Peta',
+  ];
+
   static const List<String> _pilihanUrut = <String>[
     'Nama',
     'Nomor',
     'Terdekat',
   ];
+
+  /// Berapa kamera yang sudah diperiksa: siap diputar / tidak tersedia.
+  int _hitungSiap(bool nilai) {
+    int jumlah = 0;
+
+    for (final RtsCctvKamera kamera in _kamera) {
+      if (kamera.siap == nilai) jumlah++;
+    }
+
+    return jumlah;
+  }
+
+  bool get _adaSiap => _kamera.any((RtsCctvKamera k) => k.siap != null);
 
   @override
   void initState() {
@@ -207,6 +318,7 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
   @override
   void dispose() {
     _cari.dispose();
+    _kontrolPeta.dispose();
     super.dispose();
   }
 
@@ -238,10 +350,36 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
 
       if (!mounted || daftar.isEmpty) return;
 
+      // Hasil pemeriksaan siap/tidak juga disimpan supaya lencananya tidak
+      // hilang setiap aplikasi dibuka.
+      final String siapTeks = sp.getString(rtsCctvKunciSiap) ?? '';
+      final String siapWaktu = sp.getString(rtsCctvKunciSiapWaktu) ?? '';
+
+      if (siapTeks.isNotEmpty) {
+        try {
+          final dynamic uraiSiap = jsonDecode(siapTeks);
+
+          if (uraiSiap is Map) {
+            for (int i = 0; i < daftar.length; i++) {
+              final dynamic nilai = uraiSiap[daftar[i].kode];
+
+              if (nilai == 1 || nilai == true || '$nilai' == '1') {
+                daftar[i] = daftar[i].salin(siap: true);
+              } else if (nilai == 0 || nilai == false || '$nilai' == '0') {
+                daftar[i] = daftar[i].salin(siap: false);
+              }
+            }
+          }
+        } catch (_) {
+          // simpanan lama: tidak masalah, nanti diperiksa lagi ke server
+        }
+      }
+
       setState(() {
         _kamera = daftar;
         _dariSimpanan = true;
         _diperbarui = sp.getString(rtsCctvKunciWaktu) ?? '';
+        _diperiksaSiap = siapWaktu;
       });
     } catch (_) {
       // simpanan rusak: tidak masalah, nanti diambil dari server
@@ -258,8 +396,39 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
         jsonEncode(daftar.map((RtsCctvKamera k) => k.toJson()).toList()),
       );
       await sp.setString(rtsCctvKunciWaktu, waktu);
+
+      await _tulisSiap(daftar, sp);
     } catch (_) {
       // penyimpanan penuh: daftar tetap bisa dipakai selama aplikasi terbuka
+    }
+  }
+
+  /// Menyimpan hasil pemeriksaan siap/tidak ke dalam HP.
+  Future<void> _tulisSiap(
+    List<RtsCctvKamera> daftar, [
+    SharedPreferences? sp,
+  ]) async {
+    try {
+      final Map<String, int> peta = <String, int>{};
+
+      for (final RtsCctvKamera kamera in daftar) {
+        if (kamera.siap == null) continue;
+
+        peta[kamera.kode] = kamera.siap! ? 1 : 0;
+      }
+
+      if (peta.isEmpty) return;
+
+      final SharedPreferences simpan =
+          sp ?? await SharedPreferences.getInstance();
+
+      await simpan.setString(rtsCctvKunciSiap, jsonEncode(peta));
+
+      if (_diperiksaSiap.isNotEmpty) {
+        await simpan.setString(rtsCctvKunciSiapWaktu, _diperiksaSiap);
+      }
+    } catch (_) {
+      // penyimpanan penuh: lencana tetap benar selama aplikasi terbuka
     }
   }
 
@@ -291,13 +460,15 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
         '${widget.baseUrl}/cctv.php?aksi=${segarkan ? 'segarkan' : 'daftar'}',
       );
 
+      // 45 detik: server sesekali perlu mengambil daftar/gambar terbaru dari
+      // situs ATCS lebih dahulu (dilakukan paling banyak sekali setiap 6 jam).
       final http.Response jawab = await http.get(
         uri,
         headers: <String, String>{
           'Accept': 'application/json',
           'Authorization': 'Bearer ${widget.token}',
         },
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 45));
 
       final dynamic urai = jsonDecode(jawab.body);
 
@@ -364,6 +535,12 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
       }
 
       setState(() {
+        int jumlahSiap = 0;
+
+        for (final RtsCctvKamera kamera in daftar) {
+          if (kamera.siap == true) jumlahSiap++;
+        }
+
         _kamera = daftar;
         _memuat = false;
         _menyegarkan = false;
@@ -371,6 +548,10 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
         _dariSimpanan = false;
         _sumber = '${data['sumber'] ?? 'ATCS Dishub Kota Medan'}';
         _diperbarui = '${data['diperbarui'] ?? ''}';
+        _diperiksaSiap = '${data['hidup_diperiksa'] ?? ''}';
+        _adaSiapServer = data.containsKey('hidup_diperiksa') ||
+            data.containsKey('ada_poster') ||
+            jumlahSiap > 0;
       });
 
       await _tulisSimpanan(daftar);
@@ -387,6 +568,100 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
       _gagalMuat('Server lama tidak menjawab. Periksa sambungan internet.');
     } catch (galat) {
       _gagalMuat('$galat');
+    }
+  }
+
+  /// Panggilan kecil ke api/cctv.php (dipakai tombol PERIKSA).
+  Future<Map<String, dynamic>?> _panggil(
+    String aksi, {
+    Duration waktu = const Duration(seconds: 60),
+  }) async {
+    if (widget.baseUrl.isEmpty || widget.token.isEmpty) return null;
+
+    try {
+      final http.Response jawab = await http.get(
+        Uri.parse('${widget.baseUrl}/cctv.php?aksi=$aksi'),
+        headers: <String, String>{
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ${widget.token}',
+        },
+      ).timeout(waktu);
+
+      final dynamic urai = jsonDecode(jawab.body);
+
+      if (urai is! Map) return null;
+
+      return urai.cast<String, dynamic>();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Tombol PERIKSA: meminta server memeriksa seluruh kamera, lalu memakai
+  /// hasilnya pada kartu-kartu (lencana SIAP / TIDAK TERSEDIA).
+  Future<void> _periksaKamera() async {
+    if (_memeriksa) return;
+
+    setState(() => _memeriksa = true);
+
+    final Map<String, dynamic>? balasan = await _panggil(
+      'hidup',
+      waktu: const Duration(seconds: 90),
+    );
+
+    if (!mounted) return;
+
+    if (balasan == null || balasan['success'] != true) {
+      setState(() => _memeriksa = false);
+
+      rtsKsPesan(
+        context,
+        balasan == null
+            ? 'Pemeriksaan tidak dapat dijalankan. Periksa sambungan internet.'
+            : '${balasan['message'] ?? 'Pemeriksaan gagal.'}',
+        galat: true,
+      );
+
+      return;
+    }
+
+    final Map<String, dynamic> data = (balasan['data'] is Map)
+        ? (balasan['data'] as Map).cast<String, dynamic>()
+        : <String, dynamic>{};
+
+    final List<dynamic> butir = (data['kamera'] is List)
+        ? (data['kamera'] as List<dynamic>)
+        : <dynamic>[];
+
+    final Map<String, int> peta = <String, int>{};
+
+    for (final dynamic satu in butir) {
+      if (satu is Map) {
+        peta['${satu['kode']}'] = satu['hidup'] == true ? 1 : 0;
+      }
+    }
+
+    final List<RtsCctvKamera> daftar = <RtsCctvKamera>[];
+
+    for (final RtsCctvKamera kamera in _kamera) {
+      final int? nilai = peta[kamera.kode];
+
+      daftar.add(
+        nilai == null ? kamera : kamera.salin(siap: nilai == 1),
+      );
+    }
+
+    setState(() {
+      _kamera = daftar;
+      _memeriksa = false;
+      _diperiksaSiap = '${data['diperiksa'] ?? ''}';
+      _adaSiapServer = true;
+    });
+
+    await _tulisSiap(daftar);
+
+    if (mounted) {
+      rtsKsPesan(context, '${balasan['message'] ?? 'Pemeriksaan selesai.'}');
     }
   }
 
@@ -516,8 +791,23 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
             onPressed: _bukaKeterangan,
             icon: const Icon(Icons.info_outline_rounded),
           ),
+          if (_adaSiap)
+            IconButton(
+              tooltip: 'Periksa kamera siap / tidak',
+              onPressed: _memeriksa ? null : _periksaKamera,
+              icon: _memeriksa
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.wifi_tethering_rounded),
+            ),
           IconButton(
-            tooltip: 'Segarkan dari server',
+            tooltip: 'Segarkan daftar dari server',
             onPressed: _menyegarkan ? null : () => _muat(segarkan: true),
             icon: _menyegarkan
                 ? const SizedBox(
@@ -542,6 +832,33 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
   }
 
   Widget _kepala(int jumlahTampil) {
+    // Keterangan dihitung lebih dahulu - menghindari tanda kutip bersarang
+    // (lebih mudah dibaca dan lebih aman diperiksa skrip pemeriksa kurung).
+    String keterangan;
+
+    if (_tampilan == 'Peta') {
+      keterangan = '${_kamera.length} kamera pada peta';
+
+      if (_adaSiap) {
+        keterangan = '$keterangan - SIAP ${_hitungSiap(true)}';
+        keterangan = '$keterangan - TIDAK TERSEDIA ${_hitungSiap(false)}';
+      }
+
+      if (_diperiksaSiap.isNotEmpty) {
+        keterangan = '$keterangan - diperiksa $_diperiksaSiap';
+      }
+    } else {
+      keterangan = '$jumlahTampil dari ${_kamera.length} kamera';
+
+      if (_dariSimpanan) {
+        keterangan = '$keterangan - tersimpan di HP';
+      }
+
+      if (_diperbarui.isNotEmpty) {
+        keterangan = '$keterangan - diperbarui $_diperbarui';
+      }
+    }
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -570,49 +887,191 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
             ),
           ),
           const SizedBox(height: 9),
+
+          // PILIHAN TAMPILAN - sama seperti halaman resmi ATCS Dishub yang
+          // memakai "Peta" dan "Grid Kamera". Di sini ditambah "Daftar".
           Row(
             children: <Widget>[
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: <Widget>[
-                      for (final String pilih in _pilihanUrut) ...<Widget>[
-                        _tombolUrut(pilih),
-                        const SizedBox(width: 6),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              if (_saya == null)
-                TextButton.icon(
-                  onPressed: _pakaiLokasi,
-                  icon: const Icon(Icons.my_location_rounded, size: 16),
-                  label: const Text('Pakai lokasi'),
-                )
-              else
-                const Icon(Icons.my_location_rounded, size: 16, color: rtsKsHijau),
+              for (final String pilih in _pilihanTampilan) ...<Widget>[
+                Expanded(child: _tombolTampilan(pilih)),
+                if (pilih != _pilihanTampilan.last) const SizedBox(width: 7),
+              ],
             ],
           ),
-          const SizedBox(height: 4),
+
+          const SizedBox(height: 9),
+
+          // PENYARING - hanya untuk tampilan Daftar dan Grid (peta perlu
+          // seluruh kamera supaya titiknya lengkap).
+          if (_tampilan != 'Peta') ...<Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: <Widget>[
+                        for (final String pilih in _pilihanUrut) ...<Widget>[
+                          _tombolUrut(pilih),
+                          const SizedBox(width: 6),
+                        ],
+                        if (_tampilan == 'Grid') _tombolGambar(),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_saya == null)
+                  TextButton.icon(
+                    onPressed: _pakaiLokasi,
+                    icon: const Icon(Icons.my_location_rounded, size: 16),
+                    label: const Text('Pakai lokasi'),
+                  )
+                else
+                  const Icon(Icons.my_location_rounded, size: 16, color: rtsKsHijau),
+              ],
+            ),
+            const SizedBox(height: 4),
+          ],
+
+          // BARIS KETERANGAN + tombol PERIKSA.
           Row(
             children: <Widget>[
               Expanded(
                 child: Text(
-                  '$jumlahTampil dari ${_kamera.length} kamera'
-                  '${_dariSimpanan ? ' - tersimpan di HP' : ''}'
-                  '${_diperbarui.isEmpty ? '' : ' - diperbarui $_diperbarui'}',
+                  keterangan,
                   style: const TextStyle(fontSize: 11.5, color: rtsKsTeks2),
                 ),
               ),
-              const Text(
-                'Sumber: Dishub Kota Medan',
-                style: TextStyle(fontSize: 11, color: rtsKsTeks2),
-              ),
+              if (_adaSiapServer)
+                GestureDetector(
+                  onTap: _memeriksa ? null : _periksaKamera,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: rtsKsMaroon,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        if (_memeriksa)
+                          const SizedBox(
+                            width: 11,
+                            height: 11,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        else
+                          const Icon(
+                            Icons.wifi_tethering_rounded,
+                            size: 12,
+                            color: Colors.white,
+                          ),
+                        const SizedBox(width: 5),
+                        Text(
+                          _memeriksa ? 'MEMERIKSA...' : 'PERIKSA',
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                const Text(
+                  'Sumber: Dishub Kota Medan',
+                  style: TextStyle(fontSize: 11, color: rtsKsTeks2),
+                ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Tombol pilihan tampilan (Daftar / Grid / Peta).
+  Widget _tombolTampilan(String pilihan) {
+    final bool aktif = _tampilan == pilihan;
+    final IconData ikon = pilihan == 'Grid'
+        ? Icons.grid_view_rounded
+        : pilihan == 'Peta'
+            ? Icons.map_outlined
+            : Icons.view_list_rounded;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() => _tampilan = pilihan);
+
+        if (pilihan == 'Peta') {
+          // Peta digambar dahulu (satu gambar), baru diatur supaya seluruh
+          // kamera masuk layar. MapController TIDAK dibuang saat pindah tab -
+          // flutter_map hanya membuang controller yang dibuatnya sendiri.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _aturKameraPeta();
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: aktif ? rtsKsMaroon : Colors.white,
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(color: aktif ? rtsKsMaroon : rtsKsGaris),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(ikon, size: 15, color: aktif ? Colors.white : rtsKsTeks2),
+            const SizedBox(width: 6),
+            Text(
+              pilihan == 'Grid' ? 'Grid Kamera' : pilihan,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: aktif ? FontWeight.w800 : FontWeight.w600,
+                color: aktif ? Colors.white : rtsKsTeks,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Tombol kecil: menampilkan / menyembunyikan gambar kamera (hemat kuota).
+  Widget _tombolGambar() {
+    return GestureDetector(
+      onTap: () => setState(() => _pakaiGambar = !_pakaiGambar),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: _pakaiGambar ? Colors.white : rtsKsKuning.withValues(alpha: 0.18),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _pakaiGambar ? rtsKsGaris : rtsKsKuning),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(
+              _pakaiGambar ? Icons.image_rounded : Icons.data_saver_on_rounded,
+              size: 14,
+              color: _pakaiGambar ? rtsKsTeks2 : rtsKsTeks,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              _pakaiGambar ? 'Gambar: TAMPIL' : 'HEMAT KUOTA',
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: rtsKsTeks,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -694,6 +1153,10 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
       );
     }
 
+    if (_tampilan == 'Peta') {
+      return _petaTampilan();
+    }
+
     if (daftar.isEmpty) {
       return const Center(
         child: Text(
@@ -701,6 +1164,10 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
           style: TextStyle(color: rtsKsTeks2),
         ),
       );
+    }
+
+    if (_tampilan == 'Grid') {
+      return _grid(daftar);
     }
 
     return RefreshIndicator(
@@ -713,6 +1180,407 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
         itemBuilder: (BuildContext context, int i) => _kartu(daftar[i], i),
       ),
     );
+  }
+
+  /* ----------------------------------------------------------------------- */
+  /* TAMPILAN GRID KAMERA (kotak berisi gambar kamera - seperti halaman resmi */
+  /* ATCS Dishub)                                                            */
+  /* ----------------------------------------------------------------------- */
+
+  Widget _grid(List<RtsCctvKamera> daftar) {
+    return RefreshIndicator(
+      color: rtsKsMaroon,
+      onRefresh: () => _muat(segarkan: true, diam: true),
+      child: GridView.builder(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 320,
+          mainAxisSpacing: 11,
+          crossAxisSpacing: 11,
+          childAspectRatio: 0.82,
+        ),
+        itemCount: daftar.length,
+        itemBuilder: (BuildContext context, int i) => _kartuGrid(daftar[i]),
+      ),
+    );
+  }
+
+  Widget _kartuGrid(RtsCctvKamera kamera) {
+    final String gambar = kamera.posterUrl;
+    final double? jarak = _jarakKe(kamera);
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _putar(kamera),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  _gambarKamera(gambar),
+                  // lapisan gelap supaya tombol PUTAR jelas terbaca
+                  Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: <Color>[
+                          Color(0x33000000),
+                          Color(0x99000000),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (kamera.siap != null)
+                    Positioned(
+                      left: 8,
+                      top: 8,
+                      child: _lencanaSiap(kamera.siap!),
+                    ),
+                  Center(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: rtsKsMaroon,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                          vertical: 7,
+                        ),
+                        minimumSize: const Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () => _putar(kamera),
+                      icon: const Icon(Icons.play_arrow_rounded, size: 19),
+                      label: const Text('Play', style: TextStyle(fontSize: 12.5)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    kamera.judul,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: rtsKsTeks,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: <Widget>[
+                      const Icon(Icons.place_outlined, size: 12, color: rtsKsTeks2),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          kamera.lokasi,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 10.5, color: rtsKsTeks2),
+                        ),
+                      ),
+                      if (jarak != null)
+                        Text(
+                          rtsCctvJarakTeks(jarak),
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: rtsKsHijau,
+                          ),
+                        ),
+                      GestureDetector(
+                        onTap: () => _menuKamera(kamera),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 5),
+                          child: Icon(
+                            Icons.more_horiz_rounded,
+                            size: 17,
+                            color: rtsKsTeks2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Gambar kamera (poster) dengan gambar pengganti bila gagal / belum ada.
+  Widget _gambarKamera(String gambar) {
+    const Widget pengganti = ColoredBox(
+      color: Color(0xff171414),
+      child: Center(
+        child: Icon(Icons.videocam_rounded, size: 34, color: Colors.white24),
+      ),
+    );
+
+    if (gambar.isEmpty || !_pakaiGambar) return pengganti;
+
+    return Image.network(
+      gambar,
+      fit: BoxFit.cover,
+      // Gambar dari situs Dishub berukuran besar. cacheWidth membatasinya
+      // supaya tampilan HP tetap ringan (gambar tetap diunduh sekali saja).
+      cacheWidth: 420,
+      errorBuilder: (_, __, ___) => pengganti,
+      loadingBuilder: (
+        BuildContext context,
+        Widget anak,
+        ImageChunkEvent? kemajuan,
+      ) {
+        if (kemajuan == null) return anak;
+
+        return const ColoredBox(
+          color: Color(0xff171414),
+          child: Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white38),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Lencana SIAP / TIDAK TERSEDIA (seperti READY / MAINTENANCE di situs ATCS).
+  Widget _lencanaSiap(bool siap) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: siap ? rtsKsHijau : rtsKsMerah,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        siap ? 'SIAP' : 'TIDAK TERSEDIA',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 9.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+
+  /* ----------------------------------------------------------------------- */
+  /* TAMPILAN PETA - seluruh kamera sebagai titik (seperti tab "Peta" pada    */
+  /* halaman resmi ATCS Dishub)                                              */
+  /* ----------------------------------------------------------------------- */
+
+  /// Pusat peta: rata-rata titik seluruh kamera.
+  LatLng _pusatKamera() {
+    double lat = 0;
+    double lon = 0;
+    int jumlah = 0;
+
+    for (final RtsCctvKamera kamera in _kamera) {
+      if (!kamera.adaTitik) continue;
+
+      lat += kamera.lat;
+      lon += kamera.lon;
+      jumlah++;
+    }
+
+    if (jumlah == 0) return const LatLng(3.5952, 98.6722); // pusat Kota Medan
+
+    return LatLng(lat / jumlah, lon / jumlah);
+  }
+
+  void _aturKameraPeta() {
+    final List<LatLng> titik = <LatLng>[];
+
+    for (final RtsCctvKamera kamera in _kamera) {
+      if (kamera.adaTitik) titik.add(kamera.titik);
+    }
+
+    if (_saya != null) {
+      titik.add(LatLng(_saya!.latitude, _saya!.longitude));
+    }
+
+    rtsPetaAturKamera(_kontrolPeta, titik);
+  }
+
+  Widget _petaTampilan() {
+    final List<Marker> penanda = <Marker>[];
+
+    for (final RtsCctvKamera kamera in _kamera) {
+      if (!kamera.adaTitik) continue;
+
+      penanda.add(
+        Marker(
+          point: kamera.titik,
+          width: 34,
+          height: 34,
+          child: GestureDetector(
+            onTap: () => _putar(kamera),
+            child: Icon(
+              Icons.videocam_rounded,
+              size: 26,
+              color: kamera.siap == null
+                  ? rtsKsMaroon
+                  : (kamera.siap! ? rtsKsHijau : rtsKsMerah),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final Position? saya = _saya;
+
+    if (saya != null) {
+      penanda.add(
+        Marker(
+          point: LatLng(saya.latitude, saya.longitude),
+          width: 30,
+          height: 30,
+          child: const Icon(
+            Icons.person_pin_circle_rounded,
+            size: 26,
+            color: rtsPetaSaya,
+          ),
+        ),
+      );
+    }
+
+    if (penanda.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(22),
+          child: Text(
+            'Titik koordinat kamera belum ada pada daftar. Buka '
+            'periksa_cctv.php?paksa=1&ambil=1 pada website supaya koordinat '
+            'kamera ikut terbarui, lalu tekan SEGARKAN di sini.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: rtsKsTeks, height: 1.55),
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      children: <Widget>[
+        FlutterMap(
+          mapController: _kontrolPeta,
+          options: MapOptions(
+            initialCenter: _pusatKamera(),
+            initialZoom: 12.5,
+            interactionOptions: const InteractionOptions(
+              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+            ),
+            onMapReady: () {
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _aturKameraPeta(),
+              );
+            },
+          ),
+          children: <Widget>[
+            TileLayer(
+              urlTemplate: rtsPetaSumber[0].url,
+              userAgentPackageName: 'com.bene.rts_panel_app',
+              maxNativeZoom: rtsPetaSumber[0].maksZoom,
+            ),
+            MarkerLayer(markers: penanda),
+          ],
+        ),
+        Positioned(
+          right: 10,
+          bottom: 76,
+          child: rtsPetaAtribusi(rtsPetaSumber[0].nama),
+        ),
+        Positioned(
+          left: 10,
+          right: 10,
+          bottom: 12,
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
+                  onPressed: _saya == null ? _pakaiLokasi : _putarTerdekat,
+                  icon: Icon(
+                    _saya == null
+                        ? Icons.my_location_rounded
+                        : Icons.near_me_rounded,
+                    size: 17,
+                  ),
+                  label: Text(
+                    _saya == null ? 'PAKAI LOKASI' : 'TERDEKAT',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12.5),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 7),
+              IconButton.filledTonal(
+                tooltip: 'Lihat seluruh kamera',
+                onPressed: _aturKameraPeta,
+                icon: const Icon(Icons.fullscreen_rounded, size: 20),
+              ),
+              const SizedBox(width: 6),
+              IconButton.filledTonal(
+                tooltip: 'Segarkan daftar',
+                onPressed: _menyegarkan
+                    ? null
+                    : () => _muat(segarkan: true, diam: true),
+                icon: const Icon(Icons.refresh_rounded, size: 20),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Membuka pemutar untuk kamera paling dekat dari posisi HP.
+  Future<void> _putarTerdekat() async {
+    final Position? saya = _saya;
+
+    if (saya == null) {
+      await _pakaiLokasi();
+
+      return;
+    }
+
+    RtsCctvKamera? dekat;
+    double jarakDekat = double.infinity;
+
+    for (final RtsCctvKamera kamera in _kamera) {
+      if (!kamera.adaTitik) continue;
+
+      final double jarak = rtsPetaJarakMeter(
+        saya.latitude,
+        saya.longitude,
+        kamera.lat,
+        kamera.lon,
+      );
+
+      if (jarak < jarakDekat) {
+        jarakDekat = jarak;
+        dekat = kamera;
+      }
+    }
+
+    if (dekat == null) return;
+
+    await _putar(dekat);
   }
 
   Widget _kartu(RtsCctvKamera kamera, int urutan) {
@@ -780,9 +1648,17 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
                     const SizedBox(height: 3),
                     Row(
                       children: <Widget>[
-                        Text(
-                          kamera.kode,
-                          style: const TextStyle(fontSize: 10.5, color: rtsKsTeks2),
+                        if (kamera.siap != null) ...<Widget>[
+                          _lencanaSiap(kamera.siap!),
+                          const SizedBox(width: 6),
+                        ],
+                        Flexible(
+                          child: Text(
+                            kamera.kode,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 10.5, color: rtsKsTeks2),
+                          ),
                         ),
                         if (jarak != null) ...<Widget>[
                           const Text('  -  ', style: TextStyle(fontSize: 10.5, color: rtsKsTeks2)),
@@ -932,14 +1808,38 @@ class _RtsCctvPageState extends State<RtsCctvPage> {
               ),
               const SizedBox(height: 10),
               const Text(
+                'TIGA TAMPILAN (seperti halaman resmi ATCS Dishub):',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+              const Text(
+                'DAFTAR - daftar memanjang, satu kamera satu baris.\n'
+                'GRID KAMERA - kotak-kotak berisi GAMBAR kamera + tombol Play.\n'
+                'PETA - seluruh kamera sebagai titik pada satu peta; ketuk titik '
+                'untuk memutar.',
+                style: TextStyle(fontSize: 12.5, height: 1.6, color: rtsKsTeks2),
+              ),
+              const SizedBox(height: 10),
+              const Text(
                 'Cara memakai:',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
               ),
               const Text(
                 '1. Ketik nama jalan pada kotak pencarian, atau\n'
                 '2. Tekan "Pakai lokasi" supaya kamera terdekat muncul di atas, lalu\n'
-                '3. Tekan PUTAR. Di dalam pemutar ada tombol layar penuh, peta '
-                'lokasi kamera, dan salin tautan.',
+                '3. Tekan PUTAR / Play. Di dalam pemutar ada tombol layar penuh, '
+                'peta lokasi kamera, dan salin tautan.',
+                style: TextStyle(fontSize: 12.5, height: 1.6, color: rtsKsTeks2),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'LENCANA SIAP / TIDAK TERSEDIA:',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+              const Text(
+                'Tekan tombol PERIKSA (ikon gelombang di kanan atas). Server '
+                'memeriksa seluruh kamera seperti tombol READY pada situs Dishub, '
+                'lalu hasilnya disimpan 10 menit. Kamera yang dimatikan Dishub '
+                'diberi keterangan TIDAK TERSEDIA - bukan kerusakan aplikasi.',
                 style: TextStyle(fontSize: 12.5, height: 1.6, color: rtsKsTeks2),
               ),
               const SizedBox(height: 10),
@@ -1521,6 +2421,12 @@ class _RtsCctvPetaPageState extends State<RtsCctvPetaPage> {
     super.initState();
     _saya = widget.saya;
     _hitungJarak();
+  }
+
+  @override
+  void dispose() {
+    _kontrol.dispose();
+    super.dispose();
   }
 
   void _hitungJarak() {

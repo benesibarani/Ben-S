@@ -127,7 +127,7 @@ publish_to: 'none'
 #       dikelola pada sub-menu sendiri lalu muncul sebagai pilihan pada POM.
 #     - Cetak memakai printer Bluetooth thermal 58/80 mm yang sudah dihubungkan
 #       pada menu "Printer & Struk".
-version: 1.4.0+14
+version: 1.5.0+15
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -189,6 +189,8 @@ dependencies:
   # dipasang pada Flutter lama, karena memerlukan fitur bahasa Dart 3.6.
 
   # ---- FITUR PRO: CCTV ONLINE (KAMERA LALU LINTAS MEDAN) ----
+  # Menu ini memuat TIGA TAMPILAN (Daftar, Grid Kamera, Peta) seperti halaman
+  # resmi ATCS Dishub, lencana SIAP / TIDAK TERSEDIA, dan pemutar video HLS.
   # Memutar siaran CCTV HLS (.m3u8) langsung di dalam aplikasi.
   # Di Android pemutarnya memakai ExoPlayer bawaan Google, sehingga berkas
   # .m3u8 dapat diputar tanpa aplikasi tambahan.

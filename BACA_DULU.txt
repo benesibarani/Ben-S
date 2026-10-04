@@ -13,6 +13,10 @@
  (TAHAP 2: MENU "CCTV ONLINE" SUDAH ADA DI DALAM APLIKASI - daftar kamera
   dari server, kotak pencarian, urutan TERDEKAT dari posisi HP, pemutar
   video HLS di dalam aplikasi, tombol peta + layar penuh, khusus AKUN PRO)
+ (TAHAP 2 lanjutan: TIGA TAMPILAN seperti halaman resmi ATCS Dishub -
+  DAFTAR, GRID KAMERA (kotak bergambar + tombol Play), dan PETA (seluruh
+  kamera sebagai titik); tombol PERIKSA memberi lencana SIAP / TIDAK
+  TERSEDIA; ada tombol HEMAT KUOTA untuk mematikan gambar)
  TUTORIAL PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS DI WEBSITE
  (Tambahan 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST)
  (Tambahan 17C: RTS = RETAIL SALESMAN, TF = TASK FORCE,
@@ -46,16 +50,23 @@
     - Khusus AKUN PRO: dikunci di aplikasi DAN diperiksa ulang di server.
       ADMIN dan ASS tetap boleh membuka.
 
+  TIGA TAMPILAN (meniru halaman resmi ATCS Dishub):
+    DAFTAR      - daftar memanjang (paling ringan)
+    GRID KAMERA - kotak-kotak berisi GAMBAR kamera + tombol Play
+    PETA        - seluruh kamera sebagai titik; ketuk titik untuk memutar
+    + tombol PERIKSA -> lencana SIAP / TIDAK TERSEDIA (berlaku 10 menit)
+    + tombol HEMAT KUOTA (mematikan gambar pada tampilan Grid)
+
   BERKAS BARU:
     Ke hosting  : api/cctv.php
                   (+ pastikan periksa_cctv.php dan data/cctv_medan.json
                    dari Tahap 1 sudah ada)
     Ke aplikasi : lib\cctv.dart   (BARU)
-                  main.dart       (penanda RTS-2026-10-04-18E)
-                  pubspec.yaml    (versi 1.4.0+14, tambah video_player ^2.9.5)
+                  main.dart       (penanda RTS-2026-10-04-18F)
+                  pubspec.yaml    (versi 1.5.0+15, tambah video_player ^2.9.5)
 
   CARA PASANG (urut):
-    1. Ekstrak RTS_PANEL_PUTARAN_18E.zip ke folder proyek (TIMPA semua).
+    1. Ekstrak RTS_PANEL_PUTARAN_18F.zip ke folder proyek (TIMPA semua).
     2. Jalankan LANGKAH1_PASANG_SEMUA.ps1 (Run with PowerShell).
     3. Di terminal proyek:
            flutter clean

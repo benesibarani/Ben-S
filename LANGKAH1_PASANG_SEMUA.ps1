@@ -270,8 +270,10 @@ if (Test-Path $berkasPom) {
 # lib\cctv.dart berisi MENU BARU CCTV ONLINE (kamera lalu lintas Kota Medan
 # milik Dishub) yang HANYA untuk AKUN PRO: daftar kamera dibaca dari server
 # (api/cctv.php), dapat dicari, diurutkan menurut jarak dari posisi HP, video
-# HLS diputar langsung di dalam aplikasi, ada tombol peta lokasi kamera dan
-# layar penuh. Wajib ada supaya menu CCTV Online dapat dibuka.
+# HLS diputar langsung di dalam aplikasi. Ada TIGA TAMPILAN seperti halaman
+# resmi ATCS Dishub: DAFTAR, GRID KAMERA (kotak bergambar + tombol Play), dan
+# PETA (seluruh kamera sebagai titik), lengkap dengan lencana SIAP / TIDAK
+# TERSEDIA (tombol PERIKSA). Wajib ada supaya menu CCTV Online dapat dibuka.
 if (Test-Path $berkasCctv) {
     $tujuanCctv = Join-Path $folderProyek 'lib\cctv.dart'
 

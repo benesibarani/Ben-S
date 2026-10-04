@@ -63,7 +63,7 @@
 #  dengan perintah "flutter clean".
 # =============================================================================
 
-$harapanKode = 'RTS-2026-10-04-18E'
+$harapanKode = 'RTS-2026-10-04-18F'
 
 function TulisJudul($teks) {
     Write-Host ""
@@ -221,7 +221,11 @@ $bagian = @(
     @{ Nama = "berkas menu CCTV disambungkan";             Pola = "import 'cctv.dart'" },
     @{ Nama = "kartu menu CCTV Online pada Menu PRO";      Pola = "title: 'CCTV Online'" },
     @{ Nama = "halaman CCTV Online (RtsCctvPage)";         Pola = "RtsCctvPage" },
-    @{ Nama = "pemutar video CCTV (video_player)";         Pola = "video_player" }
+    @{ Nama = "pemutar video CCTV (video_player)";         Pola = "video_player" },
+    @{ Nama = "tiga tampilan CCTV (Daftar/Grid/Peta)";     Pola = "_pilihanTampilan" },
+    @{ Nama = "tab GRID KAMERA (kotak bergambar)";         Pola = "Grid Kamera" },
+    @{ Nama = "lencana SIAP / TIDAK TERSEDIA";             Pola = "TIDAK TERSEDIA" },
+    @{ Nama = "tombol PERIKSA seluruh kamera";             Pola = "_periksaKamera" }
 )
 
 foreach ($satu in $bagian) {

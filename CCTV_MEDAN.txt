@@ -1,6 +1,7 @@
 ==============================================================================
  RTS PANEL BY BENE - MENU "CCTV ONLINE" (AKUN PRO)
  TAHAP 2: MENU CCTV ONLINE SUDAH ADA DI DALAM APLIKASI
+          + TIGA TAMPILAN: DAFTAR, GRID KAMERA, dan PETA
  (4 Oktober 2026)
 ==============================================================================
 
@@ -10,8 +11,8 @@
    2. Berkas apa saja yang diunggah ke hosting (server).
    3. Berkas apa saja yang dipasang ke proyek Flutter (aplikasi).
    4. Langkah pemasangan yang benar (urut).
-   5. Cara memakai menu CCTV Online di HP.
-   6. Bila ada masalah (daftar kosong, kamera tidak jalan, dsb).
+   5. Cara memakai menu CCTV Online di HP (tiga tampilan).
+   6. Bila ada masalah (daftar kosong, gambar tidak muncul, dsb).
    7. Catatan kuota data dan hal-hal penting.
    8. Hasil pengujian (apa yang sudah dibuktikan).
    (Bagian TAHAP 1 - cara mengetahui tautan video - ada di bawah tulisan ini.)
@@ -22,27 +23,46 @@
 ==============================================================================
 
  Menu baru pada MENU PRO di Beranda:  CCTV Online
-   - Daftar kamera dibaca dari SERVER (api/cctv.php), bukan ditanam di
-     dalam aplikasi. Jadi bila Dishub menambah/mengganti kamera, Bapak tidak
-     perlu membangun ulang aplikasi - cukup tekan SEGARKAN pada menu itu
-     (atau buka periksa_cctv.php?ambil=1 di website).
-   - Ada KOTAK PENCARIAN: ketik "kesawan" atau "jamin" atau pun nomor kamera.
-   - Ada URUTAN: Nama, Nomor, dan TERDEKAT (menurut jarak dari posisi HP).
-   - Video diputar LANGSUNG DI DALAM APLIKASI (siaran hidup HLS), tidak
-     dilempar ke peramban.
-   - Di dalam pemutar ada tombol:
-         putar / hentikan        bisukan suara         muat ulang
-         PETA lokasi kamera      SALIN TAUTAN          LAYAR PENUH
-     dan tombol VLC/peramban bila HP kesulitan memutar siaran itu.
-   - Kamera yang sedang dimatikan Dishub diberi keterangan
-     "Kamera sedang tidak tersedia." - bukan kesalahan aplikasi.
-   - HANYA untuk AKUN PRO. Aplikasi memang sudah mengunci menunya, dan
-     server (api/cctv.php) MEMERIKSA ULANG. Akun GRATIS yang memaksa
-     memanggil API akan ditolak dengan kode 403 (perlu_pro).
-     ADMIN dan ASS tetap boleh membuka (pengelola).
-   - Daftar kamera yang pernah dibaca DISIMPAN DI DALAM HP, sehingga menu
-     tetap menampilkan nama kamera walaupun HP sedang tanpa internet
-     (videonya tentu tetap perlu internet).
+
+   Menu ini dibuat MENIRU halaman resmi ATCS Dishub
+   (https://atcsdishub.medan.go.id/streaming) supaya terasa tidak asing:
+
+   A. TIGA TAMPILAN - sama seperti tab "Peta" dan "Grid Kamera" di situs itu,
+      ditambah satu:
+        DAFTAR       - daftar memanjang, satu kamera satu baris (paling ringan).
+        GRID KAMERA  - kotak-kotak berisi GAMBAR kamera + tombol Play
+                       (seperti "Grid Kamera" pada situs Dishub).
+        PETA         - SELURUH kamera sebagai titik pada satu peta
+                       (seperti tab "Peta" pada situs Dishub); ketuk titik
+                       kamera untuk langsung memutar.
+
+   B. LENCANA SIAP / TIDAK TERSEDIA - seperti lencana READY / MAINTENANCE pada
+      situs Dishub. Tekan tombol PERIKSA: server memeriksa seluruh kamera
+      sekaligus (serentak, dibatasi 20 detik) lalu hasilnya disimpan 10 menit,
+      jadi daftar berikutnya sudah membawa status itu tanpa memanggil ulang.
+      Kamera yang mati ditandai TIDAK TERSEDIA dan tombol PERIKSA pada kartu
+      otomatis tidak ditawarkan.
+
+   C. DAFTAR KAMERA DIBACA DARI SERVER (api/cctv.php), bukan ditanam di dalam
+      aplikasi. Bila Dishub menambah/mengganti kamera, cukup tekan ikon awan
+      (SEGARKAN) - aplikasi TIDAK perlu dibangun ulang. Gambar kamera pun
+      dilengkapi sendiri oleh server dari situs Dishub (paling banyak sekali
+      setiap 6 jam, supaya hosting tidak dibebani).
+
+   D. PENCARIAN - ketik "kesawan", "jamin", atau nomor kamera.
+   E. URUTAN - Nama / Nomor / TERDEKAT (menurut jarak dari posisi HP).
+   F. PEMUTAR LANGSUNG DI DALAM APLIKASI (siaran HLS). Di dalam pemutar ada:
+      play/pause, bisukan, muat ulang, PETA lokasi kamera, SALIN TAUTAN,
+      dan LAYAR PENUH. Ada juga tombol VLC/peramban bila HP kesulitan.
+   G. HEMAT KUOTA - pada tampilan Grid ada tombol "Gambar: TAMPIL / HEMAT
+      KUOTA". Bila gambar dimatikan, kartu memakai gambar pengganti sehingga
+      kuota data jauh lebih hemat (lencana dan tombol Play tetap bekerja).
+   H. KHUSUS AKUN PRO - dikunci di aplikasi DAN diperiksa ulang di server
+      (akun GRATIS ditolak dengan kode 403 + perlu_pro). ADMIN dan ASS tetap
+      boleh membuka (pengelola).
+   I. DAFTAR & STATUS DISIMPAN DI DALAM HP, sehingga nama kamera dan lencana
+      terakhir tetap terbaca walau HP sedang tanpa internet (videonya tentu
+      tetap perlu internet).
 
 
 ==============================================================================
@@ -50,7 +70,8 @@
 ==============================================================================
 
  WAJIB untuk tahap 2:
-   api/cctv.php                 <-- BARU. Pintu daftar kamera untuk aplikasi.
+   api/cctv.php                 <-- pintu daftar kamera + pemeriksa kamera hidup
+                                    (aksi: daftar, segarkan, hidup, uji)
 
  Sudah harus ada dari TAHAP 1 (kalau belum, unggah juga):
    periksa_cctv.php             alat pengambil daftar kamera + uji tautan
@@ -61,7 +82,12 @@
    api/api_bootstrap.php        (inti API: token, balasan JSON)
    api/kolom.php                (pemeriksa kolom database)
    api/langganan_inti.php       (penentu status PRO/GRATIS)
- Bila salah satu belum ada di hosting, unggah dari paket ini.
+
+ Berkas yang DIBUAT SENDIRI oleh api/cctv.php di dalam folder data/:
+   data/cctv_hidup.json         hasil pemeriksaan SIAP / TIDAK TERSEDIA
+   data/cctv_poster_coba        tanda pembatas waktu pelengkapan gambar
+   (keduanya boleh dihapus kapan saja; aplikasi akan membuatnya lagi.
+    Pastikan folder data/ dapat ditulis - hak akses 755 seperti biasa.)
 
  JANGAN diunggah ke hosting:
    cctv_medan.m3u               (hanya untuk dicoba dengan VLC di komputer)
@@ -69,20 +95,20 @@
 
  Catatan: api/cctv.php TIDAK mengubah satu pun tabel database Bapak -
  ia hanya membaca daftar kamera dan membaca status langganan.
+ Bila ternyata muncul pesan bahwa data/ tidak dapat ditulis, cukup buat folder
+ data/ di dalam public_html (hak akses 755) lalu coba lagi.
 
 
 ==============================================================================
  3. BERKAS UNTUK APLIKASI (proyek Flutter)
 ==============================================================================
 
-   lib\cctv.dart                <-- BARU. Halaman CCTV Online (3 halaman:
-                                    daftar kamera, pemutar video, peta).
-   main.dart                    menu PRO "CCTV Online" + penanda baru
-                                RTS-2026-10-04-18E
-   pubspec.yaml                 versi 1.4.0+14 dan paket baru:
+   lib\cctv.dart                <-- BARU. Halaman CCTV Online (daftar + grid +
+                                    peta + pemutar video + peta satu kamera).
+   main.dart                    menu PRO "CCTV Online" + PENANDA BARU
+                                RTS-2026-10-04-18F
+   pubspec.yaml                 versi 1.5.0+15 dan paket:
                                     video_player: ^2.9.5
-   pubspec.yaml.updated == pubspec.yaml (isi sama; yang dipakai proyek
-                                    adalah pubspec.yaml)
 
  Paket video_player memakai pemutar bawaan Android (ExoPlayer), jadi siaran
  HLS (.m3u8) dapat diputar tanpa aplikasi tambahan. Izin internetnya sudah
@@ -98,52 +124,61 @@
     2. Unggah api/cctv.php  (pilih TIMPA bila diminta)
     3. Pastikan periksa_cctv.php ada di public_html dan data/cctv_medan.json
        ada di public_html/data/
-    4. Bila pernah menjalankan migrasi database, cukup lewati; tahap 2 TIDAK
-       memerlukan perubahan database.
+    4. Tahap 2 TIDAK memerlukan perubahan database.
     5. Uji di peramban:  https://<alamat-situs>/periksa_cctv.php
        Harus terbaca "111 kamera" dan tautan contoh hidup.
 
  B. DI KOMPUTER (proyek Flutter  D:\Project\rts_panel_app)
-    1. Ekstrak paket RTS_PANEL_PUTARAN_18E.zip (pilih TIMPA / Replace semua).
+    1. Ekstrak paket RTS_PANEL_PUTARAN_18F.zip (pilih TIMPA / Replace semua).
     2. Klik kanan LANGKAH1_PASANG_SEMUA.ps1 -> Run with PowerShell.
-       Skrip itu menyalin main.dart, cctv.dart, pubspec.yaml, dan berkas
-       pendukung lain ke proyek Bapak (berkas lama dicadangkan otomatis).
-    3. Buka terminal di folder proyek, jalankan berurutan:
+    3. Di terminal proyek, jalankan berurutan:
            flutter clean
            flutter pub get
            flutter analyze        (memeriksa kode - sebaiknya 0 galat)
            flutter build apk --release
-    4. Bila `flutter pub get` menuliskan pesan bahwa paket video_player
-       memerlukan versi Flutter yang lebih baru, jalankan `flutter upgrade`
-       lalu `flutter pub get` kembali. (Nomor versi sengaja ditulis mulai
-       dari angka rendah supaya dipilihkan versi yang cocok.)
-    5. Pasang APK ke HP. JANGAN menghapus aplikasi lama di HP - cukup
-       timpa (data kasir/POM di HP tetap aman).
+    4. Bila `flutter pub get` meminta versi Flutter yang lebih baru, jalankan
+       `flutter upgrade` lalu `flutter pub get` kembali.
+    5. Pasang APK ke HP dengan cara MENIMPA. JANGAN menghapus aplikasi lama
+       di HP - data Kasir & STRUK POM tetap aman.
 
  C. DI HP
     1. Buka aplikasi -> beranda -> MENU PRO -> CCTV Online.
-    2. Bila muncul "Daftar kamera tidak dapat diambil", tekan tombol
-       SEGARKAN (ikon awan di kanan atas).
+    2. Bila muncul "Daftar kamera tidak dapat diambil", tekan ikon awan
+       (SEGARKAN) di kanan atas.
 
 
 ==============================================================================
  5. CARA MEMAKAI MENU CCTV ONLINE
 ==============================================================================
 
-   1. Ketik nama jalan pada kotak pencarian (contoh: kesawan, jamin, ahmad).
-   2. Atau tekan tombol "Pakai lokasi" supaya kamera TERDEKAT muncul di
-      atas (aplikasi meminta izin lokasi sekali saja).
-   3. Tekan tombol PUTAR pada kamera yang dipilih.
-   4. Di dalam pemutar:
-        - tombol play/pause, bisukan, dan muat ulang ada di bawah gambar;
-        - tombol PETA menampilkan lokasi kamera (OpenStreetMap) lengkap
-          dengan tombol BUKA DI GOOGLE MAPS;
-        - tombol SALIN menyalin tautan .m3u8 (bisa dikirim ke rekan kerja);
-        - tombol LAYAR PENUH memutar video satu layar penuh (miring);
-        - tombol VLC membuka siaran di aplikasi lain.
-   5. Tekan tombol SEGARKAN (ikon awan) pada halaman daftar untuk mengambil
-      daftar terbaru dari server. Bila Dishub menambah kamera baru, kamera
-      itu langsung ikut muncul - tanpa membangun ulang aplikasi.
+   A. PILIH TAMPILAN (tiga tombol di atas):
+        DAFTAR | GRID KAMERA | PETA
+        Tampilan terakhir tidak perlu dipilih ulang setiap membuka menu -
+        cukup tekan tombolnya sekali.
+
+   B. CARI & URUTKAN (tampilan Daftar dan Grid):
+        - kotak pencarian: ketik nama jalan, nama simpang, atau nomor kamera;
+        - tombol Nama / Nomor / TERDEKAT. Tombol "Pakai lokasi" meminta izin
+          lokasi sekali, lalu kamera terdekat muncul di atas.
+
+   C. MEMUTAR VIDEO:
+        - tampilan Daftar: tekan PUTAR;
+        - tampilan Grid : tekan tombol Play pada gambar kamera;
+        - tampilan Peta : ketuk titik kamera (atau tombol TERDEKAT).
+        Di dalam pemutar: play/pause, bisukan, muat ulang, PETA, SALIN, LAYAR
+        PENUH, dan VLC.
+
+   D. MEMERIKSA KAMERA (SIAP / TIDAK TERSEDIA):
+        - tekan PERIKSA (tulisan kecil di baris keterangan) atau ikon
+          gelombang pada judul halaman;
+        - tunggu beberapa detik (server memeriksa seluruh kamera sekaligus);
+        - kamera yang siap diputar diberi lencana hijau SIAP, yang mati
+          diberi lencana merah TIDAK TERSEDIA. Hasilnya berlaku 10 menit.
+
+   E. MENGHEMAT KUOTA:
+        - pada tampilan Grid, tekan tombol "Gambar: TAMPIL" menjadi
+          "HEMAT KUOTA" bila ingin mematikan gambar kamera;
+        - video siaran tetap memakai kuota selama diputar.
 
 
 ==============================================================================
@@ -160,22 +195,30 @@
 
  "Kamera sedang tidak tersedia."
      Kamera itu sedang dimatikan / diperbaiki Dishub, atau jaringan lambat.
-     Coba kamera lain, atau coba lagi beberapa saat kemudian. Bila SEMUA
-     kamera begitu, periksa koneksi internet HP (coba buka YouTube).
+     Lihat lencana pada tampilan Grid/Peta: yang bertanda TIDAK TERSEDIA
+     memang sedang mati. Coba kamera lain, atau coba lagi nanti.
 
- Video jalan tetapi tersendat
-     Turunkan kualitas jaringan (siaran ini dari server Dishub, bukan dari
-     server RTS Panel - kecepatannya berbeda-beda).
+ Gambar kamera tidak muncul (tampilan Grid)
+     1. Pastikan tombol "Gambar: TAMPIL" sedang aktif (bukan HEMAT KUOTA).
+     2. Server menyimpan daftar lama yang belum memuat gambar. Tekan ikon awan
+        (SEGARKAN). Server akan melengkapi gambar dari situs Dishub (paling
+        banyak sekali setiap 6 jam). Bila situs Dishub tidak dapat dihubungi,
+        kartu memakai gambar pengganti - aplikasi tetap berjalan normal.
+
+ Tombol PERIKSA tidak ada / tidak muncul
+     Berarti server masih memakai api/cctv.php versi lama. Unggah api/cctv.php
+     dari paket ini ke public_html/api/ (TIMPA), lalu tekan SEGARKAN.
 
  "Menu ini khusus AKUN PRO."
      Akun Bapak masih GRATIS. Buka menu Langganan PRO, lalu SINKRON AKUN.
-     Bila sudah PRO tetapi masih tertolak, tekan SINKRON AKUN pada menu
-     Sinkronisasi (status PRO diperbarui dari server).
 
- Video tidak mau jalan padahal kamera hidup
-     Tekan tombol VLC pada pemutar - bila di VLC jalan berarti HP hanya
-     kurang cocok memutar HLS; laporkan ke saya supaya saya tambahkan
-     pilihan pemutar lain.
+ Video jalan tetapi tersendat
+     Siaran ini dari server Dishub, bukan dari server RTS Panel - kecepatannya
+     berbeda-beda. Coba kamera lain atau tunggu beberapa saat.
+
+ Video tidak mau jalan padahal lencana SIAP
+     Tekan tombol VLC pada pemutar. Bila di VLC jalan berarti HP hanya kurang
+     cocok memutar HLS - laporkan ke saya supaya saya tambahkan pilihan lain.
 
 
 ==============================================================================
@@ -185,41 +228,59 @@
    - Siaran CCTV milik DINAS PERHUBUNGAN KOTA MEDAN (ATCS / ITS Kota Medan)
      dan terbuka untuk umum. Aplikasi RTS Panel hanya menampilkan; tidak
      menyimpan, tidak merekam, dan tidak memperbanyak siaran itu.
+   - Gambar (poster) kamera juga diambil dari situs Dishub. Gambar hanya
+     pelengkap tampilan - dapat dimatikan lewat tombol HEMAT KUOTA.
    - Siaran sifatnya LANGSUNG: tidak ada tombol maju/mundur, dan kuota data
      terpakai selama video dibiarkan terbuka (kira-kira 0,3-1 MB per detik
      tergantung kecepatan siaran). Sebaiknya putar hanya saat diperlukan.
-   - Daftar kamera disimpan di HP supaya nama-nama kamera tetap terbaca
-     walau tanpa internet. Hapus data aplikasi hanya bila memang perlu.
-   - Bila Dishub mengganti alamat/kunci situsnya, kirim pesan ke saya:
-     cukup satu kali perbaikan pada periksa_cctv.php dan api/cctv.php,
-     aplikasi tidak perlu dibangun ulang.
+   - Pemeriksaan SIAP / TIDAK TERSEDIA dilakukan server (bukan HP), supaya
+     kuota HP tidak terpakai untuk menguji 111 kamera. Hasilnya disimpan
+     10 menit, jadi menekan PERIKSA berkali-kali tidak membebani hosting.
+   - Daftar kamera, gambar, dan hasil pemeriksaan terakhir disimpan di HP.
+   - Bila Dishub mengganti alamat/kunci situsnya, kirim pesan ke saya: cukup
+     satu kali perbaikan pada periksa_cctv.php dan api/cctv.php - aplikasi
+     TIDAK perlu dibangun ulang.
 
 
 ==============================================================================
  8. HASIL PENGUJIAN YANG SUDAH SAYA LAKUKAN
 ==============================================================================
 
-   Pengujian otomatis api/cctv.php (PHP 8.2 asli) - 47 pemeriksaan LULUS:
+   Pengujian otomatis api/cctv.php (PHP 8.2 asli) - 76 pemeriksaan LULUS:
      - tanpa token -> 401;  akun GRATIS -> 403 + perlu_pro = true
        (dan tidak ada satu pun tautan kamera yang terbocor pada balasan itu);
      - akun PRO -> 111 kamera, kode tidak kembar, tautan berpola benar,
        daftar terurut menurut nomor kamera, koordinat masuk akal;
      - ADMIN dan ASS tetap boleh membuka walau tanpa langganan;
+     - aksi=hidup -> memeriksa seluruh kamera, hasil disimpan
+       (data/cctv_hidup.json), pemeriksaan kedua memakai simpanan (tidak
+       memeriksa ulang) - hemat beban hosting dan kuota HP;
+     - aksi=daftar sesudahnya menitipkan status hidup (0/1) pada setiap
+       kamera, jadi aplikasi langsung dapat menampilkan lencana SIAP /
+       TIDAK TERSEDIA;
      - aksi=uji&jumlah=5 memeriksa 5 kamera; aksi=uji&kode=... hanya kamera
        yang diminta; kode yang tidak dikenal -> 200 dengan 0 kamera;
-     - aksi=segarkan saat internet ke situs Dishub terputus -> tetap 200 dan
+     - aksi=segarkan saat situs Dishub tidak dapat dihubungi -> tetap 200 dan
        daftar lama dipakai (aplikasi tidak eror);
+     - pelengkapan gambar otomatis dibatasi sekali setiap 6 jam (sudah diuji);
+     - alamat gambar dirapikan menjadi pola situs Dishub (/poster/...);
      - berkas data tidak berubah saat aplikasi hanya membaca daftar.
-   Pemeriksaan kode aplikasi: kurung lib\cctv.dart & main.dart berimbang,
-   dan 29 nama fungsi peta/warna yang dipakai cctv.dart benar-benar ada.
-   Catatan jujur: pengujian di dalam HP (memutar video) harus Bapak lakukan
-   sendiri, karena saya tidak dapat memasang aplikasi di HP Bapak. Bila ada
-   yang tidak berjalan, kirim tangkapan layarnya - saya perbaiki.
+
+   Pemeriksaan kode aplikasi (lib\cctv.dart & main.dart):
+     - kurung seimbang / berkas utuh: YA;
+     - 34 nama fungsi-warna-peta yang dipakai cctv.dart ADA semua definisinya;
+     - 77 nama pada main.dart ADA semua definisinya.
+
+   Catatan jujur: pengujian di dalam HP (memutar video, menggeser peta)
+   harus Bapak lakukan sendiri, karena saya tidak dapat memasang aplikasi di
+   HP Bapak. Bila ada yang tidak berjalan, kirim tangkapan layarnya - saya
+   perbaiki.
 
 
 ==============================================================================
                        (DI BAWAH INI BAGIAN TAHAP 1)
 ==============================================================================
+
 
 ==============================================================================
  RTS PANEL BY BENE - MENU "CCTV ONLINE" (AKUN PRO)
