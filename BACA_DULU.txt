@@ -101,6 +101,23 @@
       Aplikasi hanya memakai tautan yang sama seperti yang dibuka di browser,
       jadi tidak ada kata sandi atau data rahasia yang perlu dimasukkan.
 
+  BERKAS MANA YANG DIUNDUH? (ringkas)
+  ------------------------------------
+    KE HOSTING (public_html) - WAJIB untuk CCTV:
+        periksa_cctv.php
+        data/cctv_medan.json   (buat folder "data", atau biarkan dibuat
+                                sendiri oleh periksa_cctv.php?ambil=1)
+    KE HOSTING - bila belum diunggah dari putaran sebelumnya:
+        district.php, daftar.php, periksa_district.php  (TAMBAHAN 18C)
+        kelola_akun_tim.php                             (TAMBAHAN 18B)
+    HANYA UNTUK UJI DI KOMPUTER/HP (jangan diunggah):
+        cctv_medan.m3u   (buka dengan VLC -> Media -> Open Network Stream)
+    UNTUK APLIKASI ANDROID:
+        BELUM ADA berkas baru - menu CCTV Online baru dibuat pada TAHAP 2.
+        Jadi untuk CCTV, aplikasi TIDAK perlu dibangun ulang.
+    SATU PAKET SEMUA BERKAS: RTS_PANEL_PUTARAN_18D.zip (lihat TAUTAN_UNDUH.txt)
+    PANDUAN KHUSUS CCTV   : CCTV_MEDAN.txt (juga ada di paket 18D)
+
   RENCANA TAHAP 2 - MENU "CCTV ONLINE" DI APLIKASI (menunggu izin Bapak)
   ---------------------------------------------------------------------
       a. Menu baru "CCTV Online" pada MENU PRO (khusus akun PRO).

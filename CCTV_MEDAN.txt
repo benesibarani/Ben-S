@@ -1,0 +1,153 @@
+==============================================================================
+ RTS PANEL BY BENE - MENU "CCTV ONLINE" (AKUN PRO)
+ TAHAP 1: MENGETAHUI TAUTAN VIDEO CCTV KOTA MEDAN
+ (4 Oktober 2026)
+==============================================================================
+
+ ISI SINGKAT
+ -----------
+   1. Tautan video setiap kamera memakai POLA TETAP - tidak perlu dibongkar.
+   2. Cara mengambil DAFTAR 111 kamera dengan satu klik (periksa_cctv.php).
+   3. Berkas mana yang diunggah ke hosting, dan mana yang hanya untuk uji.
+   4. Rencana tahap 2: menu CCTV Online di dalam aplikasi.
+
+
+==============================================================================
+ 1. POLA TAUTAN VIDEO
+==============================================================================
+
+    https://atcsdishub.medan.go.id/stream/<KODE>/stream.m3u8
+
+ <KODE> = huruf L + NOMOR kamera + NAMA persimpangan tanpa spasi dan tanpa
+ tanda hubung (titik tetap dipakai).
+
+    L1RADENSALEHBALAIKOTA     Raden Saleh - Balai Kota
+    L2AHMADYANIPULAUPINANG    Ahmad Yani - Pulau Pinang
+    L3KESAWANPALANGMERAH      Kesawan - Palang Merah
+    L4KATAMSOANIIDRUS         Katamso - Ani Idrus
+    L7SM.RAJAAMALIUN          SM. Raja - Amaliun
+    L31JAMINGINTINGISMUD      Jamin Ginting - Iskandar Muda
+
+ Tautan itu adalah DAFTAR PUTAR HLS (.m3u8), bukan berkas video biasa. Artinya:
+   - isinya video LANGSUNG (live) yang terus berjalan;
+   - terbuka untuk umum, tanpa kata sandi;
+   - dapat diputar di HP, komputer, maupun aplikasi VLC;
+   - pemutar HP Android dapat memutarnya langsung (format HLS dikenali).
+
+ SUDAH DIBUKTIKAN (4 Oktober 2026)
+   Tautan L1RADENSALEHBALAIKOTA, L3KESAWANPALANGMERAH, dan L7SM.RAJAAMALIUN
+   benar-benar mengirim daftar putar HLS yang isinya TERUS BERTAMBAH mengikuti
+   waktu sekarang - jadi itu siaran hidup, bukan rekaman.
+
+ GAMBAR PRATINJAU (opsional, untuk daftar kamera di aplikasi)
+    https://atcsdishub.medan.go.id/poster/<NAMA>_<NOMOR>_<LEBAR>.jpg
+    Bila gambarnya tidak ada, situs memakai: /default_image.jpg
+
+
+==============================================================================
+ 2. MENGAMBIL DAFTAR SELURUH KAMERA (111 KAMERA)
+==============================================================================
+
+ Situs ATCS memakai API resmi berisi daftar seluruh kamera (nama, koordinat,
+ gambar) untuk menampilkan halaman streaming mereka. Alat periksa_cctv.php
+ mengambil daftar itu, lalu menyimpannya untuk dipakai aplikasi.
+
+ CARA PAKAI (setelah periksa_cctv.php diunggah ke public_html):
+
+    periksa_cctv.php                  keadaan hosting & petunjuk
+    periksa_cctv.php?ambil=1          ambil daftar kamera dari API ATCS
+    periksa_cctv.php?paksa=1&ambil=1  ambil ulang (memaksa, walau masih baru)
+    periksa_cctv.php?uji=10           uji 10 tautan pertama (HIDUP / MATI)
+    periksa_cctv.php?uji=semua        uji SELURUH tautan
+    periksa_cctv.php?unduh=1          unduh data/cctv_medan.json
+
+ HASIL
+    data/cctv_medan.json  -> daftar kamera (kode, nomor, nama, alias, tautan,
+                             koordinat). BERKAS INILAH yang nanti dibaca
+                             aplikasi pada menu CCTV Online.
+
+ KEUNTUNGAN CARA INI
+    - Bapak tidak perlu menyusun daftar kamera satu per satu.
+    - Bila Dishub menambah atau mengganti kamera, cukup buka
+      periksa_cctv.php?paksa=1&ambil=1 -> daftar diperbarui, dan
+      APLIKASI TIDAK PERLU DIBANGUN ULANG.
+    - Alat ini juga menampilkan CONTOH DATA MENTAH dari API, supaya nama
+      kolom (field) yang tersedia jelas terbaca bila suatu saat berubah.
+
+ SUDAH DISIAPKAN JUGA (tidak wajib, hanya agar cepat)
+    cctv_medan.json  -> daftar 111 kamera yang saya ambil dari sini.
+      Bila ingin langsung memakainya tanpa menunggu hosting menyambung ke
+      ATCS, buat folder "data" di dalam public_html lalu letakkan berkas ini
+      di dalamnya dengan nama:  data/cctv_medan.json
+    cctv_medan.m3u   -> daftar putar untuk mencoba semua kamera TANPA aplikasi:
+      buka VLC -> Media -> Open Network Stream (Ctrl+N) -> pilih berkas ini.
+
+
+==============================================================================
+ 3. BERKAS MANA YANG DIUNGGAH KE HOSTING
+==============================================================================
+
+ KE HOSTING - WAJIB (CCTV):
+    periksa_cctv.php          -> letakkan di public_html (alat; boleh dihapus
+                                 setelah dipakai)
+    data/cctv_medan.json      -> buat folder "data" di dalam public_html, lalu
+                                 letakkan berkas ini (atau biarkan dibuat
+                                 sendiri oleh periksa_cctv.php?ambil=1)
+
+ KE HOSTING - BILA BELUM DIUNGGAH pada putaran sebelumnya:
+    district.php              -> sumber daftar Sales District (TAMBAHAN 18C)
+    daftar.php                -> halaman pendaftaran (TAMBAHAN 18C)
+    periksa_district.php      -> pemeriksa district (TAMBAHAN 18C)
+    kelola_akun_tim.php       -> kunci PRO hanya untuk ADMIN (TAMBAHAN 18B)
+
+ HANYA UNTUK UJI DI KOMPUTER / HP (JANGAN diunggah ke hosting):
+    cctv_medan.m3u            -> untuk VLC
+
+ UNTUK APLIKASI ANDROID:
+    Belum ada berkas baru untuk CCTV. Menu CCTV Online baru dibuat pada
+    TAHAP 2 (lihat bagian 4). Jadi untuk pertanyaan CCTV saat ini, aplikasi
+    TIDAK perlu dibangun ulang.
+
+
+==============================================================================
+ 4. RENCANA TAHAP 2 - MENU "CCTV ONLINE" DI DALAM APLIKASI
+==============================================================================
+
+    a. Menu baru "CCTV Online" pada MENU PRO (khusus akun PRO).
+    b. Daftar kamera dibaca dari data/cctv_medan.json di server - sama seperti
+       daftar yang diambil alat di atas, jadi kamera baru tidak memerlukan
+       aplikasi dibangun ulang.
+    c. Daftar dapat DICARI (mis. ketik "Kesawan") dan dapat diurutkan menurut
+       JARAK dari posisi HP.
+    d. Video diputar langsung di dalam aplikasi (HLS) + tombol PETA untuk
+       melihat lokasi kamera + tombol perbesar (layar penuh).
+    e. Kamera yang dimatikan atau diperbaiki Dishub diberi keterangan
+       "sedang tidak tersedia" supaya tidak terlihat seperti aplikasi rusak.
+
+ Bila setuju, putaran berikutnya saya kerjakan kode aplikasinya dan saya
+ sediakan berkas main.dart yang siap dipakai.
+
+
+==============================================================================
+ 5. CATATAN PENTING
+==============================================================================
+
+   - periksa_cctv.php HANYA MEMBACA. Tidak ada data Bapak yang diubah atau
+     dihapus.
+   - Kunci API yang dipakai adalah kunci PUBLIK milik situs ATCS: nilainya
+     dapat dibaca siapa saja pada berkas JavaScript halaman mereka. Itu BUKAN
+     kunci RTS Panel dan tidak memuat data Bapak. Bila Dishub menggantinya,
+     cukup ubah dua baris pada periksa_cctv.php atau buat berkas
+     cctv_kunci.php berisi kunci yang baru.
+   - Hasil pengambilan DISIMPAN 12 jam supaya server Dishub tidak dibebani.
+     Pakai ?paksa=1 bila ingin mengambil ulang lebih cepat.
+   - Kamera yang tampak MATI pada ?uji=semua biasanya sedang dimatikan atau
+     dalam perbaikan oleh Dishub - bukan kesalahan aplikasi.
+   - Siaran ini milik Dinas Perhubungan Kota Medan dan terbuka untuk umum.
+     Aplikasi hanya memakai tautan yang sama seperti yang dibuka di browser,
+     jadi tidak ada kata sandi atau data rahasia yang perlu dimasukkan.
+   - Tautan dapat berubah bila Dishub mengganti nama/nomor kamera. Karena itu
+     daftar sebaiknya diambil ulang (periksa_cctv.php?paksa=1&ambil=1) bila
+     ada kamera yang tidak lagi dapat diputar.
+
+==============================================================================
