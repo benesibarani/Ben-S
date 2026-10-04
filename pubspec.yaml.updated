@@ -127,7 +127,7 @@ publish_to: 'none'
 #       dikelola pada sub-menu sendiri lalu muncul sebagai pilihan pada POM.
 #     - Cetak memakai printer Bluetooth thermal 58/80 mm yang sudah dihubungkan
 #       pada menu "Printer & Struk".
-version: 1.3.0+13
+version: 1.4.0+14
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -187,6 +187,18 @@ dependencies:
   #     flutter upgrade
   # lalu jalankan  flutter pub get  kembali. Paket peta ini TIDAK dapat
   # dipasang pada Flutter lama, karena memerlukan fitur bahasa Dart 3.6.
+
+  # ---- FITUR PRO: CCTV ONLINE (KAMERA LALU LINTAS MEDAN) ----
+  # Memutar siaran CCTV HLS (.m3u8) langsung di dalam aplikasi.
+  # Di Android pemutarnya memakai ExoPlayer bawaan Google, sehingga berkas
+  # .m3u8 dapat diputar tanpa aplikasi tambahan.
+  # PENTING: nomor versi ditulis mulai dari angka rendah (^2.9.5) supaya
+  # flutter pub get MEMILIH SENDIRI versi yang cocok dengan Flutter di
+  # komputer Bapak - versi baru (2.10 ke atas) memerlukan Dart yang lebih
+  # baru, sedangkan versi 2.9.5 dapat dipasang pada Flutter lama.
+  video_player: ^2.9.5
+  # CATATAN: paket ini menambah kode Android (Gradle). Tidak ada pengaturan
+  # izin baru yang diperlukan karena aplikasi sudah memakai izin INTERNET.
 
   # ---- PENYIMPANAN DI DALAM HP (aplikasi berjalan tanpa internet) ----
   # sqflite : database SQLite di dalam HP untuk stok, penjualan, piutang,

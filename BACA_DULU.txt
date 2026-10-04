@@ -10,6 +10,9 @@
   DENAI, MEDAN MARELAN, MEDAN PERJUANGAN, PANCUR BATU)
  (Pertanyaan: BAGAIMANA MENGETAHUI TAUTAN VIDEO CCTV KOTA MEDAN?
   Menu "CCTV Online" untuk akun PRO - TAHAP 1: daftar kamera + uji tautan)
+ (TAHAP 2: MENU "CCTV ONLINE" SUDAH ADA DI DALAM APLIKASI - daftar kamera
+  dari server, kotak pencarian, urutan TERDEKAT dari posisi HP, pemutar
+  video HLS di dalam aplikasi, tombol peta + layar penuh, khusus AKUN PRO)
  TUTORIAL PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS DI WEBSITE
  (Tambahan 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST)
  (Tambahan 17C: RTS = RETAIL SALESMAN, TF = TASK FORCE,
@@ -19,6 +22,53 @@
   Tambahan 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR)
 ==============================================================================
 
+
+ ============================================================================
+  MENU "CCTV ONLINE" UNTUK AKUN PRO - TAHAP 2
+  MENUNYA SUDAH ADA DI DALAM APLIKASI
+  (4 Oktober 2026)
+ ============================================================================
+
+  Yang Bapak minta: "lanjut tahap 2".
+
+  TAHAP 2 SUDAH SELESAI. Isinya:
+    - Menu baru di MENU PRO pada beranda:  CCTV Online
+    - Daftar kamera dibaca dari server (api/cctv.php). Bila Dishub menambah
+      kamera baru, cukup tekan SEGARKAN di aplikasi - aplikasi TIDAK perlu
+      dibangun ulang.
+    - Kotak PENCARIAN (contoh: ketik "kesawan" atau "jamin").
+    - Urutan: Nama / Nomor / TERDEKAT (menurut jarak dari posisi HP).
+    - Video siaran hidup (HLS) diputar LANGSUNG DI DALAM APLIKASI.
+    - Tombol PETA (lokasi kamera di OpenStreetMap + BUKA DI GOOGLE MAPS),
+      tombol LAYAR PENUH, tombol SALIN TAUTAN, dan tombol VLC.
+    - Kamera yang dimatikan Dishub diberi keterangan
+      "Kamera sedang tidak tersedia." (bukan kerusakan aplikasi).
+    - Khusus AKUN PRO: dikunci di aplikasi DAN diperiksa ulang di server.
+      ADMIN dan ASS tetap boleh membuka.
+
+  BERKAS BARU:
+    Ke hosting  : api/cctv.php
+                  (+ pastikan periksa_cctv.php dan data/cctv_medan.json
+                   dari Tahap 1 sudah ada)
+    Ke aplikasi : lib\cctv.dart   (BARU)
+                  main.dart       (penanda RTS-2026-10-04-18E)
+                  pubspec.yaml    (versi 1.4.0+14, tambah video_player ^2.9.5)
+
+  CARA PASANG (urut):
+    1. Ekstrak RTS_PANEL_PUTARAN_18E.zip ke folder proyek (TIMPA semua).
+    2. Jalankan LANGKAH1_PASANG_SEMUA.ps1 (Run with PowerShell).
+    3. Di terminal proyek:
+           flutter clean
+           flutter pub get
+           flutter analyze
+           flutter build apk --release
+    4. Pasang APK ke HP - JANGAN hapus aplikasi lama (data kasir/POM aman).
+    5. Buka aplikasi -> Menu PRO -> CCTV Online.
+
+  BACAAN LENGKAP: CCTV_MEDAN.txt (bagian TAHAP 2 di atas) dan
+  TAUTAN_UNDUH.txt (berkas mana untuk hosting, mana untuk aplikasi).
+
+============================================================================
 
  ============================================================================
   PERTANYAAN BAPAK - "BAGAIMANA MENGETAHUI TAUTAN VIDEO CCTV?"

@@ -17,16 +17,26 @@ DAFTAR BERKAS: MANA UNTUK HOSTING, MANA UNTUK APLIKASI?
        cctv_medan.m3u            (buka dengan VLC -> Media -> Open Network
                                     Stream, untuk mencoba semua kamera)
 
-  4. UNTUK APLIKASI ANDROID:
-       BELUM ADA berkas baru untuk CCTV. Menu CCTV Online baru dibuat pada
-       TAHAP 2. Jadi untuk pertanyaan CCTV saat ini, aplikasi TIDAK perlu
-       dibangun ulang (tidak ada main.dart yang harus dipasang).
+  4. UNTUK APLIKASI ANDROID (TAHAP 2 - menu CCTV Online):
+       lib\cctv.dart     <-- BARU  (halaman CCTV Online: daftar, pemutar, peta)
+       main.dart         <-- menu PRO "CCTV Online" + penanda RTS-2026-10-04-18E
+       pubspec.yaml      <-- versi 1.4.0+14 + paket video_player ^2.9.5
+       LANGKAH1_PASANG_SEMUA.ps1  <-- menyalin ketiga berkas di atas ke proyek
+                                     Flutter Bapak (berkas lama dicadangkan)
+       Sesudah dipasang:  flutter clean  ->  flutter pub get  ->
+                          flutter analyze  ->  flutter build apk --release
 
   5. SATU PAKET SEMUA BERKAS (paling mudah):
-       RTS_PANEL_PUTARAN_18D.zip - memuat SELURUH berkas hosting + aplikasi
-       + panduan, termasuk periksa_cctv.php, data/cctv_medan.json,
-       cctv_medan.m3u, dan panduan CCTV_MEDAN.txt
-         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18D.zip
+       RTS_PANEL_PUTARAN_18E.zip - memuat SELURUH berkas hosting + aplikasi
+       + panduan, termasuk api/cctv.php, lib/cctv.dart, periksa_cctv.php,
+       data/cctv_medan.json, cctv_medan.m3u, dan panduan CCTV_MEDAN.txt
+         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18E.zip
+
+  6. PAKET KECIL KHUSUS CCTV ONLINE (bila 18D/18E sudah pernah dipasang):
+       RTS_PANEL_CCTV_ONLINE.zip - hanya berkas BARU/BERUBAH untuk tahap 2:
+       api/cctv.php, lib/cctv.dart, main.dart, pubspec.yaml,
+       LANGKAH1_PASANG_SEMUA.ps1, dan panduannya
+         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_CCTV_ONLINE.zip
 
      Di dalam paket itu:
        1_SERVER_unggah_ke_hosting/   -> unggah isinya ke public_html
@@ -39,6 +49,42 @@ DAFTAR BERKAS: MANA UNTUK HOSTING, MANA UNTUK APLIKASI?
     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/CCTV_MEDAN.txt
 
 ========================================================================
+PALING BARU - TAHAP 2: MENU "CCTV ONLINE" AKUN PRO SUDAH ADA DI APLIKASI
+(4 OKTOBER 2026)
+------------------------------------------------------------------------
+Menu baru di MENU PRO:  CCTV Online
+  - daftar kamera dibaca dari server (api/cctv.php) -> kamera baru dari
+    Dishub cukup ditekan SEGARKAN, aplikasi tidak perlu dibangun ulang;
+  - kotak PENCARIAN (ketik "kesawan", "jamin", atau nomor kamera);
+  - urutan Nama / Nomor / TERDEKAT (menurut jarak dari posisi HP);
+  - video HLS diputar DI DALAM APLIKASI + tombol PETA lokasi kamera,
+    LAYAR PENUH, SALIN TAUTAN, dan VLC;
+  - kamera yang dimatikan Dishub: "Kamera sedang tidak tersedia.";
+  - khusus AKUN PRO (dikunci di aplikasi + diperiksa ulang di server);
+    ADMIN & ASS tetap boleh membuka.
+
+BERKAS BARU:
+  KE HOSTING (public_html):
+    api/cctv.php
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api%2Fcctv.php
+  KE APLIKASI (proyek Flutter):
+    lib/cctv.dart  (BARU)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib%2Fcctv.dart
+    main.dart      (menu CCTV Online + penanda RTS-2026-10-04-18E)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+    pubspec.yaml.updated  (versi 1.4.0+14 + video_player ^2.9.5)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+  PANDUAN:
+    CCTV_MEDAN.txt   (bagian TAHAP 2 di paling atas - cara pasang & pakai)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/CCTV_MEDAN.txt
+
+CARA CEPAT:
+  1) Unggah api/cctv.php ke public_html/api/ (TIMPA).
+  2) Ekstrak RTS_PANEL_PUTARAN_18E.zip -> Run with PowerShell
+     LANGKAH1_PASANG_SEMUA.ps1.
+  3) flutter clean  ->  flutter pub get  ->  flutter build apk --release
+  4) Pasang APK (jangan hapus aplikasi lama) -> Menu PRO -> CCTV Online.
+
 PALING BARU - PERTANYAAN BAPAK: "BAGAIMANA MENGETAHUI TAUTAN VIDEO CCTV?"
 MENU "CCTV ONLINE" UNTUK AKUN PRO - TAHAP 1 (MENGETAHUI TAUTAN)
 ------------------------------------------------------------------------
@@ -67,9 +113,10 @@ Hasilnya: data/cctv_medan.json -> berkas ini yang nantinya dibaca aplikasi
 pada menu CCTV Online. Bila Dishub menambah/mengganti kamera, cukup buka
 ?paksa=1&ambil=1 - APLIKASI TIDAK PERLU DIBANGUN ULANG.
 
-Tahap 2 (menunggu izin Bapak): menu "CCTV Online" di MENU PRO - daftar kamera
-dari server, dapat dicari & diurutkan menurut jarak, diputar langsung di
-aplikasi + tombol peta & perbesar.
+Tahap 2 (SUDAH SELESAI, 4 Oktober 2026): menu "CCTV Online" di MENU PRO -
+daftar kamera dari server, dapat dicari & diurutkan menurut jarak, diputar
+langsung di aplikasi + tombol peta & perbesar (layar penuh). Rinciannya ada
+pada blok "TAHAP 2" di bawah ini.
 
   BERKAS BARU:
     periksa_cctv.php  (alat pengambil daftar + uji tautan)

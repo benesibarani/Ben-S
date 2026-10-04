@@ -1,0 +1,64 @@
+==============================================================================
+ RTS PANEL BY BENE - PAKET "CCTV ONLINE" (TAHAP 2)
+ CARA PASANG CEPAT  -  4 Oktober 2026
+==============================================================================
+
+ Paket ini untuk Bapak yang SUDAH pernah memasang RTS_PANEL_PUTARAN_18D.zip.
+ Isinya hanya berkas yang BARU atau BERUBAH untuk menu "CCTV Online".
+ Kalau belum yakin, pakai saja paket lengkap RTS_PANEL_PUTARAN_18E.zip.
+
+ ISI PAKET
+ --------
+   1_SERVER_unggah_ke_hosting/api/cctv.php          <-- BARU (wajib)
+   1_SERVER_unggah_ke_hosting/api/api_bootstrap.php  (bila belum ada)
+   1_SERVER_unggah_ke_hosting/api/kolom.php          (bila belum ada)
+   1_SERVER_unggah_ke_hosting/api/langganan_inti.php (bila belum ada)
+   1_SERVER_unggah_ke_hosting/periksa_cctv.php       + data/cctv_medan.json
+   2_APLIKASI_copy_ke_proyek/main.dart               <-- menu CCTV Online
+   2_APLIKASI_copy_ke_proyek/cctv.dart               <-- BARU
+   2_APLIKASI_copy_ke_proyek/pubspec.yaml            <-- tambah video_player
+   2_APLIKASI_copy_ke_proyek/ (berkas pendukung lain yang sudah ada)
+   3_SKRIP_POWERSHELL/LANGKAH1_PASANG_SEMUA.ps1       <-- juru salin otomatis
+   3_SKRIP_POWERSHELL/PERIKSA_KODE_APLIKASI.ps1       <-- pemeriksa kode
+   BACA_DULU.txt, TAUTAN_UNDUH.txt, CCTV_MEDAN.txt   <-- panduan
+
+ LANGKAH 1 - DI HOSTING (cPanel)
+ -------------------------------
+   1. Buka File Manager -> public_html -> folder api
+   2. Unggah  api/cctv.php   (pilih TIMPA bila ditanya)
+   3. Bila belum ada, unggah juga api_bootstrap.php dan kolom.php ke folder api
+   4. Pastikan  public_html/periksa_cctv.php  dan
+      public_html/data/cctv_medan.json  sudah ada dari Tahap 1
+   5. Tidak ada perubahan database pada tahap ini.
+
+ LANGKAH 2 - DI KOMPUTER (proyek Flutter D:\Project\rts_panel_app)
+ ----------------------------------------------------------------
+   1. Ekstrak paket ini ke mana saja (misalnya Desktop), pilih TIMPA semua.
+   2. Klik kanan  LANGKAH1_PASANG_SEMUA.ps1  ->  Run with PowerShell
+      (skrip menyalin main.dart, cctv.dart, pubspec.yaml ke proyek Bapak,
+       berkas lama dicadangkan dulu)
+   3. Buka terminal di folder proyek, jalankan berurutan:
+          flutter clean
+          flutter pub get
+          flutter analyze
+          flutter build apk --release
+   4. Bila flutter pub get meminta Flutter yang lebih baru:
+          flutter upgrade     lalu     flutter pub get
+
+ LANGKAH 3 - DI HP
+ -----------------
+   1. Pasang APK baru dengan cara MENIMPA.
+      JANGAN hapus aplikasi lama (data Kasir & STRUK POM di HP tetap aman).
+   2. Buka aplikasi -> Menu PRO -> CCTV Online.
+   3. Kalau muncul "Daftar kamera tidak dapat diambil", tekan ikon awan
+      (SEGARKAN) di kanan atas - atau buka di peramban:
+          https://<alamat-situs>/periksa_cctv.php?ambil=1
+
+ PEMERIKSAAN SESUDAH PASANG
+ --------------------------
+   Buka di peramban:  https://<alamat-situs>/periksa_cctv.php
+       harus tertulis 111 kamera dan ada contoh tautan HIDUP.
+   Di komputer: jalankan .\PERIKSA_KODE_APLIKASI.ps1
+       harus tertulis kode aplikasi  RTS-2026-10-04-18E.
+
+ BACAAN LENGKAP: CCTV_MEDAN.txt (bagian "TAHAP 2" di paling atas)

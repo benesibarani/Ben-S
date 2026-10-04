@@ -10,7 +10,8 @@
 #      "Apakah folder proyek saya sudah berisi kode paling baru?"
 #
 #  Pemeriksaan pada putaran ini ditambah:
-#     - lib\kasir.dart, lib\kasir_lokal.dart, lib\peta.dart, dan lib\pom.dart:
+#     - lib\kasir.dart, lib\kasir_lokal.dart, lib\peta.dart, lib\pom.dart,
+#       dan lib\cctv.dart:
 #       panjang
 #       berkas, jumlah baris, dan KESEIMBANGAN KURUNG. Berkas yang terpotong
 #       (misalnya karena salinan yang tidak lengkap) selalu menyisakan kurung
@@ -62,7 +63,7 @@
 #  dengan perintah "flutter clean".
 # =============================================================================
 
-$harapanKode = 'RTS-2026-10-04-18'
+$harapanKode = 'RTS-2026-10-04-18E'
 
 function TulisJudul($teks) {
     Write-Host ""
@@ -216,7 +217,11 @@ $bagian = @(
     @{ Nama = "daftar toko Radar dapat diminimize";        Pola = "BUKA DAFTAR" },
     @{ Nama = "kartu menu STRUK POM pada Menu PRO";        Pola = "title: 'Struk POM'" },
     @{ Nama = "pembuka halaman STRUK POM";                 Pola = "RtsPomMenuPage" },
-    @{ Nama = "berkas menu Struk POM disambungkan";        Pola = "import 'pom.dart'" }
+    @{ Nama = "berkas menu Struk POM disambungkan";        Pola = "import 'pom.dart'" },
+    @{ Nama = "berkas menu CCTV disambungkan";             Pola = "import 'cctv.dart'" },
+    @{ Nama = "kartu menu CCTV Online pada Menu PRO";      Pola = "title: 'CCTV Online'" },
+    @{ Nama = "halaman CCTV Online (RtsCctvPage)";         Pola = "RtsCctvPage" },
+    @{ Nama = "pemutar video CCTV (video_player)";         Pola = "video_player" }
 )
 
 foreach ($satu in $bagian) {
@@ -243,6 +248,7 @@ $paket = @(
     "package_info_plus",
     "shared_preferences",
     "http:",
+    "video_player",
     "firebase_core",
     "firebase_messaging",
     "url_launcher"
@@ -376,7 +382,7 @@ function Periksa-KurungDart($jalur) {
     return $hasil
 }
 
-foreach ($namaBerkas in @('lib\kasir.dart', 'lib\kasir_lokal.dart', 'lib\peta.dart', 'lib\pom.dart')) {
+foreach ($namaBerkas in @('lib\kasir.dart', 'lib\kasir_lokal.dart', 'lib\peta.dart', 'lib\pom.dart', 'lib\cctv.dart')) {
     if (-not (Test-Path $namaBerkas)) {
         TulisHasil $false "$namaBerkas ADA (wajib ada)"
         $bermasalah++

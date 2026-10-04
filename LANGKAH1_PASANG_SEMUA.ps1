@@ -129,6 +129,7 @@ $berkasKasir = Join-Path $folderAplikasi 'kasir.dart'
 $berkasKasirLokal = Join-Path $folderAplikasi 'kasir_lokal.dart'
 $berkasPeta = Join-Path $folderAplikasi 'peta.dart'
 $berkasPom = Join-Path $folderAplikasi 'pom.dart'
+$berkasCctv = Join-Path $folderAplikasi 'cctv.dart'
 $berkasPubspec = Join-Path $folderAplikasi 'pubspec.yaml'
 $berkasAnalysis = Join-Path $folderAplikasi 'analysis_options.yaml'
 $berkasManifestPanduan = Join-Path $folderAplikasi 'android_manifest_tambahan.xml'
@@ -266,11 +267,27 @@ if (Test-Path $berkasPom) {
     Awas 'Tanpa berkas itu aplikasi GAGAL dibangun (lib\main.dart memanggilnya).'
 }
 
+# lib\cctv.dart berisi MENU BARU CCTV ONLINE (kamera lalu lintas Kota Medan
+# milik Dishub) yang HANYA untuk AKUN PRO: daftar kamera dibaca dari server
+# (api/cctv.php), dapat dicari, diurutkan menurut jarak dari posisi HP, video
+# HLS diputar langsung di dalam aplikasi, ada tombol peta lokasi kamera dan
+# layar penuh. Wajib ada supaya menu CCTV Online dapat dibuka.
+if (Test-Path $berkasCctv) {
+    $tujuanCctv = Join-Path $folderProyek 'lib\cctv.dart'
+
+    if (Salin-DenganCadangan $berkasCctv $tujuanCctv) {
+        Baik 'lib\cctv.dart dipasang  <-- menu CCTV Online (kamera Medan).'
+    }
+} else {
+    Awas 'cctv.dart TIDAK ada di folder paket!'
+    Awas 'Tanpa berkas itu aplikasi GAGAL dibangun (lib\main.dart memanggilnya).'
+}
+
 # =============================================================================
 # 3. pubspec.yaml
 # =============================================================================
 
-Judul '3. Memasang pubspec.yaml (sqflite + kamera barcode + printer + peta + image + struk POM)'
+Judul '3. Memasang pubspec.yaml (sqflite + kamera barcode + printer + peta + image + struk POM + pemutar CCTV)'
 
 $tujuanPubspec = Join-Path $folderProyek 'pubspec.yaml'
 
@@ -292,7 +309,7 @@ if (Salin-DenganCadangan $berkasPubspec $tujuanPubspec) {
 
     foreach ($paketWajib in @('sqflite', 'path_provider', 'path:', 'mobile_scanner',
             'esc_pos_utils_plus', 'print_bluetooth_thermal', 'permission_handler',
-            'flutter_map', 'latlong2', 'image:')) {
+            'flutter_map', 'latlong2', 'image:', 'video_player')) {
         if ($isiPubspec -match [regex]::Escape($paketWajib)) {
             Baik "paket $paketWajib sudah ada di pubspec."
         } else {
