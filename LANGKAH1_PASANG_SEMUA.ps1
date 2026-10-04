@@ -686,7 +686,7 @@ Write-Host '     3. Tekan tombol PERBARUI DATABASE' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Periksa di aplikasi:' -ForegroundColor White
 Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda RTS-2026-10-03-16 (penanda lama dilewati)' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda RTS-2026-10-04-17 (penanda lama dilewati)' -ForegroundColor Gray
 Write-Host '     Pembaruan   : kotak Pembaruan -> PERBARUI SEKARANG' -ForegroundColor Gray
 Write-Host '                   (berkas diunduh DI DALAM aplikasi, tanpa Chrome)' -ForegroundColor Gray
 Write-Host '     Profil      : tombol LANGGANAN PRO tampil + gambar QRIS tampil' -ForegroundColor Gray
@@ -698,10 +698,13 @@ Write-Host '     Beranda     : Menu PRO / Menu Utama punya tombol MINIMIZE' -For
 Write-Host '     Menu Utama  : menu GSP (Galan Strategist Partner) tampil' -ForegroundColor Gray
 Write-Host '     GSP         : Tambahkan GSP (3 foto) + Hapus GSP berjalan' -ForegroundColor Gray
 Write-Host '     Peta        : penyaring Hari & Frekuensi sama di 3 halaman peta' -ForegroundColor Gray
+Write-Host '     Peta        : tombol MINIMIZE melipat penyaring KE ATAS' -ForegroundColor Gray
+Write-Host '     Peta        : tombol PETA PENUH -> hanya peta satu layar' -ForegroundColor Gray
+Write-Host '     Peta        : tombol TUTUP PETA mengembalikan tampilan biasa' -ForegroundColor Gray
 Write-Host '     Sinkronisasi: tombol SINKRON AKUN tampil di bagian atas' -ForegroundColor Gray
 Write-Host '     Akun sales  : sesudah top up + SETUJUI ADMIN, tekan SINKRON AKUN' -ForegroundColor Gray
 Write-Host '                   -> status berubah PRO dan menu PRO langsung terbuka' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-10-03-16' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-04-17' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Di hosting (cPanel) - KHUSUS MENU PETA:' -ForegroundColor White
 Write-Host '     1. Unggah  api\kantor.php  ke folder api pada hosting' -ForegroundColor Gray

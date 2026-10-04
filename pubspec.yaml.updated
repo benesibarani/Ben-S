@@ -85,7 +85,23 @@ publish_to: 'none'
 #       gagal dibuka ("east <= maxLongitude") dan panjang rute melonjak
 #       (12390,7 km). Kini titik yang tidak sah DISARING lebih dahulu, dan
 #       jumlahnya diberitahukan pada layar supaya dapat dibetulkan ADMIN.
-version: 1.2.8+11
+#   Kode 12 (1.2.9) memuat PANEL PENYARING PETA YANG DAPAT DILIPAT KE ATAS
+#   DAN TAMPILAN "PETA PENUH":
+#     - Panel penyaring (Hari + Frekuensi) pada Peta Customer, Radar Customer,
+#       dan Rute Plan kini MELIPAT KE ATAS dengan animasi. Begitu ditekan
+#       MINIMIZE, bagian pilihan chip menghilang dan tinggal satu baris
+#       ringkasan ("Hari: Senin | Frekuensi: BW Ganjil"), sehingga peta jauh
+#       lebih luas. Tekan FILTER untuk membukanya kembali.
+#     - TOMBOL BARU "PETA PENUH" pada panel penyaring dan pada tombol bulat di
+#       peta: seluruh isi halaman disembunyikan sehingga HANYA PETA yang tampil
+#       satu layar. Tekan "TUTUP PETA" untuk kembali ke tampilan biasa.
+#     - Pada Peta Customer dan Rute Plan, keterangan tambahan (catatan titik
+#       salah, legenda, pilihan kantor) ikut disembunyikan saat penyaring
+#       dilipat, supaya peta ringkas.
+#     - Pada Radar Customer, daftar toko terdekat mendapat tombol MINIMIZE
+#       sendiri; saat peta penuh, daftar dapat dibuka lewat tombol DAFTAR TOKO
+#       dan tombol PERBARUI LOKASI tetap tersedia.
+version: 1.2.9+12
 
 environment:
   sdk: '>=3.5.0 <4.0.0'

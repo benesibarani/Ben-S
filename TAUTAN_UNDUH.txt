@@ -1,4 +1,58 @@
-PALING BARU - PUTARAN 15: MENU GSP + PETA DIPERBAIKI + MENU DAPAT DIMINIMIZE
+PALING BARU - TAMBAHAN 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH
+------------------------------------------------------------------------
+Permintaan Bapak: "Pada Peta Customer, Radar Customer, dan Rute Plan, bagian
+Filter dapat di-Minimize ke atas, sehingga tampilannya dapat full hanya Map."
+
+Yang dikerjakan:
+  1. PANEL FILTER MELIPAT KE ATAS (animasi halus). Tekan MINIMIZE pada baris
+     judul penyaring: bagian pilihan chip hilang dan tinggal satu baris
+     ringkasan "Hari: ... | Frekuensi: ...", jadi peta jauh lebih luas.
+     Tekan FILTER untuk membukanya kembali.
+  2. TOMBOL BARU "PETA PENUH": seluruh isi halaman disembunyikan sehingga
+     HANYA PETA yang tampil satu layar. Tombolnya ada di baris judul penyaring
+     dan pada tombol bulat di sisi kanan peta. Tekan TUTUP PETA untuk kembali.
+  3. Ikon/legenda serta catatan tambahan ikut disembunyikan saat penyaring
+     dilipat (Peta Customer, Rute Plan). Pada Radar Customer, daftar toko
+     terdekat juga punya tombol MINIMIZE sendiri dan peta memakai seluruh
+     ruang sisa. Saat PETA PENUH, daftar Radar dibuka lewat tombol
+     DAFTAR TOKO, sedangkan pada Rute Plan tombol SALIN DAFTAR PLAN dan
+     BUKA RUTE tetap mengapung di bawah peta.
+
+PENTING: aplikasi di HP harus versi baru. Periksa penanda kode pada halaman
+Pengaturan - harus tertulis  RTS-2026-10-04-17.
+
+  PANDUAN LENGKAP:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
+    (lihat TAMBAHAN PUTARAN 15B)
+    Khusus peta:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PETA_RADAR_RUTE.txt
+    (lihat BAGIAN 0B)
+
+  PAKET LENGKAP tambahan ini:
+    RTS_PANEL_PUTARAN_15B.zip  (semua berkas sekaligus, termasuk menu GSP)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_15B.zip
+    PAKET KECIL khusus peta (5 berkas inti):
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PETA_PENUH.zip
+
+  BERKAS APLIKASI (dipasang dengan LANGKAH1_PASANG_SEMUA.ps1):
+    lib/peta.dart  <-- SEMUA perubahan tambahan ini ada di berkas ini
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
+    main.dart  (penanda versi terbaru)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+    pubspec.yaml.updated  (version: 1.2.9+12)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+
+  BERKAS SERVER: tidak ada berkas server baru pada tambahan ini.
+    Bila belum diunggah dari Putaran 15, unggah api/request_create_gsp.php:
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/request_create_gsp.php
+
+  RILIS PENUTUP TAMBAHAN INI
+    Nomor versi aplikasi : 1.2.9  (kode 12)
+    Halaman Versi Aplikasi: Versi 1.2.9 | Kode 12 | Wajib: JANGAN -> PUBLIKASIKAN
+    Penanda kode aplikasi : RTS-2026-10-04-17 (tampil pada Pengaturan)
+
+------------------------------------------------------------------------
+PUTARAN 15: MENU GSP + PETA DIPERBAIKI + MENU DAPAT DIMINIMIZE
 ------------------------------------------------------------------------
 Isi putaran ini (4 permintaan Bapak):
   1. MENU BARU GSP (Galan Strategist Partner) pada MENU UTAMA:

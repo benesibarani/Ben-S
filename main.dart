@@ -966,7 +966,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-03-16';
+const String rtsKodeAplikasi = 'RTS-2026-10-04-17';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///

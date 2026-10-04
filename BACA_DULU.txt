@@ -1,6 +1,78 @@
 ==============================================================================
  RTS PANEL BY BENE
  TUTORIAL PUTARAN 15 - MENU GSP, PETA DIPERBAIKI, MENU DAPAT DIMINIMIZE
+ (TAMBAHAN 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR)
+==============================================================================
+
+ ============================================================================
+  TAMBAHAN PUTARAN 15B - PERMINTAAN BAPAK PALING BARU
+  (4 Oktober 2026)
+ ============================================================================
+
+  Yang Bapak minta:
+    "Untuk Menu Peta Customer, Radar Customer, Rute Plan. Saya ingin bagian
+     Filter dapat di-Minimize ke atas. Jadi tampilannya dapat full hanya Map."
+
+  YANG SUDAH DIPASANG
+  -------------------
+   1. PANEL FILTER MELIPAT KE ATAS (dengan animasi halus).
+      Tombol MINIMIZE pada baris judul penyaring sekarang MELIPAT bagaian
+      pilihan chip ke atas, sehingga tinggal SATU BARIS saja:
+
+          [ ikon ] Hari: Senin  |  Frekuensi: BW Ganjil      15 toko
+                   [ FILTER ] [ PETA PENUH ]
+
+      Tekan FILTER untuk membuka pilihan Hari & Frekuensi kembali.
+      Pada POSISI TERLIPAT itu, keterangan tambahan juga ikut disembunyikan
+      supaya peta benar-benar luas:
+          - Peta Customer : catatan titik salah dan legenda warna
+          - Rute Plan     : catatan titik salah, kolom pilih kantor, dan
+                            keterangan kantor belum dititik
+          - Radar Customer: pilihan jarak (radius) dan teks jarak maksimal
+                            tetap tampil satu baris; peta memakai SELURUH
+                            ruang yang tersisa (tidak lagi tinggi tetap)
+          - Radar Customer juga mendapat tombol MINIMIZE untuk DAFTAR toko di
+            bagian bawah, jadi peta makin luas.
+
+   2. TOMBOL BARU "PETA PENUH" = HANYA PETA SATU LAYAR.
+      Tombolnya ada DUA tempat pada setiap halaman peta:
+          a. di baris judul penyaring (sebelah tombol MINIMIZE), dan
+          b. pada tombol bulat di sisi kanan peta (ikon tanda panah keluar).
+      Begitu ditekan, SELURUH bagian lain disembunyikan (judul halaman tetap
+      ada sebagai jalan keluar), dan penyaring berubah menjadi kotak kecil
+      mengapung di bagian atas peta. Jadi layar HP terisi peta saja.
+      Tekan "TUTUP PETA" (atau tombol bulat yang sama) untuk kembali.
+
+      Pada Rute Plan, saat PETA PENUH tombol SALIN DAFTAR PLAN dan BUKA RUTE
+      tetap tersedia mengapung di bagian bawah peta.
+      Pada Radar Customer, saat PETA PENUH tersedia tombol PERBARUI LOKASI dan
+      DAFTAR TOKO (daftar dibuka sebagai lembar dari bawah).
+
+   3. Tidak ada perubahan pada data. Data toko, titik kantor, catatan
+      kunjungan, dan goresan pensil tidak tersentuh.
+
+  YANG PERLU BAPAK LAKUKAN
+  ------------------------
+   1. SERVER: tidak ada berkas server baru pada tambahan ini. Bila berkas
+      api/request_create_gsp.php belum diunggah dari Putaran 15, unggah dulu.
+   2. APLIKASI: ekstrak RTS_PANEL_PUTARAN_15B.zip, jalankan
+      .\LANGKAH1_PASANG_SEMUA.ps1  ->  flutter clean  ->  flutter pub get.
+   3. Bangun + pasang ke HP:  flutter run -d CPH1937
+   4. Periksa pada Pengaturan: penanda harus tertulis  RTS-2026-10-04-17
+      (bila masih -16 atau lebih lama, aplikasi di HP belum terganti).
+   5. Halaman Versi Aplikasi:
+      Versi 1.2.9 | Kode 12 | Wajib: JANGAN  ->  PUBLIKASIKAN.
+
+  CARA MENCOBA DI HP (urutannya)
+  ------------------------------
+   1. Buka Menu PRO - Peta Customer. Panel penyaring tampil di atas peta.
+   2. Tekan MINIMIZE  -> panel melipat ke atas, tinggal satu baris.
+   3. Tekan PETA PENUH -> seluruh layar menjadi peta.
+   4. Tekan FILTER     -> pilihan Hari & Frekuensi dibuka lagi di atas peta,
+                         peta tetap penuh.
+   5. Tekan TUTUP PETA -> kembali ke tampilan biasa.
+   6. Ulangi langkah yang sama pada Radar Customer dan Rute Plan.
+
 ==============================================================================
 
  ============================================================================

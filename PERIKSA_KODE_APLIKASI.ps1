@@ -57,7 +57,7 @@
 #  dengan perintah "flutter clean".
 # =============================================================================
 
-$harapanKode = 'RTS-2026-10-03-16'
+$harapanKode = 'RTS-2026-10-04-17'
 
 function TulisJudul($teks) {
     Write-Host ""
@@ -207,7 +207,8 @@ $bagian = @(
     @{ Nama = "pengiriman GSP + 3 foto";                   Pola = "request_create_gsp.php" },
     @{ Nama = "formulir foto GSP (KTP/luar/dalam)";        Pola = "_barisFotoGsp" },
     @{ Nama = "Menu Utama & Menu PRO dapat dilipat";       Pola = "rtsSimpanLipatMenu" },
-    @{ Nama = "tombol MINIMIZE pada judul menu";           Pola = "MINIMIZE" }
+    @{ Nama = "tombol MINIMIZE pada judul menu";           Pola = "MINIMIZE" },
+    @{ Nama = "daftar toko Radar dapat diminimize";        Pola = "BUKA DAFTAR" }
 )
 
 foreach ($satu in $bagian) {
@@ -463,7 +464,12 @@ if (Test-Path 'lib\peta.dart') {
         @{ Nama = "penyaring dapat DIMINIMIZE (peta luas)";    Pola = "MINIMIZE" },
         @{ Nama = "penawar galat titik koordinat";             Pola = "rtsPetaTitikSah" },
         @{ Nama = "kamera peta yang aman";                     Pola = "rtsPetaAturKamera" },
-        @{ Nama = "catatan jumlah toko bertitik salah";        Pola = "_titikSalah" }
+        @{ Nama = "catatan jumlah toko bertitik salah";        Pola = "_titikSalah" },
+        @{ Nama = "penyaring MELIPAT KE ATAS (animasi)";       Pola = "AnimatedSize" },
+        @{ Nama = "tombol PETA PENUH (hanya peta satu layar)"; Pola = "PETA PENUH" },
+        @{ Nama = "layar peta penuh (ketiga halaman)";         Pola = "_bangunLayarPenuh" },
+        @{ Nama = "daftar toko pada peta penuh Radar";         Pola = "_bukaDaftarPenuh" },
+        @{ Nama = "daftar rencana Rute dipisah menjadi kartu"; Pola = "_daftarRencana" }
     )
 
     foreach ($satu in $tandaPeta) {

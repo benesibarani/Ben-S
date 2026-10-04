@@ -5,6 +5,45 @@
  Putaran 15 - 4 Oktober 2026
 ==============================================================================
 
+ BAGIAN 0B APA YANG BARU PADA TAMBAHAN 15B (WAJIB DIBACA)
+ ============================================================================
+
+   TAMBAHAN 15B - PANEL FILTER MELIPAT KE ATAS & TOMBOL PETA PENUH
+
+   1. MELIPAT KE ATAS. Tombol MINIMIZE pada baris judul penyaring melipat
+      bagian pilihan chip ke atas dengan animasi, sehingga tinggal SATU
+      BARIS saja, misalnya:
+
+          [ ikon ] Hari: Senin  |  Frekuensi: BW Ganjil     15 toko
+                   [FILTER] [PETA PENUH]
+
+      Tekan FILTER untuk membuka pilihan Hari & Frekuensi kembali.
+
+   2. HAL YANG IKUT DISEMBUNYIKAN SAAT TERLIPAT (supaya peta benar-benar
+      luas):
+         - Peta Customer : catatan titik salah + legenda warna
+         - Rute Plan     : catatan titik salah, kolom pilih kantor,
+                           keterangan kantor belum dititik, dan daftar toko
+                           tetap ada di bawah (dapat digeser seperti biasa)
+         - Radar Customer: pilihan jarak (radius) dan teks jarak maksimal
+                           tetap satu baris; peta memakai SELURUH ruang sisa
+                           (tidak lagi tinggi tetap 210 titik) dan DAFTAR toko
+                           di bawah dapat di-MINIMIZE sendiri lewat tombol
+                           MINIMIZE / BUKA DAFTAR.
+
+   3. TOMBOL BARU "PETA PENUH" - HANYA PETA SATU LAYAR.
+      Letaknya ada dua:
+         a. di baris judul penyaring (sebelah MINIMIZE), dan
+         b. pada tombol bulat di sisi kanan peta (ikon panah keluar).
+      Saat ditekan, seluruh bagian halaman disembunyikan dan penyaring menjadi
+      kotak kecil mengapung di atas peta. Tekan "TUTUP PETA" untuk kembali.
+      Pada Rute Plan tombol SALIN DAFTAR PLAN & BUKA RUTE tetap mengapung di
+      bawah peta; pada Radar Customer tersedia PERBARUI LOKASI & DAFTAR TOKO.
+
+   4. Penanda kode aplikasi pada tambahan ini: RTS-2026-10-04-17
+      (nomor versi 1.2.9, kode 12).
+
+ ============================================================================
  BAGIAN 0  APA YANG BARU PADA PUTARAN 15 (WAJIB DIBACA)
 
    1. PENYARING SERAGAM DI KETIGA HALAMAN PETA.
@@ -71,6 +110,7 @@
 
  Isi berkas ini:
 
+   BAGIAN 0B APA YANG BARU PADA TAMBAHAN 15B (filter melipat + peta penuh)
    BAGIAN 0  APA YANG BARU PADA PUTARAN 15 (penyaring seragam + galat peta)
    BAGIAN 1  APA YANG BARU (ringkas)
    BAGIAN 2  CARA MEMASANG (3 langkah, +-10 menit)
