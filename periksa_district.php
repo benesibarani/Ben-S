@@ -14,7 +14,8 @@
  *    1. Nama database yang sedang dipakai (memastikan produksi/staging)
  *    2. Ada/tidaknya kolom sales_district
  *    3. DAFTAR NILAI sales_district pada tabel sales_users + jumlah akun
- *    4. Daftar district pada tabel master_toko + jumlah customer
+ *    4. Daftar district pada tabel master_toko (customer) dan
+ *       master_toko_tf (outlet TF) + jumlah barisnya
  *    5. Sebaran role dan status akun
  *    6. Akun RTS/TF yang sales_district-nya masih KOSONG (perlu dilengkapi
  *       supaya data customer mereka tampil pada aplikasi)
@@ -25,7 +26,7 @@
  * ============================================================================
  */
 
-define('PERIKSA_DISTRICT_VERSI', 1);
+define('PERIKSA_DISTRICT_VERSI', 2);
 
 require_once __DIR__ . '/config.php';
 
@@ -98,17 +99,48 @@ $pd_admin = pd_ambil($pd_db, "SELECT username, nama_lengkap, role, sales_distric
 
 $pd_pilihan = function_exists('rts_district_pilihan') ? rts_district_pilihan($pd_db) : [];
 
-$pd_toko_ada = function_exists('rts_district_kolom_ada')
-    && rts_district_kolom_ada($pd_db, 'master_toko', 'district');
+/* Nama kolom district pada tabel customer/outlet adalah `sales_district`.
+   Pemeriksa ini mencari kolom yang benar-benar ada, jadi tetap jalan walau
+   namanya berbeda (`district` dipakai sebagai cadangan). */
+function pd_kolom_district($db, string $tabel): string
+{
+    if (!function_exists('rts_district_kolom_ada')) {
+        return '';
+    }
 
-$pd_toko = $pd_toko_ada
-    ? pd_ambil($pd_db, "SELECT TRIM(district) AS district, COUNT(*) AS jumlah
-        FROM master_toko
-        WHERE TRIM(COALESCE(district, '')) <> ''
-        GROUP BY TRIM(district)
-        ORDER BY jumlah DESC, district ASC
-        LIMIT 60")
-    : [];
+    foreach (['sales_district', 'district'] as $coba) {
+        if (rts_district_kolom_ada($db, $tabel, $coba)) {
+            return $coba;
+        }
+    }
+
+    return '';
+}
+
+function pd_district_tabel($db, string $tabel, string $kolom): array
+{
+    if ($kolom === '') {
+        return [];
+    }
+
+    return pd_ambil($db, 'SELECT TRIM(`' . $kolom . '`) AS district, COUNT(*) AS jumlah'
+        . ' FROM `' . $tabel . '`'
+        . ' WHERE TRIM(COALESCE(`' . $kolom . "`, '')) <> ''"
+        . ' GROUP BY TRIM(`' . $kolom . '`)'
+        . ' ORDER BY jumlah DESC, district ASC LIMIT 80');
+}
+
+$pd_kolom_toko = pd_kolom_district($pd_db, 'master_toko');
+$pd_toko_ada = ($pd_kolom_toko !== '');
+$pd_toko = pd_district_tabel($pd_db, 'master_toko', $pd_kolom_toko);
+
+$pd_kolom_tf = pd_kolom_district($pd_db, 'master_toko_tf');
+$pd_tf_ada = ($pd_kolom_tf !== '');
+$pd_tf = pd_district_tabel($pd_db, 'master_toko_tf', $pd_kolom_tf);
+
+/* District yang hanya muncul dari outlet TF - bagian yang diuji pada
+   TAMBAHAN 18C (otomatis masuk kotak pilihan pendaftaran). */
+$pd_tf_saja = function_exists('rts_district_tf_saja') ? rts_district_tf_saja($pd_db) : [];
 ?>
 <!doctype html>
 <html lang="id">
@@ -140,6 +172,22 @@ $pd_toko = $pd_toko_ada
         <div class="col-md-3">
           <div class="small text-muted">Berkas district.php</div>
           <div class="fw-bold"><?= function_exists('rts_district_pilihan') ? 'ADA' : 'TIDAK ADA' ?></div>
+        </div>
+      </div>
+      <div class="row g-3 mt-1">
+        <div class="col-md-3">
+          <div class="small text-muted">Tabel master_toko</div>
+          <div class="fw-bold"><?= $pd_toko_ada ? 'ADA' : 'TIDAK ADA' ?></div>
+        </div>
+        <div class="col-md-3">
+          <div class="small text-muted">Tabel master_toko_tf (outlet TF)</div>
+          <div class="fw-bold"><?= $pd_tf_ada ? 'ADA' : 'TIDAK ADA' ?></div>
+        </div>
+        <div class="col-md-6">
+          <div class="small text-muted">District dari outlet TF yang ikut ke pendaftaran</div>
+          <div class="fw-bold">
+            <?= $pd_tf_saja ? htmlspecialchars(implode(', ', $pd_tf_saja)) : '(belum ada)' ?>
+          </div>
         </div>
       </div>
     </div>
@@ -268,6 +316,8 @@ $pd_toko = $pd_toko_ada
     <div class="card-body">
       <h5 class="card-title">5. District pada tabel master_toko (data customer)</h5>
       <p class="text-muted small mb-2">
+        Kolom yang dibaca: <code>sales_district</code> (ditemukan:
+        <b><?= htmlspecialchars($pd_kolom_toko === '' ? '(tidak ditemukan)' : $pd_kolom_toko) ?></b>).
         Dipakai sebagai pembanding. Bila ada district pada daftar ini yang belum
         ada pada sales_users, berarti belum ada petugas yang ditugaskan di sana.
       </p>
@@ -282,6 +332,52 @@ $pd_toko = $pd_toko_ada
             <thead class="table-light"><tr><th>District customer</th><th class="text-end">Jumlah customer</th></tr></thead>
             <tbody>
               <?php foreach ($pd_toko as $baris): ?>
+                <tr>
+                  <td><?= htmlspecialchars((string) $baris['district']) ?></td>
+                  <td class="text-end"><?= (int) $baris['jumlah'] ?></td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <h5 class="card-title">6. District pada tabel master_toko_tf (outlet TF)</h5>
+      <p class="text-muted small mb-2">
+        Inilah outlet khusus TF. Sejak TAMBAHAN 18C, SELURUH district pada tabel
+        ini OTOMATIS ikut muncul pada kotak pilihan <b>Sales District</b> di
+        halaman pendaftaran (daftar.php) - jadi begitu outlet TF baru
+        ditambahkan, districtnya langsung dapat dipilih tanpa mengubah halaman
+        apa pun.
+        Kolom yang dibaca:
+        <b><?= htmlspecialchars($pd_kolom_tf === '' ? '(tidak ditemukan)' : $pd_kolom_tf) ?></b>.
+      </p>
+
+      <?php if (!$pd_tf_ada): ?>
+        <div class="alert alert-light border mb-0">
+          Tabel <code>master_toko_tf</code> belum ada di database ini (tidak masalah -
+          kotak pilihan tetap memakai district dari akun tim dan customer).
+        </div>
+      <?php elseif (!$pd_tf): ?>
+        <div class="alert alert-warning border mb-0">
+          Tabel <code>master_toko_tf</code> ada, tetapi belum ada nilai district
+          yang terisi pada kolomnya.
+        </div>
+      <?php else: ?>
+        <div class="alert alert-info py-2 small">
+          <b><?= count($pd_tf) ?> district</b> terbaca dari outlet TF<?= $pd_tf_saja
+              ? ': ' . htmlspecialchars(implode(', ', $pd_tf_saja)) : '' ?>.
+          Semuanya sudah ikut pada kotak pilihan pendaftaran.
+        </div>
+        <div class="table-responsive" style="max-height:320px;overflow:auto">
+          <table class="table table-sm table-striped mb-0">
+            <thead class="table-light"><tr><th>District outlet TF</th><th class="text-end">Jumlah outlet</th></tr></thead>
+            <tbody>
+              <?php foreach ($pd_tf as $baris): ?>
                 <tr>
                   <td><?= htmlspecialchars((string) $baris['district']) ?></td>
                   <td class="text-end"><?= (int) $baris['jumlah'] ?></td>

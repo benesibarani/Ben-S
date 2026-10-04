@@ -1,4 +1,71 @@
-PALING BARU - TAMBAHAN 18B: STATUS PRO DI "KELOLA AKUN TIM" DIKUNCI,
+PALING BARU - TAMBAHAN 18C: DISTRICT OUTLET TF IKUT MASUK
+"LIST SALES DISTRICT" PADA HALAMAN PENDAFTARAN (daftar.php)
+------------------------------------------------------------------------
+Permintaan Bapak:
+  "saya sudah menambahkan outlet untuk TF, tolong tambahkan untuk List Sales
+   district pada https://rts.benedic-s.com/daftar.php"
+  (outlet TF yang Bapak tambahkan: DENAI, MEDAN MARELAN, MEDAN PERJUANGAN,
+   PANCUR BATU)
+
+Yang dikerjakan (3 BERKAS WEBSITE: district.php, daftar.php,
+periksa_district.php):
+  1. Kotak pilihan "Sales District" kini mengambil dari EMPAT sumber:
+     akun tim (sales_users) + customer (master_toko) + OUTLET TF
+     (master_toko_tf, yang baru) + 12 district bawaan.
+  2. Jadi begitu Bapak menambah outlet TF baru di database, districtnya
+     LANGSUNG muncul pada halaman pendaftaran - tidak perlu mengubah halaman
+     lagi. DENAI kini dapat dipilih (sebelumnya tidak ada karena hanya
+     dimiliki outlet TF).
+  3. Nama district tidak menjadi ganda: "MEDAN KOTA" dari database dan
+     "Medan Kota" pada daftar bawaan dianggap satu district yang sama dan
+     ditampilkan dalam bentuk baku.
+  4. Tabel yang belum ada (master_toko_tf) atau kolom yang bernama lain
+     (`district`) dilewati dengan tenang - halaman tetap jalan, tidak ada
+     halaman putih.
+  5. Di bawah kotak pilihan ada tulisan "Lihat rincian N district" yang
+     dapat dibuka: berisi jumlah district per sumber dan lencana TF pada
+     district yang datang dari outlet TF.
+  6. periksa_district.php ditambah bagian 6 (district outlet TF) dan
+     DIPERBAIKI: dahulu membaca kolom `district` pada master_toko, padahal
+     nama kolom yang benar `sales_district`, sehingga daftar customer selalu
+     kosong. Sekarang nama kolom dicari otomatis dan ditampilkan.
+  7. Pendaftaran tetap aman: RTS dan TF tetap WAJIB memilih district, nama
+     district di luar daftar tetap ditolak.
+
+CARA PASANG: TIMPA 3 berkas di public_html -> district.php, daftar.php,
+periksa_district.php, lalu muat ulang halaman (Ctrl + F5).
+Tidak ada perubahan database, tidak ada aplikasi Android yang perlu dibangun
+ulang.
+
+SESUDAH DIUNGGAH, SILAKAN PERIKSA:
+  1. https://rts.benedic-s.com/daftar.php
+     -> kotak "Sales District" harus memuat DENAI, Medan Marelan,
+        Medan Perjuangan, dan Pancur Batu.
+  2. https://rts.benedic-s.com/periksa_district.php
+     -> bagian 6 menampilkan district outlet TF beserta jumlah outletnya.
+  3. https://rts.benedic-s.com/daftar.php?periksa
+     -> menampilkan asal setiap district dan tabel sumber yang terbaca.
+
+  PANDUAN LENGKAP:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
+    (lihat blok "TAMBAHAN 18C" di bagian paling atas)
+
+  PAKET:
+    RTS_PANEL_PUTARAN_18C.zip  (SEMUA berkas web + panduan)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18C.zip
+    RTS_PANEL_DISTRICT_OUTLET_TF.zip  (3 berkas khusus tambahan ini)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_DISTRICT_OUTLET_TF.zip
+
+  BERKAS YANG DIGANTI (unggah ke public_html):
+    district.php
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/district.php
+    daftar.php
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/daftar.php
+    periksa_district.php
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/periksa_district.php
+
+------------------------------------------------------------------------
+TAMBAHAN 18B (sebelum ini): STATUS PRO DI "KELOLA AKUN TIM" DIKUNCI,
 HANYA ADMIN YANG DAPAT MENGUBAH LANGGANAN
 ------------------------------------------------------------------------
 Permintaan Bapak:

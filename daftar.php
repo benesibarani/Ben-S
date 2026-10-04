@@ -22,11 +22,17 @@
  *  2. Role yang boleh dipilih hanya role tim Sales: RTS, TF, SMST, WSS.
  *     Role ADMIN dan ASS tidak dapat dibuat dari halaman ini - supaya tidak
  *     ada yang dapat memberi dirinya sendiri hak istimewa.
- *  3. Sales District diambil dari district.php, yang membaca daftar
- *     sesungguhnya pada kolom sales_users.sales_district lalu menggabungkannya
- *     dengan 12 district bawaan. District WAJIB diisi untuk role RTS dan TF
- *     (sebab data mereka dibatasi per district), sedangkan WSS dan SMST boleh
- *     dikosongkan (semua district).
+ *  3. Sales District diambil dari district.php, yang menggabungkan EMPAT
+ *     sumber:
+ *        a. kolom sales_users.sales_district   (akun tim)
+ *        b. kolom master_toko.sales_district   (data customer/outlet)
+ *        c. kolom master_toko_tf.sales_district(outlet khusus TF)
+ *        d. 12 district bawaan
+ *     Jadi begitu Bapak menambah outlet baru untuk TF, nama districtnya
+ *     OTOMATIS muncul pada kotak pilihan di halaman ini - tidak perlu diubah
+ *     lagi. District WAJIB diisi untuk role RTS dan TF (sebab data mereka
+ *     dibatasi per district), sedangkan WSS dan SMST boleh dikosongkan
+ *     (semua district).
  *  4. Bila DAFTAR_PERLU_PERSETUJUAN di bawah diubah menjadi true, akun baru
  *     berstatus "Pending" sehingga belum dapat masuk sampai ADMIN mengaktifkan
  *     lewat halaman Kelola User. Bawaannya false: akun langsung Aktif supaya
@@ -34,7 +40,7 @@
  * ============================================================================
  */
 
-define('DAFTAR_VERSI_BERKAS', 1);
+define('DAFTAR_VERSI_BERKAS', 2);
 
 /** Ubah menjadi true bila akun baru harus disetujui ADMIN lebih dahulu. */
 define('DAFTAR_PERLU_PERSETUJUAN', false);
@@ -85,10 +91,58 @@ if (!function_exists('daftar_ada_kolom')) {
     }
 }
 
+if (!function_exists('daftar_galat_db')) {
+    /**
+     * Membaca pesan galat dari sambungan database dengan AMAN.
+     *
+     * Ada penyedia hosting / susunan PHP yang melarang pembacaan properti
+     * mysqli pada keadaan tertentu (mis. "Property access is not allowed
+     * yet"), sehingga tanpa penjagaan ini halaman dapat berhenti dengan
+     * galat. Bila tidak terbaca, dipakai pesan kosong.
+     */
+    function daftar_galat_db($conn): string
+    {
+        try {
+            return (string) $conn->error;
+        } catch (Throwable $galat) {
+            return '';
+        }
+    }
+}
+
+if (!function_exists('daftar_id_baru')) {
+    /** Nomor id baris yang baru disimpan (0 bila tidak dapat dibaca). */
+    function daftar_id_baru($conn): int
+    {
+        try {
+            return (int) $conn->insert_id;
+        } catch (Throwable $galat) {
+            return 0;
+        }
+    }
+}
+
 $role_diizinkan = array_values(array_filter(array_map('trim', explode(',', DAFTAR_ROLE_DIIZINKAN))));
 $role_wajib_district = array_values(array_filter(array_map('trim', explode(',', DAFTAR_ROLE_WAJIB_DISTRICT))));
 
 $pilihan_district = function_exists('rts_district_pilihan') ? rts_district_pilihan($conn ?? null) : [];
+
+/* Ringkasan kotak pilihan district - dipakai untuk keterangan di bawahnya.
+   $daftar_dari_tf = district yang datang dari OUTLET TF (master_toko_tf),
+   sehingga Bapak dapat memastikan outlet TF yang baru ditambahkan sudah
+   ikut muncul pada pendaftaran. */
+$daftar_ada_db = 0;
+$daftar_dari_tf = [];
+
+foreach ($pilihan_district as $butir_ringkas) {
+    if (!empty($butir_ringkas['dari_db'])) {
+        $daftar_ada_db++;
+    }
+
+    if (!empty($butir_ringkas['dari_tf'])) {
+        $daftar_dari_tf[] = (string) $butir_ringkas['nilai'];
+    }
+}
 
 /* ---------------------------------------------------------------- diagnostik */
 if (isset($_GET['periksa'])) {
@@ -113,10 +167,38 @@ if (isset($_GET['periksa'])) {
     }
 
     echo "\nDAFTAR DISTRICT PADA KOTAK PILIHAN\n";
+    echo '(sumber: akun tim / customer / outlet TF)' . "\n";
 
     foreach ($pilihan_district as $butir) {
+        $sumber = [];
+
+        foreach (($butir['sumber'] ?? []) as $label => $jumlah) {
+            $sumber[] = $label . '=' . (int) $jumlah;
+        }
+
         echo '  - ' . str_pad((string) $butir['nilai'], 22, ' ')
-            . ($butir['dari_db'] ? 'ADA di database (' . (int) $butir['jumlah'] . ' akun)' : 'bawaan saja') . "\n";
+            . ($butir['dari_db']
+                ? 'ADA (' . (int) $butir['jumlah'] . ' baris'
+                    . ($sumber ? ': ' . implode(', ', $sumber) : '') . ')'
+                : 'bawaan saja')
+            . (!empty($butir['dari_tf']) ? '  <- dari outlet TF' : '')
+            . "\n";
+    }
+
+    if (function_exists('rts_district_sumber_tabel') && isset($conn) && $conn instanceof mysqli) {
+        echo "\nTABEL SUMBER YANG TERBACA\n";
+
+        $ada_sumber = false;
+
+        foreach (rts_district_sumber_tabel($conn) as $sumber_tabel) {
+            echo '  - ' . str_pad($sumber_tabel['tabel'], 18, ' ')
+                . 'kolom ' . $sumber_tabel['kolom'] . ' (' . $sumber_tabel['label'] . ")\n";
+            $ada_sumber = true;
+        }
+
+        if (!$ada_sumber) {
+            echo "  (tidak ada tabel sumber yang terbaca)" . "\n";
+        }
     }
 
     echo "\nHalaman ini tidak mengubah data apa pun.\n";
@@ -184,7 +266,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $stmt_kembar->execute();
                 $hasil_kembar = $stmt_kembar->get_result();
 
-                if ($hasil_kembar && $hasil_kembar->num_rows > 0) {
+                /* Keberadaan baris diperiksa dengan membaca satu baris hasil,
+                   bukan lewat num_rows - lebih aman pada setiap penyedia
+                   hosting dan tetap benar untuk prepared statement. */
+                if ($hasil_kembar instanceof mysqli_result && $hasil_kembar->fetch_assoc() !== null) {
                     $kembar = $periksa[0];
                 }
 
@@ -245,8 +330,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 } else {
                     $stmt_simpan->bind_param($jenis_isi, ...$nilai_isi);
                     $berhasil = $stmt_simpan->execute();
-                    $galat_db = $conn->error;
-                    $id_baru = (int) $conn->insert_id;
+                    $galat_db = daftar_galat_db($conn);
+                    $id_baru = daftar_id_baru($conn);
                     $stmt_simpan->close();
 
                     if (!$berhasil) {
@@ -396,8 +481,53 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             <?php endforeach; ?>
           </select>
           <div class="form-text">
-            Wajib untuk RTS dan TF. Boleh dikosongkan untuk WSS/SMST.
+            Wajib untuk RTS dan TF. Boleh dikosongkan untuk WSS/SMST.<br>
+            Daftar ini diambil dari <b>akun tim</b> + <b>data customer</b> +
+            <b>outlet TF</b> + 12 district bawaan, jadi district yang baru
+            Bapak tambahkan langsung ikut muncul.
           </div>
+
+          <details class="mt-1">
+            <summary class="small text-primary" style="cursor:pointer">
+              Lihat rincian <?= count($pilihan_district) ?> district
+              (<?= (int) $daftar_ada_db ?> terbaca dari database<?= $daftar_dari_tf
+                  ? ', ' . count($daftar_dari_tf) . ' dari outlet TF' : '' ?>)
+            </summary>
+            <div class="table-responsive mt-2" style="max-height:260px;overflow:auto">
+              <table class="table table-sm table-striped mb-0 small">
+                <thead class="table-light">
+                  <tr>
+                    <th>District</th>
+                    <th class="text-end">Akun tim</th>
+                    <th class="text-end">Customer</th>
+                    <th class="text-end">Outlet TF</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php foreach ($pilihan_district as $butir_rinci): ?>
+                    <?php $sumber_rinci = $butir_rinci['sumber'] ?? []; ?>
+                    <tr<?= !empty($butir_rinci['dari_tf']) ? ' class="table-info"' : '' ?>>
+                      <td>
+                        <?= htmlspecialchars((string) $butir_rinci['nilai']) ?>
+                        <?php if (!empty($butir_rinci['dari_tf'])): ?>
+                          <span class="badge text-bg-info">TF</span>
+                        <?php endif; ?>
+                      </td>
+                      <td class="text-end"><?= (int) ($sumber_rinci['Akun tim'] ?? 0) ?></td>
+                      <td class="text-end"><?= (int) ($sumber_rinci['Customer'] ?? 0) ?></td>
+                      <td class="text-end"><?= (int) ($sumber_rinci['Outlet TF'] ?? 0) ?></td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+            <div class="small text-muted">
+              Baris berwarna biru + tanda <b>TF</b> berarti district itu ikut
+              karena ada <b>outlet TF</b> di sana. Bila ada district yang belum
+              muncul, periksa kolom <code>sales_district</code> outlet itu di
+              database (buka <a href="periksa_district.php">periksa_district.php</a>).
+            </div>
+          </details>
         </div>
       </div>
 

@@ -5,6 +5,9 @@
  (Tambahan 18B: STATUS PRO DI "KELOLA AKUN TIM" DIKUNCI UNTUK ASS -
   HANYA ADMIN YANG DAPAT MEMBUAT/MEMPERPANJANG PRO, MEMPERPANJANG TRIAL,
   DAN MENGHAPUS PRO)
+ (Tambahan 18C: DISTRICT DARI OUTLET TF (master_toko_tf) OTOMATIS MASUK
+  "LIST SALES DISTRICT" PADA HALAMAN PENDAFTARAN daftar.php -
+  DENAI, MEDAN MARELAN, MEDAN PERJUANGAN, PANCUR BATU)
  TUTORIAL PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS DI WEBSITE
  (Tambahan 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST)
  (Tambahan 17C: RTS = RETAIL SALESMAN, TF = TASK FORCE,
@@ -14,6 +17,116 @@
   Tambahan 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR)
 ==============================================================================
 
+
+ ============================================================================
+  TAMBAHAN 18C - DISTRICT DARI OUTLET TF IKUT MASUK "LIST SALES DISTRICT"
+  PADA HALAMAN PENDAFTARAN (daftar.php)
+  (4 Oktober 2026)
+ ============================================================================
+
+  Yang Bapak sampaikan:
+    "saya sudah menambahkan outlet untuk TF, tolong tambahkan untuk List
+     Sales district pada https://rts.benedic-s.com/daftar.php"
+    Outlet TF yang Bapak tambahkan contohnya: DENAI, MEDAN MARELAN,
+    MEDAN PERJUANGAN, dan PANCUR BATU.
+
+  YANG SUDAH DIKERJAKAN (3 berkas website: district.php, daftar.php, dan
+  periksa_district.php)
+
+   1. KOTAK PILIHAN "SALES DISTRICT" KINI MENGAMBIL DARI EMPAT SUMBER:
+        a. AKUN TIM  - kolom sales_users.sales_district
+        b. CUSTOMER  - kolom master_toko.sales_district
+        c. OUTLET TF - kolom master_toko_tf.sales_district   <-- YANG BARU
+        d. 12 district bawaan (susunannya tetap seperti dulu)
+
+      Jadi begitu Bapak menambah outlet TF baru di database, districtnya
+      LANGSUNG muncul pada halaman pendaftaran. Tidak perlu mengubah halaman
+      lagi dan tidak perlu menghubungi saya lagi setiap kali menambah outlet
+      TF.
+
+   2. CONTOH HASILNYA (memakai data seperti lampiran Bapak):
+        MEDAN MARELAN     -> muncul (dari akun tim + customer + outlet TF)
+        MEDAN PERJUANGAN  -> muncul (dari akun tim + outlet TF)
+        PANCUR BATU       -> muncul (dari outlet TF)
+        DENAI             -> MUNCUL - inilah district yang tadinya TIDAK ADA
+                             sama sekali karena hanya dimiliki outlet TF
+
+      District yang hanya dimiliki outlet TF tetap dianggap SAH, sehingga
+      tim TF yang bertugas di sana dapat mendaftar dan memilih districtnya.
+
+   3. NAMA DISTRICT TIDAK MENJADI GANDA
+        "MEDAN KOTA" dari database dan "Medan Kota" pada daftar bawaan
+        dianggap SATU district yang sama, dan yang ditampilkan adalah bentuk
+        baku (Medan Kota). Kotak pilihan tidak dipenuhi tulisan kembar.
+
+   4. TABEL YANG BELUM ADA DILEWATI DENGAN TENANG
+        Bila tabel master_toko_tf belum ada, atau nama kolomnya ternyata
+        `district` (bukan `sales_district`), halaman tetap berjalan normal -
+        tidak ada halaman putih atau pesan galat. Sudah dicoba dalam empat
+        keadaan: tabel TF ada, tabel TF belum ada, tabel TF ada tetapi
+        districtnya masih kosong, dan tabel customer belum punya kolom
+        district.
+
+   5. HALAMAN PENDAFTARAN JADI LEBIH JELAS
+        Di bawah kotak pilihan ada tulisan "Lihat rincian N district ..."
+        yang dapat dibuka. Isinya daftar seluruh district beserta jumlahnya
+        pada tiap sumber (Akun tim / Customer / Outlet TF).
+        Baris berwarna biru dengan lencana TF berarti district itu ikut
+        karena ada outlet TF di sana.
+        Bila ada district yang belum muncul, tinggal buka periksa_district.php.
+
+   6. periksa_district.php DIPERBAIKI
+        - Ditambah bagian 6 "District pada tabel master_toko_tf (outlet TF)"
+          berisi daftar district outlet TF beserta jumlah outletnya.
+        - PERBAIKAN PENTING: pemeriksa ini dahulu membaca kolom `district`
+          pada master_toko, padahal nama kolom yang benar adalah
+          `sales_district`, sehingga daftar district customer selalu tampak
+          kosong. Sekarang nama kolomnya DICARI OTOMATIS (sales_district
+          lebih dahulu, `district` sebagai cadangan) dan ditampilkan pada
+          halaman supaya mudah diperiksa.
+        - Kartu ringkasan di atas juga menampilkan "District dari outlet TF
+          yang ikut ke pendaftaran" (mis. DENAI, Medan Marelan, Medan
+          Perjuangan, Pancur Batu).
+
+   7. PENDAFTARAN TETAP AMAN
+        - RTS dan TF tetap WAJIB memilih Sales District.
+        - Nama district di luar daftar tetap DITOLAK, jadi district tidak
+          dapat diisi sembarangan.
+        - WSS dan SMST tetap boleh dikosongkan (Semua District).
+
+  CARA PASANG (di cPanel - cukup 3 berkas, TIMPA berkas lama)
+        district.php          -> WAJIB (sumber daftar district)
+        daftar.php            -> kotak pilihan + rincian district
+        periksa_district.php  -> pemeriksa (boleh ditaruh sementara saja)
+      Sesudah diunggah, buka halaman dengan Ctrl + F5.
+
+  SESUDAH DIUNGGAH, SILAKAN PERIKSA (3 langkah)
+        1. Buka https://rts.benedic-s.com/daftar.php
+           Buka kotak "Sales District" dan pastikan DENAI, Medan Marelan,
+           Medan Perjuangan, serta Pancur Batu sudah ada di dalamnya.
+        2. Buka https://rts.benedic-s.com/periksa_district.php
+           Lihat bagian 6 - pastikan district outlet TF terbaca beserta
+           jumlah outletnya.
+        3. Buka https://rts.benedic-s.com/daftar.php?periksa
+           Halaman ini menampilkan asal setiap district (Akun tim / Customer
+           / Outlet TF) dan daftar tabel sumber yang terbaca.
+
+  CATATAN PENTING
+    - TIDAK ada perubahan database dan tidak ada berkas aplikasi (Flutter)
+      yang perlu dibangun ulang. Yang berubah hanya 3 berkas website di atas.
+    - Pengisian district outlet TF cukup pada kolom `sales_district` di tabel
+      master_toko_tf (halaman Upload Data Customer / menu Outlet TF). Berkas
+      CSV yang dipakai tetap kolom yang sama seperti sebelumnya.
+    - Seluruh logika diuji dengan PHP 8.2 pada 154 pemeriksaan: district.php
+      (29), tampilan daftar.php (22), daftar.php?periksa (16),
+      periksa_district.php (20), pendaftaran TF memakai DENAI (12),
+      district asing ditolak (4), RTS tanpa district ditolak (3), tabel TF
+      belum ada (16), customer tanpa kolom district (12), kolom cadangan
+      `district` (13), dan outlet TF tanpa district (7).
+
+  PAKET UNDUHAN
+    RTS_PANEL_PUTARAN_18C.zip         - seluruh berkas web + panduan
+    RTS_PANEL_DISTRICT_OUTLET_TF.zip  - 3 berkas khusus tambahan ini
 
  ============================================================================
   TAMBAHAN 18B - STATUS PRO DI HALAMAN "KELOLA AKUN TIM" DIKUNCI (WEBSITE)
