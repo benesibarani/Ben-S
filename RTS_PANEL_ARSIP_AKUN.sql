@@ -61,18 +61,43 @@ ALTER TABLE sales_users_arsip ADD INDEX idx_arsip_username (username);
 --  TAMBAHAN OPSIONAL (jalankan hanya bila perlu)
 -- ============================================================================
 --
---  a. MASA LANGGANAN PRO PER AKUN
---     Halaman Kelola Akun Tim dapat menambah masa PRO 30 hari pada akun tim.
---     Bila di database Bapak belum ada kolom masa PRO, jalankan dua perintah
---     berikut (kolomnya dipakai bersama menu Langganan PRO):
+--  a. MASA LANGGANAN PRO & TRIAL PER AKUN
+--     Sejak TAMBAHAN 18B, halaman Kelola Akun Tim dapat:
+--        - membuat / memperpanjang PRO   (hanya ADMIN)
+--        - memperpanjang TRIAL           (hanya ADMIN)
+--        - menghapus status PRO          (hanya ADMIN)
+--
+--     Nama kolom yang dipakai adalah kolom yang SAMA dengan menu Langganan PRO
+--     dan aplikasi Android:  akun_pro, pro_mulai, pro_selesai, trial_mulai,
+--     trial_selesai. Halaman mencari sendiri kolomnya; bila tidak ada, halaman
+--     menampilkan pesan yang menjelaskan apa yang harus dijalankan (tidak error).
+--
+--     Bila di database Bapak belum ada kolomnya, jalankan perintah berikut
+--     (PALING MUDAH: jalankan berkas RTS_PANEL_LANGGANAN_PRO.sql yang sudah ada):
 --
 --        ALTER TABLE sales_users ADD COLUMN akun_pro TINYINT(1) NOT NULL DEFAULT 0;
 --        ALTER TABLE sales_users ADD COLUMN pro_mulai DATETIME NULL;
+--        ALTER TABLE sales_users ADD COLUMN pro_selesai DATETIME NULL;
+--        ALTER TABLE sales_users ADD COLUMN trial_mulai DATETIME NULL;
+--        ALTER TABLE sales_users ADD COLUMN trial_selesai DATETIME NULL;
+--
+--     Catatan: nama kolom tanggal berakhir PRO yang benar adalah `pro_selesai`
+--     (itulah yang dibaca aplikasi Android). Bila di database hanya ada
+--     `pro_sampai`, halaman tetap dapat memakainya sebagai cadangan:
+--
 --        ALTER TABLE sales_users ADD COLUMN pro_sampai DATETIME NULL;
 --
 --     Bila salah satu kolom sudah ada, akan muncul pesan
 --     "Duplicate column name" - itu bukan kesalahan, cukup dilewati.
 --
+--  a2. MEMERIKSA STATUS LANGGANAN
+--
+--        SELECT id, username, role, akun_pro, pro_mulai, pro_selesai,
+--               trial_mulai, trial_selesai
+--        FROM sales_users
+--        WHERE UPPER(role) IN ('WSS','SMST','RTS','TF')
+--        ORDER BY akun_pro DESC, username ASC;
+
 --  b. MELIHAT ISI ARSIP
 --
 --        SELECT id, nama_lengkap, username, role, sales_district, aksi, oleh, waktu

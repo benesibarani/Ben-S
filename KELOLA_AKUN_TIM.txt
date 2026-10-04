@@ -1,7 +1,7 @@
 ==============================================================================
  RTS PANEL BY BENE
  PANDUAN - MENU "KELOLA AKUN TIM" UNTUK ADMIN DAN ASS
- PUTARAN 17 + TAMBAHAN 17C - 4 Oktober 2026
+ PUTARAN 17 + TAMBAHAN 17C + TAMBAHAN 18B - 4 Oktober 2026
 ==============================================================================
 
  ============================================================================
@@ -43,9 +43,14 @@
  dihapus dari halaman ini - walau alamat halaman disunting dengan tangan.
  Pemeriksaannya dilakukan ULANG di server, bukan sekadar disembunyikan.
 
- SIAPA YANG BOLEH MASUK
-        ADMIN : boleh (semua pekerjaan pada halaman ini)
-        ASS   : boleh (semua pekerjaan pada halaman ini)
+ SIAPA YANG BOLEH MASUK DAN BOLEH APA
+        ADMIN : boleh SEMUA pekerjaan pada halaman ini, TERMASUK mengurus
+                LANGGANAN (membuat PRO, memperpanjang PRO, memperpanjang
+                TRIAL, dan menghapus status PRO).
+        ASS   : boleh mengedit, menambah, dan menghapus AKUN, tetapi status
+                LANGGANAN hanya dapat DILIHAT (terkunci). Membuat PRO,
+                memperpanjang PRO, memperpanjang TRIAL, dan menghapus PRO
+                HANYA dapat dikerjakan ADMIN.
         WSS / SMST / RTS / TF : DITOLAK (halaman menampilkan pesan "Akses
                                 ditolak" dan tidak ada data yang ditampilkan)
 
@@ -177,6 +182,65 @@
     3. Tekan "Simpan Akun". Akun baru dapat langsung dipakai masuk.
 
   ---------------------------------------------------------------------------
+  LANGGANAN PRO / TRIAL - HANYA ADMIN (TAMBAHAN 18B)
+  ---------------------------------------------------------------------------
+    Aturan yang berlaku:
+
+        MEMBUAT PRO            : hanya ADMIN
+        MEMPERPANJANG PRO      : hanya ADMIN
+        MEMPERPANJANG TRIAL    : hanya ADMIN
+        MENGHAPUS STATUS PRO   : hanya ADMIN
+        MELIHAT status PRO     : ADMIN dan ASS
+
+    BAGI ADMIN - tiga cara mengurus langganan:
+
+      1. Tombol [ Kelola ] pada kolom PRO di daftar akun (paling lengkap).
+         Muncul kotak dengan tiga pilihan:
+             a. Tambah / Perpanjang PRO  - isi jumlah hari (biasanya 30)
+             b. Tambah masa TRIAL        - isi jumlah hari (biasanya 7)
+             c. HAPUS status PRO         - akun kembali GRATIS
+
+      2. Kotak "Tambahan masa PRO (hari)" pada formulir Edit
+         (isi 30 lalu Simpan Perubahan) - sama seperti sebelumnya.
+
+      3. Bila masa PRO yang lama MASIH BERJALAN, tambahannya DISAMBUNG dari
+         tanggal berakhir yang lama, jadi tidak hangus. Contoh: PRO berlaku
+         sampai 20-10-2026, ditambah 30 hari menjadi berlaku sampai
+         19-11-2026.
+
+    MENGHAPUS STATUS PRO (jadi Gratis):
+        - Tanda PRO dimatikan (akun_pro = 0).
+        - Tanggal berakhir PRO dijadikan saat ini, jadi masa PRO langsung
+          dianggap habis (cara yang sama dipakai halaman Langganan PRO).
+        - Masa TRIAL yang masih berjalan juga ditutup.
+        - Data akun, kode masuk, dan riwayat kunjungan TIDAK terhapus - yang
+          dihapus hanya status langganannya.
+
+    BAGI ASS:
+        - Kolom PRO pada daftar akun menampilkan status + tulisan
+          "Terkunci" (gembok).
+        - Pada formulir Edit, kotak langganan hanya menampilkan status dan
+          tanggal berakhirnya, dengan catatan bahwa hanya ADMIN yang dapat
+          mengubahnya. Tidak ada isian hari dan tidak ada tombol Kelola.
+        - Bila permintaan perubahan PRO tetap dikirim dengan cara lain,
+          server MENOLAKNYA dan menampilkan pesan
+          "Hanya ADMIN yang dapat membuat atau memperpanjang masa PRO ...".
+          Perubahan lain pada akun itu pun tidak disimpan supaya tidak ada
+          salah paham.
+
+    KOLOM DATABASE YANG DIPAKAI (sama dengan menu Langganan PRO & aplikasi):
+        akun_pro (0/1), pro_mulai, pro_selesai (tanggal berakhir PRO),
+        trial_mulai, trial_selesai.
+        Bila di database hanya ada `pro_sampai`, halaman memakainya sebagai
+        cadangan. Bila tidak ada sama sekali, halaman menampilkan pesan yang
+        menjelaskan berkas SQL mana yang harus dijalankan (tidak error).
+        Berkas SQL: RTS_PANEL_LANGGANAN_PRO.sql (paling lengkap) atau
+        RTS_PANEL_ARSIP_AKUN.sql bagian "a" (kolom yang sama).
+
+    CATATAN PENTING: setelah langganan diubah, minta petugas membuka
+    aplikasi lalu menu SINKRONISASI supaya status PRO di HP ikut terbarui.
+
+  ---------------------------------------------------------------------------
   RAPIKAN JADI SEMUA DISTRICT (WSS & SMST)
   ---------------------------------------------------------------------------
     Bila masih ada akun WSS/SMST yang memakai district tertentu (misalnya
@@ -230,6 +294,13 @@
    9. Aturan "WSS & SMST = SEMUA DISTRICT" diperiksa ULANG DI SERVER, jadi
       tetap berlaku walau formulir dikirim dengan cara lain (bukan sekadar
       dimatikan di layar).
+  10. KUNCI LANGGANAN PRO: setiap permintaan yang menyentuh PRO / TRIAL
+      diperiksa ULANG di server memakai peran akun yang sedang masuk. Akun
+      ASS ditolak, dan nama kolom yang boleh diubah dibatasi daftar putih di
+      dalam kode (akun_pro, pro_selesai, pro_sampai, pro_mulai,
+      trial_mulai, trial_selesai) - jadi tidak ada nama kolom yang bisa
+      disusupkan dari formulir.
+  11. Perubahan langganan selalu memakai nilai hari yang dibatasi 1-3650.
 
 
  ============================================================================

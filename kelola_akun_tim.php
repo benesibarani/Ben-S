@@ -10,8 +10,11 @@
  *  --------
  *  Memberi ASS (Assistant) menu sendiri untuk mengurus akun TIM SALES:
  *
- *      - MENGEDIT  : nama, email, username, salesman, district, status,
- *                    masa PRO, dan password akun WSS / SMST / RTS / TF
+ *      - MENGEDIT  : nama, email, username, salesman, district, status, dan
+ *                    password akun WSS / SMST / RTS / TF
+ *      - LANGGANAN : membuat / memperpanjang PRO, memperpanjang TRIAL, dan
+ *                    menghapus status PRO  ->  HANYA ADMIN (lihat catatan
+ *                    "KUNCI LANGGANAN PRO" di bawah)
  *      - MENGHAPUS : akun WSS/SMST/RTS/TF DIHAPUS PERMANEN, tetapi SELURUH
  *                    datanya disalin lebih dahulu ke tabel arsip
  *                    `sales_users_arsip` sehingga masih dapat dipulihkan
@@ -27,9 +30,10 @@
  *
  *  SIAPA YANG BOLEH MASUK
  *  ----------------------
- *        ADMIN : boleh semua (termasuk membuat akun baru hasil kerja lama
- *                sudah tetap ada di menu "Kelola User")
- *        ASS   : boleh seluruh pekerjaan pada halaman ini
+ *        ADMIN : boleh semua, TERMASUK mengurus langganan PRO/TRIAL
+ *        ASS   : boleh mengedit, menambah, dan menghapus AKUN, tetapi status
+ *                LANGGANAN (PRO / TRIAL / Gratis) hanya dapat DILIHAT
+ *                -  terkunci, tidak dapat diubah (lihat KUNCI LANGGANAN PRO)
  *        lainnya (WSS, SMST, RTS, TF) : DITOLAK
  *
  *  KEAMANAN
@@ -42,6 +46,11 @@
  *  3. Akun yang dihapus tidak dapat menghapus dirinya sendiri, tidak dapat
  *     menghapus akun terakhir yang masih aktif pada satu role, dan tidak
  *     dapat mengubah status/role akun ADMIN-ASS.
+ *  4. KUNCI LANGGANAN PRO: membuat PRO, memperpanjang PRO, memperpanjang
+ *     TRIAL, dan menghapus (menghentikan) PRO HANYA dapat dikerjakan ADMIN.
+ *     Bagi ASS, kolom PRO pada daftar dan kotak langganan pada formulir
+ *     Edit DIKUNCI; permintaan yang tetap dikirim akan DITOLAK di server
+ *     (bukan sekadar disembunyikan di layar).
  * ============================================================================
  */
 
@@ -230,6 +239,19 @@ $kat_role_semua_district = ['WSS', 'SMST'];
 
 $kat_role_boleh = ['WSS', 'SMST', 'RTS', 'TF'];
 
+/* --------------------------------------------------------------------------
+   KUNCI LANGGANAN PRO (hanya ADMIN)
+
+   Membuat PRO, memperpanjang PRO, memperpanjang TRIAL, dan menghapus
+   (menghentikan) PRO hanya boleh dikerjakan ADMIN. ASS hanya dapat MELIHAT.
+
+   Pemeriksaan ini dikerjakan DI SERVER pada setiap permintaan, jadi tetap
+   berlaku walau formulir dikirim dengan cara lain.
+   -------------------------------------------------------------------------- */
+$kat_admin = function_exists('rts_is_admin')
+    ? (bool) rts_is_admin()
+    : (strtoupper((string) $kat_role_login) === 'ADMIN');
+
 /* Nama tampil pada kotak pilihan: kode + kepanjangan resminya. */
 $kat_nama_role = [];
 
@@ -246,6 +268,83 @@ if (!function_exists('rts_kelola_role_sah')) {
 }
 
 /** Membaca angka dari masukan apa pun. */
+if (!function_exists('rts_kelola_kolom_pro')) {
+    /**
+     * Nama kolom tanggal berakhirnya PRO pada tabel sales_users.
+     *
+     * Di database Bapak namanya `pro_selesai` (itulah yang dibaca aplikasi
+     * Android dan halaman langganan_admin.php). Bila suatu saat yang ada hanya
+     * `pro_sampai`, kolom itu yang dipakai. Kosong = tidak ada kolom tanggal.
+     */
+    function rts_kelola_kolom_pro($conn): string
+    {
+        if (rts_district_kolom_ada($conn, 'sales_users', 'pro_selesai')) {
+            return 'pro_selesai';
+        }
+
+        if (rts_district_kolom_ada($conn, 'sales_users', 'pro_sampai')) {
+            return 'pro_sampai';
+        }
+
+        return '';
+    }
+}
+
+if (!function_exists('rts_kelola_set_langganan')) {
+    /**
+     * Menjalankan satu perintah UPDATE kolom langganan.
+     *
+     * Nama kolom WAJIB salah satu dari daftar putih di dalam fungsi ini, dan
+     * nilainya selalu dikirim sebagai parameter (prepared statement) - jadi
+     * tidak ada satu pun nilai yang ditempel langsung ke perintah SQL.
+     *
+     * @param mixed $nilai int untuk akun_pro, teks tanggal untuk kolom tanggal.
+     */
+    function rts_kelola_set_langganan($conn, string $kolom, $nilai, int $id): bool
+    {
+        $boleh = ['akun_pro', 'pro_selesai', 'pro_sampai', 'pro_mulai',
+            'trial_selesai', 'trial_mulai'];
+
+        if (!in_array($kolom, $boleh, true) || $id <= 0) {
+            return false;
+        }
+
+        $stmt = $conn->prepare('UPDATE sales_users SET `' . $kolom . '` = ? WHERE id = ?');
+
+        if (!$stmt) {
+            return false;
+        }
+
+        if (is_int($nilai)) {
+            $stmt->bind_param('ii', $nilai, $id);
+        } else {
+            $kat_teks = (string) $nilai;
+            $stmt->bind_param('si', $kat_teks, $id);
+        }
+
+        return (bool) $stmt->execute();
+    }
+}
+
+if (!function_exists('rts_kelola_tanggal_tambah')) {
+    /**
+     * Tanggal berakhir yang BARU.
+     *
+     * Bila masa yang lama masih berjalan, tambahannya DISAMBUNG dari tanggal
+     * itu (jadi tidak hangus). Bila sudah lewat atau belum pernah ada,
+     * dihitung dari hari ini.
+     */
+    function rts_kelola_tanggal_tambah($lama, int $hari): string
+    {
+        $dasar = trim((string) $lama);
+        $waktu = ($dasar !== '' && strtotime($dasar) !== false && strtotime($dasar) > time())
+            ? (int) strtotime($dasar)
+            : time();
+
+        return date('Y-m-d H:i:s', $waktu + ($hari * 86400));
+    }
+}
+
 if (!function_exists('rts_kelola_angka')) {
     function rts_kelola_angka($nilai): int
     {
@@ -333,6 +432,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $kat_pro_30 = rts_kelola_angka($_POST['akun_pro_30'] ?? 0);
             $kat_pro_30 = max(0, min(3650, $kat_pro_30));
 
+            /* KUNCI LANGGANAN PRO: pada halaman ASS isian ini tidak ada, tetapi
+               bila tetap dikirim (misalnya lewat alat lain), permintaannya
+               DITOLAK - perubahan lain pada akun pun tidak disimpan supaya
+               ASS tidak merasa PRO-nya sudah tersimpan. */
+            $kat_pro_terlarang = (!$kat_admin && $kat_pro_30 > 0);
+
             if ($kat_nama === '' || $kat_username === '') {
                 $kat_galat = 'Nama lengkap dan username wajib diisi.';
                 $kat_jenis_pesan = 'danger';
@@ -341,6 +446,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $kat_jenis_pesan = 'danger';
             } elseif ($kat_email !== '' && !filter_var($kat_email, FILTER_VALIDATE_EMAIL)) {
                 $kat_galat = 'Alamat email tidak sah. Kosongkan bila tidak dipakai.';
+                $kat_jenis_pesan = 'danger';
+            } elseif ($kat_pro_terlarang) {
+                $kat_galat = 'Hanya ADMIN yang dapat membuat atau memperpanjang masa PRO. '
+                    . 'Akun ASS tidak diberi kewenangan itu, jadi perubahan ini DIBATALKAN '
+                    . '(silakan minta ADMIN).';
                 $kat_jenis_pesan = 'danger';
             } elseif ($kat_password !== '' && strlen($kat_password) < 6) {
                 $kat_galat = 'Password baru minimal 6 karakter. Kosongkan bila tidak ingin diganti.';
@@ -378,29 +488,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $kat_galat = 'Gagal menyimpan perubahan: ' . htmlspecialchars($kat_stmt2->error);
                         $kat_jenis_pesan = 'danger';
                     } else {
-                        /* Langganan PRO: dijalankan hanya bila kotak hari diisi
-                           lebih dari nol dan kolomnya tersedia di database. */
-                        if ($kat_ada_pro && $kat_pro_30 > 0) {
+                        /* Langganan PRO: HANYA ADMIN, dan hanya bila kotak hari
+                           diisi lebih dari nol serta kolomnya tersedia. */
+                        if ($kat_admin && $kat_ada_pro && $kat_pro_30 > 0) {
                             $kat_pro = $conn->prepare('UPDATE sales_users SET akun_pro = 1 WHERE id = ?');
                             $kat_pro->bind_param('i', $kat_id);
                             $kat_pro->execute();
 
-                            $kat_ada_sampai = rts_district_kolom_ada($conn, 'sales_users', 'pro_sampai');
+                            /* Nama kolom tanggal: pro_selesai (dipakai aplikasi),
+                               dengan pro_sampai sebagai cadangan. */
+                            $kat_kolom_tanggal = rts_kelola_kolom_pro($conn);
                             $kat_ada_mulai = rts_district_kolom_ada($conn, 'sales_users', 'pro_mulai');
 
-                            if ($kat_ada_sampai) {
-                                /* Bila masa PRO sebelumnya masih berjalan, tambahannya
-                                   disambung dari tanggal itu. Bila sudah habis,
-                                   dihitung dari hari ini. */
-                                $kat_dasar = (string) ($kat_lama['pro_sampai'] ?? '');
-                                $kat_waktu = ($kat_dasar !== '' && strtotime($kat_dasar) !== false
-                                        && strtotime($kat_dasar) > time())
-                                    ? (int) strtotime($kat_dasar)
-                                    : time();
+                            if ($kat_kolom_tanggal !== '') {
+                                $kat_sampai = rts_kelola_tanggal_tambah(
+                                    $kat_lama[$kat_kolom_tanggal] ?? '',
+                                    $kat_pro_30
+                                );
 
-                                $kat_sampai = date('Y-m-d H:i:s', $kat_waktu + ($kat_pro_30 * 86400));
-
-                                $kat_pro2 = $conn->prepare('UPDATE sales_users SET pro_sampai = ? WHERE id = ?');
+                                $kat_pro2 = $conn->prepare('UPDATE sales_users SET '
+                                    . $kat_kolom_tanggal . ' = ? WHERE id = ?');
                                 $kat_pro2->bind_param('si', $kat_sampai, $kat_id);
                                 $kat_pro2->execute();
 
@@ -417,8 +524,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     . date('d-m-Y', (int) strtotime($kat_sampai)) . ').';
                             } else {
                                 $kat_kabar = 'Akun ' . htmlspecialchars($kat_username)
-                                    . ' disimpan dan ditandai PRO (kolom masa berlaku belum ada '
-                                    . 'di database, jadi tanggal berakhirnya belum dicatat).';
+                                    . ' disimpan dan ditandai PRO (kolom tanggal berakhir PRO - '
+                                    . 'pro_selesai / pro_sampai - belum ada di database, jadi tanggal '
+                                    . 'berakhirnya belum dicatat. Jalankan RTS_PANEL_LANGGANAN_PRO.sql '
+                                    . 'di phpMyAdmin supaya tanggalnya ikut tersimpan).';
                             }
                         }
 
@@ -493,6 +602,171 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $kat_galat = 'Gagal membuat akun: ' . htmlspecialchars($kat_stmt->error);
                     $kat_jenis_pesan = 'danger';
+                }
+            }
+        }
+    } elseif ($kat_aksi === 'langganan') {
+        /* ------------------------------------------------------ LANGGANAN */
+        /* Membuat PRO, memperpanjang PRO, memperpanjang TRIAL, dan menghapus
+           (menghentikan) PRO. HANYA ADMIN - diperiksa ULANG di sini, jadi ASS
+           tidak dapat melakukannya walau formulirnya dipalsukan. */
+        $kat_id = rts_kelola_angka($_POST['kat_id'] ?? 0);
+        $kat_bagian = strtolower(trim((string) ($_POST['kat_langganan'] ?? '')));
+        $kat_hari = rts_kelola_angka($_POST['kat_hari'] ?? 0);
+        $kat_hari = max(1, min(3650, $kat_hari));
+
+        $kat_stmt = $conn->prepare('SELECT * FROM sales_users WHERE id = ? LIMIT 1');
+        $kat_stmt->bind_param('i', $kat_id);
+        $kat_stmt->execute();
+        $kat_lama = $kat_stmt->get_result()->fetch_assoc();
+
+        if (!$kat_admin) {
+            $kat_galat = 'Hanya ADMIN yang dapat mengubah langganan PRO / TRIAL. '
+                . 'Akun ASS hanya dapat melihat statusnya.';
+            $kat_jenis_pesan = 'danger';
+        } elseif (!$kat_lama) {
+            $kat_galat = 'Akun tidak ditemukan.';
+            $kat_jenis_pesan = 'danger';
+        } elseif (!rts_kelola_role_sah((string) ($kat_lama['role'] ?? ''))) {
+            $kat_galat = 'Akun dengan role ' . htmlspecialchars(strtoupper((string) $kat_lama['role']))
+                . ' tidak diurus dari halaman ini.';
+            $kat_jenis_pesan = 'danger';
+        } elseif (!in_array($kat_bagian, ['pro', 'trial', 'hentikan'], true)) {
+            $kat_galat = 'Pilihan langganan tidak dikenal.';
+            $kat_jenis_pesan = 'danger';
+        } else {
+            $kat_uname = (string) ($kat_lama['username'] ?? '');
+            $kat_ada_pro_kol = rts_district_kolom_ada($conn, 'sales_users', 'akun_pro');
+            $kat_kolom_tanggal = rts_kelola_kolom_pro($conn);
+            $kat_ada_mulai_pro = rts_district_kolom_ada($conn, 'sales_users', 'pro_mulai');
+            $kat_ada_trial_mulai = rts_district_kolom_ada($conn, 'sales_users', 'trial_mulai');
+            $kat_ada_trial_selesai = rts_district_kolom_ada($conn, 'sales_users', 'trial_selesai');
+            $kat_sekarang = date('Y-m-d H:i:s');
+            $kat_ok_langganan = true;
+            $kat_sampai = '';
+
+            if ($kat_bagian === 'pro') {
+                /* --------------------------------- BUAT / PERPANJANG PRO */
+                if (!$kat_ada_pro_kol) {
+                    $kat_galat = 'Kolom akun_pro belum ada di database, jadi PRO belum dapat dicatat. '
+                        . 'Jalankan RTS_PANEL_LANGGANAN_PRO.sql di phpMyAdmin lebih dahulu.';
+                    $kat_jenis_pesan = 'danger';
+                    $kat_ok_langganan = false;
+                } else {
+                    /* Tanda PRO dinyalakan lebih dahulu. */
+                    $kat_ok_langganan = rts_kelola_set_langganan($conn, 'akun_pro', 1, $kat_id);
+
+                    /* Bila PRO sebelumnya masih berjalan, tambahannya DISAMBUNG
+                       dari tanggal itu supaya tidak hangus. */
+                    if ($kat_kolom_tanggal !== '') {
+                        $kat_sampai = rts_kelola_tanggal_tambah(
+                            $kat_lama[$kat_kolom_tanggal] ?? '',
+                            $kat_hari
+                        );
+                        $kat_ok_langganan = rts_kelola_set_langganan(
+                            $conn, $kat_kolom_tanggal, $kat_sampai, $kat_id
+                        ) && $kat_ok_langganan;
+                    }
+
+                    if ($kat_ada_mulai_pro
+                            && trim((string) ($kat_lama['pro_mulai'] ?? '')) === '') {
+                        $kat_ok_langganan = rts_kelola_set_langganan(
+                            $conn, 'pro_mulai', $kat_sekarang, $kat_id
+                        ) && $kat_ok_langganan;
+                    }
+
+                    if (!$kat_ok_langganan) {
+                        $kat_galat = 'Gagal menyimpan langganan PRO: ' . htmlspecialchars($conn->error);
+                        $kat_jenis_pesan = 'danger';
+                    } else {
+                        $kat_kabar = 'PRO akun ' . htmlspecialchars($kat_uname) . ' diset '
+                            . (int) $kat_hari . ' hari';
+
+                        if ($kat_sampai !== '') {
+                            $kat_kabar .= ', berlaku sampai '
+                                . date('d-m-Y', (int) strtotime($kat_sampai));
+                        } else {
+                            $kat_kabar .= ' (kolom tanggal berakhir PRO belum ada di database, '
+                                . 'jadi tanggalnya belum dicatat)';
+                        }
+
+                        $kat_kabar .= '. Minta petugas membuka aplikasi lalu menu Sinkronisasi.';
+                    }
+                }
+            } elseif ($kat_bagian === 'trial') {
+                /* --------------------------------------- MULAI / TAMBAH TRIAL */
+                if (!$kat_ada_trial_selesai) {
+                    $kat_galat = 'Kolom trial_selesai belum ada di database, jadi masa TRIAL belum dapat '
+                        . 'dicatat. Jalankan RTS_PANEL_LANGGANAN_PRO.sql di phpMyAdmin lebih dahulu.';
+                    $kat_jenis_pesan = 'danger';
+                    $kat_ok_langganan = false;
+                } else {
+                    $kat_sampai = rts_kelola_tanggal_tambah(
+                        $kat_lama['trial_selesai'] ?? '',
+                        $kat_hari
+                    );
+                    $kat_ok_langganan = rts_kelola_set_langganan(
+                        $conn, 'trial_selesai', $kat_sampai, $kat_id
+                    );
+
+                    if ($kat_ada_trial_mulai
+                            && trim((string) ($kat_lama['trial_mulai'] ?? '')) === '') {
+                        $kat_ok_langganan = rts_kelola_set_langganan(
+                            $conn, 'trial_mulai', $kat_sekarang, $kat_id
+                        ) && $kat_ok_langganan;
+                    }
+
+                    if (!$kat_ok_langganan) {
+                        $kat_galat = 'Gagal menyimpan masa TRIAL: ' . htmlspecialchars($conn->error);
+                        $kat_jenis_pesan = 'danger';
+                    } else {
+                        $kat_kabar = 'Masa TRIAL akun ' . htmlspecialchars($kat_uname) . ' diset '
+                            . (int) $kat_hari . ' hari, berlaku sampai '
+                            . date('d-m-Y', (int) strtotime($kat_sampai)) . '.';
+                    }
+                }
+            } else {
+                /* --------------------------------- HAPUS / HENTIKAN PRO */
+                $kat_ada_set = false;
+
+                if ($kat_ada_pro_kol) {
+                    $kat_ok_langganan = rts_kelola_set_langganan($conn, 'akun_pro', 0, $kat_id);
+                    $kat_ada_set = true;
+                }
+
+                if ($kat_kolom_tanggal !== '') {
+                    /* Tanggal berakhir dijadikan saat ini, jadi masa PRO langsung
+                       dianggap habis (cara yang sama dengan langganan_admin.php). */
+                    $kat_ok_langganan = rts_kelola_set_langganan(
+                        $conn, $kat_kolom_tanggal, $kat_sekarang, $kat_id
+                    ) && $kat_ok_langganan;
+                    $kat_ada_set = true;
+                }
+
+                if ($kat_ada_trial_selesai) {
+                    $kat_ok_langganan = rts_kelola_set_langganan(
+                        $conn, 'trial_selesai', $kat_sekarang, $kat_id
+                    ) && $kat_ok_langganan;
+                    $kat_ada_set = true;
+                }
+
+                if ($kat_ada_trial_mulai
+                        && trim((string) ($kat_lama['trial_mulai'] ?? '')) === '') {
+                    $kat_ok_langganan = rts_kelola_set_langganan(
+                        $conn, 'trial_mulai', $kat_sekarang, $kat_id
+                    ) && $kat_ok_langganan;
+                }
+
+                if (!$kat_ada_set) {
+                    $kat_galat = 'Tidak ada kolom langganan pada database, jadi tidak ada yang dapat '
+                        . 'diubah. Jalankan RTS_PANEL_LANGGANAN_PRO.sql di phpMyAdmin lebih dahulu.';
+                    $kat_jenis_pesan = 'danger';
+                } elseif (!$kat_ok_langganan) {
+                    $kat_galat = 'Gagal menghapus status PRO: ' . htmlspecialchars($conn->error);
+                    $kat_jenis_pesan = 'danger';
+                } else {
+                    $kat_kabar = 'Status PRO akun ' . htmlspecialchars($kat_uname)
+                        . ' DIHAPUS - akun kembali GRATIS (masa TRIAL juga ditutup).';
                 }
             }
         }
@@ -800,12 +1074,26 @@ function rts_kelola_arsipkan($conn, int $id, string $aksi, string $oleh): bool
 $kat_ada_pro = rts_district_kolom_ada($conn, 'sales_users', 'akun_pro');
 $kat_ada_arsip = rts_kelola_tabel_arsip_ada($conn);
 
+/* Kolom langganan yang dibaca: tanda PRO, tanggal berakhir PRO (nama aslinya
+   pro_selesai - dipakai aplikasi Android), dan kolom TRIAL bila ada.
+   Hanya DIBACA untuk ditampilkan; pengubahannya lewat aksi "langganan". */
+$kat_kolom_tanggal_pro = rts_kelola_kolom_pro($conn);
+$kat_ada_trial = rts_district_kolom_ada($conn, 'sales_users', 'trial_selesai');
+
 $kat_kolom_pro = '';
 if ($kat_ada_pro) {
     $kat_kolom_pro = ', akun_pro';
 
-    if (rts_district_kolom_ada($conn, 'sales_users', 'pro_sampai')) {
-        $kat_kolom_pro .= ', pro_sampai';
+    if ($kat_kolom_tanggal_pro !== '') {
+        $kat_kolom_pro .= ', ' . $kat_kolom_tanggal_pro;
+    }
+}
+
+if ($kat_ada_trial) {
+    $kat_kolom_pro .= ', trial_selesai';
+
+    if (rts_district_kolom_ada($conn, 'sales_users', 'trial_mulai')) {
+        $kat_kolom_pro .= ', trial_mulai';
     }
 }
 
@@ -881,9 +1169,23 @@ require_once __DIR__ . '/header.php';
       <p class="text-muted mb-0">
         Khusus ADMIN dan <b>ASS</b>: mengedit, menghapus, dan menambah akun
         <b>WSS</b> (Warehouse Shoe Sale), <b>SMST</b> (Sales Modern Small Trade),
-        <b>RTS</b> (Sales / Salesman), dan <b>TF</b> (Team Force).
+        <b>RTS</b> (Retail Salesman), dan <b>TF</b> (Task Force).
         Akun ADMIN dan ASS tidak tampil di sini.
       </p>
+      <?php if ($kat_admin): ?>
+        <p class="text-muted mb-0 small">
+          <i class="fa-solid fa-crown text-warning"></i>
+          Bapak masuk sebagai <b>ADMIN</b> - langganan PRO / TRIAL dapat diurus
+          lewat tombol <b>Kelola</b> pada kolom PRO di daftar akun.
+        </p>
+      <?php else: ?>
+        <p class="text-muted mb-0 small">
+          <i class="fa-solid fa-lock"></i>
+          Bapak masuk sebagai <b>ASS</b> - kolom <b>PRO</b> hanya dapat dilihat
+          (terkunci). Membuat PRO, memperpanjang PRO, memperpanjang TRIAL, dan
+          menghapus PRO hanya dapat dikerjakan <b>ADMIN</b>.
+        </p>
+      <?php endif; ?>
     </div>
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#katTambah">
       <i class="fa-solid fa-user-plus"></i> Tambah Akun Tim
@@ -1021,7 +1323,13 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
         <?php foreach ($kat_daftar as $kat_u):
             $kat_uid = (int) $kat_u['id'];
             $kat_pro_aktif = $kat_ada_pro && (int) ($kat_u['akun_pro'] ?? 0) === 1;
-            $kat_pro_sampai = (string) ($kat_u['pro_sampai'] ?? '');
+            $kat_pro_sampai = $kat_kolom_tanggal_pro !== ''
+                ? (string) ($kat_u[$kat_kolom_tanggal_pro] ?? '')
+                : '';
+            $kat_trial_sampai = (string) ($kat_u['trial_selesai'] ?? '');
+            $kat_trial_aktif = (!$kat_pro_aktif && $kat_trial_sampai !== ''
+                && strtotime($kat_trial_sampai) !== false
+                && strtotime($kat_trial_sampai) > time());
         ?>
           <tr>
             <td><?= kat_e($kat_u['nama_lengkap']) ?></td>
@@ -1041,8 +1349,27 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
                 <span class="badge text-bg-warning" title="PRO berlaku sampai <?= kat_e($kat_pro_sampai) ?>">
                   PRO<?= $kat_pro_sampai !== '' ? ' s/d ' . kat_e(date('d-m-Y', (int) strtotime($kat_pro_sampai))) : '' ?>
                 </span>
+              <?php elseif ($kat_trial_aktif): ?>
+                <span class="badge text-bg-info" title="Masa uji coba berlaku sampai <?= kat_e($kat_trial_sampai) ?>">
+                  TRIAL s/d <?= kat_e(date('d-m-Y', (int) strtotime($kat_trial_sampai))) ?>
+                </span>
               <?php else: ?>
                 <span class="badge text-bg-light text-muted">Gratis</span>
+              <?php endif; ?>
+
+              <?php if ($kat_admin): ?>
+                <div class="mt-1">
+                  <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal"
+                          data-bs-target="#katLangganan<?= $kat_uid ?>"
+                          title="Kelola langganan PRO / TRIAL (khusus ADMIN)">
+                    <i class="fa-solid fa-crown"></i> Kelola
+                  </button>
+                </div>
+              <?php else: ?>
+                <div class="small text-muted mt-1"
+                     title="Hanya ADMIN yang dapat mengubah status PRO / TRIAL">
+                  <i class="fa-solid fa-lock"></i> Terkunci
+                </div>
               <?php endif; ?>
             </td>
             <td class="text-end">
@@ -1104,7 +1431,13 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
     </div>
   <?php endif; ?>
 
-  <p class="text-muted small mt-4 mb-0">
+  <p class="text-muted small mt-4 mb-2">
+    <b>Langganan PRO hanya untuk ADMIN.</b> ASS tetap dapat mengedit, menambah, dan
+    menghapus akun, tetapi status langganan (PRO / TRIAL / Gratis) hanya dapat dilihat -
+    membuat PRO, memperpanjang PRO, memperpanjang TRIAL, dan menghapus PRO hanya dapat
+    dikerjakan ADMIN. Pemeriksaannya dilakukan di server, bukan sekadar disembunyikan.
+  </p>
+  <p class="text-muted small mb-0">
     Catatan: akun yang dihapus dicatat lebih dahulu ke tabel <b>sales_users_arsip</b>
     (permanen, tidak ikut terhapus), sehingga masih dapat dipulihkan lewat tombol
     <b>Pulihkan</b> di atas. Penghapusan sengaja ditolak bila satu role tinggal satu
@@ -1197,24 +1530,68 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
                 <div class="form-text">Minimal 6 karakter bila diisi.</div>
               </div>
 
-              <?php if ($kat_ada_pro): ?>
-                <div class="col-12">
+              <div class="col-12">
+                <?php if ($kat_admin): ?>
+                  <?php if ($kat_ada_pro): ?>
+                    <div class="border rounded p-3 bg-light">
+                      <div class="fw-semibold mb-1">
+                        <i class="fa-solid fa-crown text-warning"></i> Langganan PRO
+                        <?= $kat_pro_aktif ? '(sekarang PRO)' : '(sekarang GRATIS)' ?>
+                        <span class="badge text-bg-dark ms-1">Khusus ADMIN</span>
+                      </div>
+                      <label class="form-label">Tambahan masa PRO (hari)</label>
+                      <input name="akun_pro_30" type="number" min="0" max="3650" value="0"
+                             class="form-control" style="max-width:200px">
+                      <div class="form-text">
+                        Isi misalnya <b>30</b> untuk menambah 30 hari (langsung menjadi PRO).
+                        Biarkan 0 bila tidak ingin mengubah langganan.
+                        <?= $kat_pro_sampai !== '' ? 'Berlaku sampai: ' . kat_e($kat_pro_sampai) . '.' : '' ?>
+                        Bila masa PRO lama masih berjalan, tambahannya disambung dari tanggal itu.
+                      </div>
+                      <div class="form-text mb-0">
+                        Menghapus status PRO (jadi Gratis) atau menambah masa TRIAL dilakukan
+                        lewat tombol <b>Kelola</b> pada kolom PRO di daftar akun.
+                      </div>
+                    </div>
+                  <?php else: ?>
+                    <div class="alert alert-warning py-2 mb-0 small">
+                      Kolom <b>akun_pro</b> belum ada di database, jadi langganan PRO belum dapat
+                      diatur dari halaman ini. Jalankan <b>RTS_PANEL_LANGGANAN_PRO.sql</b> di
+                      phpMyAdmin lebih dahulu.
+                    </div>
+                  <?php endif; ?>
+                <?php else: ?>
                   <div class="border rounded p-3 bg-light">
                     <div class="fw-semibold mb-1">
-                      <i class="fa-solid fa-crown text-warning"></i> Langganan PRO
-                      <?= $kat_pro_aktif ? '(sekarang PRO)' : '(sekarang GRATIS)' ?>
+                      <i class="fa-solid fa-crown text-warning"></i> Langganan
+                      <?php if ($kat_pro_aktif): ?>
+                        <span class="badge text-bg-warning">PRO</span>
+                      <?php elseif ($kat_trial_aktif): ?>
+                        <span class="badge text-bg-info">TRIAL</span>
+                      <?php else: ?>
+                        <span class="badge text-bg-light text-muted">Gratis</span>
+                      <?php endif; ?>
                     </div>
-                    <label class="form-label">Tambahan masa PRO (hari)</label>
-                    <input name="akun_pro_30" type="number" min="0" max="3650" value="0"
-                           class="form-control" style="max-width:200px">
-                    <div class="form-text">
-                      Isi misalnya <b>30</b> untuk menambah 30 hari (langsung menjadi PRO).
-                      Biarkan 0 bila tidak ingin mengubah langganan.
-                      <?= $kat_pro_sampai !== '' ? 'Berlaku sampai: ' . kat_e($kat_pro_sampai) . '.' : '' ?>
+                    <div class="small text-muted">
+                      <?php if ($kat_pro_aktif && $kat_pro_sampai !== ''): ?>
+                        PRO berlaku sampai <b><?= kat_e(date('d-m-Y', (int) strtotime($kat_pro_sampai))) ?></b>.
+                      <?php elseif ($kat_trial_aktif): ?>
+                        Masa uji coba berlaku sampai
+                        <b><?= kat_e(date('d-m-Y', (int) strtotime($kat_trial_sampai))) ?></b>.
+                      <?php else: ?>
+                        Akun ini belum berlangganan PRO.
+                      <?php endif; ?>
+                    </div>
+                    <div class="alert alert-secondary py-2 mt-2 mb-0 small">
+                      <i class="fa-solid fa-lock"></i>
+                      <b>Status langganan DIKUNCI untuk akun ASS.</b>
+                      Membuat PRO, memperpanjang PRO, memperpanjang TRIAL, dan
+                      menghapus PRO hanya dapat dilakukan <b>ADMIN</b>.
+                      Silakan hubungi ADMIN bila perlu diubah.
                     </div>
                   </div>
-                </div>
-              <?php endif; ?>
+                <?php endif; ?>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -1225,6 +1602,88 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
       </div>
     </div>
   </div>
+
+  <?php if ($kat_admin): ?>
+    <div class="modal fade" id="katLangganan<?= $kat_uid ?>" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form method="post">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="fa-solid fa-crown text-warning"></i> Kelola Langganan</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" name="kat_aksi" value="langganan">
+              <input type="hidden" name="kat_token" value="<?= kat_e($kat_token) ?>">
+              <input type="hidden" name="kat_id" value="<?= $kat_uid ?>">
+
+              <div class="mb-2">
+                Akun: <b><?= kat_e($kat_u['nama_lengkap']) ?></b>
+                (<?= kat_e($kat_u['username']) ?>)
+                <span class="badge text-bg-primary"><?= kat_e(strtoupper((string) $kat_u['role'])) ?></span>
+              </div>
+
+              <div class="alert alert-light border py-2 small">
+                Sekarang:
+                <?php if ($kat_pro_aktif): ?>
+                  <b>PRO</b><?= $kat_pro_sampai !== ''
+                      ? ' s/d ' . kat_e(date('d-m-Y', (int) strtotime($kat_pro_sampai))) : '' ?>
+                <?php elseif ($kat_trial_aktif): ?>
+                  <b>TRIAL</b> s/d <?= kat_e(date('d-m-Y', (int) strtotime($kat_trial_sampai))) ?>
+                <?php else: ?>
+                  <b>GRATIS</b>
+                <?php endif; ?>
+              </div>
+
+              <label class="form-label fw-semibold">Pekerjaan</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="kat_langganan"
+                       id="lgPro<?= $kat_uid ?>" value="pro" checked>
+                <label class="form-check-label" for="lgPro<?= $kat_uid ?>">
+                  <b>Tambah / Perpanjang PRO</b> - akun langsung menjadi PRO
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="kat_langganan"
+                       id="lgTrial<?= $kat_uid ?>" value="trial">
+                <label class="form-check-label" for="lgTrial<?= $kat_uid ?>">
+                  <b>Tambah masa TRIAL</b> (uji coba gratis)
+                </label>
+              </div>
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="radio" name="kat_langganan"
+                       id="lgStop<?= $kat_uid ?>" value="hentikan">
+                <label class="form-check-label text-danger" for="lgStop<?= $kat_uid ?>">
+                  <b>HAPUS status PRO</b> - akun kembali GRATIS
+                </label>
+              </div>
+
+              <label class="form-label">Jumlah hari</label>
+              <input name="kat_hari" type="number" min="1" max="3650" value="30"
+                     class="form-control" style="max-width:200px">
+              <div class="form-text">
+                Dipakai untuk <b>Tambah PRO</b> dan <b>Tambah TRIAL</b> (biasanya 30 hari untuk PRO,
+                7 hari untuk TRIAL). Diabaikan bila memilih <b>HAPUS status PRO</b>.
+                Bila masa yang lama masih berjalan, tambahannya DISAMBUNG dari tanggal itu
+                supaya tidak hangus.
+              </div>
+
+              <div class="alert alert-warning py-2 mt-3 mb-0 small">
+                Perubahan ini langsung tercatat di database. Minta petugas membuka aplikasi lalu
+                menu <b>Sinkronisasi</b> supaya statusnya ikut terbarui di HP.
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+              <button class="btn btn-warning">
+                <i class="fa-solid fa-floppy-disk"></i> Simpan Langganan
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  <?php endif; ?>
 
   <div class="modal fade" id="katHapus<?= $kat_uid ?>" tabindex="-1">
     <div class="modal-dialog">

@@ -2,6 +2,9 @@
  RTS PANEL BY BENE
  (Putaran 18: MENU "UPLOAD DATA CUSTOMER" - CENTANG HAPUS DATABASE,
   TEMPLATE DIAMBIL DARI DATABASE, DAN PANDUAN CSV YANG DETAIL)
+ (Tambahan 18B: STATUS PRO DI "KELOLA AKUN TIM" DIKUNCI UNTUK ASS -
+  HANYA ADMIN YANG DAPAT MEMBUAT/MEMPERPANJANG PRO, MEMPERPANJANG TRIAL,
+  DAN MENGHAPUS PRO)
  TUTORIAL PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS DI WEBSITE
  (Tambahan 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST)
  (Tambahan 17C: RTS = RETAIL SALESMAN, TF = TASK FORCE,
@@ -10,6 +13,83 @@
  (Putaran 15: MENU GSP, PETA DIPERBAIKI, MENU DAPAT DIMINIMIZE
   Tambahan 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR)
 ==============================================================================
+
+
+ ============================================================================
+  TAMBAHAN 18B - STATUS PRO DI HALAMAN "KELOLA AKUN TIM" DIKUNCI (WEBSITE)
+  HANYA ADMIN YANG DAPAT MENGUBAH LANGGANAN
+  (4 Oktober 2026)
+ ============================================================================
+
+  Yang Bapak sampaikan:
+    "untuk masalah Akun PRO, memperpanjang, menghapus saya ingin hanya Admin
+     yang dapat merubahnya. untuk Ass dan lainnya statusnya di kunci"
+    "untuk ASS tidak boleh membuat mengubah PRO akun. Misal memperpanjang
+     Status Trial, membuat dan memperpanjang PRO dan menghapus.
+     Hanya role Admin yang bisa"
+
+  YANG SUDAH DIKERJAKAN  (satu berkas website: kelola_akun_tim.php)
+  ---------------------------------------------------------------------
+   1. EMPAT PEKERJAAN LANGGANAN KINI HANYA UNTUK ADMIN:
+        - membuat PRO
+        - memperpanjang PRO
+        - memperpanjang TRIAL
+        - menghapus status PRO (akun kembali Gratis)
+
+   2. BAGI ASS, STATUSNYA DIKUNCI:
+        - kolom PRO pada daftar akun menampilkan gembok + tulisan
+          "Terkunci";
+        - pada formulir Edit, kotak langganan hanya MENAMPILKAN status dan
+          tanggal berakhirnya - tidak ada isian hari, tidak ada tombol
+          Kelola;
+        - ASS tetap dapat mengedit, menambah, dan menghapus AKUN seperti
+          sebelumnya (yang dikunci hanya langganannya).
+
+   3. DIPERIKSA ULANG DI SERVER (bukan sekadar disembunyikan):
+        - permintaan perubahan PRO dari akun bukan ADMIN DITOLAK, dan
+          perubahan lain pada akun itu tidak disimpan supaya tidak ada salah
+          paham;
+        - aksi langganan dari bukan ADMIN juga ditolak;
+        - nama kolom yang boleh diubah dibatasi daftar putih di dalam kode.
+
+   4. UNTUK ADMIN - TOMBOL BARU [ Kelola ] PADA KOLOM PRO:
+        Satu tombol berisi tiga pilihan:
+             a. Tambah / Perpanjang PRO   (isi hari, biasanya 30)
+             b. Tambah masa TRIAL         (isi hari, biasanya 7)
+             c. HAPUS status PRO          (akun kembali GRATIS)
+        Kotak "Tambahan masa PRO (hari)" pada formulir Edit tetap ada.
+
+   5. TAMBAHAN PERBAIKAN PENTING - NAMA KOLOM TANGGAL PRO:
+        Sebelumnya halaman ini menulis tanggal berakhir PRO ke kolom
+        `pro_sampai`, padahal aplikasi Android membaca kolom `pro_selesai`.
+        Sekarang halaman memakai `pro_selesai` (kolom yang BENAR), dan hanya
+        memakai `pro_sampai` sebagai cadangan bila `pro_selesai` tidak ada.
+        Jadi PRO yang diberikan dari halaman ini sekarang benar-benar terbaca
+        beserta tanggal berakhirnya oleh aplikasi.
+        Bila masa PRO lama masih berjalan, tambahannya DISAMBUNG dari
+        tanggal berakhir yang lama (tidak hangus).
+
+   6. TAMPILAN DAFTAR AKUN:
+        Kolom PRO sekarang menampilkan tiga kemungkinan:
+             PRO s/d <tanggal>   (kuning)
+             TRIAL s/d <tanggal> (biru)
+             Gratis              (abu-abu)
+
+  YANG BAPAK LAKUKAN (CUMA 1 BERKAS - TIDAK ADA PERUBAHAN DATABASE WAJIB)
+  ---------------------------------------------------------------------
+    1. Unggah ke public_html, TIMPA berkas lama:
+             kelola_akun_tim.php
+    2. Muat ulang halaman (Ctrl + F5).
+    3. Selesai.
+
+    Catatan: halaman sudah memeriksa sendiri kolom-kolom langganan. Bila di
+    database Bapak belum ada kolomnya, halaman menampilkan pesan yang
+    menyebutkan berkas SQL yang perlu dijalankan (RTS_PANEL_LANGGANAN_PRO.sql)
+    - tidak akan muncul error.
+
+  PANDUAN LENGKAP: KELOLA_AKUN_TIM.txt (bagian "LANGGANAN PRO / TRIAL -
+  HANYA ADMIN")
+
 
  ============================================================================
   PUTARAN 18 - MENU "UPLOAD DATA CUSTOMER" DIPERBAIKI  (WEBSITE)

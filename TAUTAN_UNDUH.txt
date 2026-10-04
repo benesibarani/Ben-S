@@ -1,4 +1,54 @@
-PALING BARU - PUTARAN 18: MENU "UPLOAD DATA CUSTOMER" DIPERBAIKI
+PALING BARU - TAMBAHAN 18B: STATUS PRO DI "KELOLA AKUN TIM" DIKUNCI,
+HANYA ADMIN YANG DAPAT MENGUBAH LANGGANAN
+------------------------------------------------------------------------
+Permintaan Bapak:
+  "untuk masalah Akun PRO, memperpanjang, menghapus saya ingin hanya Admin
+   yang dapat merubahnya. untuk Ass dan lainnya statusnya di kunci"
+  "untuk ASS tidak boleh membuat mengubah PRO akun. Misal memperpanjang
+   Status Trial, membuat dan memperpanjang PRO dan menghapus.
+   Hanya role Admin yang bisa"
+
+Yang dikerjakan (HANYA 1 BERKAS WEBSITE: kelola_akun_tim.php):
+  1. Membuat PRO, memperpanjang PRO, memperpanjang TRIAL, dan menghapus
+     status PRO kini HANYA untuk ADMIN.
+  2. Bagi ASS statusnya DIKUNCI: kolom PRO menampilkan gembok + tulisan
+     "Terkunci"; pada formulir Edit hanya tampil status & tanggal
+     berakhirnya (tanpa isian hari dan tanpa tombol Kelola). ASS tetap dapat
+     mengedit, menambah, dan menghapus AKUN seperti sebelumnya.
+  3. Kunci diperiksa ULANG DI SERVER: permintaan perubahan PRO dari akun
+     bukan ADMIN ditolak, dan aksi langganan dari bukan ADMIN juga ditolak -
+     jadi tidak bisa dilanggar walau formulirnya dipalsukan.
+  4. Untuk ADMIN ada tombol baru [ Kelola ] pada kolom PRO berisi tiga
+     pilihan: Tambah/Perpanjang PRO, Tambah masa TRIAL, dan HAPUS status PRO
+     (akun kembali Gratis). Kotak masa PRO pada formulir Edit tetap ada.
+  5. Perbaikan penting: halaman ini dahulu menulis tanggal berakhir PRO ke
+     kolom `pro_sampai`, padahal aplikasi Android membaca `pro_selesai`.
+     Sekarang yang dipakai adalah `pro_selesai` (pro_sampai hanya cadangan),
+     dan tambahan masa PRO DISAMBUNG dari tanggal berakhir yang lama.
+  6. Kolom PRO pada daftar akun menampilkan PRO / TRIAL / Gratis beserta
+     tanggal berakhirnya.
+
+CARA PASANG: TIMPA 1 berkas di public_html -> kelola_akun_tim.php,
+lalu muat ulang halaman (Ctrl + F5). Tidak ada perubahan database yang wajib;
+halaman sudah memeriksa sendiri kolomnya dan memberi pesan yang jelas bila
+kolomnya belum ada.
+
+  PANDUAN LENGKAP:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/KELOLA_AKUN_TIM.txt
+    (lihat juga BACA_DULU.txt - TAMBAHAN 18B)
+
+  PAKET:
+    RTS_PANEL_PUTARAN_18B.zip  (semua berkas)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18B.zip
+    RTS_PANEL_KELOLA_AKUN_TIM_REVISI.zip  (6 berkas khusus menu ini)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_KELOLA_AKUN_TIM_REVISI.zip
+
+  BERKAS YANG DIGANTI (unggah ke public_html):
+    kelola_akun_tim.php
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/kelola_akun_tim.php
+
+------------------------------------------------------------------------
+PUTARAN 18: MENU "UPLOAD DATA CUSTOMER" DIPERBAIKI
 ------------------------------------------------------------------------
 Permintaan Bapak:
   1. Tambahkan centang untuk hapus database; bila tidak dicentang dan ada
