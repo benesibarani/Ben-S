@@ -18,10 +18,24 @@
         MENAMBAH   : membuat akun WSS / SMST / RTS / TF baru
 
  MENU INI HANYA MENYENTUH AKUN DENGAN ROLE:
-        WSS  - Supervisor / wilayah
-        SMST - Sales Manager
-        RTS  - Sales / salesman
-        TF   - Team Force
+
+        WSS  = WAREHOUSE SHOE SALE
+               Punya outlet sendiri dan ada di SETIAP district karena GROSIR.
+               Cakupan: SEMUA district.
+
+        SMST = SALES MODERN SMALL TRADE
+               Punya outlet sendiri dan ada di SETIAP district karena MODERN
+               TRADE.
+               Cakupan: SEMUA district.
+
+        RTS  = Sales / Salesman
+               Cakupan: district tertentu.
+
+        TF   = Team Force
+               Cakupan: district tertentu.
+
+ Di halaman Kelola Akun Tim tersedia satu bagian bernama "Keterangan Role"
+ yang menampilkan keempat keterangan di atas, jadi tidak perlu menghafal.
 
  Akun ADMIN dan ASS TIDAK PERNAH tampil dan TIDAK PERNAH dapat diubah atau
  dihapus dari halaman ini - walau alamat halaman disunting dengan tangan.
@@ -92,12 +106,33 @@
        [ Pulihkan ] untuk akun yang dihapus
 
   ---------------------------------------------------------------------------
+  KETERANGAN ROLE PADA HALAMAN
+  ---------------------------------------------------------------------------
+     - Di atas daftar akun ada EMPAT KARTU berisi kode role, kepanjangannya,
+       jumlah akun, dan cakupan districtnya (SEMUA district / district
+       tertentu).
+     - Di bawahnya ada kartu "Keterangan Role" yang menjelaskan:
+           WSS  - Warehouse Shoe Sale - outlet sendiri, ada di SETIAP district
+                  karena Grosir
+           SMST - Sales Modern Small Trade - outlet sendiri, ada di SETIAP
+                  district karena Modern Trade
+           RTS  - Sales / Salesman - district tertentu
+           TF   - Team Force - district tertentu
+     - Pada formulir Edit dan Tambah, begitu Role dipilih, keterangannya
+       langsung muncul di bawah kotak Role.
+     - Kotak pilihan Role memakai kepanjangan resmi, contoh:
+           "WSS (Warehouse Shoe Sale)"
+           "SMST (Sales Modern Small Trade)"
+
+  ---------------------------------------------------------------------------
   MENGEDIT AKUN
   ---------------------------------------------------------------------------
     1. Tekan [ Edit ] pada baris akun.
     2. Ubah bagian yang perlu:
          - Nama Lengkap, Email, Username
-         - Role (WSS / SMST / RTS / TF)
+         - Role (WSS / SMST / RTS / TF). Keterangan role muncul di bawahnya.
+           Untuk WSS dan SMST, Sales District umumnya dibiarkan
+           "-- Semua District --" karena outletnya ada di setiap district.
          - Salesman, Sales District
          - Status Akun: Aktif / Nonaktif
          - Password Baru: kosongkan bila TIDAK ingin diganti

@@ -1,3 +1,48 @@
+PALING BARU - TAMBAHAN 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST
+------------------------------------------------------------------------
+Permintaan Bapak: "Ubah kepanjangan dari: WSS (Warehouse Shoe Sale),
+SMST (Sales Modern Small Trade). WSS punya outlet sendiri dan di setiap
+District ada karena Grosir; SMST punya outlet sendiri dan di setiap District
+ada karena Modren Trade."
+
+Yang dibetulkan (HANYA 1 BERKAS WEBSITE: kelola_akun_tim.php):
+  1. Kepanjangan role yang benar:
+        WSS  = Warehouse Shoe Sale        (dulu salah: Supervisor / Wilayah)
+        SMST = Sales Modern Small Trade   (dulu salah: Sales Manager / SM)
+        RTS  = Sales / Salesman
+        TF   = Team Force
+  2. Keterangan setiap role sekarang tertulis di halaman:
+        WSS  - outlet sendiri, ada di SETIAP district karena GROSIR
+               -> cakupan SEMUA district
+        SMST - outlet sendiri, ada di SETIAP district karena MODERN TRADE
+               -> cakupan SEMUA district
+        RTS  - menangani district tertentu
+        TF   - menangani district tertentu
+  3. Empat kartu jumlah akun kini menampilkan kepanjangan role + cakupan
+     districtnya, ditambah kartu "Keterangan Role", dan keterangan role
+     langsung muncul di bawah kotak Role pada formulir Edit/Tambah.
+
+CARA PASANG: cukup TIMPA 1 berkas di public_html -> kelola_akun_tim.php,
+lalu muat ulang halaman (Ctrl + F5). Tidak ada perubahan database, tidak ada
+perubahan sidebar, dan TIDAK perlu membangun ulang aplikasi Android.
+
+  PANDUAN LENGKAP:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/KELOLA_AKUN_TIM.txt
+    (lihat juga BACA_DULU.txt - TAMBAHAN PUTARAN 17B)
+
+  PAKET:
+    RTS_PANEL_PUTARAN_17B.zip  (semua berkas, sudah memuat pembetulan ini)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_17B.zip
+    RTS_PANEL_KELOLA_AKUN_TIM_REVISI.zip  (6 berkas khusus menu ini)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_KELOLA_AKUN_TIM_REVISI.zip
+
+  BERKAS YANG DIGANTI (unggah ke public_html):
+    kelola_akun_tim.php
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/kelola_akun_tim.php
+
+------------------------------------------------------------------------
+PUTARAN 17: MENU "KELOLA AKUN TIM" UNTUK ASS (WEBSITE)
+------------------------------------------------------------------------
 PALING BARU - PUTARAN 17: MENU "KELOLA AKUN TIM" UNTUK ASS (WEBSITE)
 ------------------------------------------------------------------------
 Permintaan Bapak: "Untuk role ASS tolong tambahkan Menu untuk Mengedit,

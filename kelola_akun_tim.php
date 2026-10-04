@@ -177,13 +177,56 @@ if (!in_array($kat_role_login, ['ADMIN', 'ASS'], true)) {
     exit;
 }
 
-$kat_role_boleh = ['WSS', 'SMST', 'RTS', 'TF'];
-$kat_nama_role = [
-    'WSS'  => 'WSS (Supervisor / Wilayah)',
-    'SMST' => 'SMST (Sales Manager / SM)',
-    'RTS'  => 'RTS (Sales / Salesman)',
-    'TF'   => 'TF (Team Force)',
+/* --------------------------------------------------------------------------
+   DAFTAR ROLE TIM SALES (kepanjangan dibetulkan sesuai keterangan Bapak)
+
+     WSS  = Warehouse Shoe Sale
+            Punya outlet sendiri dan ada di SETIAP district karena GROSIR.
+
+     SMST = Sales Modern Small Trade
+            Punya outlet sendiri dan ada di SETIAP district karena MODERN
+            TRADE.
+
+     RTS  = Sales / Salesman  (menangani district tertentu)
+
+     TF   = Team Force        (menangani district tertentu)
+   -------------------------------------------------------------------------- */
+
+/* Kepanjangan resmi tiap role - SATU-SATUNYA sumber, jadi tidak ada
+   kemungkinan tulisan berbeda antar bagian halaman. */
+$kat_panjang_role = [
+    'WSS'  => 'Warehouse Shoe Sale',
+    'SMST' => 'Sales Modern Small Trade',
+    'RTS'  => 'Sales / Salesman',
+    'TF'   => 'Team Force',
 ];
+
+/* Keterangan panjang - tampil pada kartu jumlah akun dan pada kotak Role. */
+$kat_keterangan_role = [
+    'WSS'  => 'Punya outlet sendiri dan ada di SETIAP district karena Grosir '
+            . '(Warehouse Shoe Sale).',
+    'SMST' => 'Punya outlet sendiri dan ada di SETIAP district karena Modern '
+            . 'Trade (Sales Modern Small Trade).',
+    'RTS'  => 'Sales / salesman yang menangani district tertentu.',
+    'TF'   => 'Team Force yang menangani district tertentu.',
+];
+
+/* Cakupan wilayah (untuk lencana pada daftar keterangan role). */
+$kat_cakupan_role = [
+    'WSS'  => 'SEMUA district',
+    'SMST' => 'SEMUA district',
+    'RTS'  => 'District tertentu',
+    'TF'   => 'District tertentu',
+];
+
+$kat_role_boleh = ['WSS', 'SMST', 'RTS', 'TF'];
+
+/* Nama tampil pada kotak pilihan: kode + kepanjangan resminya. */
+$kat_nama_role = [];
+
+foreach ($kat_panjang_role as $kat_kode => $kat_panjang) {
+    $kat_nama_role[$kat_kode] = $kat_kode . ' (' . $kat_panjang . ')';
+}
 
 /** Role sah yang boleh disentuh halaman ini. */
 if (!function_exists('rts_kelola_role_sah')) {
@@ -734,7 +777,9 @@ require_once __DIR__ . '/header.php';
       <h3 class="mb-1"><i class="fa-solid fa-users-gear text-primary"></i> Kelola Akun Tim</h3>
       <p class="text-muted mb-0">
         Khusus ADMIN dan <b>ASS</b>: mengedit, menghapus, dan menambah akun
-        <b>WSS, SMST, RTS, dan TF</b>. Akun ADMIN dan ASS tidak tampil di sini.
+        <b>WSS</b> (Warehouse Shoe Sale), <b>SMST</b> (Sales Modern Small Trade),
+        <b>RTS</b> (Sales / Salesman), dan <b>TF</b> (Team Force).
+        Akun ADMIN dan ASS tidak tampil di sini.
       </p>
     </div>
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#katTambah">
@@ -751,17 +796,55 @@ require_once __DIR__ . '/header.php';
   <?php endif; ?>
 
   <div class="row g-3 mt-3">
-    <?php foreach ($kat_nama_role as $kat_kode => $kat_label): ?>
+    <?php foreach ($kat_panjang_role as $kat_kode => $kat_panjang): ?>
       <div class="col-6 col-lg-3">
         <div class="card border-0 shadow-sm h-100">
           <div class="card-body">
-            <div class="text-muted small"><?= kat_e($kat_label) ?></div>
+            <div class="fw-bold text-primary"><?= kat_e($kat_kode) ?></div>
+            <div class="text-muted small" style="min-height:34px"><?= kat_e($kat_panjang) ?></div>
             <div class="fs-3 fw-bold"><?= (int) $kat_jumlah[$kat_kode] ?></div>
-            <div class="text-muted small">akun</div>
+            <div class="text-muted small">
+              akun -
+              <?= kat_e($kat_cakupan_role[$kat_kode] ?? '') ?>
+            </div>
           </div>
         </div>
       </div>
     <?php endforeach; ?>
+  </div>
+
+  <div class="card border-0 shadow-sm mt-4">
+    <div class="card-header bg-white"><strong>Keterangan Role</strong></div>
+    <div class="card-body">
+      <div class="row g-3">
+        <?php foreach ($kat_panjang_role as $kat_kode => $kat_panjang): ?>
+          <div class="col-md-6">
+            <div class="border rounded p-3 h-100">
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                  <span class="badge text-bg-primary"><?= kat_e($kat_kode) ?></span>
+                  <b class="ms-1"><?= kat_e($kat_panjang) ?></b>
+                </div>
+                <?php if (($kat_cakupan_role[$kat_kode] ?? '') !== ''): ?>
+                  <span class="badge <?= in_array($kat_kode, ['WSS', 'SMST'], true)
+                      ? 'text-bg-info' : 'text-bg-light text-muted' ?>">
+                    <?= kat_e($kat_cakupan_role[$kat_kode]) ?>
+                  </span>
+                <?php endif; ?>
+              </div>
+              <div class="text-muted small mt-2">
+                <?= kat_e($kat_keterangan_role[$kat_kode] ?? '') ?>
+              </div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+      <div class="form-text mt-3 mb-0">
+        WSS dan SMST ada di SETIAP district (Grosir dan Modern Trade), jadi pada
+        kotak <b>Sales District</b> keduanya umumnya dibiarkan
+        <b>-- Semua District --</b>. RTS dan TF menangani district tertentu.
+      </div>
+    </div>
   </div>
 
   <?php if (!$kat_ada_arsip): ?>
@@ -940,14 +1023,17 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
               </div>
               <div class="col-md-6">
                 <label class="form-label">Role</label>
-                <select name="role" class="form-select">
+                <select name="role" class="form-select" data-kat-role>
                   <?php foreach ($kat_nama_role as $kat_kode => $kat_label): ?>
                     <option value="<?= kat_e($kat_kode) ?>"
+                      data-ket="<?= kat_e(($kat_cakupan_role[$kat_kode] ?? '') . ' - '
+                          . ($kat_keterangan_role[$kat_kode] ?? '')) ?>"
                       <?= strtoupper((string) $kat_u['role']) === $kat_kode ? 'selected' : '' ?>>
                       <?= kat_e($kat_label) ?>
                     </option>
                   <?php endforeach; ?>
                 </select>
+                <div class="form-text" data-kat-ket></div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Salesman</label>
@@ -973,7 +1059,8 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
                   <option <?= strtoupper((string) $kat_u['status_aktif']) === 'AKTIF' ? 'selected' : '' ?>>Aktif</option>
                   <option <?= strtoupper((string) $kat_u['status_aktif']) === 'NONAKTIF' ? 'selected' : '' ?>>Nonaktif</option>
                 </select>
-                <div class="form-text">Nonaktif = tidak bisa masuk, tetapi data tetap ada.</div>
+                <div class="form-text">Nonaktif = tidak bisa masuk, tetapi data tetap ada.
+              WSS &amp; SMST lazimnya <b>Semua District</b>.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Password Baru (opsional)</label>
@@ -1081,11 +1168,16 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
             </div>
             <div class="col-md-6">
               <label class="form-label">Role</label>
-              <select name="role" class="form-select">
+              <select name="role" class="form-select" data-kat-role>
                 <?php foreach ($kat_nama_role as $kat_kode => $kat_label): ?>
-                  <option value="<?= kat_e($kat_kode) ?>"><?= kat_e($kat_label) ?></option>
+                  <option value="<?= kat_e($kat_kode) ?>"
+                    data-ket="<?= kat_e(($kat_cakupan_role[$kat_kode] ?? '') . ' - '
+                        . ($kat_keterangan_role[$kat_kode] ?? '')) ?>">
+                    <?= kat_e($kat_label) ?>
+                  </option>
                 <?php endforeach; ?>
               </select>
+              <div class="form-text" data-kat-ket></div>
             </div>
             <div class="col-md-6">
               <label class="form-label">Salesman</label>
@@ -1117,5 +1209,24 @@ ALTER TABLE sales_users_arsip ADD COLUMN waktu TIMESTAMP NOT NULL DEFAULT CURREN
     </div>
   </div>
 </div>
+
+<script>
+/* Menampilkan keterangan role (termasuk cakupan districtnya) tepat di bawah
+   kotak Role, mengikuti pilihan yang sedang aktif pada formulir. */
+(function () {
+  document.querySelectorAll('[data-kat-role]').forEach(function (kotak) {
+    var keterangan = kotak.parentElement.querySelector('[data-kat-ket]');
+
+    function perbarui() {
+      if (!keterangan) return;
+      var pilihan = kotak.options[kotak.selectedIndex];
+      keterangan.innerHTML = pilihan ? (pilihan.getAttribute('data-ket') || '') : '';
+    }
+
+    kotak.addEventListener('change', perbarui);
+    perbarui();
+  });
+})();
+</script>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

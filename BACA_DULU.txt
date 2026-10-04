@@ -1,12 +1,65 @@
 ==============================================================================
  RTS PANEL BY BENE
  TUTORIAL PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS DI WEBSITE
+ (Tambahan 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST)
  (Putaran 16: MENU "STRUK POM" / STRUK SPBU BERJALAN LURING DI DALAM HP)
  (Putaran 15: MENU GSP, PETA DIPERBAIKI, MENU DAPAT DIMINIMIZE
   Tambahan 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR)
 ==============================================================================
 
 
+
+ ============================================================================
+  TAMBAHAN PUTARAN 17B - PEMBETULAN KEPANJANGAN ROLE (WEBSITE)
+  (4 Oktober 2026)
+ ============================================================================
+
+  Yang Bapak sampaikan:
+    "Ubah kepanjangan dari: WSS (Warehouse Shoe Sale),
+     SMST (Sales Modern Small Trade).
+     1. WSS punya outlet sendiri dan di setiap District ada karena Grosir
+     2. SMST punya outlet sendiri dan di setiap District ada karena
+        Modren Trade"
+
+  YANG SUDAH DIBETULKAN  (hanya 1 berkas website: kelola_akun_tim.php)
+  -------------------------------------------------------------------
+   1. KEPANJANGAN ROLE yang benar (sebelumnya salah tulis):
+          WSS  = Warehouse Shoe Sale        (dulu: Supervisor / Wilayah)
+          SMST = Sales Modern Small Trade   (dulu: Sales Manager / SM)
+          RTS  = Sales / Salesman
+          TF   = Team Force
+
+   2. KETERANGAN SETIAP ROLE ditulis pada halaman:
+          WSS  = punya outlet sendiri dan ada di SETIAP district karena
+                 GROSIR  -> cakupan: SEMUA district
+          SMST = punya outlet sendiri dan ada di SETIAP district karena
+                 MODERN TRADE -> cakupan: SEMUA district
+          RTS  = menangani district tertentu
+          TF   = menangani district tertentu
+
+   3. TIGA TEMPAT BARU pada halaman Kelola Akun Tim:
+        a. EMPAT KARTU jumlah akun kini menampilkan kode role,
+           KEPANJANGANNYA, jumlah akun, dan cakupan districtnya.
+        b. KARTU "KETERANGAN ROLE": penjelasan keempat role dalam bentuk
+           daftar, termasuk alasan WSS & SMST ada di setiap district
+           (Grosir dan Modern Trade).
+        c. KOTAK ROLE pada formulir Edit dan Tambah memakai kepanjangan
+           resmi, dan keterangan role langsung muncul di bawah kotak begitu
+           role dipilih.
+
+   4. Catatan pada formulir: untuk WSS & SMST, kotak Sales District umumnya
+      dibiarkan "-- Semua District --" karena outletnya ada di setiap
+      district.
+
+  YANG PERLU BAPAK LAKUKAN
+  ------------------------
+   1. WEBSITE: cukup TIMPA SATU BERKAS di public_html:
+          kelola_akun_tim.php
+      (Tidak ada perubahan database, tidak ada perubahan sidebar, dan
+      TIDAK ada aplikasi Android yang perlu dibangun ulang - aplikasi hanya
+      memakai kode role WSS/SMST, bukan kepanjangannya.)
+   2. Muat ulang halaman Kelola Akun Tim di browser (Ctrl + F5).
+   3. Selesai. Panduan lengkapnya: KELOLA_AKUN_TIM.txt
  ============================================================================
   TAMBAHAN PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS (WEBSITE)
   (4 Oktober 2026)
