@@ -10,7 +10,8 @@
 #      "Apakah folder proyek saya sudah berisi kode paling baru?"
 #
 #  Pemeriksaan pada putaran ini ditambah:
-#     - lib\kasir.dart, lib\kasir_lokal.dart, dan lib\peta.dart: panjang
+#     - lib\kasir.dart, lib\kasir_lokal.dart, lib\peta.dart, dan lib\pom.dart:
+#       panjang
 #       berkas, jumlah baris, dan KESEIMBANGAN KURUNG. Berkas yang terpotong
 #       (misalnya karena salinan yang tidak lengkap) selalu menyisakan kurung
 #       tidak berpasangan - jadi hal itu ketahuan SEBELUM membangun aplikasi.
@@ -30,7 +31,11 @@
 #       pengiriman GSP beserta 3 foto (_kirimGsp -> request_create_gsp.php),
 #       tombol MINIMIZE pada Menu Utama / Menu PRO, serta penyaring peta yang
 #       seragam (RtsPetaSaring) dan penawar galat peta (rtsPetaTitikSah).
-#     - pubspec.yaml: paket penunjang kasir luring (sqflite dll).
+#     - PUTARAN 16: menu STRUK POM (struk SPBU) yang berjalan 100% LURING di
+#       dalam HP - tujuh sub-menu (Histori, POM, Arsip, Struk, Operator, BBM,
+#       SPBU), database rts_panel_pom.db, gambar header dari galeri HP, dan
+#       pencetakan lewat printer Bluetooth thermal 58/80 mm.
+#     - pubspec.yaml: paket penunjang kasir & struk POM luring (sqflite, image).
 #     - android\app\build.gradle.kts: angka compileSdk (harus 37).
 #     - berkas Kotlin: jumlah MainActivity.kt (harus SATU) dan tanda +
 #       yang diletakkan di awal baris (Kotlin tidak mengizinkannya).
@@ -57,7 +62,7 @@
 #  dengan perintah "flutter clean".
 # =============================================================================
 
-$harapanKode = 'RTS-2026-10-04-17'
+$harapanKode = 'RTS-2026-10-04-18'
 
 function TulisJudul($teks) {
     Write-Host ""
@@ -208,7 +213,10 @@ $bagian = @(
     @{ Nama = "formulir foto GSP (KTP/luar/dalam)";        Pola = "_barisFotoGsp" },
     @{ Nama = "Menu Utama & Menu PRO dapat dilipat";       Pola = "rtsSimpanLipatMenu" },
     @{ Nama = "tombol MINIMIZE pada judul menu";           Pola = "MINIMIZE" },
-    @{ Nama = "daftar toko Radar dapat diminimize";        Pola = "BUKA DAFTAR" }
+    @{ Nama = "daftar toko Radar dapat diminimize";        Pola = "BUKA DAFTAR" },
+    @{ Nama = "kartu menu STRUK POM pada Menu PRO";        Pola = "title: 'Struk POM'" },
+    @{ Nama = "pembuka halaman STRUK POM";                 Pola = "RtsPomMenuPage" },
+    @{ Nama = "berkas menu Struk POM disambungkan";        Pola = "import 'pom.dart'" }
 )
 
 foreach ($satu in $bagian) {
@@ -368,7 +376,7 @@ function Periksa-KurungDart($jalur) {
     return $hasil
 }
 
-foreach ($namaBerkas in @('lib\kasir.dart', 'lib\kasir_lokal.dart', 'lib\peta.dart')) {
+foreach ($namaBerkas in @('lib\kasir.dart', 'lib\kasir_lokal.dart', 'lib\peta.dart', 'lib\pom.dart')) {
     if (-not (Test-Path $namaBerkas)) {
         TulisHasil $false "$namaBerkas ADA (wajib ada)"
         $bermasalah++
@@ -482,6 +490,44 @@ if (Test-Path 'lib\peta.dart') {
 }
 else {
     TulisHasil $false "lib\peta.dart ADA (wajib ada - menu peta)"
+    Write-Host "            Jalankan .\LANGKAH1_PASANG_SEMUA.ps1 dari paket terbaru." -ForegroundColor Yellow
+    $bermasalah++
+}
+
+if (Test-Path 'lib\pom.dart') {
+    $isiPom = [System.IO.File]::ReadAllText('lib\pom.dart')
+
+    $tandaPom = @(
+        @{ Nama = "beranda STRUK POM (7 sub-menu)";           Pola = "class RtsPomMenuPage" },
+        @{ Nama = "sub-menu HISTORI (riwayat penginputan)";   Pola = "class RtsPomHistoriPage" },
+        @{ Nama = "sub-menu POM (isi struk)";                 Pola = "class RtsPomFormPage" },
+        @{ Nama = "sub-menu ARSIP (struk tersimpan)";         Pola = "class RtsPomArsipPage" },
+        @{ Nama = "sub-menu STRUK (template)";                Pola = "class RtsPomStrukPage" },
+        @{ Nama = "sub-menu OPERATOR";                        Pola = "class RtsPomOperatorPage" },
+        @{ Nama = "sub-menu BBM (harga & subsidi)";           Pola = "class RtsPomBbmPage" },
+        @{ Nama = "sub-menu SPBU (Title/Subtitle/Footer)";    Pola = "class RtsPomSpbuPage" },
+        @{ Nama = "database struk POM DI DALAM HP";           Pola = "rts_panel_pom.db" },
+        @{ Nama = "tabel arsip struk POM";                    Pola = "CREATE TABLE IF NOT EXISTS pom_struk" },
+        @{ Nama = "penyusun perintah cetak ESC/POS";          Pola = "class RtsPomCetak" },
+        @{ Nama = "gambar header DIPILIH DARI GALERI HP";     Pola = "logoSimpanDariGaleri" },
+        @{ Nama = "cetak lewat printer Bluetooth tersambung"; Pola = "PrintBluetoothThermal.writeBytes" },
+        @{ Nama = "tombol SIMPAN & CETAK";                    Pola = "SIMPAN & CETAK" },
+        @{ Nama = "tombol cepat nominal & liter";             Pola = "_barisCepat" },
+        @{ Nama = "penyaring tanggal pada Histori";           Pola = "_pilihTanggal" },
+        @{ Nama = "tindakan Arsip (cetak/ubah/salin/hapus)";  Pola = "_PomAksi" },
+        @{ Nama = "struk TIDAK memakai logo RTS Panel";       Pola = "tidak memakai logo RTS" }
+    )
+
+    foreach ($satu in $tandaPom) {
+        $adaTanda = $isiPom -match [regex]::Escape($satu.Pola)
+
+        TulisHasil $adaTanda $satu.Nama
+
+        if (-not $adaTanda) { $bermasalah++ }
+    }
+}
+else {
+    TulisHasil $false "lib\pom.dart ADA (wajib ada - menu STRUK POM)"
     Write-Host "            Jalankan .\LANGKAH1_PASANG_SEMUA.ps1 dari paket terbaru." -ForegroundColor Yellow
     $bermasalah++
 }

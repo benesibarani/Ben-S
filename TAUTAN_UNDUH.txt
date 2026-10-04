@@ -1,3 +1,76 @@
+PALING BARU - PUTARAN 16: MENU "STRUK POM" (STRUK SPBU) BERJALAN LURING
+------------------------------------------------------------------------
+Permintaan Bapak: "Menu dan fitur sama seperti aplikasi Play Store Struk POM
+(SPBU). Pastinya anda harus menyesuaikannya lagi di sqlite."
+
+Yang dikerjakan:
+  1. MENU BARU "STRUK POM" pada MENU PRO, TEPAT DI BAWAH "Printer & Struk",
+     berisi TUJUH sub-menu sekaligus:
+         HISTORI  - riwayat penginputan struk + penyaring tanggal
+                    (Semua / Hari ini / 7 hari / 30 hari / pilih sendiri),
+                    pencarian, dan ringkasan jumlah struk - rupiah - liter.
+         POM      - pengisian struk; semua isian dapat diedit sebelum
+                    dicetak (shift, pompa, selang, operator, BBM, no. trans,
+                    waktu, odo, plat, jumlah beli, liter, bayar, kembali)
+                    + tombol cepat Rp 10.000/15.000/20.000/25.000 dan 1-4
+                    Liter + tombol SIMPAN dan SIMPAN & CETAK.
+         ARSIP    - seluruh struk yang sudah dibuat; dapat dibuka, diubah,
+                    dicetak ulang, teksnya disalin, atau dihapus.
+         STRUK    - TEMPLATE struk: 3 format (58 mm standar, 58 mm ringkas,
+                    80 mm lebar). Header, isi, dan footer dapat diedit.
+         OPERATOR - tambah / edit / hapus nama operator -> muncul sebagai
+                    pilihan pada menu POM.
+         BBM      - tambah / edit / hapus BBM + HARGA + SUBSIDI -> muncul
+                    sebagai pilihan pada menu POM.
+         SPBU     - Title / Subtitle / Footer -> kepala struk (di bawah
+                    gambar header) dan tulisan bawah struk.
+  2. SELURUH DATA TERSIMPAN DI DALAM HP memakai SQLite (rts_panel_pom.db) -
+     berjalan TANPA INTERNET. Database ini terpisah dari database Kasir, jadi
+     data Kasir/stok/piutang tidak tersentuh.
+  3. GAMBAR HEADER dipilih dari GALERI HP (tombol PILIH DARI GALERI),
+     disalin ke folder aplikasi di HP. Struk POM TIDAK memakai logo RTS Panel.
+  4. CETAK lewat printer Bluetooth thermal 58/80 mm yang sudah dihubungkan
+     pada menu "Printer & Struk", lengkap dengan PRATINJAU di layar.
+
+PENTING: aplikasi di HP harus versi baru. Periksa penanda kode pada halaman
+Pengaturan - harus tertulis  RTS-2026-10-04-18.
+
+  PANDUAN LENGKAP:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
+    (lihat TAMBAHAN PUTARAN 16)
+    Khusus menu Struk POM:
+    https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/STRUK_POM.txt
+
+  PAKET LENGKAP putaran ini:
+    RTS_PANEL_PUTARAN_16.zip  (semua berkas sekaligus)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_16.zip
+    PAKET KECIL khusus menu Struk POM:
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_STRUK_POM.zip
+
+  BERKAS APLIKASI (dipasang dengan LANGKAH1_PASANG_SEMUA.ps1):
+    lib/pom.dart  <-- BERKAS BARU: seluruh menu STRUK POM ada di sini
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/pom.dart
+    main.dart  (kartu menu baru + penanda versi terbaru)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+    pubspec.yaml.updated  (version: 1.3.0+13, ditambah paket "image")
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+    LANGKAH1_PASANG_SEMUA.ps1  (kini juga menyalin lib\pom.dart)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/LANGKAH1_PASANG_SEMUA.ps1
+    PERIKSA_KODE_APLIKASI.ps1  (kini memeriksa lib\pom.dart juga)
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERIKSA_KODE_APLIKASI.ps1
+
+  BERKAS SERVER: tidak ada berkas server baru pada putaran ini.
+    Bila belum diunggah dari Putaran 15, unggah api/request_create_gsp.php:
+      https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/request_create_gsp.php
+
+  RILIS PENUTUP PUTARAN INI
+    Nomor versi aplikasi : 1.3.0  (kode 13)
+    Halaman Versi Aplikasi: Versi 1.3.0 | Kode 13 | Wajib: JANGAN -> PUBLIKASIKAN
+    Penanda kode aplikasi : RTS-2026-10-04-18 (tampil pada Pengaturan)
+
+------------------------------------------------------------------------
+PUTARAN 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR
+------------------------------------------------------------------------
 PALING BARU - TAMBAHAN 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH
 ------------------------------------------------------------------------
 Permintaan Bapak: "Pada Peta Customer, Radar Customer, dan Rute Plan, bagian
@@ -47,9 +120,9 @@ Pengaturan - harus tertulis  RTS-2026-10-04-17.
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/request_create_gsp.php
 
   RILIS PENUTUP TAMBAHAN INI
-    Nomor versi aplikasi : 1.2.9  (kode 12)
-    Halaman Versi Aplikasi: Versi 1.2.9 | Kode 12 | Wajib: JANGAN -> PUBLIKASIKAN
-    Penanda kode aplikasi : RTS-2026-10-04-17 (tampil pada Pengaturan)
+    Nomor versi aplikasi : 1.2.9  (kode 12)  -> kini 1.3.0 (kode 13)
+    Halaman Versi Aplikasi: Versi 1.3.0 | Kode 13 | Wajib: JANGAN -> PUBLIKASIKAN
+    Penanda kode aplikasi : RTS-2026-10-04-18 (tampil pada Pengaturan)
 
 ------------------------------------------------------------------------
 PUTARAN 15: MENU GSP + PETA DIPERBAIKI + MENU DAPAT DIMINIMIZE

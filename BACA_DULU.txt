@@ -1,8 +1,100 @@
 ==============================================================================
  RTS PANEL BY BENE
- TUTORIAL PUTARAN 15 - MENU GSP, PETA DIPERBAIKI, MENU DAPAT DIMINIMIZE
- (TAMBAHAN 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR)
+ TUTORIAL PUTARAN 16 - MENU BARU "STRUK POM" (STRUK SPBU) BERJALAN LURING
+ (Putaran 15: MENU GSP, PETA DIPERBAIKI, MENU DAPAT DIMINIMIZE
+  Tambahan 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR)
 ==============================================================================
+
+ ============================================================================
+  TAMBAHAN PUTARAN 16 - PERMINTAAN BAPAK PALING BARU
+  (4 Oktober 2026)
+ ============================================================================
+
+  Yang Bapak minta:
+    "Menu dan fitur sama seperti aplikasi Play Store Struk POM (SPBU).
+     Pastinya anda harus menyesuaikannya lagi di sqlite."
+
+  YANG SUDAH DIPASANG
+  -------------------
+   1. MENU BARU "STRUK POM" pada MENU PRO, TEPAT DI BAWAH "Printer & Struk".
+      Isinya TUJUH sub-menu sekaligus:
+
+          HISTORI   - riwayat penginputan struk, dapat disaring per tanggal
+                      (Semua / Hari ini / 7 hari / 30 hari / pilih sendiri),
+                      ada pencarian dan tiga angka ringkasan (jumlah struk,
+                      nilai rupiah, liter).
+          POM       - halaman pengisian struk; SEMUA isian dapat diedit
+                      sebelum dicetak: shift, pompa, selang, operator, jenis
+                      BBM, nomor transaksi, waktu, odo, plat nomor, jumlah
+                      beli, liter, jumlah bayar, dan kembali. Ada tombol cepat
+                      Rp 10.000 / 15.000 / 20.000 / 25.000 dan 1-4 Liter,
+                      tombol SIMPAN, serta SIMPAN & CETAK.
+          ARSIP     - seluruh struk yang pernah dibuat; dapat dibuka, diubah,
+                      DICETAK ULANG, teksnya disalin, atau dihapus.
+          STRUK     - TEMPLATE struk. Tersedia TIGA format (58 mm standar,
+                      58 mm ringkas, 80 mm lebar). Header, isi, dan footer
+                      dapat diedit: gambar header, garis pemisah, subsidi,
+                      jumlah salinan, serta tulisan tambahan di atas dan di
+                      bawah struk.
+          OPERATOR  - tambah / edit / hapus nama operator; nama inilah yang
+                      muncul sebagai pilihan pada menu POM.
+          BBM       - tambah / edit / hapus bahan bakar beserta HARGA dan
+                      SUBSIDI; harganya dipakai menghitung total pada POM dan
+                      subsidinya dituliskan pada struk.
+          SPBU      - Title, Subtitle, dan Footer: menjadi kepala struk (di
+                      bawah gambar header) dan tulisan paling bawah struk.
+
+   2. DATABASE TERSENDIRI DI DALAM HP - rts_panel_pom.db.
+      Seluruh data struk POM disimpan di dalam HP memakai SQLite, jadi menu
+      ini berjalan TANPA INTERNET. Database ini TERPISAH dari database Kasir
+      (rts_panel_kasir.db) sehingga data Kasir, stok, dan piutang tidak
+      tersentuh sama sekali. Tabel yang dibuat: pom_spbu, pom_bbm,
+      pom_operator, pom_format, pom_struk, dan pom_setelan.
+
+   3. GAMBAR HEADER DIPILIH DARI GALERI HP.
+      Tombol [ PILIH DARI GALERI ] pada sub-menu STRUK. Gambarnya dipakai
+      sebagai kepala struk dan disalin ke dalam folder aplikasi di HP, jadi
+      tetap ada walau berkas aslinya dihapus dari galeri.
+      STRUK POM TIDAK memakai logo RTS Panel - sesuai permintaan Bapak.
+
+   4. CETAK LEWAT PRINTER BLUETOOTH THERMAL.
+      Memakai printer 58 mm / 80 mm yang sudah dihubungkan pada menu
+      "Printer & Struk" (satu printer untuk Kasir dan Struk POM). Ada tombol
+      PRATINJAU di layar sebelum kertas dipakai.
+
+  YANG PERLU BAPAK LAKUKAN
+  ------------------------
+   1. SERVER: tidak ada berkas server baru pada putaran ini. Tidak ada
+      perubahan database hosting. (Bila api/request_create_gsp.php belum
+      diunggah dari Putaran 15, unggah dulu berkas itu.)
+   2. APLIKASI: ekstrak RTS_PANEL_PUTARAN_16.zip, jalankan
+      .\LANGKAH1_PASANG_SEMUA.ps1  ->  flutter clean  ->  flutter pub get.
+      Skrip itu sekarang juga menyalin berkas BARU  lib\pom.dart.
+   3. Bangun + pasang ke HP:  flutter run -d CPH1937
+   4. Periksa pada Pengaturan: penanda harus tertulis  RTS-2026-10-04-18
+      (bila masih -17 atau lebih lama, aplikasi di HP belum terganti).
+   5. Halaman Versi Aplikasi (website):
+      Versi 1.3.0 | Kode 13 | Wajib: JANGAN  ->  PUBLIKASIKAN.
+
+  CARA MENCOBA DI HP (urutannya)
+  ------------------------------
+   1. Beranda -> MENU PRO -> "Struk POM" (kartu ke-5, di bawah Printer &
+      Struk).
+   2. Buka sub-menu SPBU -> TAMBAH -> isi Title / Subtitle / Footer -> SIMPAN.
+   3. Buka sub-menu BBM -> periksa harga; TAMBAH bila perlu -> nama, harga,
+      subsidi -> Simpan.
+   4. Buka sub-menu OPERATOR -> TAMBAH -> isi nama petugas -> Simpan.
+   5. Buka sub-menu STRUK -> [ PILIH DARI GALERI ] (pilih logo SPBU), lalu
+      ketuk Format 1 bila ingin mengubah ukuran kertas / tulisan tambahan.
+      Tombol [ UJI CETAK TEMPLATE INI ] untuk mencoba printer.
+   6. Buka sub-menu POM -> isi transaksi -> [ SIMPAN & CETAK ].
+   7. Buka sub-menu ARSIP atau HISTORI -> struk tersimpan di situ; ketuk
+      ikon titik-tiga untuk cetak ulang / ubah / salin teks / hapus.
+   8. Matikan internet (atau mode pesawat), buka kembali menu ini: seluruh
+      data tetap ada dan tetap dapat dicetak - bukti berjalan luring.
+
+  PANDUAN LENGKAP KHUSUS MENU INI:
+      STRUK_POM.txt  (ada di dalam paket dan di tautan unduh)
 
  ============================================================================
   TAMBAHAN PUTARAN 15B - PERMINTAAN BAPAK PALING BARU
@@ -58,10 +150,11 @@
    2. APLIKASI: ekstrak RTS_PANEL_PUTARAN_15B.zip, jalankan
       .\LANGKAH1_PASANG_SEMUA.ps1  ->  flutter clean  ->  flutter pub get.
    3. Bangun + pasang ke HP:  flutter run -d CPH1937
-   4. Periksa pada Pengaturan: penanda harus tertulis  RTS-2026-10-04-17
-      (bila masih -16 atau lebih lama, aplikasi di HP belum terganti).
-   5. Halaman Versi Aplikasi:
-      Versi 1.2.9 | Kode 12 | Wajib: JANGAN  ->  PUBLIKASIKAN.
+   4. Periksa pada Pengaturan: penanda harus tertulis  RTS-2026-10-04-18
+      (nilai terbaru dari TAMBAHAN PUTARAN 16; bila masih -17 atau lebih
+      lama, aplikasi di HP belum terganti).
+   5. Halaman Versi Aplikasi (nilai terbaru dari TAMBAHAN PUTARAN 16):
+      Versi 1.3.0 | Kode 13 | Wajib: JANGAN  ->  PUBLIKASIKAN.
 
   CARA MENCOBA DI HP (urutannya)
   ------------------------------
@@ -195,12 +288,12 @@
         Aplikasi di HP HARUS versi baru supaya menu GSP muncul.
 
    5. PERIKSA PENANDA VERSI DI HP:
-        Buka Pengaturan - lihat penanda kode aplikasi. Harus tertulis
-        RTS-2026-10-03-16. Bila masih tertulis -15 atau lebih lama, aplikasi
-        di HP belum terganti.
+        Buka Pengaturan - lihat penanda kode aplikasi. Nilai TERBARU adalah
+        RTS-2026-10-04-18 (dari TAMBAHAN PUTARAN 16). Bila masih tertulis
+        angka lama, aplikasi di HP belum terganti.
 
    6. HALAMAN VERSI APLIKASI (bila Bapak memakai pembaruan otomatis):
-        Isi dengan  Versi 1.2.8 | Kode 11 | Wajib: JANGAN  lalu
+        Isi dengan  Versi 1.3.0 | Kode 13 | Wajib: JANGAN  lalu
         PUBLIKASIKAN.
 
  ============================================================================

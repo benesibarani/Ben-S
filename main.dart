@@ -18,6 +18,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'kasir.dart';
 import 'kasir_lokal.dart';
 import 'peta.dart';
+import 'pom.dart';
 
 /* ------------------------------------------------------------------------- */
 /* KONFIGURASI                                                                */
@@ -966,7 +967,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-04-17';
+const String rtsKodeAplikasi = 'RTS-2026-10-04-18';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -2338,6 +2339,12 @@ class _DashboardPageState extends State<DashboardPage>
       pro: true,
     ),
     _MenuData(
+      title: 'Struk POM',
+      subtitle: 'Struk SPBU - luring',
+      icon: Icons.local_gas_station_outlined,
+      pro: true,
+    ),
+    _MenuData(
       title: 'Peta Customer',
       subtitle: 'Sebaran & filter warna',
       icon: Icons.map_outlined,
@@ -2729,6 +2736,18 @@ class _DashboardPageState extends State<DashboardPage>
             token: token,
             pengguna: (RtsSesi.user ?? user).toJson(),
           ),
+        ),
+      );
+      return;
+    }
+
+    if (menu == 'Struk POM') {
+      // STRUK POM berjalan 100% LURING: seluruh data (SPBU, BBM, operator,
+      // template struk, dan arsip struk) tersimpan di dalam HP lewat SQLite
+      // sehingga tetap dapat dipakai tanpa internet.
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const RtsPomMenuPage(),
         ),
       );
       return;

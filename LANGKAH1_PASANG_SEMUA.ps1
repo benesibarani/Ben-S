@@ -11,9 +11,12 @@
 #        (berkas di akar folder hanya salinan acuan; yang dibangun Flutter
 #         adalah lib\main.dart), lalu analysis_options.yaml supaya VS Code
 #         tidak menandai salinan akar itu dengan tanda merah palsu.
-#     3. Menyalin pubspec.yaml (memuat sqflite + flutter_map + versi 1.2.5+8)
-#     4. Menyalin lib\kasir.dart, lib\kasir_lokal.dart, DAN lib\peta.dart
+#     3. Menyalin pubspec.yaml (memuat sqflite + flutter_map + image)
+#     4. Menyalin lib\kasir.dart, lib\kasir_lokal.dart, lib\peta.dart,
+#        DAN lib\pom.dart
 #        (kasir_lokal.dart  = mesin kasir di dalam HP, berjalan tanpa internet)
+#        (pom.dart  = STRUK POM / SPBU - tujuh sub-menu yang berjalan LURING
+#                     dengan database tersendiri di dalam HP: rts_panel_pom.db)
 #        (peta.dart = PETA CUSTOMER, RADAR CUSTOMER, RUTE PLAN, dan LOKASI
 #                     KANTOR memakai OpenStreetMap)
 #     5. Menambahkan izin KAMERA pada AndroidManifest.xml (bila belum ada)
@@ -125,6 +128,7 @@ $berkasMain = Join-Path $folderAplikasi 'main.dart'
 $berkasKasir = Join-Path $folderAplikasi 'kasir.dart'
 $berkasKasirLokal = Join-Path $folderAplikasi 'kasir_lokal.dart'
 $berkasPeta = Join-Path $folderAplikasi 'peta.dart'
+$berkasPom = Join-Path $folderAplikasi 'pom.dart'
 $berkasPubspec = Join-Path $folderAplikasi 'pubspec.yaml'
 $berkasAnalysis = Join-Path $folderAplikasi 'analysis_options.yaml'
 $berkasManifestPanduan = Join-Path $folderAplikasi 'android_manifest_tambahan.xml'
@@ -247,11 +251,26 @@ if (Test-Path $berkasPeta) {
     Awas 'Tanpa berkas itu aplikasi GAGAL dibangun (lib\main.dart memanggilnya).'
 }
 
+# lib\pom.dart berisi MENU BARU STRUK POM (STRUK SPBU) yang berjalan 100%
+# LURING: Histori, POM, Arsip, Struk, Operator, BBM, dan SPBU. Seluruh datanya
+# tersimpan di dalam HP memakai database tersendiri (rts_panel_pom.db) sehingga
+# tidak mengganggu data Kasir (rts_panel_kasir.db). Wajib ada.
+if (Test-Path $berkasPom) {
+    $tujuanPom = Join-Path $folderProyek 'lib\pom.dart'
+
+    if (Salin-DenganCadangan $berkasPom $tujuanPom) {
+        Baik 'lib\pom.dart dipasang  <-- menu STRUK POM (SPBU), tersimpan di HP.'
+    }
+} else {
+    Awas 'pom.dart TIDAK ada di folder paket!'
+    Awas 'Tanpa berkas itu aplikasi GAGAL dibangun (lib\main.dart memanggilnya).'
+}
+
 # =============================================================================
 # 3. pubspec.yaml
 # =============================================================================
 
-Judul '3. Memasang pubspec.yaml (sqflite + kamera barcode + printer + peta + versi 1.2.5+8)'
+Judul '3. Memasang pubspec.yaml (sqflite + kamera barcode + printer + peta + image + struk POM)'
 
 $tujuanPubspec = Join-Path $folderProyek 'pubspec.yaml'
 
@@ -273,7 +292,7 @@ if (Salin-DenganCadangan $berkasPubspec $tujuanPubspec) {
 
     foreach ($paketWajib in @('sqflite', 'path_provider', 'path:', 'mobile_scanner',
             'esc_pos_utils_plus', 'print_bluetooth_thermal', 'permission_handler',
-            'flutter_map', 'latlong2')) {
+            'flutter_map', 'latlong2', 'image:')) {
         if ($isiPubspec -match [regex]::Escape($paketWajib)) {
             Baik "paket $paketWajib sudah ada di pubspec."
         } else {
@@ -686,7 +705,7 @@ Write-Host '     3. Tekan tombol PERBARUI DATABASE' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Periksa di aplikasi:' -ForegroundColor White
 Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda RTS-2026-10-04-17 (penanda lama dilewati)' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda RTS-2026-10-04-18 (penanda lama dilewati)' -ForegroundColor Gray
 Write-Host '     Pembaruan   : kotak Pembaruan -> PERBARUI SEKARANG' -ForegroundColor Gray
 Write-Host '                   (berkas diunduh DI DALAM aplikasi, tanpa Chrome)' -ForegroundColor Gray
 Write-Host '     Profil      : tombol LANGGANAN PRO tampil + gambar QRIS tampil' -ForegroundColor Gray
@@ -701,10 +720,17 @@ Write-Host '     Peta        : penyaring Hari & Frekuensi sama di 3 halaman peta
 Write-Host '     Peta        : tombol MINIMIZE melipat penyaring KE ATAS' -ForegroundColor Gray
 Write-Host '     Peta        : tombol PETA PENUH -> hanya peta satu layar' -ForegroundColor Gray
 Write-Host '     Peta        : tombol TUTUP PETA mengembalikan tampilan biasa' -ForegroundColor Gray
+Write-Host '     Menu PRO    : kartu STRUK POM tampil DI BAWAH Printer & Struk' -ForegroundColor Gray
+Write-Host '     Struk POM   : 7 sub-menu tampil (Histori, POM, Arsip, Struk,' -ForegroundColor Gray
+Write-Host '                   Operator, BBM, SPBU) - semuanya berjalan LURING' -ForegroundColor Gray
+Write-Host '     Struk POM   : menu SPBU -> TAMBAH -> isi Title/Subtitle/Footer' -ForegroundColor Gray
+Write-Host '     Struk POM   : menu BBM -> TAMBAH -> isi Nama, Harga, Subsidi' -ForegroundColor Gray
+Write-Host '     Struk POM   : menu POM -> isi -> SIMPAN -> Cetak ke printer' -ForegroundColor Gray
+Write-Host '     Struk POM   : menu Struk -> PILIH DARI GALERI (gambar header)' -ForegroundColor Gray
 Write-Host '     Sinkronisasi: tombol SINKRON AKUN tampil di bagian atas' -ForegroundColor Gray
 Write-Host '     Akun sales  : sesudah top up + SETUJUI ADMIN, tekan SINKRON AKUN' -ForegroundColor Gray
 Write-Host '                   -> status berubah PRO dan menu PRO langsung terbuka' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-10-04-17' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-04-18' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Di hosting (cPanel) - KHUSUS MENU PETA:' -ForegroundColor White
 Write-Host '     1. Unggah  api\kantor.php  ke folder api pada hosting' -ForegroundColor Gray

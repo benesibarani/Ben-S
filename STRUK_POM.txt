@@ -1,0 +1,296 @@
+==============================================================================
+ RTS PANEL BY BENE
+ MENU "STRUK POM" - STRUK SPBU (POM BENSIN) YANG BERJALAN LURING DI DALAM HP
+ PUTARAN 16 - 4 Oktober 2026
+==============================================================================
+
+ ============================================================================
+  1. APA INI DAN DI MANA LETAKNYA
+ ============================================================================
+
+ Menu ini untuk membuat, mengedit, dan MENCETAK struk POM / SPBU dari HP
+ sendiri - sama seperti aplikasi "Struk POM" yang Bapak lihat di Play Store.
+
+ LETAK MENU
+   Beranda  ->  MENU PRO  ->  "Struk POM"
+   Posisinya TEPAT DI BAWAH kartu "Printer & Struk".
+
+ SYARAT
+   Menu ini termasuk MENU PRO, jadi akun harus PRO. Bila akun masih GRATIS,
+   kartunya tetap tampil dan akan mengarahkan ke halaman Langganan PRO.
+
+ PENTING - SEMUA DATA TERSIMPAN DI DALAM HP
+   Menu ini BERJALAN TANPA INTERNET. Seluruh data (SPBU, BBM, operator,
+   template struk, dan seluruh arsip struk) disimpan di dalam HP memakai
+   database SQLite bernama:
+
+        rts_panel_pom.db
+
+   Database ini TERPISAH dari database Kasir (rts_panel_kasir.db), jadi data
+   Kasir, stok, dan piutang Bapak TIDAK tersentuh sama sekali. Bila aplikasi
+   dibuka tanpa sinyal, menu ini tetap berjalan normal.
+
+ CATATAN GAMBAR
+   Struk POM TIDAK memakai logo RTS Panel. Kepala struk memakai GAMBAR yang
+   Bapak pilih sendiri dari galeri HP (misalnya logo Pertamina / SPBU).
+
+
+ ============================================================================
+  2. TUJUH SUB-MENU
+ ============================================================================
+
+   1) HISTORI
+      Riwayat semua struk yang pernah diinput. Di bagian atas ada tiga angka
+      ringkasan: JUMLAH STRUK, NILAI (rupiah), dan VOLUME (liter).
+      Penyaring tanggal:
+          Semua  |  Hari ini  |  7 hari  |  30 hari  |  pilih sendiri
+      Tombol DARI dan SAMPAI untuk memilih tanggal awal dan akhir.
+      Ada kolom pencarian (nama SPBU / plat nomor / nomor transaksi).
+      Ketuk satu kartu untuk membukanya, atau ketuk ikon titik-tiga untuk
+      mencetak / mengubah / menyalin teks / menghapus.
+
+   2) POM
+      Halaman pengisian struk. Semua isian DAPAT DIEDIT sebelum dicetak:
+        - Shift, Pompa, Selang  (kolom angka, cukup diisi angka pompa/selang)
+        - Operator              (pilihan dari sub-menu Operator)
+        - Jenis BBM             (pilihan dari sub-menu BBM, tampil harga)
+        - SPBU / header struk   (pilihan dari sub-menu SPBU)
+        - No. Trans             (otomatis berlanjut dari arsip)
+        - Waktu                 (otomatis; dapat diketuk untuk diubah)
+        - Odo/No. HP dan Plat Nomor
+        - Jumlah Beli (Rp) dan Liter
+        - Jumlah Bayar dan Kembali
+        - Catatan (tampil di bawah struk)
+      TOMBOL CEPAT supaya tidak perlu mengetik angka panjang:
+        - Rp 10.000 / 15.000 / 20.000 / 25.000  -> mengisi Jumlah Beli
+        - 1 Liter / 2 / 3 / 4                   -> mengisi Liter
+      Bila HARGA BBM sudah diisi pada sub-menu BBM, maka:
+        - mengisi Jumlah Beli otomatis menghitung LITER, dan
+        - mengisi Liter otomatis menghitung JUMLAH BELI.
+      TOTAL HARGA = Harga per liter x Liter (tampil di kotak abu-abu).
+      Tombol di bawah:
+        [ SIMPAN ]          -> tersimpan ke Arsip (dapat dicetak kemudian)
+        [ SIMPAN & CETAK ]  -> tersimpan lalu langsung dikirim ke printer
+      Ikon kertas di kanan atas = PRATINJAU: melihat bentuk struk di layar
+      sebelum kertas dipakai.
+
+   3) ARSIP
+      Kumpulan seluruh struk yang berhasil dibuat. Ada pencarian dan ringkasan
+      jumlah struk + nilai rupiah + liter.
+      Ketuk kartu  -> membuka struk pada menu POM untuk diedit lagi.
+      Tahan/tekan ikon titik-tiga -> tindakan:
+            CETAK KE PRINTER   (boleh berkali-kali)
+            BUKA & UBAH        (mengubah isi struk yang sudah tersimpan)
+            SALIN TEKS STRUK   (ditempel ke WhatsApp atau catatan)
+            HAPUS DARI ARSIP
+      Tombol STRUK BARU di kanan bawah = membuat struk baru.
+
+   4) STRUK  (TEMPLATE)
+      Daftar template struk. Ada TIGA template siap pakai:
+            Format 1 - POM Standar (58 mm)
+            Format 2 - POM Ringkas  (58 mm)
+            Format 3 - POM Lebar    (80 mm)
+      Bagian paling atas halaman ini: GAMBAR HEADER STRUK.
+            Tombol [ PILIH DARI GALERI ] -> mengambil gambar dari galeri HP
+            Tombol [ HAPUS ]            -> mencetak struk tanpa gambar
+      Gambar disalin ke dalam folder aplikasi di HP, jadi tetap ada walaupun
+      berkas aslinya dihapus dari galeri.
+      Ketuk salah satu template untuk mengubahnya:
+            - Nama template
+            - Ukuran kertas: 58 mm (32 karakter/baris) atau 80 mm
+              (42 karakter/baris)
+            - Jumlah salinan (1 atau lebih - kertas tercetak berulang)
+            - Pakai gambar header (hidup/mati)
+            - Tampilkan subsidi BBM
+            - Garis pemisah
+            - Tulisan tambahan di ATAS struk (di bawah nama SPBU)
+            - Tulisan tambahan di BAWAH struk (paling bawah kertas)
+      Tombol [ UJI CETAK TEMPLATE INI ] = mencetak contoh untuk mencoba
+      template tanpa mengganggu arsip.
+
+   5) OPERATOR
+      Daftar nama petugas. Tombol TAMBAH: isi Nama dan Keterangan (opsional).
+      Setiap baris dapat diubah (ikon pensil) atau dihapus (ikon tempat
+      sampah). Nama pada daftar inilah yang muncul sebagai pilihan Operator
+      pada menu POM.
+      Catatan: menghapus operator TIDAK mengubah struk lama, karena nama
+      operator disalin ke setiap struk saat struk dibuat.
+
+   6) BBM
+      Daftar bahan bakar beserta HARGA dan SUBSIDI. Tombol TAMBAH:
+            Nama     : Pertalite / Pertamax / Bio Solar / ... (wajib)
+            Harga    : harga per liter (misalnya 10000)
+            Subsidi  : opsional (misalnya 703 - kosongkan bila tidak ada)
+      Harga dipakai untuk menghitung TOTAL HARGA pada menu POM.
+      Subsidi ditulis pada struk bila nilainya lebih dari nol.
+      Daftar bawaan: Pertalite, Pertamax, Pertamina Dex, Bio Solar, Dexlite.
+      Semuanya dapat diubah atau dihapus sesuai SPBU Bapak.
+
+   7) SPBU
+      Data tempat usaha yang menjadi KEPALA dan KAKI struk. Tombol TAMBAH:
+            Title    : nomor / nama SPBU   (contoh: 14201105)
+            Subtitle : nama dan alamat SPBU (boleh beberapa baris)
+            Footer   : tulisan paling bawah struk (boleh beberapa baris)
+      Title dan Subtitle tampil DI BAWAH gambar header.
+      Footer tampil di bagian paling bawah struk.
+      Setiap kotak isian menampilkan hitungan panjang baris supaya tidak
+      terpotong: kertas 58 mm paling banyak 32 karakter per baris, kertas
+      80 mm paling banyak 42 karakter per baris. Gunakan tombol enter untuk
+      memisahkan baris.
+
+
+ ============================================================================
+  3. URUTAN PEMAKAIAN PERTAMA KALI (PENTING - IKUTI URUTAN INI)
+ ============================================================================
+
+   1. Menu PRO -> Struk POM -> SPBU
+      Tekan TAMBAH, isi Title (nomor SPBU), Subtitle (nama + alamat), dan
+      Footer, lalu SIMPAN.
+
+   2. Masih di Struk POM -> BBM
+      Periksa daftar bawaan. Ubah harganya sesuai SPBU Bapak, atau TAMBAH
+      jenis BBM baru beserta harga dan subsidinya.
+
+   3. Masih di Struk POM -> Operator
+      TAMBAH nama petugas yang bertugas (boleh beberapa).
+
+   4. Masih di Struk POM -> Struk
+      Tekan [ PILIH DARI GALERI ] dan pilih gambar kepala struk (logo SPBU /
+      Pertamina). Lalu ketuk Format 1 untuk memeriksa ukuran kertas dan
+      tulisan tambahan. Tekan [ UJI CETAK TEMPLATE INI ] bila ingin mencoba
+      printer lebih dahulu.
+
+   5. Masih di Struk POM -> POM
+      Isi transaksi (shift, pompa, selang, operator, BBM, liter, plat nomor).
+      Tekan [ SIMPAN & CETAK ].
+
+   6. Hasilnya tersimpan di Arsip dan dapat dicetak ulang kapan saja, bahkan
+      setelah aplikasi ditutup atau HP tanpa sinyal.
+
+
+ ============================================================================
+  4. MENCETAK - PRINTER BLUETOOTH THERMAL
+ ============================================================================
+
+   Cetak memakai printer thermal Bluetooth 58 mm / 80 mm yang SAMA dengan
+   printer Kasir. Bila printer belum dihubungkan:
+        1. Nyalakan printer thermal.
+        2. Beranda -> Menu PRO -> "Printer & Struk" -> cari printer di daftar
+           -> sambungkan (ketuk namanya).
+        3. Kembali ke Struk POM -> cetak.
+   Setelan printer disimpan di dalam HP, jadi tidak perlu dihubungkan ulang
+   setiap kali (asal printer tetap hidup).
+
+   Bila muncul pesan "Printer belum tersambung", buka kembali menu
+   "Printer & Struk" dan sambungkan printer, lalu coba cetak lagi.
+
+   Bila muncul pesan tentang IZIN BLUETOOTH:
+        Pengaturan HP -> Aplikasi -> RTS Panel -> Izin ->
+        "Perangkat di sekitar" (Bluetooth) -> Izinkan.
+
+
+ ============================================================================
+  5. BENTUK STRUK YANG DICETAK (CONTOH)
+ ============================================================================
+
+        [ GAMBAR HEADER DARI GALERI ]
+
+                   14201105
+              SPBU TB SIMATUPANG NO. 107
+             JL. TB SIMATUPANG NO. 107
+        ----------------------------------
+        Shift: 2      No. Trans: 9161613
+        Waktu: 09-09-2024 09:33:51
+        ----------------------------------
+        Pulau/Pompa: 2 / 1
+        Nama Produk: PERTALITE
+        Harga/Liter: Rp. 10.000
+        Volume     : (L) 3.500
+        Total Harga: Rp. 35.000
+        Operator   : OPERATOR
+        ----------------------------------
+        CASH
+                                 35.000
+        Bayar   : 50.000
+        Kembali : 15.000
+        ----------------------------------
+        No. Plat   : BK 5872 AEG
+        Odo/No. HP : 26572
+        ----------------------------------
+             [ Footer dari menu SPBU ]
+          [ Tulisan tambahan template ]
+
+   Tidak ada logo RTS Panel pada struk ini - kepala struk 100% gambar pilihan
+   Bapak sendiri.
+
+
+ ============================================================================
+  6. YANG TERSIMPAN DI DALAM HP (UNTUK KETERANGAN TEKNIS)
+ ============================================================================
+
+   Berkas database : rts_panel_pom.db   (sqlite, di dalam HP)
+   Tabel:
+        pom_spbu      : data SPBU (Title / Subtitle / Footer)
+        pom_bbm       : daftar BBM + harga + subsidi
+        pom_operator  : daftar operator
+        pom_format    : tiga template struk
+        pom_struk     : ARSIP seluruh struk (termasuk semua isi struk)
+        pom_setelan   : setelan menu (contoh: alamat gambar header)
+
+   Berkas program : lib/pom.dart
+   Pemakaian ulang dari menu Kasir: penyambung printer Bluetooth
+   (RtsPrinter) dan pengirim perintah cetak (PrintBluetoothThermal) -
+   sehingga cukup SATU printer untuk Kasir dan Struk POM.
+
+   Cadangan data Kasir (menu Server & Cadangan) tetap berjalan seperti biasa.
+   Data Struk POM dapat dilihat kembali pada sub-menu Histori dan Arsip.
+
+
+ ============================================================================
+  7. PENANDA VERSI - MEMASTIKAN APLIKASI DI HP SUDAH BARU
+ ============================================================================
+
+   Versi aplikasi     : 1.3.0   (kode versi 13)
+   Penanda kode       : RTS-2026-10-04-18
+   Letak penanda      : Beranda (kartu cuaca) dan halaman Pengaturan.
+
+   Bila penanda di HP Bapak masih angka lama (misalnya RTS-2026-10-04-17),
+   berarti aplikasi baru belum dibangun/dipasang. Jalankan
+   LANGKAH1_PASANG_SEMUA.ps1 dari paket ini, lalu bangun aplikasi kembali.
+
+   Pada halaman app_versi.php (website) isi sesuai urutan:
+        version_name : 1.3.0
+        version_code : 13
+        wajib        : JANGAN  (pilihan "wajib")
+        lalu ubah status dari DRAF menjadi PUBLIKASIKAN.
+
+
+ ============================================================================
+  8. BILA ADA YANG TIDAK BERJALAN
+ ============================================================================
+
+   Menu "Struk POM" tidak tampil
+        Periksa: Menu PRO sudah terbuka (bukan hanya Menu Utama), dan akun
+        sudah PRO. Bila perlu tekan SINKRON AKUN pada menu Sinkronisasi.
+
+   Tombol PILIH DARI GALERI tidak berjalan
+        Periksa izin pada Pengaturan HP -> Aplikasi -> RTS Panel -> Izin ->
+        Foto dan video / Media -> Izinkan.
+
+   Struk tercetak tetapi gambar kepala tidak muncul
+        Gambar terlalu besar atau bentuknya tidak didukung printer. Pilih
+        gambar lain yang lebih sederhana (hitam-putih lebih baik), atau
+        matikan pilihan "Pakai gambar header" pada template struk.
+
+   Tulisan struk terpotong di sisi kanan
+        Pilih ukuran kertas yang benar pada template: 58 mm untuk printer
+        kecil, 80 mm untuk printer lebar. Hitungan panjang baris tampil pada
+        setiap kotak isian di menu SPBU.
+
+   BBM atau SPBU tidak tampil pada pilihan menu POM
+        Buka sub-menu BBM atau SPBU, pastikan daftarnya tidak kosong.
+        Daftar yang kosong membuat menu POM menampilkan pesan pengingat.
+
+ ============================================================================
+  Akhir panduan MENU STRUK POM. Terima kasih - RTS Panel By Bene.
+ ============================================================================

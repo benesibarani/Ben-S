@@ -101,7 +101,33 @@ publish_to: 'none'
 #     - Pada Radar Customer, daftar toko terdekat mendapat tombol MINIMIZE
 #       sendiri; saat peta penuh, daftar dapat dibuka lewat tombol DAFTAR TOKO
 #       dan tombol PERBARUI LOKASI tetap tersedia.
-version: 1.2.9+12
+#   Kode 13 (1.3.0) memuat MENU BARU "STRUK POM" (STRUK SPBU) YANG BERJALAN
+#   LURING - seluruh datanya tersimpan DI DALAM HP:
+#     - Kartu "Struk POM" pada MENU PRO, tepat DI BAWAH "Printer & Struk".
+#     - Tujuh sub-menu sekali jalan: Histori, POM, Arsip, Struk, Operator,
+#       BBM, dan SPBU.
+#     - Database baru di dalam HP: rts_panel_pom.db (tabel pom_spbu, pom_bbm,
+#       pom_operator, pom_format, pom_struk, pom_setelan). Berkas ini terpisah
+#       dari rts_panel_kasir.db, jadi data Kasir tidak tersentuh sama sekali.
+#     - POM: shift, pompa, selang, operator (dropdown), jenis BBM (dropdown),
+#       nomor transaksi, waktu, odo, plat nomor, jumlah beli, liter, jumlah
+#       bayar, kembali - lengkap dengan tombol cepat 10.000/15.000/20.000/
+#       25.000 dan 1-4 Liter, serta tombol SIMPAN dan SIMPAN & CETAK.
+#     - Struk: PRATINJAU di layar, 3 template (58 mm, 58 mm ringkas, 80 mm)
+#       yang dapat diubah (nama, ukuran kertas, jumlah salinan, gambar header,
+#       garis pemisah, subsidi, tulisan tambahan di atas dan di bawah struk).
+#     - Gambar header (logo SPBU) DIPILIH DARI GALERI HP dan disimpan di dalam
+#       HP. Struk POM TIDAK memakai logo RTS Panel.
+#     - Arsip: seluruh struk yang pernah dibuat - dapat dibuka, diubah, dicetak
+#       ulang, disalin teksnya, atau dihapus.
+#     - Histori: riwayat penginputan dengan ringkasan jumlah struk, nilai
+#       rupiah, dan liter; dapat disaring per tanggal (Semua / Hari ini /
+#       7 hari / 30 hari / pilih sendiri) dan dicari.
+#     - Operator, BBM (harga + subsidi), dan SPBU (Title/Subtitle/Footer)
+#       dikelola pada sub-menu sendiri lalu muncul sebagai pilihan pada POM.
+#     - Cetak memakai printer Bluetooth thermal 58/80 mm yang sudah dihubungkan
+#       pada menu "Printer & Struk".
+version: 1.3.0+13
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -142,6 +168,12 @@ dependencies:
   print_bluetooth_thermal: ^1.2.5
   # Meminta izin kamera dan Bluetooth (wajib pada Android 12 ke atas).
   permission_handler: ^13.0.2
+  # Membaca gambar header struk POM (logo SPBU yang dipilih dari galeri HP)
+  # dan mengubah ukurannya sebelum dikirim ke printer thermal. Paket ini
+  # dipakai bersama esc_pos_utils_plus pada menu STRUK POM.
+  # Angka awal ditulis rendah supaya flutter pub get memilih versi yang cocok
+  # dengan versi Flutter di komputer Bapak.
+  image: ^4.0.0
 
   # ---- FITUR PRO: PETA, RADAR, RUTE PLAN (OpenStreetMap) ----
   # Peta OpenStreetMap. Gratis, TANPA kunci API, dan 100% Dart sehingga
