@@ -477,9 +477,9 @@ function rts_ks_nama_sales(array $user): string
  */
 function rts_ks_boleh_semua(array $user): bool
 {
-    $role = strtoupper((string) ($user['role'] ?? ''));
-
-    return in_array($role, ['ADMIN', 'ASS', 'WSS', 'SMST'], true);
+    // ADMIN, ASS, WSS, dan SMST melihat data seluruh sales.
+    // WSS & SMST ada di setiap district, jadi tidak dipotong Sales District.
+    return rts_api_peran_semua_district_akun((string) ($user['role'] ?? ''));
 }
 
 /**

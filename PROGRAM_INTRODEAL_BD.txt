@@ -1,0 +1,114 @@
+============================================================================
+ RTS PANEL BY BENE - MENU PRO BARU : PROGRAM (INTRODEAL & BD)
+ Putaran 18G - 5 Oktober 2026
+============================================================================
+
+ APA INI?
+ --------
+ PT Wismilak selalu meluncurkan produk baru (launching). Menu PRO "Program"
+ membantu Sales melihat apakah setiap toko SUDAH masuk produk launching atau
+ BELUM. Menu ini punya DUA sub-menu:
+
+   1. INTRODEAL : produk yang sedang diperkenalkan ke customer.
+   2. BD        : produk Business Development.
+
+ Menu Program ada di MENU PRO (Menu Utama -> tombol MENU PRO -> PROGRAM).
+ Khusus AKUN PRO. ADMIN dan ASS tetap boleh membuka sebagai pengelola.
+
+ EMPAT TOMBOL DI ATAS DAFTAR
+ ---------------------------
+   DARI BARANG BAWAAN  Ambil satu produk dari daftar Barang Bawaan (produk
+                       yang sudah ada di menu PRO "Barang Bawaan"), lalu
+                       simpan sebagai produk program. Tidak perlu mengetik
+                       ulang nama, SKU, barcode, dan isi per pack.
+
+   PILIH TOKO TERDEKAT  Membuka daftar toko yang diurutkan dari yang PALING
+                       DEKAT dengan posisi HP (izin Lokasi dipakai). Setelah
+                       toko dipilih, setiap produk diberi keterangan:
+                           TOKO INI: SUDAH (tanggal)
+                           TOKO INI: BELUM
+
+   SINKRON ONLINE      Mengambil daftar produk program dari server
+                       (api/program.php) supaya sama dengan HP Sales lain.
+                       Daftar lama pada sub-menu itu diganti dengan daftar
+                       dari server.
+
+   TAMBAH PRODUK       Mengetik sendiri satu produk program (nama, merek,
+                       SKU, barcode bungkus, isi per pack, periode
+                       launching, dan catatan).
+
+ LENCANA PADA SETIAP PRODUK
+ --------------------------
+   DIBELI n TOKO        Ada n customer yang sudah membeli produk ini.
+   BELUM ADA PEMBELI    Belum ada nota yang memuat produk ini.
+   DARI SERVER          Produk berasal dari SINKRON ONLINE.
+   TOKO INI: SUDAH / BELUM  Status untuk toko yang sedang dipilih.
+
+   Angka "DIBELI n TOKO" dihitung dari NOTA KASIR YANG TERSIMPAN DI HP
+   (tabel penjualan & penjualan_item). Jadi Sales langsung tahu siapa yang
+   sudah masuk produk launching tanpa mengubah data di server.
+
+ MENU KAPSUL (tiga titik di kanan setiap produk)
+ -----------------------------------------------
+   Ubah produk     - memperbaiki nama/harga/isi produk program.
+   Hapus dari HP   - menghapus produk itu dari daftar di HP.
+   Kirim ke server - (hanya ADMIN / ASS) mengirim produk ke server supaya
+                     dapat disinkron oleh HP Sales lain.
+
+ AGAR DAPAT DISINKRON ONLINE (PENTING)
+ -------------------------------------
+ SINKRON ONLINE membaca tabel BARU bernama  rts_program_produk  di database
+ server. Tabel ini TIDAK menyentuh tabel lain milik Bapak.
+
+ Cara termudah:
+   1. Buka aplikasi, buka menu PROGRAM, tekan SINKRON ONLINE (akun ADMIN).
+   2. Bila tabelnya belum ada, aplikasi menampilkan perintah SQL + tombol
+      SALIN SQL. Tempel perintah itu di phpMyAdmin (menu SQL) pada database
+      Bapak, lalu tekan SINKRON ONLINE lagi.
+   3. Atau buka berkas  RTS_PANEL_PROGRAM.sql  pada paket ini dan jalankan
+      isinya sekali saja di phpMyAdmin.
+
+ Perintah SQL-nya (sama dengan yang dikirim aplikasi):
+
+   CREATE TABLE IF NOT EXISTS rts_program_produk (
+     id INT AUTO_INCREMENT PRIMARY KEY,
+     jenis VARCHAR(20) NOT NULL DEFAULT 'INTRODEAL',
+     sku VARCHAR(64) NOT NULL DEFAULT '',
+     barcode_pack VARCHAR(64) NOT NULL DEFAULT '',
+     nama VARCHAR(150) NOT NULL DEFAULT '',
+     merek VARCHAR(80) NOT NULL DEFAULT '',
+     isi_per_pack INT NOT NULL DEFAULT 0,
+     catatan VARCHAR(255) NOT NULL DEFAULT '',
+     periode VARCHAR(60) NOT NULL DEFAULT '',
+     aktif TINYINT NOT NULL DEFAULT 1,
+     diubah_oleh VARCHAR(80) NOT NULL DEFAULT '',
+     diubah_pada DATETIME NULL,
+     UNIQUE KEY uq_program_jenis_sku (jenis, sku)
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ HAK (SIApa YANG BOLEH MENULIS DI SERVER)
+ ----------------------------------------
+   ADMIN, ASS          : boleh membaca DAN mengubah daftar di server
+                         (tombol KIRIM KE SERVER tampil).
+   WSS, SMST, RTS, TF  : hanya MENERIMA daftar dari server.
+
+ SARAN PEMAKAIAN HARIAN
+ ----------------------
+   1. Sebelum berkeliling, tekan PILIH TOKO TERDEKAT lalu pilih toko.
+   2. Lihat produk mana yang masih BELUM, tawarkan terlebih dahulu.
+   3. Setelah nota disimpan di Kasir, buka Program lagi - lencana berubah
+      menjadi TOKO INI: SUDAH (tanggal nota).
+
+ BERKAS YANG TERLIBAT
+ --------------------
+   Aplikasi (Android)  : lib/program.dart  (menu Program)
+   Server (hosting)    : api/program.php   (daftar / simpan / hapus / periksa)
+   Server (opsional)   : RTS_PANEL_PROGRAM.sql (perintah pembuat tabel)
+
+ CATATAN PEMASANGAN
+ ------------------
+   - Perintah SQL di atas hanya MEMBUAT TABEL BARU. Tidak ada data lama yang
+     diubah atau dihapus.
+   - Seperti biasa: backup dulu database Bapak sebelum menjalankan perintah
+     apa pun, lalu uji di database testing bila ada.
+============================================================================

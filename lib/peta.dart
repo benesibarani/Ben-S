@@ -15,9 +15,12 @@
 //            daftar toko di sekitar titik GPS petugas, urut dari yang
 //            paling dekat, lengkap dengan jarak (nama, alamat, jarak).
 //     3. RtsRutePage         - RUTE PLAN
-//            urutan kunjungan dari titik KANTOR sampai terjauh, ditambah
-//            PENSIL untuk menggambar garis rute perjalanan, dan daftar
-//            rencana yang dapat DISALIN (nama customer + id customer).
+//            daftar kunjungan menurut HARI + FREKUENSI, titik toko di peta
+//            diberi NOMOR sesuai urutan, urutan dapat DIGESER (tekan lama
+//            lalu tarik) atau lewat tombol naik/turun, dan daftar urutan
+//            dapat DISALIN sebagai TEKS untuk dilaporkan ke ASS / Admin.
+//            Garis rute TIDAK dibuat otomatis - bila ingin menggambar garis,
+//            Sales menyalakan MODE PENSIL.
 //     4. RtsKantorPage       - LOKASI KANTOR / MITRA (khusus ADMIN & ASS)
 //            titik kantor dipakai sebagai awal perhitungan RUTE PLAN.
 //
@@ -3674,22 +3677,50 @@ class _RtsRutePageState extends State<RtsRutePage> {
     }
   }
 
-  void _ubahUrutan(int index, int geser) {
-    final List<RtsToko> rencana = _rencana;
-    final int tujuan = index + geser;
+  /// Menggeser satu langkah (tombol panah atas / bawah pada daftar).
+  void _ubahUrutan(int index, int geser) => _pindahKe(index, index + geser);
 
-    if (tujuan < 0 || tujuan >= rencana.length) return;
+  /// Menyusun ulang urutan rencana kunjungan.
+  ///
+  /// Dipakai oleh tombol NAIK / TURUN maupun geser-jari (tekan lama lalu
+  /// tarik) pada daftar rencana. Toko yang sudah ditandai SELESAI selalu
+  /// berada di urutan paling bawah, jadi urutan yang dapat diatur adalah toko
+  /// yang belum dikunjungi.
+  void _pindahKe(int dari, int ke) {
+    final List<RtsToko> belum = _rencana
+        .where((RtsToko t) => !_selesai.contains(t.idCustomer))
+        .toList();
 
-    final List<String> urutan = <String>[
-      for (final RtsToko t in rencana) t.idCustomer,
-    ];
+    if (belum.isEmpty) return;
 
-    final String pindah = urutan[index];
+    if (dari < 0 || dari >= belum.length) {
+      rtsKsPesan(
+        context,
+        'Toko yang sudah ditandai SELESAI tetap di urutan bawah.',
+      );
+      return;
+    }
 
-    urutan[index] = urutan[tujuan];
-    urutan[tujuan] = pindah;
+    int tujuan = ke;
 
-    setState(() => _urutanManual = urutan);
+    if (tujuan < 0) tujuan = 0;
+    if (tujuan >= belum.length) tujuan = belum.length - 1;
+    if (tujuan == dari) return;
+
+    final RtsToko pindah = belum.removeAt(dari);
+
+    belum.insert(tujuan, pindah);
+
+    setState(() {
+      _urutanManual = <String>[
+        for (final RtsToko t in belum) t.idCustomer,
+      ];
+    });
+
+    rtsKsPesan(
+      context,
+      'Urutan: ${pindah.nama} sekarang nomor ${tujuan + 1}.',
+    );
   }
 
   /* ---------------------------------------------------------------- pensil */
@@ -4122,8 +4153,14 @@ class _RtsRutePageState extends State<RtsRutePage> {
       return tulis.toString();
     }
 
-    tulis.writeln('DAFTAR TOKO KUNJUNGAN');
-    tulis.writeln('Hari: $_hari - Frekuensi: $_frekuensi');
+    tulis.writeln('URUTAN KUNJUNGAN (RTS PANEL)');
+    tulis.writeln('Tanggal    : ${rtsPetaTanggalTeks(DateTime.now())} '
+        '(${rtsPetaNamaHari(DateTime.now())})');
+    tulis.writeln('Sales      : ${RtsKasirLokal.aku.namaSales} '
+        '(${RtsKasirLokal.aku.idSales})');
+    tulis.writeln('Hari       : $_hari');
+    tulis.writeln('Frekuensi  : $_frekuensi');
+    tulis.writeln('Jumlah     : ${rencana.length} toko');
     tulis.writeln('');
 
     for (int i = 0; i < rencana.length; i++) {
@@ -4131,6 +4168,31 @@ class _RtsRutePageState extends State<RtsRutePage> {
     }
 
     return tulis.toString();
+  }
+
+  /// Menyalin URUTAN kunjungan dalam bentuk TEKS (siap dikirim / ditempel ke
+  /// pesan WhatsApp untuk ASS atau Admin). Tidak membuka dialog.
+  Future<void> _salinUrutanTeks() async {
+    final List<RtsToko> rencana = _rencana;
+
+    if (rencana.isEmpty) {
+      rtsKsPesan(
+        context,
+        'Belum ada toko pada rencana rute. Ubah pilihan hari atau frekuensi.',
+        galat: true,
+      );
+      return;
+    }
+
+    await rtsPetaSalinTeks(_teksRencana(rencana, lengkap: false));
+
+    if (mounted) {
+      rtsKsPesan(
+        context,
+        'Urutan ${rencana.length} toko disalin sebagai teks. '
+        'Tempel ke pesan untuk ASS / Admin.',
+      );
+    }
   }
 
   Future<void> _bukaDaftarPlan() async {
@@ -4285,9 +4347,8 @@ class _RtsRutePageState extends State<RtsRutePage> {
 
   /* ------------------------------------------------------------------ peta */
 
-  List<Polyline<Object>> _garisRute(List<RtsToko> rencana) {
+  List<Polyline<Object>> _garisRute() {
     final List<Polyline<Object>> garis = <Polyline<Object>>[];
-    final RtsKantor? kantor = _kantorDipilih;
 
     // Garis goresan pensil (tersimpan + yang baru digambar).
     for (final RtsGoresan g in _tersimpan) {
@@ -4330,29 +4391,9 @@ class _RtsRutePageState extends State<RtsRutePage> {
       );
     }
 
-    // Garis rencana kunjungan (kantor -> toko 1 -> toko 2 -> ...).
-    final List<LatLng> rencana = <LatLng>[];
-
-    if (kantor != null) rencana.add(kantor.titik);
-
-    for (final RtsToko t in _rencana) {
-      if (_selesai.contains(t.idCustomer)) continue;
-
-      rencana.add(t.titik);
-    }
-
-    if (rencana.length >= 2) {
-      garis.add(
-        Polyline<Object>(
-          points: rencana,
-          color: rtsKsMaroon,
-          strokeWidth: 4,
-          borderColor: Colors.white,
-          borderStrokeWidth: 1.5,
-        ),
-      );
-    }
-
+    // TIDAK ada lagi garis rute otomatis (kantor -> toko -> toko).
+    // Sesuai permintaan: peta hanya menampilkan TITIK toko bernomor, dan garis
+    // dibuat sendiri oleh Sales memakai MODE PENSIL.
     return garis;
   }
 
@@ -4633,19 +4674,33 @@ class _RtsRutePageState extends State<RtsRutePage> {
         Container(
           color: Colors.white,
           padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-          child: Row(
+          child: Column(
             children: <Widget>[
-              Expanded(
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
-                  onPressed: () => unawaited(_bukaDaftarPlan()),
-                  icon: const Icon(Icons.copy_all_rounded, size: 17),
-                  label: const Text('SALIN DAFTAR PLAN',
-                      style: TextStyle(fontSize: 11.5)),
-                ),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
+                      onPressed: () => unawaited(_salinUrutanTeks()),
+                      icon: const Icon(Icons.copy_all_rounded, size: 17),
+                      label: const Text('COPY URUTAN (TEKS)',
+                          style: TextStyle(fontSize: 11.5)),
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => unawaited(_bukaDaftarPlan()),
+                      icon: const Icon(Icons.list_alt_rounded, size: 17),
+                      label: const Text('DAFTAR LENGKAP',
+                          style: TextStyle(fontSize: 11.5)),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 7),
-              Expanded(
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: () => unawaited(_bukaRuteGoogle(rencana)),
                   icon: const Icon(Icons.navigation_rounded, size: 17),
@@ -4685,7 +4740,16 @@ class _RtsRutePageState extends State<RtsRutePage> {
 
   /// Baris keterangan jumlah toko, panjang rute, dan tombol warna penanda.
   Widget _barisStatistik(List<RtsToko> rencana) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const Text(
+          'Geser (tekan lama) pada baris daftar untuk mengubah urutan '
+          'kunjungan. Garis tidak dibuat otomatis - pakai ikon PENSIL di kanan '
+          'atas bila ingin menggambar garis sendiri.',
+          style: TextStyle(fontSize: 10.5, color: rtsKsTeks2, height: 1.35),
+        ),
+        Row(
       children: <Widget>[
         Expanded(
           child: Text(
@@ -4708,10 +4772,12 @@ class _RtsRutePageState extends State<RtsRutePage> {
             _caraWarna = _caraWarna == 'HARI' ? 'KUNJUNGAN' : 'HARI';
           }),
           icon: const Icon(Icons.palette_outlined, size: 16),
-          label: Text(
-            _caraWarna == 'HARI' ? 'WARNA: HARI' : 'WARNA: FREKUENSI',
-            style: const TextStyle(fontSize: 10.5),
-          ),
+              label: Text(
+                _caraWarna == 'HARI' ? 'WARNA: HARI' : 'WARNA: FREKUENSI',
+                style: const TextStyle(fontSize: 10.5),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -4773,10 +4839,23 @@ class _RtsRutePageState extends State<RtsRutePage> {
               Expanded(
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
-                  onPressed: () => unawaited(_bukaDaftarPlan()),
+                  onPressed: () => unawaited(_salinUrutanTeks()),
                   icon: const Icon(Icons.copy_all_rounded, size: 17),
-                  label: const Text('SALIN DAFTAR PLAN',
+                  label: const Text('COPY URUTAN (TEKS)',
                       style: TextStyle(fontSize: 11.5)),
+                ),
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: rtsKsMaroon,
+                  ),
+                  onPressed: () => unawaited(_bukaDaftarPlan()),
+                  icon: const Icon(Icons.list_alt_rounded, size: 17),
+                  label:
+                      const Text('DAFTAR LENGKAP', style: TextStyle(fontSize: 11.5)),
                 ),
               ),
               const SizedBox(width: 7),
@@ -4815,9 +4894,20 @@ class _RtsRutePageState extends State<RtsRutePage> {
       );
     }
 
-    return ListView.builder(
+    // Daftar ini dapat DIGESER (tekan lama lalu tarik) untuk mengubah urutan
+    // kunjungan. Tombol panah atas/bawah tetap tersedia sebagai pilihan lain.
+    return ReorderableListView.builder(
+      buildDefaultDragHandles: false,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 18),
       itemCount: rencana.length,
+      onReorder: (int lama, int baru) {
+        int tujuan = baru;
+
+        // ReorderableListView memberi posisi sebelum baris diangkat.
+        if (tujuan > lama) tujuan -= 1;
+
+        _pindahKe(lama, tujuan);
+      },
       itemBuilder: (BuildContext ctx, int i) {
         final RtsToko t = rencana[i];
 
@@ -4834,31 +4924,35 @@ class _RtsRutePageState extends State<RtsRutePage> {
           );
         }
 
-        return RtsBarisToko(
-          nomor: '${i + 1}',
-          toko: t,
-          warna: _warnaToko(t),
-          jarak: _jarakKe(t),
-          jarakSebelum: sebelumnya,
-          sudah: _sudah.contains(t.idCustomer),
-          selesai: _selesai.contains(t.idCustomer),
-          onNaik: () => _ubahUrutan(i, -1),
-          onTurun: () => _ubahUrutan(i, 1),
-          onSalin: () async {
-            await rtsPetaSalinTeks('${t.nama} | ${t.idCustomer}');
+        return ReorderableDelayedDragStartListener(
+          key: ValueKey<String>('rencana-${t.idCustomer}'),
+          index: i,
+          child: RtsBarisToko(
+            nomor: '${i + 1}',
+            toko: t,
+            warna: _warnaToko(t),
+            jarak: _jarakKe(t),
+            jarakSebelum: sebelumnya,
+            sudah: _sudah.contains(t.idCustomer),
+            selesai: _selesai.contains(t.idCustomer),
+            onNaik: () => _ubahUrutan(i, -1),
+            onTurun: () => _ubahUrutan(i, 1),
+            onSalin: () async {
+              await rtsPetaSalinTeks('${t.nama} | ${t.idCustomer}');
 
-            if (mounted) rtsKsPesan(context, 'Nama & kode disalin.');
-          },
-          onKunjungi: () => _tandaiKunjungan(t),
-          onNavigasi: () => unawaited(
-            rtsPetaNavigasi(context, t.latitude, t.longitude, t.nama),
+              if (mounted) rtsKsPesan(context, 'Nama & kode disalin.');
+            },
+            onKunjungi: () => _tandaiKunjungan(t),
+            onNavigasi: () => unawaited(
+              rtsPetaNavigasi(context, t.latitude, t.longitude, t.nama),
+            ),
           ),
         );
       },
     );
   }
 
-  /// Peta Rute Plan beserta garis rute, pensil, dan tombol-tombolnya.
+  /// Peta Rute Plan: titik toko bernomor + pensil + tombol-tombolnya.
   Widget _bangunPeta(List<RtsToko> rencana, RtsKantor? kantor) {
     return Stack(
       children: <Widget>[
@@ -4887,7 +4981,7 @@ class _RtsRutePageState extends State<RtsRutePage> {
               userAgentPackageName: 'com.bene.rts_panel_app',
               maxNativeZoom: 19,
             ),
-            PolylineLayer<Object>(polylines: _garisRute(rencana)),
+            PolylineLayer<Object>(polylines: _garisRute()),
             MarkerLayer(markers: _penanda(rencana)),
           ],
         ),

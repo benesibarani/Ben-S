@@ -17,6 +17,10 @@
   DAFTAR, GRID KAMERA (kotak bergambar + tombol Play), dan PETA (seluruh
   kamera sebagai titik); tombol PERIKSA memberi lencana SIAP / TIDAK
   TERSEDIA; ada tombol HEMAT KUOTA untuk mematikan gambar)
+ (Putaran 18G: RUTE PLAN TANPA GARIS OTOMATIS - URUTAN DAPAT DIGESER DAN
+  DISALIN SEBAGAI TEKS; MENU PRO BARU "PROGRAM" (INTRODEAL & BD - PRODUK
+  LAUNCHING WISMILAK); KASIR/PIUTANG/PROGRAM MENAMPILKAN TOKO TERDEKAT;
+  WSS & SMST TIDAK DIBATASI SALES DISTRICT)
  TUTORIAL PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS DI WEBSITE
  (Tambahan 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST)
  (Tambahan 17C: RTS = RETAIL SALESMAN, TF = TASK FORCE,
@@ -62,11 +66,11 @@
                   (+ pastikan periksa_cctv.php dan data/cctv_medan.json
                    dari Tahap 1 sudah ada)
     Ke aplikasi : lib\cctv.dart   (BARU)
-                  main.dart       (penanda RTS-2026-10-04-18F)
+                  main.dart       (penanda RTS-2026-10-05-18G)
                   pubspec.yaml    (versi 1.5.0+15, tambah video_player ^2.9.5)
 
   CARA PASANG (urut):
-    1. Ekstrak RTS_PANEL_PUTARAN_18F.zip ke folder proyek (TIMPA semua).
+    1. Ekstrak RTS_PANEL_PUTARAN_18G.zip ke folder proyek (TIMPA semua).
     2. Jalankan LANGKAH1_PASANG_SEMUA.ps1 (Run with PowerShell).
     3. Di terminal proyek:
            flutter clean

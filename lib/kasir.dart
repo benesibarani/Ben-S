@@ -28,10 +28,12 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 // mobile_scanner diberi nama pendek "ms" karena paket ini juga memuat
 // kelas bernama Barcode - sama dengan nama kelas pada paket printer
@@ -2791,10 +2793,19 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
   String _galat = '';
   String _sinkronPada = '';
 
+  // ---- Toko TERDEKAT (point 3) -------------------------------------------
+  // Begitu halaman ini dibuka, posisi HP dibaca sekali. Daftar toko disusun
+  // ulang dari yang paling dekat, sehingga DUA baris teratas adalah toko
+  // terdekat dari keberadaan Sales - tidak perlu mencari nama toko lagi.
+  Position? _posisi;
+  bool _mencariLokasi = false;
+  String _catatanLokasi = '';
+
   @override
   void initState() {
     super.initState();
     _muat();
+    _ambilLokasi();
   }
 
   @override
@@ -2826,6 +2837,10 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
         _sinkronPada = '${hasil['sinkron_pada'] ?? ''}';
         _memuat = false;
       });
+
+      // Bila posisi HP sudah terbaca, daftar langsung disusun dari yang
+      // terdekat (tanpa menunggu tombol TERDEKAT ditekan).
+      if (_posisi != null) _urutkanTerdekat();
 
       // Salinan di HP masih kosong: coba salin dari master_toko sekarang.
       if (_daftar.isEmpty) {
@@ -2884,6 +2899,88 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
         .whereType<Map>()
         .map((Map<dynamic, dynamic> e) => e.cast<String, dynamic>())
         .toList();
+  }
+
+  /// Membaca posisi HP, lalu mengurutkan daftar dari toko yang TERDEKAT.
+  Future<void> _ambilLokasi() async {
+    if (_mencariLokasi) return;
+
+    setState(() {
+      _mencariLokasi = true;
+      _catatanLokasi = '';
+    });
+
+    final Position? p = await rtsKsAmbilLokasi();
+
+    if (!mounted) return;
+
+    setState(() {
+      _mencariLokasi = false;
+      _posisi = p;
+      _catatanLokasi = p == null
+          ? 'Posisi HP belum terbaca. Isi izin Lokasi lalu tekan TERDEKAT.'
+          : '';
+    });
+
+    if (p != null) _urutkanTerdekat();
+  }
+
+  /// Mengurutkan daftar toko: paling dekat di atas, yang belum bertitik di
+  /// bawah. Jaraknya disimpan pada setiap baris ('jarak_meter', 'jarak_teks')
+  /// supaya dapat ditampilkan pada layar.
+  void _urutkanTerdekat() {
+    final Position? p = _posisi;
+
+    if (p == null) return;
+
+    final List<Map<String, dynamic>> urut =
+        List<Map<String, dynamic>>.from(_daftar);
+
+    for (final Map<String, dynamic> t in urut) {
+      final double lat = _angkaAtau(t['latitude']);
+      final double lng = _angkaAtau(t['longitude']);
+
+      if (lat != 0 && lng != 0) {
+        final double jarak = rtsKsJarakMeter(
+          p.latitude,
+          p.longitude,
+          lat,
+          lng,
+        );
+
+        t['jarak_meter'] = jarak;
+        t['jarak_teks'] = rtsKsJarakTeks(jarak);
+      } else {
+        t['jarak_meter'] = -1.0;
+        t['jarak_teks'] = '';
+      }
+    }
+
+    urut.sort((Map<String, dynamic> a, Map<String, dynamic> b) {
+      final double ja = _angkaAtau(a['jarak_meter']);
+      final double jb = _angkaAtau(b['jarak_meter']);
+
+      final bool adaA = ja >= 0;
+      final bool adaB = jb >= 0;
+
+      if (adaA != adaB) return adaA ? -1 : 1;
+      if (!adaA && !adaB) {
+        return '${a['nama']}'.toLowerCase().compareTo(
+              '${b['nama']}'.toLowerCase(),
+            );
+      }
+
+      return ja.compareTo(jb);
+    });
+
+    _daftar = urut;
+    _saring(_cari.text);
+  }
+
+  /// Angka dari nilai apa pun (double, int, atau teks dari server).
+  double _angkaAtau(dynamic nilai) {
+    if (nilai is num) return nilai.toDouble();
+    return double.tryParse('${nilai ?? ''}'.replaceAll(',', '.')) ?? 0;
   }
 
   void _saring(String kata) {
@@ -2955,6 +3052,26 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: rtsKsMaroon,
+                          side: const BorderSide(color: rtsKsMaroon),
+                        ),
+                        onPressed: _mencariLokasi ? null : _ambilLokasi,
+                        icon: _mencariLokasi
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.my_location_rounded, size: 18),
+                        label: Text(
+                          _mencariLokasi ? 'MENCARI...' : 'TERDEKAT',
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -2966,6 +3083,13 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
                           ' - dapat dipakai tanpa internet.',
                   style: const TextStyle(fontSize: 11.5, color: rtsKsTeks2),
                 ),
+                if (_catatanLokasi.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 4),
+                  Text(
+                    _catatanLokasi,
+                    style: const TextStyle(fontSize: 11.5, color: rtsKsMerah),
+                  ),
+                ],
               ],
             ),
           ),
@@ -2980,7 +3104,10 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '${_hasil.length} dari ${_daftar.length} toko',
+                _posisi == null
+                    ? '${_hasil.length} dari ${_daftar.length} toko'
+                    : '${_hasil.length} dari ${_daftar.length} toko - '
+                        '2 baris teratas adalah toko TERDEKAT dari posisi Anda',
                 style: const TextStyle(fontSize: 12, color: rtsKsTeks2),
               ),
             ),
@@ -2992,11 +3119,50 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
               separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (BuildContext ctx, int i) {
                 final Map<String, dynamic> t = _hasil[i];
+                final double jarak = _angkaAtau(t['jarak_meter']);
+                final String jarakTeks = '${t['jarak_teks'] ?? ''}';
+                // Dua baris teratas adalah toko terdekat dari posisi Sales.
+                final bool terdekat = _posisi != null && jarak >= 0 && i < 2;
 
                 return ListTile(
-                  title: Text(
-                    '${t['nama']}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  leading: terdekat
+                      ? CircleAvatar(
+                          backgroundColor: rtsKsMaroon,
+                          foregroundColor: Colors.white,
+                          child: Text(
+                            '${i + 1}',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        )
+                      : null,
+                  title: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          '${t['nama']}',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      if (terdekat)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: rtsKsMaroon,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'TERDEKAT',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3007,6 +3173,15 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
                         Text(
                           rtsKsSambung('${t['district']}', '${t['salesman']}'),
                           style: const TextStyle(fontSize: 12, color: rtsKsTeks2),
+                        ),
+                      if (jarakTeks.isNotEmpty)
+                        Text(
+                          'Jarak ${jarakTeks} dari posisi Anda',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: rtsKsMaroon,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                     ],
                   ),
@@ -3024,6 +3199,73 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
         ],
       ),
     );
+  }
+}
+
+/// Jarak antara dua titik di permukaan bumi (meter).
+///
+/// Rumus Haversine - sama dengan yang dipakai menu Peta, tetapi ditulis ulang
+/// di sini supaya berkas ini TIDAK memanggil peta.dart (menghindari impor
+/// berputar, karena peta.dart justru memanggil kasir.dart).
+double rtsKsJarakMeter(double lat1, double lng1, double lat2, double lng2) {
+  const double bumi = 6371000.0;
+  const double derajat = math.pi / 180.0;
+
+  final double dLat = (lat2 - lat1) * derajat;
+  final double dLng = (lng2 - lng1) * derajat;
+
+  final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+      math.cos(lat1 * derajat) *
+          math.cos(lat2 * derajat) *
+          math.sin(dLng / 2) *
+          math.sin(dLng / 2);
+
+  return bumi * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+}
+
+/// Tulisan jarak yang ringkas (contoh: 250 m, 1,3 km).
+String rtsKsJarakTeks(double meter) {
+  if (meter < 1000) return '${meter.round()} m';
+
+  final String angka = (meter / 1000).toStringAsFixed(1).replaceAll('.', ',');
+
+  return '$angka km';
+}
+
+/// Mengambil posisi HP saat ini (izin lokasi diminta sekali).
+///
+/// Sama seperti rtsPetaAmbilLokasi pada peta.dart, tetapi ditulis ulang di
+/// sini supaya berkas ini tetap berdiri sendiri. Bila lokasi tidak dapat
+/// dibaca, hasilnya null - daftar toko tetap tampil seperti biasa.
+Future<Position?> rtsKsAmbilLokasi() async {
+  try {
+    final bool layanan = await Geolocator.isLocationServiceEnabled();
+
+    if (!layanan) return await Geolocator.getLastKnownPosition();
+
+    LocationPermission izin = await Geolocator.checkPermission();
+
+    if (izin == LocationPermission.denied) {
+      izin = await Geolocator.requestPermission();
+    }
+
+    if (izin == LocationPermission.denied ||
+        izin == LocationPermission.deniedForever) {
+      return await Geolocator.getLastKnownPosition();
+    }
+
+    return await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 25),
+      ),
+    );
+  } catch (_) {
+    try {
+      return await Geolocator.getLastKnownPosition();
+    } catch (_) {
+      return null;
+    }
   }
 }
 
@@ -3471,6 +3713,9 @@ class _RtsPiutangPageState extends State<RtsPiutangPage> {
   String _galat = '';
   String _belumTeks = '0';
 
+  // Toko yang sedang dibuka piutangnya (dipilih dari daftar TERDEKAT).
+  String _tokoNama = '';
+
   @override
   void initState() {
     super.initState();
@@ -3481,6 +3726,31 @@ class _RtsPiutangPageState extends State<RtsPiutangPage> {
   void dispose() {
     _cari.dispose();
     super.dispose();
+  }
+
+  /// Membuka pemilih toko (diurutkan dari yang TERDEKAT dengan posisi HP),
+  /// lalu menampilkan piutang toko tersebut. Dipakai pada menu Piutang supaya
+  /// Sales tidak perlu mengetik nama toko.
+  Future<void> _pilihTokoTerdekat() async {
+    final Map<String, dynamic>? toko =
+        await Navigator.of(context).push<Map<String, dynamic>>(
+      MaterialPageRoute<Map<String, dynamic>>(
+        builder: (_) => RtsPilihCustomerPage(
+          baseUrl: widget.baseUrl,
+          token: widget.token,
+          pengguna: widget.pengguna,
+        ),
+      ),
+    );
+
+    if (toko == null || !mounted) return;
+
+    setState(() {
+      _cari.text = '${toko['id']}';
+      _tokoNama = '${toko['nama']}';
+    });
+
+    await _muat();
   }
 
   Future<void> _muat() async {
@@ -3576,12 +3846,47 @@ class _RtsPiutangPageState extends State<RtsPiutangPage> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
+                  tooltip: 'Pilih toko TERDEKAT dari posisi Anda',
+                  icon: const Icon(Icons.my_location_rounded, color: rtsKsMaroon),
+                  onPressed: _pilihTokoTerdekat,
+                ),
+                IconButton(
                   icon: const Icon(Icons.refresh, color: rtsKsMaroon),
                   onPressed: _muat,
                 ),
               ],
             ),
           ),
+          if (_tokoNama.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+              child: Row(
+                children: <Widget>[
+                  const Icon(Icons.storefront_rounded, size: 16, color: rtsKsMaroon),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Toko terdekat: $_tokoNama',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: rtsKsMaroon,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _cari.clear();
+                        _tokoNama = '';
+                      });
+                      _muat();
+                    },
+                    child: const Text('HAPUS FILTER'),
+                  ),
+                ],
+              ),
+            ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),

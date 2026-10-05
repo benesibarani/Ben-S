@@ -17,23 +17,50 @@ DAFTAR BERKAS: MANA UNTUK HOSTING, MANA UNTUK APLIKASI?
        cctv_medan.m3u            (buka dengan VLC -> Media -> Open Network
                                     Stream, untuk mencoba semua kamera)
 
-  4. UNTUK APLIKASI ANDROID (TAHAP 2 - menu CCTV Online):
+  4. BERKAS BARU / BERUBAH PUTARAN 18G (Rute Plan, Program, Toko Terdekat):
+       lib\program.dart    <-- BARU  (menu PRO "Program": INTRODEAL & BD,
+                                       ambil dari Barang Bawaan, sinkron online,
+                                       status SUDAH/BELUM per toko terdekat)
+       lib\peta.dart       <-- Rute Plan TANPA garis otomatis, urutan dapat
+                               digeser (tekan lama), titik toko bernomor,
+                               tombol COPY URUTAN (TEKS)
+       lib\kasir.dart      <-- pemilih toko TERDEKAT (2 baris teratas) untuk
+                               Kasir & Piutang + penolong jarak GPS
+       lib\kasir_lokal.dart <-- tabel baru `program` (versi database 4) dan
+                                perintah program_daftar/simpan/hapus/ganti/toko
+       api\program.php     <-- BARU  (daftar / simpan / hapus / periksa program)
+       RTS_PANEL_PROGRAM.sql <-- perintah pembuat tabel rts_program_produk
+       PROGRAM_INTRODEAL_BD.txt <-- panduan menu Program (baca dulu)
+       api\api_bootstrap.php <-- WSS & SMST = SEMUA DISTRICT (fungsi baru
+                                rts_api_peran_semua_district_akun)
+       api\kasir_inti.php  <-- memakai fungsi peran yang sama
+
+  5. UNTUK APLIKASI ANDROID (TAHAP 2 - menu CCTV Online):
        lib\cctv.dart     <-- BARU  (CCTV Online: DAFTAR, GRID KAMERA, PETA,
                                      pemutar video, peta satu kamera)
-       main.dart         <-- menu PRO "CCTV Online" + penanda RTS-2026-10-04-18F
-       pubspec.yaml      <-- versi 1.5.0+15 + paket video_player ^2.9.5
+       main.dart         <-- menu PRO "Program" & Rute Plan baru + penanda
+                               RTS-2026-10-05-18G
+       pubspec.yaml      <-- versi 1.5.1+16 + paket video_player ^2.9.5
        LANGKAH1_PASANG_SEMUA.ps1  <-- menyalin ketiga berkas di atas ke proyek
                                      Flutter Bapak (berkas lama dicadangkan)
        Sesudah dipasang:  flutter clean  ->  flutter pub get  ->
                           flutter analyze  ->  flutter build apk --release
 
-  5. SATU PAKET SEMUA BERKAS (paling mudah):
-       RTS_PANEL_PUTARAN_18F.zip - memuat SELURUH berkas hosting + aplikasi
+  6. SATU PAKET SEMUA BERKAS (paling mudah):
+       RTS_PANEL_PUTARAN_18G.zip - memuat SELURUH berkas hosting + aplikasi
        + panduan, termasuk api/cctv.php, lib/cctv.dart, periksa_cctv.php,
        data/cctv_medan.json, cctv_medan.m3u, dan panduan CCTV_MEDAN.txt
-         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18F.zip
+         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18G.zip
 
-  6. PAKET KECIL KHUSUS CCTV ONLINE (bila 18D sudah pernah dipasang):
+  7. PAKET KECIL PUTARAN 18G (bila 18F sudah pernah dipasang):
+       RTS_PANEL_PERUBAHAN_18G.zip - hanya berkas BARU / BERUBAH putaran ini:
+       lib/program.dart (baru), lib/peta.dart, lib/kasir.dart,
+       lib/kasir_lokal.dart, main.dart, pubspec.yaml, api/program.php (baru),
+       api/api_bootstrap.php, api/kasir_inti.php, RTS_PANEL_PROGRAM.sql,
+       LANGKAH1_PASANG_SEMUA.ps1, PERIKSA_KODE_APLIKASI.ps1, dan panduannya
+         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18G.zip
+
+  8. PAKET KECIL KHUSUS CCTV ONLINE (bila 18D sudah pernah dipasang):
        RTS_PANEL_CCTV_ONLINE.zip - hanya berkas BARU/BERUBAH untuk tahap 2:
        api/cctv.php, lib/cctv.dart, main.dart, pubspec.yaml,
        LANGKAH1_PASANG_SEMUA.ps1, dan panduannya
@@ -77,7 +104,7 @@ BERKAS BARU:
   KE APLIKASI (proyek Flutter):
     lib/cctv.dart  (BARU)
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib%2Fcctv.dart
-    main.dart      (menu CCTV Online + penanda RTS-2026-10-04-18F)
+    main.dart      (menu Program + Rute Plan baru, penanda RTS-2026-10-05-18G)
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
     pubspec.yaml.updated  (versi 1.5.0+15 + video_player ^2.9.5)
       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
@@ -87,7 +114,7 @@ BERKAS BARU:
 
 CARA CEPAT:
   1) Unggah api/cctv.php ke public_html/api/ (TIMPA).
-  2) Ekstrak RTS_PANEL_PUTARAN_18F.zip -> Run with PowerShell
+  2) Ekstrak RTS_PANEL_PUTARAN_18G.zip -> Run with PowerShell
      LANGKAH1_PASANG_SEMUA.ps1.
   3) flutter clean  ->  flutter pub get  ->  flutter build apk --release
   4) Pasang APK (jangan hapus aplikasi lama) -> Menu PRO -> CCTV Online.

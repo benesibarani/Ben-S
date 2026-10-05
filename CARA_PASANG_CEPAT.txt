@@ -1,11 +1,26 @@
 ==============================================================================
- RTS PANEL BY BENE - PAKET "CCTV ONLINE" (TAHAP 2)
- CARA PASANG CEPAT  -  4 Oktober 2026
+ RTS PANEL BY BENE - PUTARAN 18G (RUTE PLAN, PROGRAM, TOKO TERDEKAT)
+ CARA PASANG CEPAT  -  5 Oktober 2026
 ==============================================================================
 
  Paket ini untuk Bapak yang SUDAH pernah memasang RTS_PANEL_PUTARAN_18D.zip.
  Isinya hanya berkas yang BARU atau BERUBAH untuk menu "CCTV Online".
- Kalau belum yakin, pakai saja paket lengkap RTS_PANEL_PUTARAN_18F.zip.
+ PUTARAN 18G - EMPAT PERUBAHAN UTAMA:
+   1. RUTE PLAN: garis rute OTOMATIS DIHILANGKAN. Yang tampil hanya TITIK
+      toko BERNOMOR sesuai urutan; garis dibuat sendiri lewat ikon PENSIL.
+      Urutan kunjungan dapat DIGESER (tekan lama lalu tarik) dan dapat
+      DISALIN sebagai TEKS lewat tombol COPY URUTAN (TEKS) untuk dilaporkan
+      ke ASS / Admin.
+   2. MENU PRO BARU "PROGRAM" dengan dua sub-menu: INTRODEAL dan BD (produk
+      launching PT Wismilak). Produk dapat diambil dari Menu Barang Bawaan
+      atau disinkron dari server; setiap produk menampilkan berapa customer
+      yang sudah membelinya (dari nota di HP).
+   3. KASIR, PIUTANG, PROGRAM: pemilih toko mengurutkan toko dari yang
+      TERDEKAT dengan posisi HP (2 baris teratas = toko terdekat).
+   4. WSS & SMST: daftar customer TIDAK dipotong menurut Sales District
+      (keduanya ada di setiap district).
+
+ Paket lengkap putaran ini: RTS_PANEL_PUTARAN_18G.zip.
 
  ISI MENU CCTV ONLINE:
    - TIGA TAMPILAN seperti halaman resmi ATCS Dishub: DAFTAR, GRID KAMERA
@@ -71,6 +86,6 @@
    Buka di peramban:  https://<alamat-situs>/periksa_cctv.php
        harus tertulis 111 kamera dan ada contoh tautan HIDUP.
    Di komputer: jalankan .\PERIKSA_KODE_APLIKASI.ps1
-       harus tertulis kode aplikasi  RTS-2026-10-04-18F.
+       harus tertulis kode aplikasi  RTS-2026-10-05-18G.
 
  BACAAN LENGKAP: CCTV_MEDAN.txt (bagian "TAHAP 2" di paling atas)

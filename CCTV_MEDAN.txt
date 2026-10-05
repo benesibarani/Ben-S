@@ -106,7 +106,7 @@
    lib\cctv.dart                <-- BARU. Halaman CCTV Online (daftar + grid +
                                     peta + pemutar video + peta satu kamera).
    main.dart                    menu PRO "CCTV Online" + PENANDA BARU
-                                RTS-2026-10-04-18F
+                                RTS-2026-10-05-18G
    pubspec.yaml                 versi 1.5.0+15 dan paket:
                                     video_player: ^2.9.5
 
@@ -129,7 +129,7 @@
        Harus terbaca "111 kamera" dan tautan contoh hidup.
 
  B. DI KOMPUTER (proyek Flutter  D:\Project\rts_panel_app)
-    1. Ekstrak paket RTS_PANEL_PUTARAN_18F.zip (pilih TIMPA / Replace semua).
+    1. Ekstrak paket RTS_PANEL_PUTARAN_18G.zip (pilih TIMPA / Replace semua).
     2. Klik kanan LANGKAH1_PASANG_SEMUA.ps1 -> Run with PowerShell.
     3. Di terminal proyek, jalankan berurutan:
            flutter clean

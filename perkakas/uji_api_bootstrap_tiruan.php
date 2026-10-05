@@ -92,6 +92,39 @@ function rts_api_param(string $key, string $default = ''): string
     return trim((string) $nilai);
 }
 
+/**
+ * Tiruan aturan peran: WSS & SMST ada di setiap district, jadi daftar
+ * customer-nya tidak dipotong Sales District. PERILAKU INI SAMA dengan
+ * api/api_bootstrap.php yang asli (diuji oleh perkakas/uji_peran_district.php).
+ */
+function rts_api_peran_semua_district(): array
+{
+    return ['ADMIN', 'ASS', 'WSS', 'SMST'];
+}
+
+function rts_api_peran_semua_district_akun(string $role): bool
+{
+    $role = strtoupper(trim($role));
+
+    if ($role === '') {
+        return false;
+    }
+
+    if (in_array($role, rts_api_peran_semua_district(), true)) {
+        return true;
+    }
+
+    foreach (['WSS', 'SMST'] as $kode) {
+        if (str_starts_with($role, $kode . ' ')
+            || str_starts_with($role, $kode . '-')
+            || str_starts_with($role, $kode . '/')) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function rts_api_bearer_token(): string
 {
     $kepala = (string) ($_SERVER['HTTP_AUTHORIZATION'] ?? '');

@@ -20,6 +20,7 @@ import 'kasir_lokal.dart';
 import 'peta.dart';
 import 'pom.dart';
 import 'cctv.dart';
+import 'program.dart';
 
 /* ------------------------------------------------------------------------- */
 /* KONFIGURASI                                                                */
@@ -968,7 +969,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-04-18F';
+const String rtsKodeAplikasi = 'RTS-2026-10-05-18G';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -2021,9 +2022,10 @@ class _DashboardPageState extends State<DashboardPage>
                       const SizedBox(height: 6),
                       if (_menuProTerbuka) ...[
                         const Text(
-                          'Fitur Barang Bawaan, Kasir, Piutang, Peta Customer, '
-                          'Radar Customer, Rute Plan, Printer, dan CCTV Online '
-                          '- tersedia untuk akun PRO.',
+                          'Fitur Barang Bawaan, Kasir, Piutang, Program '
+                          '(Introdeal & BD), Peta Customer, Radar Customer, '
+                          'Rute Plan, Printer, dan CCTV Online - tersedia untuk '
+                          'akun PRO.',
                           style: TextStyle(
                             color: rtsTextSecondary,
                             fontSize: 12,
@@ -2361,6 +2363,12 @@ class _DashboardPageState extends State<DashboardPage>
       title: 'Rute Plan',
       subtitle: 'Urutan dari kantor & pensil',
       icon: Icons.route_outlined,
+      pro: true,
+    ),
+    _MenuData(
+      title: 'Program',
+      subtitle: 'Introdeal & BD - produk launching',
+      icon: Icons.campaign_outlined,
       pro: true,
     ),
     _MenuData(
@@ -2790,6 +2798,19 @@ class _DashboardPageState extends State<DashboardPage>
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => RtsRutePage(
+            baseUrl: RtsConfig.baseUrl,
+            token: token,
+            pengguna: (RtsSesi.user ?? user).toJson(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (menu == 'Program') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RtsProgramPage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
             pengguna: (RtsSesi.user ?? user).toJson(),

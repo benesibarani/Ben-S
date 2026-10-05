@@ -100,11 +100,11 @@ function Salin-DenganCadangan($sumber, $tujuan) {
 }
 
 Judul 'RTS PANEL BY BENE - LANGKAH 1: PASANG SEMUA'
-Write-Host ' Topik putaran ini:' -ForegroundColor White
-Write-Host '   - iklan saat aplikasi dibuka (app open)' -ForegroundColor Gray
-Write-Host '   - iklan native di seluruh menu' -ForegroundColor Gray
-Write-Host '   - halaman Langganan PRO dengan QRIS (30 hari + uji coba 7 hari)' -ForegroundColor Gray
-Write-Host '   - foto pribadi setiap pengguna' -ForegroundColor Gray
+Write-Host ' Topik putaran ini (18G):' -ForegroundColor White
+Write-Host '   - Rute Plan TANPA garis otomatis + urutan digeser + COPY URUTAN (teks)' -ForegroundColor Gray
+Write-Host '   - menu PRO baru PROGRAM (Introdeal & BD - produk launching Wismilak)' -ForegroundColor Gray
+Write-Host '   - Kasir, Piutang, Program: toko TERDEKAT dari posisi HP di 2 baris atas' -ForegroundColor Gray
+Write-Host '   - WSS & SMST: daftar customer TIDAK dipotong Sales District' -ForegroundColor Gray
 Write-Host ''
 
 # =============================================================================
@@ -130,6 +130,7 @@ $berkasKasirLokal = Join-Path $folderAplikasi 'kasir_lokal.dart'
 $berkasPeta = Join-Path $folderAplikasi 'peta.dart'
 $berkasPom = Join-Path $folderAplikasi 'pom.dart'
 $berkasCctv = Join-Path $folderAplikasi 'cctv.dart'
+$berkasProgram = Join-Path $folderAplikasi 'program.dart'
 $berkasPubspec = Join-Path $folderAplikasi 'pubspec.yaml'
 $berkasAnalysis = Join-Path $folderAplikasi 'analysis_options.yaml'
 $berkasManifestPanduan = Join-Path $folderAplikasi 'android_manifest_tambahan.xml'
@@ -282,6 +283,22 @@ if (Test-Path $berkasCctv) {
     }
 } else {
     Awas 'cctv.dart TIDAK ada di folder paket!'
+    Awas 'Tanpa berkas itu aplikasi GAGAL dibangun (lib\main.dart memanggilnya).'
+}
+
+# lib\program.dart berisi MENU PRO BARU "PROGRAM" dengan dua sub-menu:
+# INTRODEAL dan BD (produk launching PT Wismilak). Produk dapat diambil dari
+# Barang Bawaan atau disinkron dari server (api/program.php), dan setiap produk
+# menampilkan berapa customer yang sudah membelinya (dari nota di HP). Wajib
+# ada supaya menu Program dapat dibuka.
+if (Test-Path $berkasProgram) {
+    $tujuanProgram = Join-Path $folderProyek 'lib\program.dart'
+
+    if (Salin-DenganCadangan $berkasProgram $tujuanProgram) {
+        Baik 'lib\program.dart dipasang  <-- menu Program (Introdeal & BD).'
+    }
+} else {
+    Awas 'program.dart TIDAK ada di folder paket!'
     Awas 'Tanpa berkas itu aplikasi GAGAL dibangun (lib\main.dart memanggilnya).'
 }
 

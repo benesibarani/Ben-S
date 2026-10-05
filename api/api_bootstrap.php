@@ -270,6 +270,48 @@ function rts_api_require_user(): array
 /* -------------------------------------------------------------------- hak */
 
 /**
+ * Peran yang melihat SELURUH district (tidak dipotong Sales District).
+ *
+ * - ADMIN, ASS               : pengelola
+ * - WSS  (Warehouse Shoe Sale)        : outlet sendiri, ada di SETIAP district
+ * - SMST (Sales Modern Small Trade)   : outlet sendiri, ada di SETIAP district
+ *
+ * Karena WSS dan SMST berada di setiap district, daftar customer mereka tidak
+ * boleh dibatasi menurut Sales District akun.
+ */
+function rts_api_peran_semua_district(): array
+{
+    return ['ADMIN', 'ASS', 'WSS', 'SMST'];
+}
+
+/**
+ * True bila akun berperan WSS / SMST (termasuk penulisan bervariasi pada
+ * database, misalnya "WSS GROSIR" atau "SMST-MODERN").
+ */
+function rts_api_peran_semua_district_akun(string $role): bool
+{
+    $role = strtoupper(trim($role));
+
+    if ($role === '') {
+        return false;
+    }
+
+    if (in_array($role, rts_api_peran_semua_district(), true)) {
+        return true;
+    }
+
+    foreach (['WSS', 'SMST'] as $kode) {
+        if (str_starts_with($role, $kode . ' ')
+            || str_starts_with($role, $kode . '-')
+            || str_starts_with($role, $kode . '/')) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Hak pada modul pengajuan.
  * - ADMIN, ASS        : melihat semua dan boleh approve / reject
  * - WSS, SMST         : melihat semua, tidak boleh approve
@@ -277,10 +319,14 @@ function rts_api_require_user(): array
  */
 function rts_api_request_scope(array $user): array
 {
+    $semuaDistrict = rts_api_peran_semua_district_akun((string) ($user['role'] ?? ''));
+
     return [
         'role' => $user['role'],
         'can_approve' => in_array($user['role'], ['ADMIN', 'ASS'], true),
-        'can_view_all' => in_array($user['role'], ['ADMIN', 'ASS', 'WSS', 'SMST'], true),
+        // WSS & SMST melihat semua customer (ada di setiap district).
+        'can_view_all' => $semuaDistrict,
+        'semua_district' => $semuaDistrict,
         'email' => $user['email'],
     ];
 }
@@ -297,7 +343,9 @@ function rts_api_request_scope(array $user): array
 function rts_api_scope(array $user): array
 {
     $role = $user['role'];
-    $allArea = in_array($role, ['ADMIN', 'ASS', 'WSS', 'SMST'], true);
+    // WSS & SMST ada di setiap district - daftar customer-nya TIDAK dipotong
+    // menurut Sales District (lihat rts_api_peran_semua_district_akun).
+    $allArea = rts_api_peran_semua_district_akun((string) $role);
     $district = trim((string) ($user['sales_district'] ?? ''));
     $salesman = trim((string) ($user['salesman'] ?? ''));
 
@@ -326,6 +374,7 @@ function rts_api_scope(array $user): array
     return [
         'role' => $role,
         'all_area' => $allArea,
+        'semua_district' => $allArea,
         'can_approve' => in_array($role, ['ADMIN', 'ASS'], true),
         'salesman' => $salesman,
         'sales_district' => $district,

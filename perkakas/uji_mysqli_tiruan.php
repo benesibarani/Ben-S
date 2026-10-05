@@ -17,6 +17,8 @@
  *      dibaca pada objek tiruan -> fungsi yang membacanya (rts_lg_ada_kolom,
  *      rts_lg_ada_tabel, rts_api_ada_kolom) DIGANTI tiruannya lebih dahulu.
  *    - mysqli_stmt::execute() WAJIB mengembalikan bool.
+ *    - Keadaan uji 'tabel_program' = true berarti tabel rts_program_produk ada,
+ *      dan 'program' = daftar barisnya (dipakai perkakas/uji_program_api.mjs).
  * ============================================================================
  */
 
@@ -123,6 +125,20 @@ class RtsUjiDb extends mysqli
 
     public function query(string $query, int $result_mode = MYSQLI_STORE_RESULT): mysqli_result|bool
     {
+        // api/program.php memakai SHOW TABLES LIKE 'rts_program_produk'.
+        // Jawabannya mengikuti keadaan uji 'tabel_program'.
+        if (stripos($query, 'show tables') !== false) {
+            if (stripos($query, 'rts_program_produk') !== false) {
+                return new RtsUjiHasil(
+                    empty(self::$keadaan['tabel_program'])
+                        ? []
+                        : [['Tables_in_uji' => 'rts_program_produk']]
+                );
+            }
+
+            return new RtsUjiHasil([]);
+        }
+
         return true;
     }
 
@@ -163,6 +179,47 @@ function rts_uji_baris_untuk(string $sql, array $nilai): array
             'status_aktif' => (string) ($user['status_aktif'] ?? 'Aktif'),
             'akun_pro' => (int) ($user['akun_pro'] ?? 0),
         ]];
+    }
+
+    if (strpos($kecil, 'from rts_program_produk') !== false) {
+        $program = $keadaan['program'] ?? [];
+
+        if (!is_array($program)) {
+            return [];
+        }
+
+        $baris = [];
+
+        foreach ($program as $satu) {
+            if (!is_array($satu)) {
+                continue;
+            }
+
+            if (strpos($kecil, 'where jenis') !== false) {
+                $jenis = strtoupper((string) ($satu['jenis'] ?? 'INTRODEAL'));
+
+                if ($jenis !== strtoupper((string) ($nilai[0] ?? ''))) {
+                    continue;
+                }
+            }
+
+            $baris[] = [
+                'id' => (int) ($satu['id'] ?? (count($baris) + 1)),
+                'jenis' => (string) ($satu['jenis'] ?? 'INTRODEAL'),
+                'sku' => (string) ($satu['sku'] ?? ''),
+                'barcode_pack' => (string) ($satu['barcode_pack'] ?? ''),
+                'nama' => (string) ($satu['nama'] ?? ''),
+                'merek' => (string) ($satu['merek'] ?? ''),
+                'isi_per_pack' => (int) ($satu['isi_per_pack'] ?? 0),
+                'catatan' => (string) ($satu['catatan'] ?? ''),
+                'periode' => (string) ($satu['periode'] ?? ''),
+                'aktif' => (int) ($satu['aktif'] ?? 1),
+                'diubah_oleh' => (string) ($satu['diubah_oleh'] ?? ''),
+                'diubah_pada' => (string) ($satu['diubah_pada'] ?? ''),
+            ];
+        }
+
+        return $baris;
     }
 
     if (strpos($kecil, 'from sales_users') !== false) {
