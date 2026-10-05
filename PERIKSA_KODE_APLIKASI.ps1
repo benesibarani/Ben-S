@@ -745,6 +745,78 @@ else {
 }
 
 # -----------------------------------------------------------------------------
+# 6f. Penanda putaran pada setiap berkas aplikasi
+#
+# Setiap berkas Dart memuat SATU baris penanda di bagian paling atas, contoh:
+#     // RTS-PANEL-ROUND: 18I - penanda putaran RTS Panel ...
+# Tujuannya: memastikan seluruh berkas berasal dari putaran yang SAMA.
+# Inilah pemeriksaan yang menangkap kejadian pada Putaran 18I: lib\program.dart
+# sudah versi baru, tetapi lib\main.dart masih versi lama sehingga build gagal:
+#     lib\main.dart:2847:13: Error: No named parameter with the name 'jenisAwal'.
+# -----------------------------------------------------------------------------
+TulisJudul "6f. Penanda putaran berkas aplikasi (harus 18I)"
+
+$putaranHarap = '18I'
+
+$daftarPutaran = @(
+    @{ Nama = 'main.dart (akar)';     Jalur = 'main.dart' },
+    @{ Nama = 'lib\main.dart';        Jalur = 'lib\main.dart' },
+    @{ Nama = 'lib\program.dart';     Jalur = 'lib\program.dart' },
+    @{ Nama = 'lib\kasir.dart';       Jalur = 'lib\kasir.dart' },
+    @{ Nama = 'lib\kasir_lokal.dart'; Jalur = 'lib\kasir_lokal.dart' },
+    @{ Nama = 'lib\peta.dart';        Jalur = 'lib\peta.dart' }
+)
+
+foreach ($satuBerkas in $daftarPutaran) {
+    $jalurBerkas = $satuBerkas.Jalur
+
+    if (-not (Test-Path $jalurBerkas)) {
+        Write-Host ("   [BELUM] " + $satuBerkas.Nama + " : berkas TIDAK ADA di folder ini") -ForegroundColor Yellow
+        $bermasalah++
+        continue
+    }
+
+    $isiPutaran = Get-Content $jalurBerkas -Raw
+    $putaran = ''
+
+    if ($isiPutaran -match 'RTS-PANEL-ROUND:\s*([0-9A-Za-z]+)') {
+        $putaran = $Matches[1]
+    }
+
+    $ukuranKB = [math]::Round((Get-Item $jalurBerkas).Length / 1024)
+    $jumlahBaris = (Get-Content $jalurBerkas).Count
+
+    if ($putaran -eq $putaranHarap) {
+        Write-Host ("   [ADA]   " + $satuBerkas.Nama + " : putaran " + $putaran + " (" + $ukuranKB + " KB, " + $jumlahBaris + " baris)") -ForegroundColor Green
+    }
+    elseif ($putaran -eq '') {
+        $bermasalah++
+        Write-Host ("   [BELUM] " + $satuBerkas.Nama + " : TIDAK ada penanda putaran - berkas ini masih versi LAMA") -ForegroundColor Yellow
+    }
+    else {
+        $bermasalah++
+        Write-Host ("   [BELUM] " + $satuBerkas.Nama + " : putaran " + $putaran + " (LAMA, seharusnya " + $putaranHarap + ")") -ForegroundColor Yellow
+    }
+}
+
+# Menu Program versi lama (tiga tombol terpisah: Program Introdeal, Program BD,
+# Input Program) tidak boleh ada lagi pada lib\main.dart.
+$isiMainLib = ''
+if (Test-Path 'lib\main.dart') { $isiMainLib = Get-Content 'lib\main.dart' -Raw }
+
+if ($isiMainLib -match "'INTRODEAL' : 'BD'") {
+    $bermasalah++
+    Write-Host "   [BELUM] lib\main.dart masih memakai MENU PROGRAM LAMA (tiga tombol)." -ForegroundColor Yellow
+    Write-Host "           Timpa lib\main.dart dengan main.dart dari paket 18I" -ForegroundColor Gray
+    Write-Host "           (jalankan LANGKAH1_PASANG_SEMUA.ps1), lalu jalankan skrip ini lagi." -ForegroundColor Gray
+    Write-Host "           Pesan galat yang muncul bila dibiarkan:" -ForegroundColor Gray
+    Write-Host "               No named parameter with the name 'jenisAwal' / 'bukaAwal'" -ForegroundColor DarkGray
+}
+elseif ($isiMainLib -ne '') {
+    Write-Host "   [ADA]   lib\main.dart sudah memakai SATU menu Program (tanpa tombol lama)." -ForegroundColor Green
+}
+
+# -----------------------------------------------------------------------------
 # 7. Kesimpulan dan langkah berikutnya
 # -----------------------------------------------------------------------------
 

@@ -1,3 +1,4 @@
+// RTS-PANEL-ROUND: 18I - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 /// ============================================================================
 ///  RTS PANEL BY BENE - MESIN KASIR OFFLINE (SQLite di dalam HP)
 ///  Berkas : lib/kasir_lokal.dart
@@ -14,7 +15,8 @@
 ///  (berkas database/migrations/RTS_PANEL_PRODUK.sql). Isinya:
 ///     SKU, barcode BUNGKUS (barcode batang tidak dipakai), nama, merek,
 ///     isi per bungkus, harga bungkus, harga batang.
-///  Aplikasi mengunduhnya lewat tombol "SINKRON PRODUK" dan menyimpan
+///  Aplikasi mengunduhnya lewat menu "SINKRONISASI" (tombol SINKRONKAN
+///  SEKARANG pada menu utama) dan menyimpan
 ///  salinannya di HP, sehingga semua sales memakai daftar produk yang SAMA.
 ///  Produk yang ditambah dari HP juga naik ke tabel itu. Sebelum
 ///  disinkronkan pun aplikasi sudah dapat dipakai (produk diisi di HP).
@@ -3722,7 +3724,8 @@ class RtsKasirLokal {
     };
   }
 
-  /// Mengganti SELURUH daftar satu jenis dengan hasil SINKRON ONLINE.
+  /// Mengganti SELURUH daftar satu jenis dengan hasil penarikan data dari
+  /// server (dipakai perintah "program_ganti" dan menu Sinkronisasi).
   ///
   /// Daftar lama jenis tersebut dibuang lebih dulu supaya produk yang sudah
   /// tidak di-launching tidak tertinggal di HP.

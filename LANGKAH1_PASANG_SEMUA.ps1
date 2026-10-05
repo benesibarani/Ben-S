@@ -286,16 +286,17 @@ if (Test-Path $berkasCctv) {
     Awas 'Tanpa berkas itu aplikasi GAGAL dibangun (lib\main.dart memanggilnya).'
 }
 
-# lib\program.dart berisi MENU PRO BARU "PROGRAM" dengan dua sub-menu:
-# INTRODEAL dan BD (produk launching PT Wismilak). Produk dapat diambil dari
-# Barang Bawaan atau disinkron dari server (api/program.php), dan setiap produk
-# menampilkan berapa customer yang sudah membelinya (dari nota di HP). Wajib
-# ada supaya menu Program dapat dibuka.
+# lib\program.dart berisi MENU PRO "PROGRAM" (Putaran 18I): SATU halaman saja,
+# isinya LIST CUSTOMER YANG MENGIKUTI PROGRAM + tombol melayang INPUT PROGRAM.
+# Program yang tersedia: INTRODEAL (paket 2+1 / 1+1), BD, dan PROGRAM BUATAN
+# SENDIRI (misalnya PROGRAM GAWIH). Ada juga peta & penyaring program, serta
+# halaman Backup & Sinkron Data Offline. Wajib ada supaya menu Program dapat
+# dibuka.
 if (Test-Path $berkasProgram) {
     $tujuanProgram = Join-Path $folderProyek 'lib\program.dart'
 
     if (Salin-DenganCadangan $berkasProgram $tujuanProgram) {
-        Baik 'lib\program.dart dipasang  <-- menu Program (Introdeal & BD).'
+        Baik 'lib\program.dart dipasang  <-- menu Program (list customer + input program).'
     }
 } else {
     Awas 'program.dart TIDAK ada di folder paket!'
@@ -721,7 +722,47 @@ if (-not $flutter) {
 }
 
 # =============================================================================
-# 8. RINGKASAN
+# 8b. Memeriksa penanda putaran berkas yang baru dipasang
+#
+# Setiap berkas Dart memuat baris pertama:  // RTS-PANEL-ROUND: 18I ...
+# Pemeriksaan ini memastikan SEMUA berkas berasal dari putaran yang sama,
+# sehingga build tidak gagal karena berkas lama tertinggal.
+# =============================================================================
+
+Judul '8b. Memeriksa penanda putaran berkas aplikasi'
+
+$daftarPenanda = @(
+    @{ Nama = 'main.dart (akar)';     Jalur = (Join-Path $folderProyek 'main.dart') },
+    @{ Nama = 'lib\main.dart';        Jalur = (Join-Path $folderProyek 'lib\main.dart') },
+    @{ Nama = 'lib\program.dart';     Jalur = (Join-Path $folderProyek 'lib\program.dart') },
+    @{ Nama = 'lib\kasir.dart';       Jalur = (Join-Path $folderProyek 'lib\kasir.dart') },
+    @{ Nama = 'lib\kasir_lokal.dart'; Jalur = (Join-Path $folderProyek 'lib\kasir_lokal.dart') },
+    @{ Nama = 'lib\peta.dart';        Jalur = (Join-Path $folderProyek 'lib\peta.dart') }
+)
+
+foreach ($satuPenanda in $daftarPenanda) {
+    if (-not (Test-Path $satuPenanda.Jalur)) {
+        Awas ($satuPenanda.Nama + ' TIDAK ADA sesudah pemasangan.')
+        continue
+    }
+
+    $isiPenanda = Get-Content $satuPenanda.Jalur -Raw
+    $angkaPutaran = ''
+
+    if ($isiPenanda -match 'RTS-PANEL-ROUND:\s*([0-9A-Za-z]+)') {
+        $angkaPutaran = $Matches[1]
+    }
+
+    if ($angkaPutaran -eq '18I') {
+        Baik ($satuPenanda.Nama + ' : putaran 18I (benar).')
+    }
+    else {
+        Awas ($satuPenanda.Nama + ' : penanda putaran tidak terbaca - berkas mungkin masih versi lama.')
+    }
+}
+
+# =============================================================================
+# 9. RINGKASAN
 # =============================================================================
 
 Judul '9. SELESAI - LANGKAH BERIKUTNYA'
@@ -741,7 +782,7 @@ Write-Host '     3. Tekan tombol PERBARUI DATABASE' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Periksa di aplikasi:' -ForegroundColor White
 Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda RTS-2026-10-04-18 (penanda lama dilewati)' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-05-18I' -ForegroundColor Gray
 Write-Host '     Pembaruan   : kotak Pembaruan -> PERBARUI SEKARANG' -ForegroundColor Gray
 Write-Host '                   (berkas diunduh DI DALAM aplikasi, tanpa Chrome)' -ForegroundColor Gray
 Write-Host '     Profil      : tombol LANGGANAN PRO tampil + gambar QRIS tampil' -ForegroundColor Gray
@@ -766,7 +807,18 @@ Write-Host '     Struk POM   : menu Struk -> PILIH DARI GALERI (gambar header)' 
 Write-Host '     Sinkronisasi: tombol SINKRON AKUN tampil di bagian atas' -ForegroundColor Gray
 Write-Host '     Akun sales  : sesudah top up + SETUJUI ADMIN, tekan SINKRON AKUN' -ForegroundColor Gray
 Write-Host '                   -> status berubah PRO dan menu PRO langsung terbuka' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-10-04-18' -ForegroundColor Gray
+Write-Host '     Menu PRO    : HANYA SATU tombol Program (List customer & input' -ForegroundColor Gray
+Write-Host '                   program) - Program Introdeal, Program BD, dan' -ForegroundColor Gray
+Write-Host '                   Input Program sudah TIDAK ada lagi' -ForegroundColor Gray
+Write-Host '     Program     : list customer yang mengikuti program tampil' -ForegroundColor Gray
+Write-Host '     Program     : tombol merah melayang INPUT PROGRAM -> pilih' -ForegroundColor Gray
+Write-Host '                   customer -> pilih program -> SIMPAN DI HP' -ForegroundColor Gray
+Write-Host '     Program     : DAFTAR PROGRAM untuk membuat program sendiri' -ForegroundColor Gray
+Write-Host '                   (misalnya PROGRAM GAWIH)' -ForegroundColor Gray
+Write-Host '     Program     : ikon peta (peta + penyaring program/kunjungan/hari)' -ForegroundColor Gray
+Write-Host '     Menu PRO    : tombol SINKRON di dalam menu TIDAK ada lagi;' -ForegroundColor Gray
+Write-Host '                   sinkron lewat MENU UTAMA -> SINKRONISASI' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-05-18I' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Di hosting (cPanel) - KHUSUS MENU PETA:' -ForegroundColor White
 Write-Host '     1. Unggah  api\kantor.php  ke folder api pada hosting' -ForegroundColor Gray

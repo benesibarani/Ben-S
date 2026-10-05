@@ -77,6 +77,22 @@
       pilih customer dari List Customer, lalu pilih programnya
       (INTRODEAL 2+1 / 1+1, BD, atau PROGRAM BARU).
 
+ KALAU BUILD GAGAL DENGAN PESAN "jenisAwal"
+ ---------------------------------------
+   lib\main.dart:2847:13: Error: No named parameter with the name 'jenisAwal'.
+
+   Artinya lib\main.dart masih versi LAMA (tiga tombol Program), sedangkan
+   lib\program.dart sudah versi 18I. Perbaikannya:
+      1. Pastikan paket 18I sudah diekstrak (TIMPA semua berkas).
+      2. Jalankan LANGKAH1_PASANG_SEMUA.ps1 (menimpa main.dart di akar folder
+         DAN lib\main.dart sekaligus).
+      3. Jalankan PERIKSA_KODE_APLIKASI.ps1 -> bagian 6f harus [ADA] semua
+         dengan putaran 18I.
+      4. flutter clean -> flutter pub get -> flutter run
+   Sebagai pengaman, lib\program.dart 18I juga menerima permintaan gaya lama,
+   jadi build tetap berhasil - tetapi main.dart tetap harus ditimpa supaya
+   menu Program benar-benar SATU tombol.
+
  PEMERIKSAAN SESUDAH PASANG
  --------------------------
    Di komputer: jalankan .\PERIKSA_KODE_APLIKASI.ps1

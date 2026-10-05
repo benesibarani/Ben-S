@@ -1,3 +1,4 @@
+// RTS-PANEL-ROUND: 18I - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 // ============================================================================
 //  RTS PANEL BY BENE - FITUR PRO : PROGRAM
 //  Berkas : lib/program.dart
@@ -162,16 +163,26 @@ Widget _petaMiniProgram({
 /// Menu PRO "Program": daftar customer yang mengikuti program + tombol
 /// melayang untuk menginput program.
 class RtsProgramPage extends StatefulWidget {
+  /// [jenisAwal] : nama program yang langsung dipilih saat halaman dibuka
+  ///               (dipakai tombol Program Introdeal / Program BD pada versi
+  ///               sebelumnya; sekarang hanya sebagai cadangan supaya
+  ///               pemanggilan lama tetap sah).
+  /// [bukaAwal]   : 'input' = langsung membuka form INPUT PROGRAM,
+  ///               'peta'  = langsung membuka peta & filter program.
   const RtsProgramPage({
     super.key,
     required this.baseUrl,
     required this.token,
     this.pengguna = const <String, dynamic>{},
+    this.jenisAwal,
+    this.bukaAwal = '',
   });
 
   final String baseUrl;
   final String token;
   final Map<String, dynamic> pengguna;
+  final String? jenisAwal;
+  final String bukaAwal;
 
   @override
   State<RtsProgramPage> createState() => _RtsProgramPageState();
@@ -204,7 +215,34 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
   @override
   void initState() {
     super.initState();
+
+    // Nilai awal dari pemanggilan versi lama (tombol Program Introdeal/BD).
+    final String awal = '${widget.jenisAwal ?? ''}'.trim().toUpperCase();
+    if (awal.isNotEmpty) _saring = awal;
+
     unawaited(_muat());
+
+    // Halaman yang diminta langsung dibuka (input program / peta & filter).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final String minta = widget.bukaAwal.trim().toLowerCase();
+      if (minta.isEmpty) return;
+
+      // Ditunda sedikit supaya daftar program sempat dimuat lebih dulu.
+      Future<void>.delayed(const Duration(milliseconds: 800), () {
+        if (!mounted) return;
+
+        if (minta == 'input') {
+          unawaited(_bukaInputProgram());
+          return;
+        }
+
+        if (minta == 'peta' || minta == 'program' || minta == 'filter') {
+          unawaited(_petaFilter());
+        }
+      });
+    });
   }
 
   /* -------------------------------------------------------------------- muat */
@@ -473,6 +511,21 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
   }
 
   /* --------------------------------------------------------------- input program */
+
+  /// Membuka form INPUT PROGRAM dari tombol melayang, lengkap dengan
+  /// pemeriksa galat supaya kegagalan membaca data di HP tidak mematikan
+  /// seluruh layar Program.
+  Future<void> _bukaInputProgram() async {
+    try {
+      await _inputProgram();
+    } on RtsKasirGalat catch (e) {
+      if (mounted) rtsKsPesan(context, e.pesan, galat: true);
+    } catch (e) {
+      if (mounted) {
+        rtsKsPesan(context, 'Gagal membuka form input program: $e', galat: true);
+      }
+    }
+  }
 
   /// Membuka form INPUT PROGRAM (dipakai tombol melayang).
   Future<void> _inputProgram({Map<String, dynamic>? toko, String program = ''}) async {
@@ -1218,7 +1271,7 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: rtsKsMaroon,
         foregroundColor: Colors.white,
-        onPressed: () => unawaited(_inputProgram()),
+        onPressed: () => unawaited(_bukaInputProgram()),
         icon: const Icon(Icons.add_rounded),
         label: const Text('INPUT PROGRAM'),
       ),
