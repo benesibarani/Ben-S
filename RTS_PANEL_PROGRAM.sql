@@ -1,6 +1,8 @@
 -- ============================================================================
 --  RTS PANEL BY BENE - TABEL BARU UNTUK MENU PRO "PROGRAM" (INTRODEAL & BD)
---  Putaran 18H - 5 Oktober 2026 (revisi: paket Introdeal + input program)
+--  Putaran 18I - 5 Oktober 2026 (revisi: paket Introdeal + input program +
+--                 nama program bebas, karena Sales dapat membuat program
+--                 sendiri di samping INTRODEAL dan BD)
 --
 --  CARA PAKAI
 --  ----------
@@ -50,7 +52,7 @@ CREATE TABLE IF NOT EXISTS rts_program_produk (
 -- lalu dikirim ke server lewat CATATAN TERSIMPAN -> KIRIM KE SERVER):
 CREATE TABLE IF NOT EXISTS rts_program_input (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  jenis VARCHAR(20) NOT NULL DEFAULT 'INTRODEAL',
+  jenis VARCHAR(40) NOT NULL DEFAULT 'INTRODEAL',
   paket VARCHAR(20) NOT NULL DEFAULT '',
   paket_keterangan VARCHAR(120) NOT NULL DEFAULT '',
   id_customer VARCHAR(40) NOT NULL DEFAULT '',

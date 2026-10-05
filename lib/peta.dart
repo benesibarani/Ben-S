@@ -1570,12 +1570,6 @@ class _RtsPetaCustomerPageState extends State<RtsPetaCustomerPage> {
                       style: rtsPetaJudulKecil,
                     ),
                   ),
-                  TextButton.icon(
-                    onPressed: _sibuk ? null : () => _segarkanToko(),
-                    icon: const Icon(Icons.sync_rounded, size: 17),
-                    label:
-                        const Text('SEGARKAN', style: TextStyle(fontSize: 11.5)),
-                  ),
                 ],
               ),
               if (_saringBuka && _tanpaTitik > 0)
@@ -4471,11 +4465,6 @@ class _RtsRutePageState extends State<RtsRutePage> {
             tooltip: 'Lokasi kantor',
             icon: const Icon(Icons.business_rounded),
             onPressed: () => unawaited(_bukaLokasiKantor()),
-          ),
-          IconButton(
-            tooltip: 'Segarkan',
-            icon: const Icon(Icons.sync_rounded),
-            onPressed: _sibuk ? null : () => _segarkanToko(),
           ),
         ],
       ),

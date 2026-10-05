@@ -33,6 +33,9 @@
  *                paket sendiri (misalnya "3+1") dari aplikasi.
  *    BD        = New Brand Distribution. TIDAK ada program paket -
  *                produknya produk baru yang SUDAH ADA di outlet.
+ *    LAIN-LAIN = Sales dapat membuat PROGRAM SENDIRI (nama program bebas,
+ *                contoh "PROGRAM GAWIH"). Karena itu kolom `jenis` pada
+ *                catatan program menerima nama program apa saja.
  *    simpan   menambah / mengubah satu produk program
  *             parameter: jenis, sku, barcode_pack, nama, merek,
  *                        isi_per_pack, catatan, periode, aktif
@@ -133,6 +136,19 @@ function rts_pr_jenis(string $nilai): string
     return $nilai === 'BD' ? 'BD' : 'INTRODEAL';
 }
 
+/**
+ * Nama PROGRAM dari HP Sales: nama apa saja (huruf besar) sampai 40 huruf.
+ *
+ * Dipakai pada catatan program, supaya Sales dapat membuat program sendiri di
+ * samping INTRODEAL dan BD.
+ */
+function rts_pr_program(string $nilai): string
+{
+    $nama = strtoupper(rts_pr_potong(trim($nilai), 40));
+
+    return $nama === '' ? 'INTRODEAL' : $nama;
+}
+
 /** Perintah SQL pembuatan tabel (dipakai aksi periksa & simpan). */
 function rts_pr_sql(): string
 {
@@ -188,7 +204,7 @@ function rts_pr_sql_input(): string
 {
     return 'CREATE TABLE IF NOT EXISTS rts_program_input ('
         . ' id INT AUTO_INCREMENT PRIMARY KEY,'
-        . " jenis VARCHAR(20) NOT NULL DEFAULT 'INTRODEAL',"
+        . " jenis VARCHAR(40) NOT NULL DEFAULT 'INTRODEAL',"
         . " paket VARCHAR(20) NOT NULL DEFAULT '',"
         . " paket_keterangan VARCHAR(120) NOT NULL DEFAULT '',"
         . " id_customer VARCHAR(40) NOT NULL DEFAULT '',"
@@ -231,7 +247,15 @@ function rts_pr_siapkan_input(mysqli $conn): bool
         return false;
     }
 
-    return rts_pr_tabel_input_ada($conn);
+    if (!rts_pr_tabel_input_ada($conn)) {
+        return false;
+    }
+
+    // Nama program buatan Sales sampai 40 huruf (database yang dibuat sebelum
+    // putaran 18I masih VARCHAR(20)).
+    $conn->query("ALTER TABLE rts_program_input MODIFY jenis VARCHAR(40) NOT NULL DEFAULT 'INTRODEAL'");
+
+    return true;
 }
 
 /** True bila tabel paket sudah ada. */
@@ -654,7 +678,9 @@ if ($aksi === 'input_simpan') {
         );
     }
 
-    $jenis = rts_pr_jenis(rts_api_param('jenis', 'INTRODEAL'));
+    // Jenis = NAMA PROGRAM pilihan Sales (INTRODEAL, BD, atau nama program
+    // buatan Sales sendiri).
+    $jenis = rts_pr_program(rts_api_param('jenis', 'INTRODEAL'));
 
     // BD (New Brand Distribution) tidak memakai paket.
     $paket = $jenis === 'BD'
@@ -673,9 +699,15 @@ if ($aksi === 'input_simpan') {
     }
 
     $namaProduk = rts_pr_potong(trim(rts_api_param('nama_produk')), 150);
+    $catatan = rts_pr_potong(trim(rts_api_param('catatan')), 255);
     $jumlah = (float) str_replace(',', '.', trim(rts_api_param('jumlah', '0')));
 
-    if ($jumlah <= 0) {
+    // Produk boleh dikosongkan (cukup catatan), tetapi salah satu harus ada.
+    if ($namaProduk === '' && $catatan === '') {
+        rts_api_fail('Isi produk atau catatan supaya keterangan program jelas.');
+    }
+
+    if ($namaProduk !== '' && $jumlah <= 0) {
         rts_api_fail('Jumlah program harus lebih besar dari 0.');
     }
 
@@ -709,8 +741,11 @@ if ($aksi === 'input_simpan') {
     $produkId = (int) rts_api_param('produk_id', '0');
     $sku = rts_pr_potong(trim(rts_api_param('sku')), 64);
     $satuan = strtoupper(rts_pr_potong(trim(rts_api_param('satuan', 'PACK')), 20));
+
+    if (!in_array($satuan, ['PACK', 'BATANG', 'BALL'], true)) {
+        $satuan = 'PACK';
+    }
     $tanggal = rts_pr_potong(trim(rts_api_param('tanggal')), 20);
-    $catatan = rts_pr_potong(trim(rts_api_param('catatan')), 255);
     $namaSales = rts_pr_potong((string) ($user['nama_lengkap'] ?? ''), 80);
 
     $stmt->bind_param(
@@ -745,6 +780,7 @@ if ($aksi === 'input_simpan') {
         'paket' => $paket,
         'id_customer' => $idCustomer,
         'jumlah' => $jumlah,
+        'satuan' => $satuan,
         'id_hp' => $idHp,
     ]);
 }
@@ -759,7 +795,9 @@ if ($aksi === 'input_daftar') {
         ]);
     }
 
-    $jenis = rts_pr_jenis(rts_api_param('jenis', ''));
+    // Kosong = seluruh program; selain itu nama program yang diminta.
+    $mintaJenis = trim(rts_api_param('jenis', ''));
+    $jenis = $mintaJenis === '' ? '' : rts_pr_program($mintaJenis);
     $batas = (int) rts_api_param('batas', '200');
     $batas = $batas < 1 ? 200 : ($batas > 500 ? 500 : $batas);
 
@@ -769,7 +807,7 @@ if ($aksi === 'input_daftar') {
     $params = [];
     $types = '';
 
-    if ($jenis === 'INTRODEAL' || $jenis === 'BD') {
+    if ($jenis !== '') {
         $sql .= ' WHERE jenis = ?';
         $params[] = $jenis;
         $types .= 's';

@@ -1,5 +1,46 @@
 DAFTAR BERKAS: MANA UNTUK HOSTING, MANA UNTUK APLIKASI?
 ========================================================================
+ >>> PUTARAN 18I (5 Oktober 2026) - PALING BARU <<<
+   MENU "PROGRAM" KEMBALI SATU SAJA: LIST CUSTOMER YANG MENGIKUTI PROGRAM
+   + TOMBOL MELAYANG INPUT PROGRAM; PROGRAM BISA DIBUAT SENDIRI
+   (INTRODEAL 2+1/1+1, BD, LAIN-LAIN); PETA TETAP ADA; TOMBOL SINKRON DI
+   DALAM MENU DIHAPUS (LEWAT MENU SINKRONISASI SAJA).
+
+   UNDUH LANGSUNG (klik / tempel di peramban):
+     Paket LENGKAP 18I:
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18I.zip
+     Paket PERUBAHAN 18I (hanya berkas yang berubah):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18I.zip
+     api/program.php (hosting - WAJIB):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/program.php
+     RTS_PANEL_PROGRAM.sql (3 tabel baru):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PROGRAM.sql
+     lib/program.dart (halaman Program 18I):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/program.dart
+     lib/kasir_lokal.dart (data di HP, versi database 6):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
+     lib/kasir.dart (tombol SINKRON PRODUK dihapus):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir.dart
+     lib/peta.dart (tombol SEGARKAN dihapus):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
+     main.dart (satu menu Program + sinkron terpusat):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+     pubspec.yaml.updated (versi 1.5.3+18):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+     BACA_DULU.txt (tutorial tunggal):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
+     CARA_PASANG_CEPAT.txt:
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/CARA_PASANG_CEPAT.txt
+     PROGRAM_INTRODEAL_BD.txt (panduan menu Program):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PROGRAM_INTRODEAL_BD.txt
+     PERIKSA_KODE_APLIKASI.ps1 (kode 18I):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERIKSA_KODE_APLIKASI.ps1
+
+   Catatan: daftar di bawah ini (bagian 1 - 6) adalah rujukan putaran
+   sebelumnya - masih berlaku, hanya penanda kode aplikasi berubah menjadi
+   RTS-2026-10-05-18I dan versi pubspec 1.5.3+18.
+========================================================================
+========================================================================
  >>> PUTARAN 18H (5 Oktober 2026) - PALING BARU <<<
    MENU "PROGRAM" DIPERBAIKI (INTRODEAL = PROGRAM PAKET 2+1 / 1+1 /
    PAKET SENDIRI, BD TANPA PAKET), INPUT PROGRAM TANPA INTERNET,

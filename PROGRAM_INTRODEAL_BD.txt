@@ -1,113 +1,130 @@
 ==============================================================================
  RTS PANEL BY BENE - PANDUAN MENU PRO "PROGRAM"
- VERSI 2 (Putaran 18H, 5 Oktober 2026)
- INTRODEAL = PROGRAM PAKET (2+1, 1+1, PAKET SENDIRI)
- BD        = NEW BRAND DISTRIBUTION (TANPA PAKET)
- + INPUT PROGRAM TANPA INTERNET + PETA & FILTER
- + MENU BARU: BACKUP & SINKRON DATA OFFLINE
+ VERSI 3 (Putaran 18I, 5 Oktober 2026)
+ SATU MENU: LIST CUSTOMER YANG MENGIKUTI PROGRAM + TOMBOL MELAYANG INPUT
 ==============================================================================
 
- BACA DULU - ARTI DUA PROGRAM (sesuai penjelasan Bapak)
- ------------------------------------------------------
-   INTRODEAL = Introductory Deal.
-               Ini PROGRAM PAKET. Paket bakunya:
-                 - 2+1  artinya beli 2 gratis 1
-                 - 1+1  artinya beli 1 gratis 1
-               Sales juga boleh membuat PAKET SENDIRI, contoh 3+1.
-               Produknya diambil dari MENU BARANG BAWAAN.
+ BACA DULU - APA YANG BERUBAH
+ ----------------------------
+   Putaran sebelumnya ada beberapa tombol program (Program Introdeal, Program
+   BD, Input Program). Sesuai permintaan Bapak, sekarang DIJADIKAN SATU SAJA:
 
-   BD        = New Brand Distribution.
-               TIDAK ADA program / paket. Hanya PRODUK, karena produknya
-               adalah produk baru yang SUDAH ADA di outlet.
+        MENU PRO -> PROGRAM  (List customer & input program)
 
- CARA MEMBUKA
+   Di dalam halaman Program:
+        1. LIST CUSTOMER YANG MENGIKUTI PROGRAM (isi utama halaman).
+        2. Tombol merah melayang INPUT PROGRAM di kanan bawah.
+        3. Ikon PETA di kanan atas (peta & filter program, kunjungan, hari).
+        4. Ikon awan di kanan atas (catatan program yang masih di HP).
+        5. Tombol DAFTAR PROGRAM (tambah / ubah / hapus program).
+
+ ARTI PROGRAM
  ------------
-   Beranda -> MENU PRO (boleh diminimize) -> pilih salah satu:
-     Program Introdeal        : paket 2+1 / 1+1 / PAKET SENDIRI
-     Program BD               : produk BD saja
-     Input Program            : langsung ke form CATAT PROGRAM
-     Peta & Filter Program    : langsung ke peta + penyaring
-     Backup & Sinkron Data Offline : data yang tersimpan di HP
+   INTRODEAL = Introductory Deal - PROGRAM PAKET.
+               Paket bakunya: 2+1 (beli 2 gratis 1) dan 1+1 (beli 1 gratis 1).
+               Sales juga dapat membuat PAKET SENDIRI (contoh 3+1).
+   BD        = New Brand Distribution - TIDAK memakai paket, karena produknya
+               adalah produk baru yang SUDAH ADA di outlet.
+   LAIN-LAIN = PROGRAM BUATAN SENDIRI. Bapak dapat membuat program apa saja
+               (contoh: PROGRAM GAWIH) dan menentukan apakah memakai paket
+               atau tidak.
 
  ------------------------------------------------------------------------------
- A. PROGRAM INTRODEAL (PROGRAM PAKET)
+ A. MELIHAT LIST CUSTOMER
  ------------------------------------------------------------------------------
-  1. Di bawah tombol-tombol ada tulisan "PAKET INTRODEAL (pilih satu)".
-     Ketuk salah satu paket:
-        2+1  (Beli 2 gratis 1)   - paket bawaan, tidak bisa dihapus
-        1+1  (Beli 1 gratis 1)   - paket bawaan, tidak bisa dihapus
-        3+1, 4+2, dst            - PAKET SENDIRI buatan Sales
-  2. Tekan  PAKET SENDIRI  untuk membuat paket baru:
-        - Nama paket : contoh 3+1
-        - Keterangan : contoh Beli 3 gratis 1
-        - Tekan SIMPAN. Paket langsung muncul dan bisa dipilih.
-  3. Menghapus paket: ketuk tanda silang kecil di paket buatan Sales.
-     Paket bawaan 2+1 dan 1+1 TIDAK dapat dihapus (aman).
-  4. Produk:
-        DARI BARANG BAWAAN : mengambil satu produk dari daftar bawaan
-        SINKRON ONLINE     : mengambil daftar dari server (api/program.php)
-        TAMBAH PRODUK      : mengetik produk sendiri
-  5. ADMIN / ASS dapat menekan KIRIM KE SERVER pada tiap produk supaya
-     dipakai HP Sales lain.
+   Buka MENU PRO -> PROGRAM. Halaman langsung menampilkan daftar customer:
+        - Nama toko dan ID customer.
+        - Lencana program yang diikuti (misalnya "INTRODEAL 2+1" atau "BD").
+        - Jumlah catatan program dan berapa yang BELUM DIKIRIM ke server.
+
+   Menyaring daftar: ketuk SEMUA PROGRAM, INTRODEAL, BD, atau nama program
+   buatan Bapak di bagian atas halaman.
+
+   Melihat riwayat satu customer: KETUK barisnya. Muncul daftar program yang
+   pernah dicatat, lengkap dengan:
+        - jumlah & satuan, tanggal, dan keterangan sudah/belum dikirim,
+        - tombol tempat sampah untuk menghapus satu catatan,
+        - tombol TAMBAH PROGRAM untuk menambah catatan program customer itu.
 
  ------------------------------------------------------------------------------
- B. PROGRAM BD (NEW BRAND DISTRIBUTION)
+ B. INPUT PROGRAM (TOMBOL MELAYANG)
  ------------------------------------------------------------------------------
-  - Tidak ada paket. Muncul keterangan "Sub-menu BD (New Brand
-    Distribution): TIDAK memakai paket - produknya sudah ada di outlet."
-  - Isinya hanya daftar PRODUK BD. Cara mengisi produk sama seperti
-    Introdeal: DARI BARANG BAWAAN / SINKRON ONLINE / TAMBAH PRODUK.
+   Tekan tombol merah INPUT PROGRAM di kanan bawah. Muncul halaman berisi:
+
+     1) CUSTOMER
+        Tekan PILIH DARI LIST CUSTOMER. Daftar toko dibuka dan sudah DIURUTKAN
+        DARI YANG TERDEKAT dengan posisi HP (2 baris teratas = toko terdekat).
+
+     2) PROGRAM
+        Pilih INTRODEAL, BD, atau program buatan Bapak.
+        Bila programnya memakai paket (contoh INTRODEAL), muncul pilihan:
+            2+1   (Beli 2 gratis 1)
+            1+1   (Beli 1 gratis 1)
+            PAKET SENDIRI (contoh 3+1 - Beli 3 gratis 1)
+        Tombol PROGRAM BARU dipakai membuat program baru:
+            - Nama program (contoh: PROGRAM GAWIH)
+            - Keterangan (boleh kosong)
+            - Sakelar "Program memakai PAKET" (nyala = muncul pilihan paket)
+
+     3) PRODUK (dari Menu Barang Bawaan)
+        Pilih produk yang ditawarkan. Boleh memilih TANPA PRODUK bila hanya
+        ingin mencatat customer yang mengikuti program - isi catatannya.
+        Jumlah dan satuan (PACK / BATANG / BALL) diisi bila memakai produk.
+
+     4) PETA LOKASI
+        Peta kecil OpenStreetMap berisi titik toko yang dipilih (merah) dan
+        titik posisi Bapak (biru).
+
+     5) Tekan SIMPAN DI HP (tombol hijau di kanan bawah).
+        Catatan langsung tersimpan DI DALAM HP - TIDAK memerlukan internet.
 
  ------------------------------------------------------------------------------
- C. INPUT PROGRAM TANPA INTERNET (INPUT OFFLINE)
+ C. MENGELOLA DAFTAR PROGRAM
  ------------------------------------------------------------------------------
-  1. Pilih toko dulu: tombol  PILIH TOKO TERDEKAT  (memakai posisi GPS HP).
-  2. Tekan  CATAT PROGRAM  (tombol hijau).
-  3. Form berisi:
-        - PETA KECIL OpenStreetMap: titik toko terpilih + titik posisi Bapak.
-        - Produk program (pilihan dari daftar produk di HP).
-        - Jumlah, Satuan (PACK / BATANG / BALL), dan Catatan.
-  4. Tekan SIMPAN DI HP. Catatan TIDAK memerlukan internet.
-  5. Melihat catatan: tombol  CATATAN TERSIMPAN  atau ikon awan di kanan
-     atas (ada angkanya bila masih ada yang belum dikirim).
-  6. Bila sudah ada internet: buka CATATAN TERSIMPAN -> KIRIM KE SERVER.
-     Catatan yang berhasil dikirim otomatis ditandai sudah dikirim.
-     (Server menyimpan di tabel rts_program_input; catatan yang sama tidak
-      masuk dua kali.)
+   Tombol DAFTAR PROGRAM menampilkan seluruh program:
+        - INTRODEAL dan BD adalah program BAWAAN (tidak dapat dihapus).
+        - Program buatan Bapak dapat diubah keterangannya atau dihapus.
+        - Riwayat input yang sudah dicatat TETAP tersimpan walaupun programnya
+          dihapus dari daftar pilihan.
 
  ------------------------------------------------------------------------------
- D. PETA & FILTER (INTRODEAL / BD, KUNJUNGAN, HARI)
+ D. PETA & FILTER PROGRAM
  ------------------------------------------------------------------------------
-  Tekan  PETA & FILTER (PROGRAM, KUNJUNGAN, HARI). Isinya:
-     - Peta OpenStreetMap seluruh toko yang ada titiknya.
-       Titik hijau = toko sudah ada catatan/dibeli untuk program terpilih;
-       titik abu-abu = belum; titik biru = posisi Bapak.
-     - Penyaring PROGRAM   : INTRODEAL atau BD.
-     - Penyaring KUNJUNGAN : SEMUA / SUDAH / BELUM (kunjungan hari ini).
-     - Penyaring HARI      : SEMUA, SENIN ... MINGGU (hari kunjungan toko).
-     - Daftar 30 toko teratas: Nama, ID, hari, jarak dari posisi Bapak,
-       dan lencana SUDAH / BELUM.
+   Ikon PETA di kanan atas membuka:
+        - Peta OpenStreetMap seluruh toko yang ada titiknya.
+          Hijau = toko sudah mengikuti program yang dipilih; merah = belum;
+          biru = posisi Bapak.
+        - Penyaring PROGRAM (SEMUA, INTRODEAL, BD, atau program buatan Bapak).
+        - Penyaring KUNJUNGAN (SEMUA / SUDAH / BELUM hari ini).
+        - Penyaring HARI (SEMUA, SENIN ... MINGGU).
+        - Daftar 30 toko teratas: nama, ID, hari kunjungan, jarak dari posisi
+          Bapak, dan lencana SUDAH / BELUM.
 
  ------------------------------------------------------------------------------
- E. BACKUP & SINKRON DATA OFFLINE (MENU PRO BARU)
+ E. MENGIRIM CATATAN KE SERVER
  ------------------------------------------------------------------------------
-  Membuka menu ini menampilkan DATA DI DALAM HP:
-     Kunjungan, Nota kasir, Input program, Piutang, Program produk,
-     Paket Introdeal, Toko tersimpan, Produk tersimpan, Goresan peta,
-     Titik kantor.
-  Tiap baris menunjukkan berapa yang BELUM DIKIRIM.
-  Tombol:
-     LIHAT DATA SIAP KIRIM : melihat & menyalin isi data belum kirim
-                             (untuk dilaporkan ke ASS / Admin).
-     SALIN RINGKASAN       : menyalin ringkasan angka (tempel ke WhatsApp).
-     TANDAI SUDAH DIKIRIM  : menandai data sudah masuk ke pusat.
-     BUAT CADANGAN DI HP   : membuat berkas cadangan .db di dalam HP.
+   Ikon awan di kanan atas (ada angkanya bila masih ada yang belum dikirim)
+   membuka CATATAN PROGRAM DI HP:
+        - bisa menghapus satu catatan,
+        - tombol KIRIM KE SERVER mengirim seluruh catatan ke server
+          (butuh internet) dan menandainya sudah dikirim.
+   Rincian data di HP juga dapat dilihat pada menu PRO
+   "Backup & Sinkron Data Offline".
 
  ------------------------------------------------------------------------------
- F. PEMASANGAN (HOSTING & APLIKASI)
+ F. SINKRONISASI DATA (SUDAH DIPUSATKAN)
+ ------------------------------------------------------------------------------
+   Sesuai permintaan Bapak, tombol SINKRON di dalam menu sudah DIHAPUS
+   (SINKRON PRODUK di Barang Bawaan, SEGARKAN di Peta Customer & Rute Plan,
+   dan SINKRON ONLINE di Program). Sinkronisasi sekarang lewat MENU UTAMA ->
+   SINKRONISASI -> tombol SINKRONKAN SEKARANG, yang sekaligus menarik:
+        status AKUN (PRO/GRATIS), PRODUK (SKU & harga), dan DAFTAR TOKO.
+
+ ------------------------------------------------------------------------------
+ G. PEMASANGAN (HOSTING & APLIKASI)
  ------------------------------------------------------------------------------
   HOSTING (public_html) - timpa satu berkas:
-     api/program.php          <-- versi baru putaran 18H
+     api/program.php
         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/program.php
 
   SQL di phpMyAdmin (membuat 3 tabel baru, tanpa menghapus data lama):
@@ -119,26 +136,30 @@
         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/program.dart
      lib/kasir_lokal.dart
         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
+     lib/kasir.dart
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir.dart
+     lib/peta.dart
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
      main.dart
         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
-     pubspec.yaml (versi 1.5.2+17)
+     pubspec.yaml (versi 1.5.3+18)
         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
 
   PAKET SEMUA BERKAS (paling mudah):
-     RTS_PANEL_PUTARAN_18H.zip
-        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18H.zip
-     RTS_PANEL_PERUBAHAN_18H.zip (hanya berkas yang berubah)
-        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18H.zip
+     RTS_PANEL_PUTARAN_18I.zip
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18I.zip
+     RTS_PANEL_PERUBAHAN_18I.zip (hanya berkas yang berubah)
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18I.zip
 
   Sesudah dipasang:
      flutter clean  ->  flutter pub get  ->  flutter analyze  ->  build apk
 
  ------------------------------------------------------------------------------
- G. PENANDA VERSI
+ H. PENANDA VERSI
  ------------------------------------------------------------------------------
-  Kode aplikasi : RTS-2026-10-05-18H      (lihat kode di aplikasi)
-  Versi pubspec : 1.5.2+17
-  Tabel baru    : rts_program_produk, rts_program_paket, rts_program_input
+  Kode aplikasi : RTS-2026-10-05-18I   (lihat kode di aplikasi)
+  Versi pubspec : 1.5.3+18
+  Data di HP    : versi database 6 (tabel program_jenis = daftar program)
 
 ==============================================================================
  Selesai. Bila ada yang belum jelas, tanyakan saja - akan dijelaskan ulang

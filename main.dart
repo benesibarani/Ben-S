@@ -969,7 +969,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-05-18H';
+const String rtsKodeAplikasi = 'RTS-2026-10-05-18I';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -2366,27 +2366,9 @@ class _DashboardPageState extends State<DashboardPage>
       pro: true,
     ),
     _MenuData(
-      title: 'Program Introdeal',
-      subtitle: 'Paket 2+1, 1+1, paket sendiri',
-      icon: Icons.card_giftcard_outlined,
-      pro: true,
-    ),
-    _MenuData(
-      title: 'Program BD',
-      subtitle: 'New Brand Distribution',
-      icon: Icons.new_releases_outlined,
-      pro: true,
-    ),
-    _MenuData(
-      title: 'Input Program',
-      subtitle: 'Catat program - tanpa internet',
-      icon: Icons.edit_note_rounded,
-      pro: true,
-    ),
-    _MenuData(
-      title: 'Peta & Filter Program',
-      subtitle: 'Introdeal/BD, kunjungan, hari',
-      icon: Icons.map_outlined,
+      title: 'Program',
+      subtitle: 'List customer & input program',
+      icon: Icons.campaign_outlined,
       pro: true,
     ),
     _MenuData(
@@ -2831,23 +2813,13 @@ class _DashboardPageState extends State<DashboardPage>
       return;
     }
 
-    if (menu == 'Program' ||
-        menu == 'Program Introdeal' ||
-        menu == 'Program BD' ||
-        menu == 'Input Program' ||
-        menu == 'Peta & Filter Program') {
-      final bool introdeal = menu != 'Program BD';
-
+    if (menu == 'Program') {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => RtsProgramPage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
             pengguna: (RtsSesi.user ?? user).toJson(),
-            jenisAwal: introdeal ? 'INTRODEAL' : 'BD',
-            bukaAwal: menu == 'Input Program'
-                ? 'input'
-                : (menu == 'Peta & Filter Program' ? 'peta' : ''),
           ),
         ),
       );
@@ -5500,6 +5472,27 @@ class _SyncPageState extends State<SyncPage> {
       // Status akun (PRO / GRATIS) disegarkan lebih dahulu, supaya akun yang
       // baru diperpanjang langsung terbuka lewat tombol ini juga.
       await _sinkronAkun(lapor: false);
+
+      // Sejak putaran 18I seluruh tombol SINKRON di dalam menu dihilangkan,
+      // jadi tombol ini juga menarik PRODUK (SKU & harga) dan DAFTAR TOKO.
+      // Akun GRATIS dilewati tanpa menggagalkan sinkronisasi yang lain.
+      final RtsKasirApi kasir = RtsKasirApi(
+        baseUrl: RtsConfig.baseUrl,
+        token: widget.token,
+        pengguna: (RtsSesi.user ?? widget.user).toJson(),
+      );
+
+      try {
+        await kasir.kirim('sinkron_produk');
+      } catch (_) {
+        // Produk tidak dapat ditarik: tidak menggagalkan sinkronisasi lain.
+      }
+
+      try {
+        await kasir.kirim('toko_segarkan');
+      } catch (_) {
+        // Daftar toko tidak dapat ditarik: tidak menggagalkan sinkronisasi lain.
+      }
 
       // Data customer pada cakupan akun.
       final Map<String, dynamic> dataCustomer = await api.get('customers.php', {

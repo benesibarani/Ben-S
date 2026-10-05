@@ -709,7 +709,6 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
   List<RtsProduk> _produk = <RtsProduk>[];
   List<Map<String, dynamic>> _riwayat = <Map<String, dynamic>>[];
   bool _memuat = true;
-  bool _sibuk = false;
   String _galat = '';
   bool _perluPro = false;
   bool _perluSiap = false;
@@ -774,26 +773,6 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
         _perluPro = e.perluPro;
         _perluSiap = e.perluSiap;
       });
-    }
-  }
-
-  /// Mengunduh daftar produk bersama dari server (tabel `produk`).
-  Future<void> _sinkronProduk() async {
-    setState(() => _sibuk = true);
-
-    try {
-      final Map<String, dynamic> hasil = await _api.kirim('sinkron_produk');
-
-      if (!mounted) return;
-
-      setState(() => _sibuk = false);
-      rtsKsPesan(context, '${hasil['message'] ?? 'Sinkron produk selesai.'}');
-      await _muat();
-    } on RtsKasirGalat catch (e) {
-      if (!mounted) return;
-
-      setState(() => _sibuk = false);
-      rtsKsPesan(context, e.pesan, galat: true);
     }
   }
 
@@ -1227,23 +1206,10 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
                   const SizedBox(height: 6),
                   const Text(
                     'Produk di sini dipakai BERSAMA semua user. Tambah / ubah '
-                    'produk dari HP mana saja, lalu tekan SINKRON PRODUK supaya '
-                    'semua HP memakai daftar yang sama. Harga berlaku sama '
-                    'untuk semua sales.',
+                    'produk dari HP mana saja; daftar seluruh HP disamakan '
+                    'lewat menu SINKRONISASI pada menu utama (tombol '
+                    'SINKRONKAN SEKARANG). Harga berlaku sama untuk semua sales.',
                     style: TextStyle(fontSize: 12, color: rtsKsTeks2),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: FilledButton.icon(
-                          style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
-                          onPressed: _sibuk ? null : _sinkronProduk,
-                          icon: const Icon(Icons.cloud_sync_outlined, size: 18),
-                          label: Text(_sibuk ? 'MENYINKRON...' : 'SINKRON PRODUK'),
-                        ),
-                      ),
-                    ],
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -1272,9 +1238,9 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
               padding: EdgeInsets.all(20),
               child: Text(
                 'Belum ada produk pada daftar di HP ini.\n\n'
-                'Tekan SINKRON PRODUK untuk mengunduh daftar produk bersama '
-                'dari server (tabel produk), atau tekan tombol "Produk" di '
-                'bawah untuk menambah produk baru.',
+                'Buka MENU UTAMA -> SINKRONISASI -> SINKRONKAN SEKARANG '
+                'untuk mengunduh daftar produk bersama dari server, atau '
+                'tekan tombol "Produk" di bawah untuk menambah produk baru.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: rtsKsTeks2),
               ),
@@ -1433,8 +1399,8 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
             const Padding(
               padding: EdgeInsets.all(20),
               child: Text(
-                'Belum ada produk. Buka tab PRODUK lalu tekan SINKRON PRODUK '
-                'untuk mengunduh daftar produk bersama.',
+                'Belum ada produk. Buka MENU UTAMA -> SINKRONISASI -> '
+                'SINKRONKAN SEKARANG untuk mengunduh daftar produk bersama.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: rtsKsTeks2),
               ),
@@ -5059,8 +5025,9 @@ class _RtsPrinterPageState extends State<RtsPrinterPage> {
 /* ------------------------------------------------------------------------- */
 
 /// Halaman pengelolaan data kasir yang tersimpan di dalam HP:
-///   - SINKRON PRODUK : mengirim produk baru ke server dan mengunduh
-///     daftar SKU + harga yang ditetapkan di server.
+///   - SINKRONISASI   : menu utama "SINKRONISASI" (tombol SINKRONKAN
+///     SEKARANG) yang mengirim produk baru ke server sekaligus mengunduh
+///     daftar SKU + harga serta daftar toko terbaru.
 ///   - CADANGKAN      : menyalin seluruh database kasir ke sebuah berkas.
 ///   - PULIHKAN       : mengembalikan data dari berkas cadangan.
 class RtsCadanganPage extends StatefulWidget {
@@ -5127,25 +5094,6 @@ class _RtsCadanganPageState extends State<RtsCadanganPage> {
         _memuat = false;
         _galat = e.pesan;
       });
-    }
-  }
-
-  Future<void> _sinkron() async {
-    setState(() => _kerja = true);
-
-    try {
-      final Map<String, dynamic> hasil = await _api.kirim('sinkron_produk');
-
-      if (!mounted) return;
-
-      setState(() => _kerja = false);
-      rtsKsPesan(context, '${hasil['message'] ?? 'Sinkron selesai.'}');
-      _muat();
-    } on RtsKasirGalat catch (e) {
-      if (!mounted) return;
-
-      setState(() => _kerja = false);
-      rtsKsPesan(context, e.pesan, galat: true);
     }
   }
 
@@ -5397,25 +5345,15 @@ class _RtsCadanganPageState extends State<RtsCadanganPage> {
                 const SizedBox(height: 12),
                 _kartu(
                   judul: 'PRODUK DARI SERVER (SKU & HARGA)',
-                  child: Column(
+                  child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      const Text(
+                      Text(
                         'Server menyimpan daftar produk (nama, barcode, isi per '
-                        'pack) beserta harganya. Tekan tombol di bawah untuk '
-                        'mengunduh daftar terbaru dan mengirim produk baru yang '
-                        'Bapak tambahkan dari HP. Perlu internet sesekali saja.',
+                        'pack) beserta harganya, dan seluruh HP disamakan '
+                        'lewat menu SINKRONISASI pada menu utama (tombol '
+                        'SINKRONKAN SEKARANG). Perlu internet sesekali saja.',
                         style: TextStyle(fontSize: 12, color: rtsKsTeks2),
-                      ),
-                      const SizedBox(height: 10),
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: rtsKsMaroon,
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                        ),
-                        onPressed: _kerja ? null : _sinkron,
-                        icon: const Icon(Icons.cloud_download_outlined),
-                        label: const Text('SINKRON PRODUK'),
                       ),
                     ],
                   ),

@@ -1,113 +1,102 @@
 ==============================================================================
- RTS PANEL BY BENE - PUTARAN 18H
- (MENU PROGRAM: INTRODEAL 2+1 / 1+1 / PAKET SENDIRI, BD TANPA PAKET,
-  INPUT PROGRAM TANPA INTERNET, PETA + FILTER, BACKUP & SINKRON OFFLINE)
+ RTS PANEL BY BENE - PUTARAN 18I
+ (MENU "PROGRAM" KEMBALI SATU SAJA: LIST CUSTOMER YANG MENGIKUTI PROGRAM +
+  TOMBOL MELAYANG INPUT PROGRAM; PROGRAM BISA DIBUAT SENDIRI; PETA TETAP;
+  TOMBOL SINKRON DI DALAM MENU DIHAPUS)
  CARA PASANG CEPAT  -  5 Oktober 2026
 ==============================================================================
 
- Paket ini untuk Bapak yang SUDAH pernah memasang RTS_PANEL_PUTARAN_18G.zip.
- Isinya hanya berkas yang BARU atau BERUBAH untuk revisi menu "Program".
+ Paket ini untuk Bapak yang SUDAH pernah memasang RTS_PANEL_PUTARAN_18H.zip.
+ Isinya hanya berkas yang BARU atau BERUBAH untuk perbaikan menu "Program".
 
-
- PERBAIKAN KECIL 18H (sudah termasuk di paket ini)
- --------------------------------------------------
-   lib/program.dart seharusnya mengimpor kasir_lokal.dart (tempat kelas
-   RtsKasirGalat berada) dan memakai _jenis, bukan jenis. Keduanya sudah
-   DIPERBAIKI, jadi tulisan merah di flutter analyze sudah hilang.
-   Peta pada form CATAT PROGRAM juga sekarang benar-benar menampilkan titik
-   toko terpilih (data toko dilengkapi titik koordinatnya lebih dulu).
-
- LIMA PERUBAHAN PUTARAN 18H
+ ENAM PERUBAHAN PUTARAN 18I
  --------------------------
-   1. INTRODEAL = PROGRAM PAKET. Di dalamnya ada pilihan paket:
-         2+1 (bawaan)      -> Beli 2 gratis 1
-         1+1 (bawaan)      -> Beli 1 gratis 1
-         PAKET SENDIRI     -> Sales membuat sendiri, contoh 3+1
-      Paket bawaan tidak dapat dihapus; paket buatan Sales dapat dihapus.
-      Produk diambil dari MENU BARANG BAWAAN (atau SINKRON ONLINE).
-   2. BD = NEW BRAND DISTRIBUTION -> TIDAK memakai paket, hanya PRODUK
-      (produknya sudah ada di outlet).
-   3. INPUT OFFLINE: tombol CATAT PROGRAM menyimpan catatan program ke
-      DALAM HP (tanpa internet). Catatan dikirim ke server lewat tombol
-      CATATAN TERSIMPAN -> KIRIM KE SERVER. Ada lencana angka di kanan atas.
-   4. PETA & FILTER: peta OpenStreetMap + penyaring INTRODEAL / BD,
-      penyaring KUNJUNGAN (sudah/belum), dan penyaring HARI (Senin-Minggu).
-      Peta kecil juga TERLAMPIR di dalam form CATAT PROGRAM.
-   5. MENU PRO BARU: "Backup & Sinkron Data Offline" -> melihat DATA DI HP
-      (kunjungan, nota, input program, piutang, dll), berapa yang belum
-      dikirim, tombol salin ringkasan, tandai sudah dikirim, dan buat
-      cadangan .db di dalam HP.
+   1. TOMBOL PROGRAM DIJADIKAN SATU SAJA:
+      "Program Introdeal", "Program BD", dan "Input Program" DIHAPUS.
+      Sekarang hanya ada satu tombol: PROGRAM
+      (keterangan: List customer & input program).
+   2. ISI MENU PROGRAM: LIST CUSTOMER YANG MENGIKUTI PROGRAM.
+      Tiap baris = satu customer + nama toko + ID + program yang diikuti +
+      jumlah catatan + berapa yang belum dikirim. Ketuk barisnya untuk
+      melihat riwayat program customer itu.
+   3. PROGRAM: INTRODEAL (paket 2+1 dan 1+1), BD, dan LAIN-LAIN.
+      Sales dapat membuat PROGRAM SENDIRI (tombol PROGRAM BARU), dan
+      menentukan apakah program itu memakai paket atau tidak.
+   4. TOMBOL MELAYANG "INPUT PROGRAM" (kanan bawah, warna merah):
+      ditekan -> muncul LIST CUSTOMER (urut dari yang terdekat) ->
+      pilih programnya -> pilih produk dari Barang Bawaan -> SIMPAN DI HP.
+      Bisa dikerjakan TANPA INTERNET.
+   5. PETA TETAP ADA: ikon peta di kanan atas halaman Program, berisi peta
+      OpenStreetMap + penyaring PROGRAM, KUNJUNGAN (sudah/belum), dan HARI.
+   6. TOMBOL SINKRON DI DALAM MENU DIHAPUS (SINKRON PRODUK di Barang Bawaan,
+      SEGARKAN di Peta Customer & Rute Plan, SINKRON ONLINE di Program).
+      Sinkronisasi sekarang terpusat pada menu SINKRONISASI di menu utama
+      (tombol SINKRONKAN SEKARANG). Tombol itu sekarang sekaligus menarik
+      status akun, PRODUK (SKU & harga), dan DAFTAR TOKO.
 
  ISI PAKET
  --------
-   1_SERVER_unggah_ke_hosting/api/program.php        <-- WAJIB (versi 18H:
-                                                           paket Introdeal +
-                                                           catatan program)
-   1_SERVER_unggah_ke_hosting/RTS_PANEL_PROGRAM.sql  <-- SQL 3 tabel baru
-   2_APLIKASI_copy_ke_proyek/program.dart            <-- menu Program 18H
-   2_APLIKASI_copy_ke_proyek/kasir_lokal.dart        <-- simpanan di HP
-   2_APLIKASI_copy_ke_proyek/main.dart               <-- sub-menu Program +
-                                                           Backup & Sinkron
-   2_APLIKASI_copy_ke_proyek/pubspec.yaml            <-- versi 1.5.2+17
-   3_SKRIP_POWERSHELL/LANGKAH1_PASANG_SEMUA.ps1      <-- juru salin otomatis
-   3_SKRIP_POWERSHELL/PERIKSA_KODE_APLIKASI.ps1      <-- pemeriksa kode
+   1_SERVER_unggah_ke_hosting/api/program.php        <-- WAJIB (versi 18I:
+                                                           nama program bebas)
+   1_SERVER_unggah_ke_hosting/RTS_PANEL_PROGRAM.sql  <-- SQL 3 tabel
+   2_APLIKASI_copy_ke_proyek/program.dart            <-- halaman Program 18I
+   2_APLIKASI_copy_ke_proyek/kasir_lokal.dart        <-- data di HP (versi 6)
+   2_APLIKASI_copy_ke_proyek/kasir.dart              <-- tombol sinkron dihapus
+   2_APLIKASI_copy_ke_proyek/peta.dart               <-- tombol SEGARKAN dihapus
+   2_APLIKASI_copy_ke_proyek/main.dart               <-- satu menu Program
+   2_APLIKASI_copy_ke_proyek/pubspec.yaml            <-- versi 1.5.3+18
+   3_SKRIP_POWERSHELL/LANGKAH1_PASANG_SEMUA.ps1       <-- juru salin otomatis
+   3_SKRIP_POWERSHELL/PERIKSA_KODE_APLIKASI.ps1       <-- pemeriksa kode
    BACA_DULU.txt, TAUTAN_UNDUH.txt, PROGRAM_INTRODEAL_BD.txt  <-- panduan
 
  LANGKAH 1 - DI HOSTING (cPanel)
  -------------------------------
    1. Buka File Manager -> public_html -> folder api
    2. Unggah  api/program.php  (pilih TIMPA bila ditanya)
-   3. Buka phpMyAdmin -> pilih database Bapak -> menu SQL
-      Tempel SELURUH isi RTS_PANEL_PROGRAM.sql, lalu tekan GO.
-      Perintah ini hanya MEMBUAT 3 tabel baru:
-         rts_program_produk, rts_program_paket, rts_program_input
-      dan mengisi paket bawaan 2+1 dan 1+1. TIDAK ada data lama dihapus.
-      (Disarankan Backup dulu database - cukup tekan Ekspor di phpMyAdmin.)
+   3. Bila tabel program belum ada: buka phpMyAdmin -> database Bapak ->
+      menu SQL -> tempel SELURUH isi RTS_PANEL_PROGRAM.sql -> tekan GO.
+      Aman dijalankan berkali-kali; tidak ada data lama yang dihapus.
    4. Tidak ada berkas hosting lain yang berubah pada putaran ini.
 
  LANGKAH 2 - DI KOMPUTER (proyek Flutter D:\Project\rts_panel_app)
  ----------------------------------------------------------------
    1. Ekstrak paket ini ke mana saja (misalnya Desktop), pilih TIMPA semua.
    2. Klik kanan  LANGKAH1_PASANG_SEMUA.ps1  ->  Run with PowerShell
-      (skrip menyalin program.dart, kasir_lokal.dart, main.dart, dan
-       pubspec.yaml ke proyek Bapak; berkas lama dicadangkan dulu)
    3. Buka terminal di folder proyek, jalankan berurutan:
           flutter clean
           flutter pub get
           flutter analyze
           flutter build apk --release
-   4. Bila muncul peringatan kuning pada menu Program, kirimkan tulisannya
-      ke saya - akan saya perbaiki sampai bersih.
 
  LANGKAH 3 - DI HP
  -----------------
    1. Pasang APK baru dengan cara MENIMPA. JANGAN hapus aplikasi lama
       (data Kasir, STRUK POM, dan catatan program di HP tetap aman).
-   2. Buka aplikasi -> Menu PRO.
-      Sekarang ada: Program Introdeal, Program BD, Input Program,
-      Peta & Filter Program, dan Backup & Sinkron Data Offline.
-   3. Program Introdeal -> pilih paket 2+1 atau 1+1 (atau buat PAKET SENDIRI).
-   4. Tekan PILIH TOKO TERDEKAT, lalu CATAT PROGRAM - boleh tanpa internet.
+   2. Buka aplikasi -> MENU PRO -> sekarang hanya ada satu tombol: PROGRAM.
+   3. Di halaman Program, tekan tombol merah INPUT PROGRAM di kanan bawah:
+      pilih customer dari List Customer, lalu pilih programnya
+      (INTRODEAL 2+1 / 1+1, BD, atau PROGRAM BARU).
 
  PEMERIKSAAN SESUDAH PASANG
  --------------------------
    Di komputer: jalankan .\PERIKSA_KODE_APLIKASI.ps1
-       harus tertulis kode aplikasi  RTS-2026-10-05-18H
-   Di aplikasi: Menu PRO -> Program Introdeal
-       harus terlihat paket 2+1 dan 1+1, dan tombol PAKET SENDIRI.
-   Bila tertulis "tabel belum ada": tekan SINKRON ONLINE di menu Program,
-       lalu tempel perintah SQL yang muncul ke phpMyAdmin.
+       harus tertulis kode aplikasi  RTS-2026-10-05-18I
+   Di aplikasi: Menu PRO harus memuat HANYA satu tombol Program.
+   Bila daftar program bertambah banyak, gunakan DAFTAR PROGRAM untuk
+       mengubah atau menghapus program buatan sendiri.
 
  BACAAN LENGKAP: PROGRAM_INTRODEAL_BD.txt (panduan menu Program)
-                BACA_DULU.txt  bagian "PUTARAN 18H"
+                BACA_DULU.txt  bagian "PUTARAN 18I"
 
  TAUTAN UNDUH CEPAT
  ------------------
-   Paket lengkap    : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18H.zip
-   Hanya perubahan  : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18H.zip
+   Paket lengkap    : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18I.zip
+   Hanya perubahan  : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18I.zip
    api/program.php  : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/program.php
    SQL tabel        : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PROGRAM.sql
    lib/program.dart : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/program.dart
    main.dart        : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
    kasir_lokal.dart : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
+   kasir.dart       : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir.dart
+   peta.dart        : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
    pubspec.yaml     : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated

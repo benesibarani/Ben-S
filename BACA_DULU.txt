@@ -1,5 +1,10 @@
 ==============================================================================
  RTS PANEL BY BENE
+ (Putaran 18I: MENU "PROGRAM" KEMBALI SATU SAJA - ISINYA LIST CUSTOMER YANG
+  MENGIKUTI PROGRAM + TOMBOL MELAYANG UNTUK INPUT PROGRAM; PROGRAM BISA
+  DIBUAT SENDIRI (INTRODEAL 2+1 / 1+1, BD, DAN LAIN-LAIN); PETA TETAP ADA;
+  SELURUH TOMBOL SINKRON DI DALAM MENU DIHILANGKAN - SINKRON LEWAT MENU
+  "SINKRONISASI" SAJA)
  (Putaran 18: MENU "UPLOAD DATA CUSTOMER" - CENTANG HAPUS DATABASE,
   TEMPLATE DIAMBIL DARI DATABASE, DAN PANDUAN CSV YANG DETAIL)
  (Tambahan 18B: STATUS PRO DI "KELOLA AKUN TIM" DIKUNCI UNTUK ASS -
@@ -169,6 +174,102 @@
      Versi pubspec  : 1.5.2+17
      Bila kode di HP Bapak masih 18G/lebih lama, berarti aplikasi belum
      dipasang ulang - silakan pasang RTS_PANEL_PUTARAN_18H.zip.
+
+
+ ============================================================================
+  PUTARAN 18I - MENU "PROGRAM" DIPERBAIKI (SESUAI PERMINTAAN BAPAK)
+  (5 Oktober 2026)
+ ============================================================================
+
+  Yang Bapak minta pada putaran ini:
+    1. Tiga tombol Program (Program Introdeal, Program BD, Input Program)
+       DIHAPUS. Sekarang hanya SATU menu bernama "Program".
+    2. Di dalam menu Program: LIST CUSTOMER YANG MENGIKUTI PROGRAM.
+    3. Programnya: INTRODEAL (2+1 dan 1+1), BD, dan LAIN-LAIN -
+       Sales dapat membuat program sendiri.
+    4. Ada TOMBOL MELAYANG: diklik -> muncul List Customer -> pilih
+       programnya.
+    5. PETA tetap ada.
+    6. Tombol SINKRON di setiap menu dihapus (sudah ada menu Sinkronisasi).
+
+  ----------------------------------------------------------------------------
+  1. SATU MENU "PROGRAM" SAJA
+  ----------------------------------------------------------------------------
+     Di MENU PRO pada beranda sekarang hanya ada satu tombol: PROGRAM
+     (keterangan: "List customer & input program").
+
+     Isi halaman Program:
+        - Penggalan atas : tombol penyaring program (SEMUA PROGRAM,
+                           INTRODEAL, BD, dan program buatan Bapak) dan
+                           tombol DAFTAR PROGRAM untuk menambah / mengubah /
+                           menghapus program.
+        - Isi utama      : LIST CUSTOMER YANG MENGIKUTI PROGRAM.
+                           Tiap baris menampilkan nama toko, ID customer,
+                           program yang diikuti (misalnya "INTRODEAL 2+1"),
+                           jumlah catatan, dan berapa yang belum dikirim.
+                           Ketuk satu baris -> riwayat program customer itu.
+        - Tombol merah di kanan bawah (melayang) : INPUT PROGRAM.
+        - Tombol peta    : ikon PETA di kanan atas (peta & filter program,
+                           kunjungan, hari).
+        - Ikon awan      : catatan program yang masih tersimpan di HP.
+
+  ----------------------------------------------------------------------------
+  2. TOMBOL MELAYANG "INPUT PROGRAM"
+  ----------------------------------------------------------------------------
+     Ditekan -> terbuka halaman INPUT PROGRAM berisi:
+        1) CUSTOMER : tekan PILIH DARI LIST CUSTOMER (daftar toko diurutkan
+                      dari yang TERDEKAT dengan posisi HP).
+        2) PROGRAM  : pilih INTRODEAL, BD, atau PROGRAM BARU.
+                      Bila programnya memakai paket (contoh INTRODEAL),
+                      muncul pilihan paket 2+1 / 1+1 / PAKET SENDIRI.
+        3) PRODUK   : pilihan produk dari MENU BARANG BAWAAN
+                      (boleh TANPA PRODUK bila hanya ingin mencatat customer
+                      yang mengikuti program - isi catatan).
+        4) PETA LOKASI: titik toko yang dipilih + titik posisi Bapak.
+        5) Tekan SIMPAN DI HP - tidak memerlukan internet sama sekali.
+
+  ----------------------------------------------------------------------------
+  3. PROGRAM DAPAT DIBUAT SENDIRI
+  ----------------------------------------------------------------------------
+     Tekan PROGRAM BARU, isi nama (contoh: PROGRAM GAWIH), keterangan, dan
+     tentukan apakah program itu MEMAKAI PAKET atau TIDAK.
+     Program bawaan (INTRODEAL dan BD) tidak dapat dihapus; program buatan
+     Bapak dapat dihapus dari tombol DAFTAR PROGRAM.
+     Catatan: riwayat input yang sudah dicatat tetap tersimpan walaupun
+     programnya dihapus.
+
+  ----------------------------------------------------------------------------
+  4. TOMBOL SINKRON DI DALAM MENU DIHAPUS
+  ----------------------------------------------------------------------------
+     Tombol SINKRON PRODUK (Barang Bawaan), SEGARKAN (Peta Customer dan
+     Rute Plan), dan SINKRON ONLINE (Program) sudah dihapus.
+     Sinkronisasi sekarang TERPUSAT pada menu SINKRONISASI di menu utama
+     (tombol SINKRONKAN SEKARANG). Tombol itu sekarang sekaligus menarik:
+        - status AKUN (PRO / GRATIS),
+        - PRODUK (SKU & harga) dari server,
+        - DAFTAR TOKO (titik koordinat dan hari kunjungan).
+     Tombol Segarkan pada menu CCTV tetap ada (untuk mengambil daftar kamera
+     terbaru dari Dishub), dan tombol Segarkan pada Histori Struk POM tetap
+     ada (hanya membaca ulang data di HP).
+
+  ----------------------------------------------------------------------------
+  5. YANG PERLU DIPASANG (HOSTING + APLIKASI)
+  ----------------------------------------------------------------------------
+     HOSTING: timpa api/program.php (versi 18I), lalu jalankan
+     RTS_PANEL_PROGRAM.sql di phpMyAdmin bila tabelnya belum ada.
+     Aplikasi: timpa lib/program.dart, lib/kasir_lokal.dart, lib/kasir.dart,
+     lib/peta.dart, main.dart, dan pubspec.yaml (versi 1.5.3+18).
+     Cara termudah: paket RTS_PANEL_PUTARAN_18I.zip +
+     LANGKAH1_PASANG_SEMUA.ps1, lalu flutter clean -> pub get -> analyze ->
+     build apk.
+
+  ----------------------------------------------------------------------------
+  6. PENANDA VERSI
+  ----------------------------------------------------------------------------
+     Kode aplikasi : RTS-2026-10-05-18I
+     Versi pubspec  : 1.5.3+18
+     Data di HP    : versi database 6 (tabel program_jenis baru)
+
 
 
  ============================================================================

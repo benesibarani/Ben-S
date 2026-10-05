@@ -217,6 +217,34 @@ console.log('\n[1] Kesepakatan fungsi: rts_api_* yang dipakai program.php ada di
   periksa('tabel paket Introdeal ada (rts_program_paket)', endpoint.includes('rts_program_paket'));
   periksa('paket bawaan 2+1 dan 1+1 disiapkan server', endpoint.includes("'2+1'") && endpoint.includes("'1+1'"));
   periksa('INTRODEAL = program paket, BD tanpa paket', /INTRODEAL\s*=\s*Introductory Deal/i.test(endpoint));
+  periksa('nama program bebas (fungsi rts_pr_program)', endpoint.includes('function rts_pr_program('));
+  periksa('kolom jenis catatan program 40 huruf', /jenis VARCHAR\(40\)/.test(endpoint));
+
+  const pindahkanJenis = jalankan({
+    metode: 'POST',
+    token,
+    token_ada: true,
+    user: userRtsPro,
+    langganan: langgananPro,
+    tabel_program: true,
+    tabel_paket: true,
+    tabel_input: true,
+    program: duaProduk,
+    paket: duaPaket,
+    input: [],
+    post: {
+      aksi: 'input_simpan',
+      jenis: 'program gawih',
+      id_customer: 'C-1',
+      nama_toko: 'Toko Gawih',
+      catatan: 'Ikut program baru',
+    },
+  });
+
+  periksa('program buatan Sales (nama bebas) diterima server', pindahkanJenis.kode === 200,
+    JSON.stringify(pindahkanJenis.balasan));
+  periksa('nama program dirapikan huruf besar', !!pindahkanJenis.balasan
+    && pindahkanJenis.balasan.jenis === 'PROGRAM GAWIH');
 }
 
 /* --------------------------------------------------------- 2. tanpa token */
@@ -862,7 +890,34 @@ console.log('\n[19] Catatan program dari HP -> INTRODEAL wajib paket, BD tanpa p
     post: { aksi: 'input_simpan', jenis: 'BD', id_customer: 'C-200', jumlah: '0' },
   });
 
-  periksa('jumlah 0 ditolak 400', jumlahNol.kode === 400, 'kode=' + jumlahNol.kode);
+  periksa('jumlah 0 tanpa produk/catatan ditolak 400', jumlahNol.kode === 400,
+    'kode=' + jumlahNol.kode);
+
+  const catatanSaja = jalankan({
+    metode: 'POST',
+    token,
+    token_ada: true,
+    user: userRtsPro,
+    langganan: langgananPro,
+    tabel_program: true,
+    tabel_paket: true,
+    tabel_input: true,
+    program: duaProduk,
+    paket: duaPaket,
+    input: [],
+    post: {
+      aksi: 'input_simpan',
+      jenis: 'PROGRAM GAWIH',
+      id_customer: 'C-300',
+      nama_toko: 'Toko Gawih',
+      catatan: 'Mau ikut program, menunggu barang',
+    },
+  });
+
+  periksa('catatan saja tanpa produk diterima (200)', catatanSaja.kode === 200,
+    JSON.stringify(catatanSaja.balasan));
+  periksa('satuan dirapikan menjadi PACK/BATANG/BALL', !!catatanSaja.balasan
+    && ['PACK', 'BATANG', 'BALL'].includes(String(catatanSaja.balasan.satuan ?? '')));
 
   const tanpaToko = jalankan({
     metode: 'POST',
@@ -926,6 +981,25 @@ console.log('\n[20] Daftar catatan program di server + tabel belum ada');
     && hasil.balasan.items[0].nama_toko === 'Toko Uji'
     && hasil.balasan.items[0].nama_produk === 'Wismilak Inti Kretek');
   periksa('paket ikut terkirim', !!hasil.balasan && hasil.balasan.items[0].paket === '2+1');
+
+  const bebas = jalankan({
+    metode: 'GET',
+    token,
+    token_ada: true,
+    user: userAdmin,
+    langganan: langgananPro,
+    tabel_program: true,
+    tabel_paket: true,
+    tabel_input: true,
+    program: duaProduk,
+    paket: duaPaket,
+    input: catatan,
+    get: { aksi: 'input_daftar', jenis: 'PROGRAM GAWIH' },
+  });
+
+  periksa('saring nama program bebas diterima (200)', bebas.kode === 200, 'kode=' + bebas.kode);
+  periksa('nama program ikut dikembalikan', !!bebas.balasan
+    && String(bebas.balasan.jenis) === 'PROGRAM GAWIH');
 
   const belum = jalankan({
     metode: 'GET',
