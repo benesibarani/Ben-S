@@ -150,7 +150,20 @@
      tempelkan perintah SQL-nya di phpMyAdmin.
 
   ----------------------------------------------------------------------------
-  6. PENANDA VERSI
+  6. PERBAIKAN KECIL YANG SUDAH IKUT DI PAKET INI
+  ----------------------------------------------------------------------------
+     a. lib/program.dart belum mengimpor kasir_lokal.dart, padahal kelas
+        RtsKasirGalat tinggal di berkas itu. Akibatnya flutter analyze
+        menulis "The name 'RtsKasirGalat' isn't a type". SUDAH DIPERBAIKI.
+     b. Di dua tempat tertulis $jenis, padahal nama yang benar $_jenis.
+        Sudah diperbaiki juga.
+     c. Peta pada form CATAT PROGRAM kini benar-benar menampilkan titik
+        toko terpilih, karena data toko dilengkapi titik koordinatnya dulu
+        (daftar pemilih toko hanya mengirim id, nama, alamat, district).
+     Silakan pakai lib/program.dart dari paket 18H yang PALING BARU ini.
+
+  ----------------------------------------------------------------------------
+  7. PENANDA VERSI
   ----------------------------------------------------------------------------
      Kode aplikasi  : RTS-2026-10-05-18H
      Versi pubspec  : 1.5.2+17

@@ -48,6 +48,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import 'kasir.dart';
+import 'kasir_lokal.dart';
 import 'peta.dart';
 
 /// Dua sub-menu Program.
@@ -321,8 +322,8 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
       rtsKsPesan(
         context,
         items.isEmpty
-            ? 'Server belum memuat produk $jenis. Daftar di HP dikosongkan.'
-            : '${simpan['message'] ?? '$jenis disinkron.'}',
+            ? 'Server belum memuat produk $_jenis. Daftar di HP dikosongkan.'
+            : '${simpan['message'] ?? '$_jenis disinkron.'}',
       );
 
       setState(() => _sibuk = false);
@@ -755,7 +756,11 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
 
     if (toko == null || !mounted) return;
 
-    setState(() => _toko = toko);
+    final Map<String, dynamic> lengkap = await _lengkapiToko(toko);
+
+    if (!mounted) return;
+
+    setState(() => _toko = lengkap);
 
     await _muatStatusToko();
   }
@@ -997,6 +1002,7 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
                   sayaLat: _sayaLat,
                   sayaLng: _sayaLng,
                   tinggi: 150,
+                  warnaLain: rtsKsMaroon,
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
@@ -1287,20 +1293,18 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
     double? sayaLat,
     double? sayaLng,
     double tinggi = 200,
+    Color warnaLain = rtsKsTeks2,
   }) {
     final List<Map<String, dynamic>> bertitik = toko
-        .where((Map<String, dynamic> t) => t['bertitik'] == true)
+        .where((Map<String, dynamic> t) => _adaTitik(t))
         .toList();
 
     double lat = sayaLat ?? 3.5952;
     double lng = sayaLng ?? 98.6722;
 
     if (bertitik.isNotEmpty) {
-      final dynamic a = bertitik.first['latitude'];
-      final dynamic b = bertitik.first['longitude'];
-
-      if (a is num) lat = a.toDouble();
-      if (b is num) lng = b.toDouble();
+      lat = _latTitik(bertitik.first) ?? lat;
+      lng = _lngTitik(bertitik.first) ?? lng;
     }
 
     return ClipRRect(
@@ -1329,8 +1333,8 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
                 for (final Map<String, dynamic> t in bertitik)
                   Marker(
                     point: LatLng(
-                      (t['latitude'] as num).toDouble(),
-                      (t['longitude'] as num).toDouble(),
+                      _latTitik(t) ?? lat,
+                      _lngTitik(t) ?? lng,
                     ),
                     width: 32,
                     height: 32,
@@ -1338,7 +1342,7 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
                       message: '${t['nama']}',
                       child: Container(
                         decoration: BoxDecoration(
-                          color: t['program_sudah'] == true ? rtsKsHijau : rtsKsTeks2,
+                          color: t['program_sudah'] == true ? rtsKsHijau : warnaLain,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 1.4),
                         ),
@@ -1367,6 +1371,29 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
         ),
       ),
     );
+  }
+
+  /// True bila toko punya titik koordinat yang dapat digambar di peta.
+  bool _adaTitik(Map<String, dynamic> t) {
+    if (t['bertitik'] == false) return false;
+
+    return _latTitik(t) != null && _lngTitik(t) != null;
+  }
+
+  double? _latTitik(Map<String, dynamic> t) {
+    final dynamic a = t['latitude'];
+
+    if (a is num && a != 0) return a.toDouble();
+
+    return null;
+  }
+
+  double? _lngTitik(Map<String, dynamic> t) {
+    final dynamic b = t['longitude'];
+
+    if (b is num && b != 0) return b.toDouble();
+
+    return null;
   }
 
   /// PETA & FILTER: peta toko + penyaring program, kunjungan, dan hari.
@@ -1455,7 +1482,7 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
         builder: (BuildContext ctx2, StateSetter setDialog) {
           List<Map<String, dynamic>> saring() {
             return toko.where((Map<String, dynamic> t) {
-              if (t['bertitik'] != true) return false;
+              if (!_adaTitik(t)) return false;
 
               final String id = '${t['id_customer']}';
 
@@ -1560,13 +1587,15 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
                             'ID ${t['id_customer']}',
                             rtsKsSambung(
                               '${t['hari']}',
-                              sayaLat != null
+                              (sayaLat != null &&
+                                      _latTitik(t) != null &&
+                                      _lngTitik(t) != null)
                                   ? rtsKsJarakTeks(
                                       rtsKsJarakMeter(
                                         sayaLat,
                                         sayaLng ?? 0,
-                                        (t['latitude'] as num).toDouble(),
-                                        (t['longitude'] as num).toDouble(),
+                                        _latTitik(t)!,
+                                        _lngTitik(t)!,
                                       ),
                                     )
                                   : '',
@@ -1602,6 +1631,34 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
     final String tanggal = hari.day < 10 ? '0${hari.day}' : '${hari.day}';
 
     return '${hari.year}-$bulan-$tanggal';
+  }
+
+  /// Melengkapi toko terpilih dengan TITIK KOORDINAT dan hari kunjungan.
+  ///
+  /// Daftar pemilih toko (RtsPilihCustomerPage) hanya mengirim id, nama, hp,
+  /// alamat, dan district; titik peta dibaca dari salinan toko di HP supaya
+  /// peta kecil pada form CATAT PROGRAM benar-benar menampilkan toko itu.
+  Future<Map<String, dynamic>> _lengkapiToko(Map<String, dynamic> toko) async {
+    try {
+      final Map<String, dynamic> hasil = await _api.kirim('toko_peta');
+
+      final List<dynamic> items =
+          (hasil['items'] is List) ? hasil['items'] as List<dynamic> : <dynamic>[];
+
+      for (final dynamic satu in items) {
+        if (satu is! Map) continue;
+
+        final Map<String, dynamic> t = satu.cast<String, dynamic>();
+
+        if ('${t['id_customer']}' == '${toko['id']}') {
+          return <String, dynamic>{...toko, ...t};
+        }
+      }
+    } on RtsKasirGalat {
+      // Titik toko tidak ditemukan: peta tetap tampil tanpa titik toko.
+    }
+
+    return toko;
   }
 
   /* -------------------------------------------------------------------- layar */
@@ -1883,7 +1940,7 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
                   child: Padding(
                     padding: const EdgeInsets.all(22),
                     child: Text(
-                      'Belum ada produk $jenis.\n\nTekan DARI BARANG BAWAAN untuk '
+                      'Belum ada produk $_jenis.\n\nTekan DARI BARANG BAWAAN untuk '
                       'mengambil satu produk dari daftar bawaan, atau TAMBAH '
                       'PRODUK untuk mengetik sendiri, atau SINKRON ONLINE untuk '
                       'mengambil daftar dari server.',

@@ -8,6 +8,15 @@
  Paket ini untuk Bapak yang SUDAH pernah memasang RTS_PANEL_PUTARAN_18G.zip.
  Isinya hanya berkas yang BARU atau BERUBAH untuk revisi menu "Program".
 
+
+ PERBAIKAN KECIL 18H (sudah termasuk di paket ini)
+ --------------------------------------------------
+   lib/program.dart seharusnya mengimpor kasir_lokal.dart (tempat kelas
+   RtsKasirGalat berada) dan memakai _jenis, bukan jenis. Keduanya sudah
+   DIPERBAIKI, jadi tulisan merah di flutter analyze sudah hilang.
+   Peta pada form CATAT PROGRAM juga sekarang benar-benar menampilkan titik
+   toko terpilih (data toko dilengkapi titik koordinatnya lebih dulu).
+
  LIMA PERUBAHAN PUTARAN 18H
  --------------------------
    1. INTRODEAL = PROGRAM PAKET. Di dalamnya ada pilihan paket:
