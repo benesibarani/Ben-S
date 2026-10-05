@@ -63,7 +63,7 @@
 #  dengan perintah "flutter clean".
 # =============================================================================
 
-$harapanKode = 'RTS-2026-10-05-18G'
+$harapanKode = 'RTS-2026-10-05-18H'
 
 function TulisJudul($teks) {
     Write-Host ""

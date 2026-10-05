@@ -21,6 +21,11 @@
   DISALIN SEBAGAI TEKS; MENU PRO BARU "PROGRAM" (INTRODEAL & BD - PRODUK
   LAUNCHING WISMILAK); KASIR/PIUTANG/PROGRAM MENAMPILKAN TOKO TERDEKAT;
   WSS & SMST TIDAK DIBATASI SALES DISTRICT)
+ (Putaran 18H: MENU "PROGRAM" DIPERBAIKI - INTRODEAL = PROGRAM PAKET
+  (2+1, 1+1, DAN PAKET BUATAN SALES SENDIRI), BD = NEW BRAND DISTRIBUTION
+  TANPA PAKET; SALES DAPAT INPUT PROGRAM TANPA INTERNET; PETA + FILTER
+  (INTRODEAL / BD, KUNJUNGAN, HARI); MENU PRO BARU
+  "BACKUP & SINKRON DATA OFFLINE")
  TUTORIAL PUTARAN 17 - MENU "KELOLA AKUN TIM" UNTUK ASS DI WEBSITE
  (Tambahan 17B: PEMBETULAN KEPANJANGAN ROLE WSS & SMST)
  (Tambahan 17C: RTS = RETAIL SALESMAN, TF = TASK FORCE,
@@ -29,6 +34,128 @@
  (Putaran 15: MENU GSP, PETA DIPERBAIKI, MENU DAPAT DIMINIMIZE
   Tambahan 15B: PANEL FILTER MELIPAT KE ATAS + PETA PENUH SATU LAYAR)
 ==============================================================================
+
+
+
+ ============================================================================
+  PUTARAN 18H - MENU "PROGRAM" DIPERBAIKI + BACKUP & SINKRON DATA OFFLINE
+  (5 Oktober 2026) - PENTING, BACA BAGIAN INI DULU
+ ============================================================================
+
+  Yang Bapak minta pada putaran ini:
+    1. INTRODEAL = Introductory Deal, yaitu PROGRAM PAKET.
+       Buat sub-menu: 2+1, 1+1, dan Sales dapat membuat PAKET SENDIRI
+       (contoh 3+1). Produk diambil dari MENU BARANG BAWAAN.
+    2. BD = New Brand Distribution. TIDAK ada program / paket - hanya
+       PRODUK, karena produknya sudah ada di outlet.
+    3. Sales dapat INPUT OFFLINE (tanpa internet).
+    4. Lampirkan PETA pada input program + filter Introdeal, filter BD,
+       filter Kunjungan, dan filter Hari.
+    5. Seluruh menu PRO ditambah menu "Backup & Sinkron Data Offline"
+       ( melihat DATA DI HP ).
+
+  SEMUA SUDAH SELESAI. Berikut penjelasan Bahasa Indonesia yang mudah.
+
+  ----------------------------------------------------------------------------
+  1. MENU PRO "PROGRAM" SEKARANG TERPISAH MENJADI EMPAT TOMBOL DI BERANDA
+  ----------------------------------------------------------------------------
+     Program Introdeal       -> paket 2+1, 1+1, dan tombol PAKET SENDIRI
+     Program BD              -> New Brand Distribution (tanpa paket)
+     Input Program           -> langsung membuka form CATAT PROGRAM
+     Peta & Filter Program   -> langsung membuka PETA + penyaring
+
+  Di dalam Program Introdeal:
+     - Ada baris "PAKET INTRODEAL (pilih satu)".
+     - Paket bawaan: 2+1 (Beli 2 gratis 1) dan 1+1 (Beli 1 gratis 1).
+       Paket bawaan TIDAK dapat dihapus.
+     - Tombol "PAKET SENDIRI" untuk membuat paket baru, contoh 3+1
+       (Beli 3 gratis 1). Paket buatan Sales dapat dihapus (tekan tanda
+       silang kecil pada paket).
+     - Produk tetap diambil dari MENU BARANG BAWAAN atau SINKRON ONLINE.
+
+  Di dalam Program BD:
+     - Ada keterangan: "Sub-menu BD (New Brand Distribution): TIDAK
+       memakai paket - produknya sudah ada di outlet."
+     - Jadi BD hanya berisi PRODUK saja, sama seperti permintaan Bapak.
+
+  ----------------------------------------------------------------------------
+  2. SALES DAPAT INPUT PROGRAM WALAU TANPA INTERNET
+  ----------------------------------------------------------------------------
+     Tombol  CATAT PROGRAM  (hijau) di halaman Program:
+       1. Pilih dulu toko terdekat (tombol PILIH TOKO TERDEKAT).
+       2. Tekan CATAT PROGRAM.
+       3. Di dalam form sudah TERLAMPIR PETA KECIL (OpenStreetMap) berisi
+          titik toko yang dipilih + titik posisi Bapak.
+       4. Pilih produk, isi jumlah, satuan (PACK / BATANG / BALL),
+          dan catatan bila perlu.
+       5. Tekan SIMPAN DI HP.
+       Catatan langsung tersimpan DI DALAM HP (SQLite) - tidak perlu
+       internet sama sekali.
+
+     Tombol  CATATAN TERSIMPAN  (juga ada di pojok kanan atas, bergambar
+     awan + angka):
+       - Melihat semua catatan program yang tersimpan di HP.
+       - Menghapus satu catatan (ikon tempat sampah).
+       - Tombol KIRIM KE SERVER bila sudah ada internet. Catatan yang
+         berhasil dikirim otomatis ditandai "sudah dikirim".
+
+  ----------------------------------------------------------------------------
+  3. PETA + FILTER (INTRODEAL / BD, KUNJUNGAN, HARI)
+  ----------------------------------------------------------------------------
+     Tombol  PETA & FILTER  membuka satu layar berisi:
+       - Peta OpenStreetMap titik toko (hijau = sudah, abu-abu = belum).
+       - Titik biru = posisi Bapak.
+       - Penyaring PROGRAM: INTRODEAL atau BD.
+       - Penyaring KUNJUNGAN: SEMUA / SUDAH / BELUM (hari ini).
+       - Penyaring HARI: SEMUA, SENIN, SELASA, RABU, KAMIS, JUMAT,
+         SABTU, MINGGU.
+       - Daftar 30 toko teratas beserta ID, hari kunjungan, dan jarak
+         dari posisi Bapak.
+
+  ----------------------------------------------------------------------------
+  4. MENU PRO BARU: "BACKUP & SINKRON DATA OFFLINE"
+  ----------------------------------------------------------------------------
+     Isinya (semua dari data DI DALAM HP):
+       Kunjungan, Nota kasir, Input program, Piutang, Program produk,
+       Paket Introdeal, Toko tersimpan, Produk tersimpan, Goresan peta,
+       Titik kantor.
+     Tiap baris menunjukkan berapa data yang BELUM DIKIRIM.
+     Tombol yang tersedia:
+       - LIHAT DATA SIAP KIRIM : melihat/menyalin isi data yang belum
+                                 dikirim (untuk dilaporkan ke ASS/Admin).
+       - SALIN RINGKASAN       : menyalin ringkasan angka ke catatan HP,
+                                 lalu dapat ditempel ke WhatsApp.
+       - TANDAI SUDAH DIKIRIM  : menandai data sudah masuk ke server/pusat.
+       - BUAT CADANGAN DI HP   : membuat berkas cadangan .db di dalam HP.
+
+  ----------------------------------------------------------------------------
+  5. YANG PERLU DIPASANG (HOSTING + APLIKASI)
+  ----------------------------------------------------------------------------
+     KE HOSTING (public_html) - cukup timpa berkas ini:
+        api/program.php     (versi baru: paket Introdeal + catatan program)
+     Lalu jalankan perintah SQL pada phpMyAdmin:
+        RTS_PANEL_PROGRAM.sql   (membuat 3 tabel: rts_program_produk,
+        rts_program_paket, rts_program_input - isinya paket 2+1 dan 1+1)
+     TIDAK ada tabel/data lama yang dihapus.
+
+     KE APLIKASI FLUTTER (proyek D:\Project\rts_panel_app):
+        lib/program.dart, lib/kasir_lokal.dart, main.dart,
+        pubspec.yaml (versi 1.5.2+17)
+     Cara termudah: jalankan LANGKAH1_PASANG_SEMUA.ps1 dari paket
+     RTS_PANEL_PUTARAN_18H.zip, lalu:
+        flutter clean -> flutter pub get -> flutter analyze -> build apk
+
+     Sesudah aplikasi dibuka, bila ada keterangan "tabel belum ada",
+     tekan tombol SINKRON ONLINE / SALIN SQL di menu Program, lalu
+     tempelkan perintah SQL-nya di phpMyAdmin.
+
+  ----------------------------------------------------------------------------
+  6. PENANDA VERSI
+  ----------------------------------------------------------------------------
+     Kode aplikasi  : RTS-2026-10-05-18H
+     Versi pubspec  : 1.5.2+17
+     Bila kode di HP Bapak masih 18G/lebih lama, berarti aplikasi belum
+     dipasang ulang - silakan pasang RTS_PANEL_PUTARAN_18H.zip.
 
 
  ============================================================================

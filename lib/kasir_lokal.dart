@@ -189,11 +189,14 @@ class RtsKasirLokal {
 
     _db = await openDatabase(
       jalur,
-      version: 4,
+      version: 5,
       onCreate: (Database d, int v) async {
         for (final String sql in _perintahTabel()) {
           await d.execute(sql);
         }
+
+        // Paket INTRODEAL bawaan (2+1 dan 1+1) langsung tersedia.
+        await _paketBawaan(d);
       },
       onUpgrade: (Database d, int lama, int baru) async {
         // Database lama (versi 1) belum memakai kolom sku, belum punya tabel
@@ -201,6 +204,9 @@ class RtsKasirLokal {
         // Versi 3 menambahkan titik koordinat & jadwal kunjungan pada tabel
         // toko, serta tabel kantor, kunjungan, dan peta_gores (pensil rute).
         // Versi 4 menambahkan tabel program (INTRODEAL & BD) pada menu PRO.
+        // Versi 5 menambahkan PAKET INTRODEAL (2+1, 1+1, buatan Sales), INPUT
+        // PROGRAM luring, dan penanda KIRIM untuk kunjungan & nota (Sinkron
+        // Data Offline).
         await _perbaikiTabel(d);
       },
       onConfigure: (Database d) async {
@@ -257,6 +263,7 @@ class RtsKasirLokal {
       '''CREATE TABLE IF NOT EXISTS program (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         jenis TEXT NOT NULL DEFAULT 'INTRODEAL',
+        paket TEXT NOT NULL DEFAULT '',
         sku TEXT NOT NULL DEFAULT '',
         barcode_pack TEXT NOT NULL DEFAULT '',
         nama TEXT NOT NULL DEFAULT '',
@@ -271,6 +278,39 @@ class RtsKasirLokal {
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_program_jenis_sku'
       ' ON program(jenis, sku)',
       'CREATE INDEX IF NOT EXISTS idx_program_nama ON program(nama)',
+      '''CREATE TABLE IF NOT EXISTS program_paket (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        jenis TEXT NOT NULL DEFAULT 'INTRODEAL',
+        nama TEXT NOT NULL DEFAULT '',
+        keterangan TEXT NOT NULL DEFAULT '',
+        bawaan INTEGER NOT NULL DEFAULT 0,
+        diubah_pada TEXT NOT NULL DEFAULT ''
+      )''',
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_paket_jenis_nama'
+      ' ON program_paket(jenis, nama)',
+      '''CREATE TABLE IF NOT EXISTS program_input (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        jenis TEXT NOT NULL DEFAULT 'INTRODEAL',
+        paket TEXT NOT NULL DEFAULT '',
+        paket_keterangan TEXT NOT NULL DEFAULT '',
+        id_customer TEXT NOT NULL DEFAULT '',
+        nama_toko TEXT NOT NULL DEFAULT '',
+        produk_id INTEGER NOT NULL DEFAULT 0,
+        nama_produk TEXT NOT NULL DEFAULT '',
+        sku TEXT NOT NULL DEFAULT '',
+        jumlah REAL NOT NULL DEFAULT 0,
+        satuan TEXT NOT NULL DEFAULT 'PACK',
+        tanggal TEXT NOT NULL DEFAULT '',
+        catatan TEXT NOT NULL DEFAULT '',
+        id_sales TEXT NOT NULL DEFAULT '',
+        nama_sales TEXT NOT NULL DEFAULT '',
+        kirim INTEGER NOT NULL DEFAULT 0,
+        dikirim_pada TEXT NOT NULL DEFAULT '',
+        diubah_pada TEXT NOT NULL DEFAULT ''
+      )''',
+      'CREATE INDEX IF NOT EXISTS idx_input_toko'
+      ' ON program_input(id_customer, jenis)',
+      'CREATE INDEX IF NOT EXISTS idx_input_kirim ON program_input(kirim)',
       ..._perintahPeta(),
       '''CREATE TABLE IF NOT EXISTS stok (
         id_sales TEXT NOT NULL,
@@ -465,6 +505,38 @@ class RtsKasirLokal {
     }
   }
 
+  /// Mengisi PAKET INTRODEAL bawaan bila belum ada.
+  ///
+  /// INTRODEAL = Introductory Deal, yaitu PROGRAM PAKET. Paket baku yang
+  /// selalu tersedia: "2+1" dan "1+1". Sales juga dapat membuat paket sendiri
+  /// (misalnya "3+1") dari aplikasi - paket buatan Sales disimpan di HP dan
+  /// dapat dikirim ke server oleh ADMIN / ASS.
+  Future<void> _paketBawaan(DatabaseExecutor d) async {
+    final List<Map<String, Object?>> ada =
+        await d.rawQuery('SELECT COUNT(*) AS jumlah FROM program_paket');
+
+    if (_bulat(ada.isEmpty ? 0 : ada.first['jumlah']) > 0) return;
+
+    final String waktu = _waktu();
+
+    for (final List<String> satu in <List<String>>[
+      <String>['2+1', 'Beli 2 gratis 1'],
+      <String>['1+1', 'Beli 1 gratis 1'],
+    ]) {
+      try {
+        await d.insert('program_paket', <String, Object?>{
+          'jenis': 'INTRODEAL',
+          'nama': satu[0],
+          'keterangan': satu[1],
+          'bawaan': 1,
+          'diubah_pada': waktu,
+        });
+      } catch (_) {
+        // paket sudah ada: tidak perlu dikerjakan lagi
+      }
+    }
+  }
+
   /// Menyesuaikan database lama agar sesuai bentuk terbaru.
   ///
   /// Seluruh perintah di bawah AMAN dijalankan berkali-kali: bila kolomnya
@@ -515,6 +587,49 @@ class RtsKasirLokal {
     await coba('CREATE UNIQUE INDEX IF NOT EXISTS idx_program_jenis_sku'
         ' ON program(jenis, sku)');
     await coba('CREATE INDEX IF NOT EXISTS idx_program_nama ON program(nama)');
+
+    // 1e. Tabel PAKET INTRODEAL + INPUT PROGRAM (putaran 18H).
+    await coba("ALTER TABLE program ADD COLUMN paket TEXT NOT NULL DEFAULT ''");
+    await coba('''CREATE TABLE IF NOT EXISTS program_paket (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      jenis TEXT NOT NULL DEFAULT 'INTRODEAL',
+      nama TEXT NOT NULL DEFAULT '',
+      keterangan TEXT NOT NULL DEFAULT '',
+      bawaan INTEGER NOT NULL DEFAULT 0,
+      diubah_pada TEXT NOT NULL DEFAULT ''
+    )''');
+    await coba('CREATE UNIQUE INDEX IF NOT EXISTS idx_paket_jenis_nama'
+        ' ON program_paket(jenis, nama)');
+    await coba('''CREATE TABLE IF NOT EXISTS program_input (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      jenis TEXT NOT NULL DEFAULT 'INTRODEAL',
+      paket TEXT NOT NULL DEFAULT '',
+      paket_keterangan TEXT NOT NULL DEFAULT '',
+      id_customer TEXT NOT NULL DEFAULT '',
+      nama_toko TEXT NOT NULL DEFAULT '',
+      produk_id INTEGER NOT NULL DEFAULT 0,
+      nama_produk TEXT NOT NULL DEFAULT '',
+      sku TEXT NOT NULL DEFAULT '',
+      jumlah REAL NOT NULL DEFAULT 0,
+      satuan TEXT NOT NULL DEFAULT 'PACK',
+      tanggal TEXT NOT NULL DEFAULT '',
+      catatan TEXT NOT NULL DEFAULT '',
+      id_sales TEXT NOT NULL DEFAULT '',
+      nama_sales TEXT NOT NULL DEFAULT '',
+      kirim INTEGER NOT NULL DEFAULT 0,
+      dikirim_pada TEXT NOT NULL DEFAULT '',
+      diubah_pada TEXT NOT NULL DEFAULT ''
+    )''');
+    await coba('CREATE INDEX IF NOT EXISTS idx_input_toko'
+        ' ON program_input(id_customer, jenis)');
+    await coba('CREATE INDEX IF NOT EXISTS idx_input_kirim ON program_input(kirim)');
+    await _paketBawaan(d);
+
+    // 1f. Penanda KIRIM untuk kunjungan & nota (Sinkron Data Offline).
+    await coba("ALTER TABLE kunjungan ADD COLUMN kirim INTEGER NOT NULL DEFAULT 0");
+    await coba("ALTER TABLE kunjungan ADD COLUMN dikirim_pada TEXT NOT NULL DEFAULT ''");
+    await coba("ALTER TABLE penjualan ADD COLUMN kirim INTEGER NOT NULL DEFAULT 0");
+    await coba("ALTER TABLE penjualan ADD COLUMN dikirim_pada TEXT NOT NULL DEFAULT ''");
 
     // 2. Kolom barcode_batang DIHAPUS (barcode hanya ada pada bungkus).
     //    SQLite lama belum mendukung DROP COLUMN, jadi tabel dibangun ulang
@@ -1250,6 +1365,57 @@ class RtsKasirLokal {
         await _pastikanBoleh();
 
         return _programToko(_teks(data['id_customer'], 40));
+
+      case 'paket_daftar':
+        await _pastikanBoleh();
+
+        return _paketDaftar(_teks(data['jenis'], 20));
+
+      case 'paket_simpan':
+        await _pastikanBoleh();
+
+        return _paketSimpan(data);
+
+      case 'paket_hapus':
+        await _pastikanBoleh();
+
+        return _paketHapus(_bulat(data['id']));
+
+      case 'program_input_simpan':
+        await _pastikanBoleh();
+
+        return _programInputSimpan(data);
+
+      case 'program_input_daftar':
+        await _pastikanBoleh();
+
+        return _programInputDaftar(
+          _teks(data['jenis'], 20),
+          _teks(data['id_customer'], 40),
+          _bulat(data['batas'] ?? 200),
+        );
+
+      case 'program_input_hapus':
+        await _pastikanBoleh();
+
+        return _programInputHapus(_bulat(data['id']));
+
+      case 'offline_ringkas':
+        await _pastikanBoleh();
+
+        return _offlineRingkas();
+
+      case 'offline_ambil':
+        await _pastikanBoleh();
+
+        return _offlineAmbil(_bulat(data['batas'] ?? 300));
+
+      case 'offline_tandai':
+        await _pastikanBoleh();
+
+        return _offlineTandai(
+          data['kiriman'] is List ? data['kiriman'] as List<dynamic> : <dynamic>[],
+        );
 
       case 'gores_daftar':
         await _pastikanBoleh();
@@ -3282,6 +3448,7 @@ class RtsKasirLokal {
     return <String, dynamic>{
       'id': _bulat(baris['id']),
       'jenis': '${baris['jenis'] ?? 'INTRODEAL'}',
+      'paket': '${baris['paket'] ?? ''}',
       'sku': '${baris['sku'] ?? ''}',
       'barcode_pack': '${baris['barcode_pack'] ?? ''}',
       'nama': '${baris['nama'] ?? ''}',
@@ -3413,6 +3580,7 @@ class RtsKasirLokal {
 
     final Map<String, Object?> isi = <String, Object?>{
       'jenis': jenis,
+      'paket': jenis == 'BD' ? '' : _teks(data['paket'], 20).toUpperCase(),
       'sku': sku,
       'barcode_pack': barcode,
       'nama': nama,
@@ -3505,6 +3673,7 @@ class RtsKasirLokal {
         // Seluruh baris pada perintah ini milik satu sub-menu (jns), supaya
         // daftar INTRODEAL dan BD tidak pernah tertukar.
         'jenis': jns,
+        'paket': jns == 'BD' ? '' : _teks(p['paket'], 20).toUpperCase(),
         'sku': sku,
         'barcode_pack': barcode,
         'nama': nama,
@@ -3582,6 +3751,558 @@ class RtsKasirLokal {
       'jumlah': items.length,
       'sudah': sudah,
       'id_customer': idCustomer,
+    };
+  }
+
+  /* -------------------------------------------------------- paket introdeal */
+
+  /// Bentuk satu PAKET Introdeal untuk aplikasi.
+  Map<String, dynamic> _paketBentuk(Map<String, Object?> baris) {
+    return <String, dynamic>{
+      'id': _bulat(baris['id']),
+      'jenis': '${baris['jenis'] ?? 'INTRODEAL'}',
+      'nama': '${baris['nama'] ?? ''}',
+      'keterangan': '${baris['keterangan'] ?? ''}',
+      'bawaan': _bulat(baris['bawaan']) == 1,
+      'diubah_pada': '${baris['diubah_pada'] ?? ''}',
+    };
+  }
+
+  /// Daftar paket Introdeal (bawaan 2+1 & 1+1, ditambah paket buatan Sales).
+  ///
+  /// Sub-menu BD TIDAK memakai paket (produk BD sudah ada di outlet), jadi
+  /// permintaan paket untuk BD selalu mengembalikan daftar kosong.
+  Future<Map<String, dynamic>> _paketDaftar(String jenis) async {
+    final Database d = await db;
+    final String jns = jenis.toUpperCase() == 'BD' ? 'BD' : 'INTRODEAL';
+
+    await _paketBawaan(d);
+
+    if (jns == 'BD') {
+      return <String, dynamic>{
+        'success': true,
+        'message': 'Sub-menu BD tidak memakai paket - produknya sudah ada di outlet.',
+        'items': <Map<String, dynamic>>[],
+        'jumlah': 0,
+        'jenis': jns,
+      };
+    }
+
+    final List<Map<String, Object?>> baris = await d.query(
+      'program_paket',
+      where: 'jenis = ?',
+      whereArgs: <Object?>[jns],
+      orderBy: 'bawaan DESC, nama ASC',
+      limit: 100,
+    );
+
+    final List<Map<String, dynamic>> items =
+        baris.map(_paketBentuk).toList();
+
+    return <String, dynamic>{
+      'success': true,
+      'message': '${items.length} paket $jns tersedia.',
+      'items': items,
+      'jumlah': items.length,
+      'jenis': jns,
+    };
+  }
+
+  /// Menyimpan paket Introdeal (dipakai tombol "BUAT PAKET SENDIRI").
+  Future<Map<String, dynamic>> _paketSimpan(Map<String, dynamic> data) async {
+    final Database d = await db;
+
+    final String nama = _teks(data['nama'], 20).toUpperCase();
+    final String keterangan = _teks(data['keterangan'], 120);
+
+    if (nama.isEmpty) {
+      throw RtsKasirGalat('Nama paket belum diisi (contoh: 3+1).');
+    }
+
+    final String waktu = _waktu();
+    final Map<String, Object?> isi = <String, Object?>{
+      'jenis': 'INTRODEAL',
+      'nama': nama,
+      'keterangan': keterangan,
+      'bawaan': 0,
+      'diubah_pada': waktu,
+    };
+
+    final List<Map<String, Object?>> ada = await d.query(
+      'program_paket',
+      where: 'jenis = ? AND nama = ?',
+      whereArgs: <Object?>['INTRODEAL', nama],
+      limit: 1,
+    );
+
+    if (ada.isNotEmpty) {
+      await d.update(
+        'program_paket',
+        isi,
+        where: 'id = ?',
+        whereArgs: <Object?>[_bulat(ada.first['id'])],
+      );
+    } else {
+      await d.insert('program_paket', isi);
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Paket $nama disimpan di HP.',
+      'nama': nama,
+    };
+  }
+
+  /// Menghapus paket buatan Sales. Paket bawaan (2+1 & 1+1) tidak dihapus.
+  Future<Map<String, dynamic>> _paketHapus(int id) async {
+    if (id < 1) {
+      throw RtsKasirGalat('Paket yang ingin dihapus tidak dikenal.');
+    }
+
+    final Database d = await db;
+
+    final List<Map<String, Object?>> ada = await d.query(
+      'program_paket',
+      where: 'id = ?',
+      whereArgs: <Object?>[id],
+      limit: 1,
+    );
+
+    if (ada.isEmpty) {
+      throw RtsKasirGalat('Paket tidak ditemukan.');
+    }
+
+    if (_bulat(ada.first['bawaan']) == 1) {
+      throw RtsKasirGalat(
+        'Paket "${ada.first['nama']}" adalah paket BAWAAN, tidak dapat dihapus.',
+      );
+    }
+
+    await d.delete('program_paket', where: 'id = ?', whereArgs: <Object?>[id]);
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Paket ${ada.first['nama']} dihapus.',
+    };
+  }
+
+  /* --------------------------------------------------------- input program */
+
+  /// Bentuk satu INPUT PROGRAM (dipakai daftar di HP maupun kiriman server).
+  Map<String, dynamic> _inputBentuk(Map<String, Object?> baris) {
+    return <String, dynamic>{
+      'id': _bulat(baris['id']),
+      'jenis': '${baris['jenis'] ?? 'INTRODEAL'}',
+      'paket': '${baris['paket'] ?? ''}',
+      'paket_keterangan': '${baris['paket_keterangan'] ?? ''}',
+      'id_customer': '${baris['id_customer'] ?? ''}',
+      'nama_toko': '${baris['nama_toko'] ?? ''}',
+      'produk_id': _bulat(baris['produk_id']),
+      'nama_produk': '${baris['nama_produk'] ?? ''}',
+      'sku': '${baris['sku'] ?? ''}',
+      'jumlah': _angka(baris['jumlah']),
+      'jumlah_teks': _angka(baris['jumlah']).toStringAsFixed(
+            _angka(baris['jumlah']) == _angka(baris['jumlah']).roundToDouble()
+                ? 0
+                : 1,
+          ),
+      'satuan': '${baris['satuan'] ?? 'PACK'}',
+      'tanggal': '${baris['tanggal'] ?? ''}',
+      'catatan': '${baris['catatan'] ?? ''}',
+      'id_sales': '${baris['id_sales'] ?? ''}',
+      'nama_sales': '${baris['nama_sales'] ?? ''}',
+      'kirim': _bulat(baris['kirim']) == 1,
+      'dikirim_pada': '${baris['dikirim_pada'] ?? ''}',
+      'diubah_pada': '${baris['diubah_pada'] ?? ''}',
+    };
+  }
+
+  /// Menyimpan INPUT PROGRAM secara LURING (tanpa internet).
+  ///
+  /// Dipakai sub-menu INTRODEAL (dengan paket 2+1 / 1+1 / paket buatan Sales)
+  /// maupun BD (tanpa paket). Data disimpan di HP dan dikirim ke server
+  /// belakangan lewat menu PRO "Backup & Sinkron Data Offline".
+  Future<Map<String, dynamic>> _programInputSimpan(Map<String, dynamic> data) async {
+    final Database d = await db;
+
+    final String jns = _teks(data['jenis'], 20).toUpperCase() == 'BD'
+        ? 'BD'
+        : 'INTRODEAL';
+    String paket = _teks(data['paket'], 20).toUpperCase();
+
+    if (jns == 'BD') paket = '';
+
+    if (jns == 'INTRODEAL' && paket.isEmpty) {
+      throw RtsKasirGalat('Paket Introdeal belum dipilih (contoh: 2+1 atau 1+1).');
+    }
+
+    final String idCustomer = _teks(data['id_customer'], 40);
+    final String namaToko = _teks(data['nama_toko'], 150);
+    final String namaProduk = _teks(data['nama_produk'], 150);
+
+    if (idCustomer.isEmpty && namaToko.isEmpty) {
+      throw RtsKasirGalat('Toko/customer belum dipilih.');
+    }
+
+    if (namaProduk.isEmpty) {
+      throw RtsKasirGalat('Produk belum dipilih (ambil dari Barang Bawaan).');
+    }
+
+    final double jumlah = _angka(data['jumlah']);
+
+    if (jumlah <= 0) {
+      throw RtsKasirGalat('Jumlah produk harus lebih dari nol.');
+    }
+
+    final DateTime sekarang = DateTime.now();
+    final String waktu = _waktu();
+
+    final Map<String, Object?> isi = <String, Object?>{
+      'jenis': jns,
+      'paket': paket,
+      'paket_keterangan': _teks(data['paket_keterangan'], 120),
+      'id_customer': idCustomer,
+      'nama_toko': namaToko,
+      'produk_id': _bulat(data['produk_id']),
+      'nama_produk': namaProduk,
+      'sku': _teks(data['sku'], 64),
+      'jumlah': jumlah,
+      'satuan': _teks(data['satuan'], 12).toUpperCase() == 'BATANG'
+          ? 'BATANG'
+          : 'PACK',
+      'tanggal': _teks(data['tanggal'], 30).isEmpty
+          ? '${sekarang.year}-${_dua(sekarang.month)}-${_dua(sekarang.day)}'
+          : _teks(data['tanggal'], 30),
+      'catatan': _teks(data['catatan'], 255),
+      'id_sales': idSales,
+      'nama_sales': namaSales,
+      'kirim': 0,
+      'dikirim_pada': '',
+      'diubah_pada': waktu,
+    };
+
+    final int idBaru = await d.insert('program_input', isi);
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Input $jns${paket.isEmpty ? '' : ' paket $paket'} tersimpan '
+          'DI HP (luring). Kirim ke server lewat menu Backup & Sinkron Data '
+          'Offline.',
+      'id': idBaru,
+      'jenis': jns,
+      'paket': paket,
+    };
+  }
+
+  /// Daftar input program di HP (dapat disaring menurut toko).
+  Future<Map<String, dynamic>> _programInputDaftar(
+    String jenis,
+    String idCustomer,
+    int batas,
+  ) async {
+    final Database d = await db;
+    final String jns = jenis.toUpperCase();
+
+    String where = '';
+    final List<Object?> args = <Object?>[];
+
+    if (jns == 'INTRODEAL' || jns == 'BD') {
+      where = 'jenis = ?';
+      args.add(jns);
+    }
+
+    if (idCustomer.isNotEmpty) {
+      where += where.isEmpty ? '' : ' AND ';
+      where += 'id_customer = ?';
+      args.add(idCustomer);
+    }
+
+    final List<Map<String, Object?>> baris = await d.query(
+      'program_input',
+      where: where.isEmpty ? null : where,
+      whereArgs: args.isEmpty ? null : args,
+      orderBy: 'id DESC',
+      limit: batas < 1 ? 200 : (batas > 500 ? 500 : batas),
+    );
+
+    final List<Map<String, dynamic>> items =
+        baris.map(_inputBentuk).toList();
+
+    int belum = 0;
+
+    for (final Map<String, dynamic> satu in items) {
+      if (satu['kirim'] != true) belum++;
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': '${items.length} input program di HP, $belum belum dikirim.',
+      'items': items,
+      'jumlah': items.length,
+      'belum_kirim': belum,
+      'jenis': jns,
+    };
+  }
+
+  /// Menghapus satu input program di HP.
+  Future<Map<String, dynamic>> _programInputHapus(int id) async {
+    if (id < 1) {
+      throw RtsKasirGalat('Input program yang ingin dihapus tidak dikenal.');
+    }
+
+    final Database d = await db;
+    final int jumlah =
+        await d.delete('program_input', where: 'id = ?', whereArgs: <Object?>[id]);
+
+    return <String, dynamic>{
+      'success': true,
+      'message': jumlah > 0
+          ? 'Input program dihapus dari HP.'
+          : 'Input program tidak ditemukan.',
+      'jumlah': jumlah,
+    };
+  }
+
+  /* -------------------------------------------------- sinkron data offline */
+
+  /// Ringkasan SELURUH data yang tersimpan di HP (semua menu PRO).
+  Future<Map<String, dynamic>> _offlineRingkas() async {
+    final Database d = await db;
+
+    Future<int> hitung(String sql, [List<Object?> args = const <Object?>[]]) async {
+      final List<Map<String, Object?>> baris = await d.rawQuery(sql, args);
+
+      return _bulat(baris.isEmpty ? 0 : baris.first['jumlah']);
+    }
+
+    final int kunjungan = await hitung(
+      'SELECT COUNT(*) AS jumlah FROM kunjungan WHERE id_sales = ?',
+      <Object?>[idSales],
+    );
+    final int kunjunganBelum = await hitung(
+      'SELECT COUNT(*) AS jumlah FROM kunjungan WHERE id_sales = ? AND kirim = 0',
+      <Object?>[idSales],
+    );
+    final int nota = await hitung(
+      'SELECT COUNT(*) AS jumlah FROM penjualan WHERE id_sales = ?',
+      <Object?>[idSales],
+    );
+    final int notaBelum = await hitung(
+      'SELECT COUNT(*) AS jumlah FROM penjualan WHERE id_sales = ? AND kirim = 0',
+      <Object?>[idSales],
+    );
+    final int piutang = await hitung(
+      'SELECT COUNT(*) AS jumlah FROM piutang WHERE id_sales = ?',
+      <Object?>[idSales],
+    );
+    final int inputProgram = await hitung(
+      'SELECT COUNT(*) AS jumlah FROM program_input WHERE id_sales = ?',
+      <Object?>[idSales],
+    );
+    final int inputBelum = await hitung(
+      'SELECT COUNT(*) AS jumlah FROM program_input WHERE id_sales = ? AND kirim = 0',
+      <Object?>[idSales],
+    );
+    final int produk = await hitung('SELECT COUNT(*) AS jumlah FROM produk');
+    final int toko = await hitung('SELECT COUNT(*) AS jumlah FROM toko');
+    final int program = await hitung('SELECT COUNT(*) AS jumlah FROM program');
+    final int paket = await hitung('SELECT COUNT(*) AS jumlah FROM program_paket');
+    final int goresan = await hitung('SELECT COUNT(*) AS jumlah FROM peta_gores');
+    final int kantor = await hitung('SELECT COUNT(*) AS jumlah FROM kantor');
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Data di HP terbaca.',
+      'produk': produk,
+      'toko': toko,
+      'nota': nota,
+      'nota_belum': notaBelum,
+      'piutang': piutang,
+      'kunjungan': kunjungan,
+      'kunjungan_belum': kunjunganBelum,
+      'program': program,
+      'paket': paket,
+      'program_input': inputProgram,
+      'program_input_belum': inputBelum,
+      'goresan': goresan,
+      'kantor': kantor,
+      'id_sales': idSales,
+      'nama_sales': namaSales,
+      'belum_kirim': kunjunganBelum + notaBelum + inputBelum,
+    };
+  }
+
+  /// Mengambil data yang BELUM dikirim ke server (untuk menu Sinkron Offline).
+  ///
+  /// Isinya: kunjungan, nota kasir beserta barangnya, piutang, dan input
+  /// program. Bentuk balasan sudah siap dikirim sebagai satu paket JSON.
+  Future<Map<String, dynamic>> _offlineAmbil(int batas) async {
+    final Database d = await db;
+    final int jml = batas < 1 ? 300 : (batas > 500 ? 500 : batas);
+
+    final List<Map<String, Object?>> kunjungan = await d.query(
+      'kunjungan',
+      where: 'id_sales = ? AND kirim = 0',
+      whereArgs: <Object?>[idSales],
+      orderBy: 'id ASC',
+      limit: jml,
+    );
+
+    final List<Map<String, Object?>> nota = await d.query(
+      'penjualan',
+      where: 'id_sales = ? AND kirim = 0',
+      whereArgs: <Object?>[idSales],
+      orderBy: 'id ASC',
+      limit: jml,
+    );
+
+    final List<Map<String, Object?>> piutang = await d.query(
+      'piutang',
+      where: 'id_sales = ?',
+      whereArgs: <Object?>[idSales],
+      orderBy: 'id ASC',
+      limit: jml,
+    );
+
+    final List<Map<String, Object?>> input = await d.query(
+      'program_input',
+      where: 'id_sales = ? AND kirim = 0',
+      whereArgs: <Object?>[idSales],
+      orderBy: 'id ASC',
+      limit: jml,
+    );
+
+    final List<Map<String, dynamic>> kunjunganKirim = <Map<String, dynamic>>[];
+    final List<Map<String, dynamic>> kiriman = <Map<String, dynamic>>[];
+
+    for (final Map<String, Object?> k in kunjungan) {
+      kunjunganKirim.add(<String, dynamic>{
+        'tabel': 'kunjungan',
+        'id_hp': _bulat(k['id']),
+        'id_customer': '${k['id_customer'] ?? ''}',
+        'nama_toko': '${k['nama'] ?? ''}',
+        'tanggal': '${k['tanggal'] ?? ''}',
+        'jam': '${k['jam'] ?? ''}',
+        'latitude': _angka(k['latitude']),
+        'longitude': _angka(k['longitude']),
+        'catatan': '${k['catatan'] ?? ''}',
+      });
+    }
+
+    for (final Map<String, Object?> n in nota) {
+      final List<Map<String, Object?>> barang = await d.query(
+        'penjualan_item',
+        where: 'penjualan_id = ?',
+        whereArgs: <Object?>[_bulat(n['id'])],
+        orderBy: 'id ASC',
+        limit: 200,
+      );
+
+      kunjunganKirim.add(<String, dynamic>{
+        'tabel': 'penjualan',
+        'id_hp': _bulat(n['id']),
+        'nomor': '${n['nomor'] ?? ''}',
+        'tanggal': '${n['tanggal'] ?? ''}',
+        'customer_id': '${n['customer_id'] ?? ''}',
+        'nama_customer': '${n['nama_customer'] ?? ''}',
+        'metode': '${n['metode'] ?? ''}',
+        'total': _angka(n['total']),
+        'status': '${n['status'] ?? ''}',
+        'jumlah_item': _bulat(n['jumlah_item']),
+        'catatan': '${n['catatan'] ?? ''}',
+        'barang': <Map<String, dynamic>>[
+          for (final Map<String, Object?> b in barang)
+            <String, dynamic>{
+              'nama_produk': '${b['nama_produk'] ?? ''}',
+              'satuan': '${b['satuan'] ?? ''}',
+              'pack': _bulat(b['pack']),
+              'batang': _bulat(b['batang']),
+              'harga_satuan': _angka(b['harga_satuan']),
+              'subtotal': _angka(b['subtotal']),
+            },
+        ],
+      });
+    }
+
+    for (final Map<String, Object?> i in input) {
+      kiriman.add(_inputBentuk(i));
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Data siap dikirim: ${kunjunganKirim.length} kunjungan/nota '
+          'dan ${kiriman.length} input program.',
+      'id_sales': idSales,
+      'nama_sales': namaSales,
+      'kunjungan': kunjunganKirim,
+      'program_input': kiriman,
+      'piutang': <Map<String, dynamic>>[
+        for (final Map<String, Object?> p in piutang)
+          <String, dynamic>{
+            'nomor': '${p['nomor'] ?? ''}',
+            'jenis': '${p['jenis'] ?? ''}',
+            'customer_id': '${p['customer_id'] ?? ''}',
+            'nama_customer': '${p['nama_customer'] ?? ''}',
+            'total': _angka(p['total']),
+            'dibayar': _angka(p['dibayar']),
+            'sisa': _angka(p['sisa']),
+            'status': '${p['status'] ?? ''}',
+          },
+      ],
+      'jumlah_kunjungan': kunjunganKirim.length,
+      'jumlah_input': kiriman.length,
+    };
+  }
+
+  /// Menandai data yang sudah diterima server (agar tidak dikirim dua kali).
+  Future<Map<String, dynamic>> _offlineTandai(List<dynamic> kiriman) async {
+    final Database d = await db;
+    final String waktu = _waktu();
+
+    int kunjungan = 0;
+    int nota = 0;
+    int input = 0;
+
+    for (final dynamic satu in kiriman) {
+      if (satu is! Map) continue;
+
+      final Map<String, dynamic> k = satu.cast<String, dynamic>();
+      final String tabel = '${k['tabel'] ?? ''}';
+      final int id = _bulat(k['id_hp']);
+
+      if (id < 1) continue;
+
+      if (tabel == 'kunjungan') {
+        kunjungan += await d.update(
+          'kunjungan',
+          <String, Object?>{'kirim': 1, 'dikirim_pada': waktu},
+          where: 'id = ?',
+          whereArgs: <Object?>[id],
+        );
+      } else if (tabel == 'penjualan') {
+        nota += await d.update(
+          'penjualan',
+          <String, Object?>{'kirim': 1, 'dikirim_pada': waktu},
+          where: 'id = ?',
+          whereArgs: <Object?>[id],
+        );
+      } else if (tabel == 'program_input') {
+        input += await d.update(
+          'program_input',
+          <String, Object?>{'kirim': 1, 'dikirim_pada': waktu},
+          where: 'id = ?',
+          whereArgs: <Object?>[id],
+        );
+      }
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Penanda terkirim disimpan ($kunjungan kunjungan, $nota nota, '
+          '$input input program).',
+      'kunjungan': kunjungan,
+      'nota': nota,
+      'program_input': input,
     };
   }
 

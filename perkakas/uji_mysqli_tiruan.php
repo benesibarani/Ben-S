@@ -19,6 +19,10 @@
  *    - mysqli_stmt::execute() WAJIB mengembalikan bool.
  *    - Keadaan uji 'tabel_program' = true berarti tabel rts_program_produk ada,
  *      dan 'program' = daftar barisnya (dipakai perkakas/uji_program_api.mjs).
+ *    - Keadaan uji 'tabel_paket' = true berarti tabel rts_program_paket ada,
+ *      dan 'paket' = daftar paket Introdeal (2+1, 1+1, paket buatan Sales).
+ *    - Keadaan uji 'tabel_input' = true berarti tabel rts_program_input ada,
+ *      dan 'input' = catatan program yang dikirim dari HP Sales.
  * ============================================================================
  */
 
@@ -136,7 +140,31 @@ class RtsUjiDb extends mysqli
                 );
             }
 
+            if (stripos($query, 'rts_program_paket') !== false) {
+                return new RtsUjiHasil(
+                    empty(self::$keadaan['tabel_paket'])
+                        ? []
+                        : [['Tables_in_uji' => 'rts_program_paket']]
+                );
+            }
+
+            if (stripos($query, 'rts_program_input') !== false) {
+                return new RtsUjiHasil(
+                    empty(self::$keadaan['tabel_input'])
+                        ? []
+                        : [['Tables_in_uji' => 'rts_program_input']]
+                );
+            }
+
             return new RtsUjiHasil([]);
+        }
+
+        // api/program.php memakai SELECT COUNT(*) untuk memutuskan apakah
+        // paket bawaan (2+1 dan 1+1) perlu diisi.
+        if (stripos($query, 'count(*)') !== false && stripos($query, 'rts_program_paket') !== false) {
+            $paket = self::$keadaan['paket'] ?? [];
+
+            return new RtsUjiHasil([['jumlah' => is_array($paket) ? count($paket) : 0]]);
         }
 
         return true;
@@ -206,6 +234,7 @@ function rts_uji_baris_untuk(string $sql, array $nilai): array
             $baris[] = [
                 'id' => (int) ($satu['id'] ?? (count($baris) + 1)),
                 'jenis' => (string) ($satu['jenis'] ?? 'INTRODEAL'),
+                'paket' => (string) ($satu['paket'] ?? ''),
                 'sku' => (string) ($satu['sku'] ?? ''),
                 'barcode_pack' => (string) ($satu['barcode_pack'] ?? ''),
                 'nama' => (string) ($satu['nama'] ?? ''),
@@ -215,6 +244,93 @@ function rts_uji_baris_untuk(string $sql, array $nilai): array
                 'periode' => (string) ($satu['periode'] ?? ''),
                 'aktif' => (int) ($satu['aktif'] ?? 1),
                 'diubah_oleh' => (string) ($satu['diubah_oleh'] ?? ''),
+                'diubah_pada' => (string) ($satu['diubah_pada'] ?? ''),
+            ];
+        }
+
+        return $baris;
+    }
+
+    if (strpos($kecil, 'from rts_program_paket') !== false) {
+        $paket = $keadaan['paket'] ?? [];
+
+        if (!is_array($paket)) {
+            return [];
+        }
+
+        $baris = [];
+
+        foreach ($paket as $satu) {
+            if (!is_array($satu)) {
+                continue;
+            }
+
+            if (strpos($kecil, "jenis = 'introdeal'") !== false
+                && strtoupper((string) ($satu['jenis'] ?? 'INTRODEAL')) !== 'INTRODEAL') {
+                continue;
+            }
+
+            $baris[] = [
+                'id' => (int) ($satu['id'] ?? (count($baris) + 1)),
+                'jenis' => (string) ($satu['jenis'] ?? 'INTRODEAL'),
+                'nama' => (string) ($satu['nama'] ?? ''),
+                'keterangan' => (string) ($satu['keterangan'] ?? ''),
+                'bawaan' => (int) ($satu['bawaan'] ?? 0),
+                'diubah_oleh' => (string) ($satu['diubah_oleh'] ?? ''),
+                'diubah_pada' => (string) ($satu['diubah_pada'] ?? ''),
+            ];
+        }
+
+        // Mengikuti ORDER BY bawaan DESC, id ASC milik api/program.php.
+        usort($baris, static function (array $a, array $b): int {
+            if ($a['bawaan'] !== $b['bawaan']) {
+                return $b['bawaan'] <=> $a['bawaan'];
+            }
+
+            return $a['id'] <=> $b['id'];
+        });
+
+        return $baris;
+    }
+
+    if (strpos($kecil, 'from rts_program_input') !== false) {
+        $input = $keadaan['input'] ?? [];
+
+        if (!is_array($input)) {
+            return [];
+        }
+
+        $baris = [];
+
+        foreach ($input as $satu) {
+            if (!is_array($satu)) {
+                continue;
+            }
+
+            if (strpos($kecil, 'where jenis') !== false) {
+                $jenis = strtoupper((string) ($satu['jenis'] ?? 'INTRODEAL'));
+
+                if ($jenis !== strtoupper((string) ($nilai[0] ?? ''))) {
+                    continue;
+                }
+            }
+
+            $baris[] = [
+                'id' => (int) ($satu['id'] ?? (count($baris) + 1)),
+                'jenis' => (string) ($satu['jenis'] ?? 'INTRODEAL'),
+                'paket' => (string) ($satu['paket'] ?? ''),
+                'paket_keterangan' => (string) ($satu['paket_keterangan'] ?? ''),
+                'id_customer' => (string) ($satu['id_customer'] ?? ''),
+                'nama_toko' => (string) ($satu['nama_toko'] ?? ''),
+                'produk_id' => (int) ($satu['produk_id'] ?? 0),
+                'nama_produk' => (string) ($satu['nama_produk'] ?? ''),
+                'sku' => (string) ($satu['sku'] ?? ''),
+                'jumlah' => (float) ($satu['jumlah'] ?? 0),
+                'satuan' => (string) ($satu['satuan'] ?? 'PACK'),
+                'tanggal' => (string) ($satu['tanggal'] ?? ''),
+                'catatan' => (string) ($satu['catatan'] ?? ''),
+                'id_sales' => (string) ($satu['id_sales'] ?? ''),
+                'nama_sales' => (string) ($satu['nama_sales'] ?? ''),
                 'diubah_pada' => (string) ($satu['diubah_pada'] ?? ''),
             ];
         }

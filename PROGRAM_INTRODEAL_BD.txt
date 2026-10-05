@@ -1,114 +1,146 @@
-============================================================================
- RTS PANEL BY BENE - MENU PRO BARU : PROGRAM (INTRODEAL & BD)
- Putaran 18G - 5 Oktober 2026
-============================================================================
+==============================================================================
+ RTS PANEL BY BENE - PANDUAN MENU PRO "PROGRAM"
+ VERSI 2 (Putaran 18H, 5 Oktober 2026)
+ INTRODEAL = PROGRAM PAKET (2+1, 1+1, PAKET SENDIRI)
+ BD        = NEW BRAND DISTRIBUTION (TANPA PAKET)
+ + INPUT PROGRAM TANPA INTERNET + PETA & FILTER
+ + MENU BARU: BACKUP & SINKRON DATA OFFLINE
+==============================================================================
 
- APA INI?
- --------
- PT Wismilak selalu meluncurkan produk baru (launching). Menu PRO "Program"
- membantu Sales melihat apakah setiap toko SUDAH masuk produk launching atau
- BELUM. Menu ini punya DUA sub-menu:
+ BACA DULU - ARTI DUA PROGRAM (sesuai penjelasan Bapak)
+ ------------------------------------------------------
+   INTRODEAL = Introductory Deal.
+               Ini PROGRAM PAKET. Paket bakunya:
+                 - 2+1  artinya beli 2 gratis 1
+                 - 1+1  artinya beli 1 gratis 1
+               Sales juga boleh membuat PAKET SENDIRI, contoh 3+1.
+               Produknya diambil dari MENU BARANG BAWAAN.
 
-   1. INTRODEAL : produk yang sedang diperkenalkan ke customer.
-   2. BD        : produk Business Development.
+   BD        = New Brand Distribution.
+               TIDAK ADA program / paket. Hanya PRODUK, karena produknya
+               adalah produk baru yang SUDAH ADA di outlet.
 
- Menu Program ada di MENU PRO (Menu Utama -> tombol MENU PRO -> PROGRAM).
- Khusus AKUN PRO. ADMIN dan ASS tetap boleh membuka sebagai pengelola.
+ CARA MEMBUKA
+ ------------
+   Beranda -> MENU PRO (boleh diminimize) -> pilih salah satu:
+     Program Introdeal        : paket 2+1 / 1+1 / PAKET SENDIRI
+     Program BD               : produk BD saja
+     Input Program            : langsung ke form CATAT PROGRAM
+     Peta & Filter Program    : langsung ke peta + penyaring
+     Backup & Sinkron Data Offline : data yang tersimpan di HP
 
- EMPAT TOMBOL DI ATAS DAFTAR
- ---------------------------
-   DARI BARANG BAWAAN  Ambil satu produk dari daftar Barang Bawaan (produk
-                       yang sudah ada di menu PRO "Barang Bawaan"), lalu
-                       simpan sebagai produk program. Tidak perlu mengetik
-                       ulang nama, SKU, barcode, dan isi per pack.
+ ------------------------------------------------------------------------------
+ A. PROGRAM INTRODEAL (PROGRAM PAKET)
+ ------------------------------------------------------------------------------
+  1. Di bawah tombol-tombol ada tulisan "PAKET INTRODEAL (pilih satu)".
+     Ketuk salah satu paket:
+        2+1  (Beli 2 gratis 1)   - paket bawaan, tidak bisa dihapus
+        1+1  (Beli 1 gratis 1)   - paket bawaan, tidak bisa dihapus
+        3+1, 4+2, dst            - PAKET SENDIRI buatan Sales
+  2. Tekan  PAKET SENDIRI  untuk membuat paket baru:
+        - Nama paket : contoh 3+1
+        - Keterangan : contoh Beli 3 gratis 1
+        - Tekan SIMPAN. Paket langsung muncul dan bisa dipilih.
+  3. Menghapus paket: ketuk tanda silang kecil di paket buatan Sales.
+     Paket bawaan 2+1 dan 1+1 TIDAK dapat dihapus (aman).
+  4. Produk:
+        DARI BARANG BAWAAN : mengambil satu produk dari daftar bawaan
+        SINKRON ONLINE     : mengambil daftar dari server (api/program.php)
+        TAMBAH PRODUK      : mengetik produk sendiri
+  5. ADMIN / ASS dapat menekan KIRIM KE SERVER pada tiap produk supaya
+     dipakai HP Sales lain.
 
-   PILIH TOKO TERDEKAT  Membuka daftar toko yang diurutkan dari yang PALING
-                       DEKAT dengan posisi HP (izin Lokasi dipakai). Setelah
-                       toko dipilih, setiap produk diberi keterangan:
-                           TOKO INI: SUDAH (tanggal)
-                           TOKO INI: BELUM
+ ------------------------------------------------------------------------------
+ B. PROGRAM BD (NEW BRAND DISTRIBUTION)
+ ------------------------------------------------------------------------------
+  - Tidak ada paket. Muncul keterangan "Sub-menu BD (New Brand
+    Distribution): TIDAK memakai paket - produknya sudah ada di outlet."
+  - Isinya hanya daftar PRODUK BD. Cara mengisi produk sama seperti
+    Introdeal: DARI BARANG BAWAAN / SINKRON ONLINE / TAMBAH PRODUK.
 
-   SINKRON ONLINE      Mengambil daftar produk program dari server
-                       (api/program.php) supaya sama dengan HP Sales lain.
-                       Daftar lama pada sub-menu itu diganti dengan daftar
-                       dari server.
+ ------------------------------------------------------------------------------
+ C. INPUT PROGRAM TANPA INTERNET (INPUT OFFLINE)
+ ------------------------------------------------------------------------------
+  1. Pilih toko dulu: tombol  PILIH TOKO TERDEKAT  (memakai posisi GPS HP).
+  2. Tekan  CATAT PROGRAM  (tombol hijau).
+  3. Form berisi:
+        - PETA KECIL OpenStreetMap: titik toko terpilih + titik posisi Bapak.
+        - Produk program (pilihan dari daftar produk di HP).
+        - Jumlah, Satuan (PACK / BATANG / BALL), dan Catatan.
+  4. Tekan SIMPAN DI HP. Catatan TIDAK memerlukan internet.
+  5. Melihat catatan: tombol  CATATAN TERSIMPAN  atau ikon awan di kanan
+     atas (ada angkanya bila masih ada yang belum dikirim).
+  6. Bila sudah ada internet: buka CATATAN TERSIMPAN -> KIRIM KE SERVER.
+     Catatan yang berhasil dikirim otomatis ditandai sudah dikirim.
+     (Server menyimpan di tabel rts_program_input; catatan yang sama tidak
+      masuk dua kali.)
 
-   TAMBAH PRODUK       Mengetik sendiri satu produk program (nama, merek,
-                       SKU, barcode bungkus, isi per pack, periode
-                       launching, dan catatan).
+ ------------------------------------------------------------------------------
+ D. PETA & FILTER (INTRODEAL / BD, KUNJUNGAN, HARI)
+ ------------------------------------------------------------------------------
+  Tekan  PETA & FILTER (PROGRAM, KUNJUNGAN, HARI). Isinya:
+     - Peta OpenStreetMap seluruh toko yang ada titiknya.
+       Titik hijau = toko sudah ada catatan/dibeli untuk program terpilih;
+       titik abu-abu = belum; titik biru = posisi Bapak.
+     - Penyaring PROGRAM   : INTRODEAL atau BD.
+     - Penyaring KUNJUNGAN : SEMUA / SUDAH / BELUM (kunjungan hari ini).
+     - Penyaring HARI      : SEMUA, SENIN ... MINGGU (hari kunjungan toko).
+     - Daftar 30 toko teratas: Nama, ID, hari, jarak dari posisi Bapak,
+       dan lencana SUDAH / BELUM.
 
- LENCANA PADA SETIAP PRODUK
- --------------------------
-   DIBELI n TOKO        Ada n customer yang sudah membeli produk ini.
-   BELUM ADA PEMBELI    Belum ada nota yang memuat produk ini.
-   DARI SERVER          Produk berasal dari SINKRON ONLINE.
-   TOKO INI: SUDAH / BELUM  Status untuk toko yang sedang dipilih.
+ ------------------------------------------------------------------------------
+ E. BACKUP & SINKRON DATA OFFLINE (MENU PRO BARU)
+ ------------------------------------------------------------------------------
+  Membuka menu ini menampilkan DATA DI DALAM HP:
+     Kunjungan, Nota kasir, Input program, Piutang, Program produk,
+     Paket Introdeal, Toko tersimpan, Produk tersimpan, Goresan peta,
+     Titik kantor.
+  Tiap baris menunjukkan berapa yang BELUM DIKIRIM.
+  Tombol:
+     LIHAT DATA SIAP KIRIM : melihat & menyalin isi data belum kirim
+                             (untuk dilaporkan ke ASS / Admin).
+     SALIN RINGKASAN       : menyalin ringkasan angka (tempel ke WhatsApp).
+     TANDAI SUDAH DIKIRIM  : menandai data sudah masuk ke pusat.
+     BUAT CADANGAN DI HP   : membuat berkas cadangan .db di dalam HP.
 
-   Angka "DIBELI n TOKO" dihitung dari NOTA KASIR YANG TERSIMPAN DI HP
-   (tabel penjualan & penjualan_item). Jadi Sales langsung tahu siapa yang
-   sudah masuk produk launching tanpa mengubah data di server.
+ ------------------------------------------------------------------------------
+ F. PEMASANGAN (HOSTING & APLIKASI)
+ ------------------------------------------------------------------------------
+  HOSTING (public_html) - timpa satu berkas:
+     api/program.php          <-- versi baru putaran 18H
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/program.php
 
- MENU KAPSUL (tiga titik di kanan setiap produk)
- -----------------------------------------------
-   Ubah produk     - memperbaiki nama/harga/isi produk program.
-   Hapus dari HP   - menghapus produk itu dari daftar di HP.
-   Kirim ke server - (hanya ADMIN / ASS) mengirim produk ke server supaya
-                     dapat disinkron oleh HP Sales lain.
+  SQL di phpMyAdmin (membuat 3 tabel baru, tanpa menghapus data lama):
+     RTS_PANEL_PROGRAM.sql
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PROGRAM.sql
 
- AGAR DAPAT DISINKRON ONLINE (PENTING)
- -------------------------------------
- SINKRON ONLINE membaca tabel BARU bernama  rts_program_produk  di database
- server. Tabel ini TIDAK menyentuh tabel lain milik Bapak.
+  APLIKASI FLUTTER (D:\Project\rts_panel_app) - berkas lengkap siap timpa:
+     lib/program.dart
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/program.dart
+     lib/kasir_lokal.dart
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
+     main.dart
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+     pubspec.yaml (versi 1.5.2+17)
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
 
- Cara termudah:
-   1. Buka aplikasi, buka menu PROGRAM, tekan SINKRON ONLINE (akun ADMIN).
-   2. Bila tabelnya belum ada, aplikasi menampilkan perintah SQL + tombol
-      SALIN SQL. Tempel perintah itu di phpMyAdmin (menu SQL) pada database
-      Bapak, lalu tekan SINKRON ONLINE lagi.
-   3. Atau buka berkas  RTS_PANEL_PROGRAM.sql  pada paket ini dan jalankan
-      isinya sekali saja di phpMyAdmin.
+  PAKET SEMUA BERKAS (paling mudah):
+     RTS_PANEL_PUTARAN_18H.zip
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18H.zip
+     RTS_PANEL_PERUBAHAN_18H.zip (hanya berkas yang berubah)
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18H.zip
 
- Perintah SQL-nya (sama dengan yang dikirim aplikasi):
+  Sesudah dipasang:
+     flutter clean  ->  flutter pub get  ->  flutter analyze  ->  build apk
 
-   CREATE TABLE IF NOT EXISTS rts_program_produk (
-     id INT AUTO_INCREMENT PRIMARY KEY,
-     jenis VARCHAR(20) NOT NULL DEFAULT 'INTRODEAL',
-     sku VARCHAR(64) NOT NULL DEFAULT '',
-     barcode_pack VARCHAR(64) NOT NULL DEFAULT '',
-     nama VARCHAR(150) NOT NULL DEFAULT '',
-     merek VARCHAR(80) NOT NULL DEFAULT '',
-     isi_per_pack INT NOT NULL DEFAULT 0,
-     catatan VARCHAR(255) NOT NULL DEFAULT '',
-     periode VARCHAR(60) NOT NULL DEFAULT '',
-     aktif TINYINT NOT NULL DEFAULT 1,
-     diubah_oleh VARCHAR(80) NOT NULL DEFAULT '',
-     diubah_pada DATETIME NULL,
-     UNIQUE KEY uq_program_jenis_sku (jenis, sku)
-   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ ------------------------------------------------------------------------------
+ G. PENANDA VERSI
+ ------------------------------------------------------------------------------
+  Kode aplikasi : RTS-2026-10-05-18H      (lihat kode di aplikasi)
+  Versi pubspec : 1.5.2+17
+  Tabel baru    : rts_program_produk, rts_program_paket, rts_program_input
 
- HAK (SIApa YANG BOLEH MENULIS DI SERVER)
- ----------------------------------------
-   ADMIN, ASS          : boleh membaca DAN mengubah daftar di server
-                         (tombol KIRIM KE SERVER tampil).
-   WSS, SMST, RTS, TF  : hanya MENERIMA daftar dari server.
-
- SARAN PEMAKAIAN HARIAN
- ----------------------
-   1. Sebelum berkeliling, tekan PILIH TOKO TERDEKAT lalu pilih toko.
-   2. Lihat produk mana yang masih BELUM, tawarkan terlebih dahulu.
-   3. Setelah nota disimpan di Kasir, buka Program lagi - lencana berubah
-      menjadi TOKO INI: SUDAH (tanggal nota).
-
- BERKAS YANG TERLIBAT
- --------------------
-   Aplikasi (Android)  : lib/program.dart  (menu Program)
-   Server (hosting)    : api/program.php   (daftar / simpan / hapus / periksa)
-   Server (opsional)   : RTS_PANEL_PROGRAM.sql (perintah pembuat tabel)
-
- CATATAN PEMASANGAN
- ------------------
-   - Perintah SQL di atas hanya MEMBUAT TABEL BARU. Tidak ada data lama yang
-     diubah atau dihapus.
-   - Seperti biasa: backup dulu database Bapak sebelum menjalankan perintah
-     apa pun, lalu uji di database testing bila ada.
-============================================================================
+==============================================================================
+ Selesai. Bila ada yang belum jelas, tanyakan saja - akan dijelaskan ulang
+ dengan Bahasa Indonesia yang lebih sederhana.
+==============================================================================

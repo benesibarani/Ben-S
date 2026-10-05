@@ -969,7 +969,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-05-18G';
+const String rtsKodeAplikasi = 'RTS-2026-10-05-18H';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -2366,9 +2366,33 @@ class _DashboardPageState extends State<DashboardPage>
       pro: true,
     ),
     _MenuData(
-      title: 'Program',
-      subtitle: 'Introdeal & BD - produk launching',
-      icon: Icons.campaign_outlined,
+      title: 'Program Introdeal',
+      subtitle: 'Paket 2+1, 1+1, paket sendiri',
+      icon: Icons.card_giftcard_outlined,
+      pro: true,
+    ),
+    _MenuData(
+      title: 'Program BD',
+      subtitle: 'New Brand Distribution',
+      icon: Icons.new_releases_outlined,
+      pro: true,
+    ),
+    _MenuData(
+      title: 'Input Program',
+      subtitle: 'Catat program - tanpa internet',
+      icon: Icons.edit_note_rounded,
+      pro: true,
+    ),
+    _MenuData(
+      title: 'Peta & Filter Program',
+      subtitle: 'Introdeal/BD, kunjungan, hari',
+      icon: Icons.map_outlined,
+      pro: true,
+    ),
+    _MenuData(
+      title: 'Backup & Sinkron Data Offline',
+      subtitle: 'Data di HP & kirim ke server',
+      icon: Icons.cloud_sync_outlined,
       pro: true,
     ),
     _MenuData(
@@ -2807,10 +2831,33 @@ class _DashboardPageState extends State<DashboardPage>
       return;
     }
 
-    if (menu == 'Program') {
+    if (menu == 'Program' ||
+        menu == 'Program Introdeal' ||
+        menu == 'Program BD' ||
+        menu == 'Input Program' ||
+        menu == 'Peta & Filter Program') {
+      final bool introdeal = menu != 'Program BD';
+
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => RtsProgramPage(
+            baseUrl: RtsConfig.baseUrl,
+            token: token,
+            pengguna: (RtsSesi.user ?? user).toJson(),
+            jenisAwal: introdeal ? 'INTRODEAL' : 'BD',
+            bukaAwal: menu == 'Input Program'
+                ? 'input'
+                : (menu == 'Peta & Filter Program' ? 'peta' : ''),
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (menu == 'Backup & Sinkron Data Offline') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RtsBackupOfflinePage(
             baseUrl: RtsConfig.baseUrl,
             token: token,
             pengguna: (RtsSesi.user ?? user).toJson(),
