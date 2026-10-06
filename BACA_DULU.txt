@@ -1,5 +1,11 @@
 ==============================================================================
  RTS PANEL BY BENE
+ (Putaran 18J: DATA CUSTOMER DIPOTONG PER SALES DISTRICT SUPAYA APLIKASI
+  TIDAK BERAT - PENYARING SALES DISTRICT TAMPIL DI MENU KASIR (PILIH TOKO),
+  PETA CUSTOMER, RADAR CUSTOMER, RUTE PLAN, DAN PROGRAM; RTS & TF TERKUNCI
+  PADA DISTRICT AKUNNYA, WSS/SMST/ADMIN/ASS BEBAS MEMILIH; PETA PROGRAM BISA
+  SATU LAYAR PENUH; LABEL "BELUM KIRIM" DIHAPUS; LIST CUSTOMER PROGRAM DAPAT
+  DIPILAH MENURUT HARI KUNJUNGAN & SUDAH/BELUM DIKUNJUNGI)
  (Putaran 18I: MENU "PROGRAM" KEMBALI SATU SAJA - ISINYA LIST CUSTOMER YANG
   MENGIKUTI PROGRAM + TOMBOL MELAYANG UNTUK INPUT PROGRAM; PROGRAM BISA
   DIBUAT SENDIRI (INTRODEAL 2+1 / 1+1, BD, DAN LAIN-LAIN); PETA TETAP ADA;
@@ -174,6 +180,112 @@
      Versi pubspec  : 1.5.2+17
      Bila kode di HP Bapak masih 18G/lebih lama, berarti aplikasi belum
      dipasang ulang - silakan pasang RTS_PANEL_PUTARAN_18H.zip.
+
+
+ ============================================================================
+  PUTARAN 18J - DATA CUSTOMER PER SALES DISTRICT (APLIKASI TIDAK BERAT LAGI)
+  (6 Oktober 2026)
+ ============================================================================
+
+  Keluhan Bapak: seluruh data customer masuk sekaligus (3170 toko dari 3186
+  toko di HP) sehingga aplikasi berat bahkan tersendat, terutama pada Peta
+  Customer yang harus menggambar ribuan titik sekaligus.
+
+  ----------------------------------------------------------------------------
+  1. PENYARING SALES DISTRICT DI MENU PRO
+  ----------------------------------------------------------------------------
+     Sekarang setiap halaman menu PRO yang memakai data customer memuat
+     BARIS PENYARING SALES DISTRICT (di bawah judul halaman):
+         Kasir   -> PILIH TOKO (master_toko)
+         Peta Customer
+         Radar Customer
+         Rute Plan
+         Program (menu PRO "Program")
+         serta halaman PILIH DARI LIST CUSTOMER pada input program.
+
+     Cara kerjanya:
+         - RTS dan TF : baris itu berwarna biru dan TERKUNCI. Data hanya
+           memuat toko pada Sales District akunnya (sesuai aturan hak akses
+           data customer di server).
+         - WSS, SMST, ADMIN, dan ASS : dapat memilih SEMUA DISTRICT atau
+           memilih satu district (contoh: MEDAN KOTA, BINJAI, dsb). Tombol
+           district dapat digeser ke samping dan memuat jumlah tiap district.
+         - Pilihan itu DISIMPAN di HP, sehingga seluruh menu PRO memakai
+           pilihan yang sama dan tetap tersimpan walau aplikasi ditutup.
+         - Bawaan (belum pernah memilih): Sales District pada akun. Bila akun
+           tidak punya district, bawaannya SEMUA DISTRICT.
+
+     Karena hanya satu district yang dibaca, daftar dan peta menjadi ringan:
+     biasanya 200 - 500 toko, bukan 3000+ toko.
+
+  ----------------------------------------------------------------------------
+  2. PENGAMAN TAMBAHAN: PETA BERHENTI SESUDAH 1200 TITIK
+  ----------------------------------------------------------------------------
+     Bila Bapak tetap memilih SEMUA DISTRICT, peta menggambar 1200 titik
+     pertama lebih dulu dan menampilkan pesan kuning:
+         "Peta menggambar 1200 titik pertama dari 3170 toko supaya aplikasi
+          tetap ringan. Pilih SALES DISTRICT pada penyaring di bawah ..."
+     Jadi aplikasi TIDAK tersendat lagi walaupun Bapak ingin melihat gambaran
+     seluruh wilayah lebih dulu.
+
+  ----------------------------------------------------------------------------
+  3. SALINAN TOKO DI HP IKUT DIRAPIKAN (RTS & TF)
+  ----------------------------------------------------------------------------
+     Setiap kali daftar toko disalin dari server (menu SINKRONISASI ->
+     SINKRONKAN SEKARANG), akun RTS dan TF otomatis membuang toko district
+     lain yang mungkin masih tersimpan dari pemakaian sebelumnya. Pesannya
+     menyebutkan berapa toko yang dibuang, contoh:
+         "Daftar toko dari master_toko tersimpan di HP: 412 toko.
+          2869 toko district lain dibuang."
+
+  ----------------------------------------------------------------------------
+  4. MENU PROGRAM - TIGA PERBAIKAN SESUAI PERMINTAAN BAPAK
+  ----------------------------------------------------------------------------
+     a. PETA BISA SATU LAYAR PENUH.
+        Pada kotak "Peta & filter program" sekarang ada tombol PETA PENUH
+        (di sebelah tombol TUTUP). Peta langsung memakai SATU LAYAR penuh
+        dengan penyaring PROGRAM, KUNJUNGAN, dan HARI tetap ada di atas.
+        Tombol silang di kanan atas menutup kembali.
+
+     b. LABEL "1 BELUM KIRIM" DIHAPUS.
+        Lencana kuning "x BELUM KIRIM" pada setiap baris customer sudah
+        TIDAK ada lagi. Sebagai gantinya, baris customer menampilkan HARI
+        kunjungan dan SALES DISTRICT-nya, serta lencana hijau
+        "SUDAH DIKUNJUNGI" bila toko itu sudah dikunjungi hari ini.
+        (Jumlah catatan yang belum dikirim tetap dapat dilihat pada ikon awan
+        di kanan atas dan pada menu PRO "Backup & Sinkron Data Offline".)
+
+     c. LIST CUSTOMER DAPAT DIPILAH PER HARI & PER KUNJUNGAN.
+        Di atas daftar sekarang ada dua baris tombol pilihan:
+           - HARI KUNJUNGAN : SEMUA HARI / SENIN ... MINGGU
+           - KUNJUNGAN      : SEMUA KUNJUNGAN / SUDAH / BELUM (hari ini)
+        Contoh: pilih HARI SELASA + BELUM -> daftar langsung menampilkan
+        customer program yang harus dikunjungi hari Selasa dan belum
+        dikunjungi. Teks kecil di bawahnya menyebutkan
+        "x dari y customer tampil".
+
+  ----------------------------------------------------------------------------
+  5. YANG PERLU DIPASANG (HOSTING + APLIKASI)
+  ----------------------------------------------------------------------------
+     HOSTING : TIDAK ada berkas server yang berubah pada putaran ini
+               (api/program.php dan customers.php tetap seperti 18I).
+               Jalankan RTS_PANEL_PROGRAM.sql bila tabelnya belum ada.
+     APLIKASI: timpa lib/peta.dart, lib/program.dart, lib/kasir.dart,
+               lib/kasir_lokal.dart, main.dart, dan pubspec.yaml
+               (versi 1.5.4+19).
+     Cara termudah: paket RTS_PANEL_PUTARAN_18J.zip +
+     LANGKAH1_PASANG_SEMUA.ps1, lalu flutter clean -> pub get -> analyze ->
+     build apk.
+
+  ----------------------------------------------------------------------------
+  6. PENANDA VERSI
+  ----------------------------------------------------------------------------
+     Kode aplikasi : RTS-2026-10-06-18J
+     Versi pubspec  : 1.5.4+19
+     Data di HP    : versi database 6 (tidak berubah pada putaran ini)
+     Setiap berkas Dart memuat baris pertama:
+         // RTS-PANEL-ROUND: 18J - penanda putaran RTS Panel
+
 
 
  ============================================================================

@@ -1,6 +1,6 @@
 ==============================================================================
  RTS PANEL BY BENE - PANDUAN MENU PRO "PROGRAM"
- VERSI 3 (Putaran 18I, 5 Oktober 2026)
+ VERSI 4 (Putaran 18J, 6 Oktober 2026)
  SATU MENU: LIST CUSTOMER YANG MENGIKUTI PROGRAM + TOMBOL MELAYANG INPUT
 ==============================================================================
 
@@ -13,10 +13,12 @@
 
    Di dalam halaman Program:
         1. LIST CUSTOMER YANG MENGIKUTI PROGRAM (isi utama halaman).
-        2. Tombol merah melayang INPUT PROGRAM di kanan bawah.
-        3. Ikon PETA di kanan atas (peta & filter program, kunjungan, hari).
-        4. Ikon awan di kanan atas (catatan program yang masih di HP).
-        5. Tombol DAFTAR PROGRAM (tambah / ubah / hapus program).
+        2. Penyaring SALES DISTRICT (baru pada putaran 18J).
+        3. Tombol merah melayang INPUT PROGRAM di kanan bawah.
+        4. Ikon PETA di kanan atas (peta & filter program, kunjungan, hari)
+           - di dalamnya ada tombol PETA PENUH.
+        5. Ikon awan di kanan atas (catatan program yang masih di HP).
+        6. Tombol DAFTAR PROGRAM (tambah / ubah / hapus program).
 
  ARTI PROGRAM
  ------------
@@ -34,11 +36,25 @@
  ------------------------------------------------------------------------------
    Buka MENU PRO -> PROGRAM. Halaman langsung menampilkan daftar customer:
         - Nama toko dan ID customer.
+        - Hari kunjungan dan Sales District toko tersebut.
         - Lencana program yang diikuti (misalnya "INTRODEAL 2+1" atau "BD").
-        - Jumlah catatan program dan berapa yang BELUM DIKIRIM ke server.
+        - Lencana hijau SUDAH DIKUNJUNGI bila toko itu sudah dikunjungi hari
+          ini.
+        - Jumlah catatan program milik customer itu.
 
-   Menyaring daftar: ketuk SEMUA PROGRAM, INTRODEAL, BD, atau nama program
-   buatan Bapak di bagian atas halaman.
+   Catatan 18J: lencana kuning "x BELUM KIRIM" pada tiap baris sudah DIHAPUS
+   sesuai permintaan Bapak. Jumlah catatan yang belum dikirim tetap dapat
+   dilihat pada ikon awan di kanan atas dan pada menu PRO
+   "Backup & Sinkron Data Offline".
+
+   TIGA penyaring di atas daftar:
+        1. PROGRAM        : SEMUA PROGRAM / INTRODEAL / BD / program buatan
+                            Bapak.
+        2. HARI KUNJUNGAN : SEMUA HARI / SENIN ... MINGGU.
+        3. KUNJUNGAN      : SEMUA KUNJUNGAN / SUDAH / BELUM (hari ini).
+      Contoh: tekan SELASA lalu BELUM -> daftar langsung menampilkan customer
+      program yang harus dikunjungi hari Selasa dan belum dikunjungi.
+      Teks kecil di bawah penyaring menyebutkan "x dari y customer tampil".
 
    Melihat riwayat satu customer: KETUK barisnya. Muncul daftar program yang
    pernah dicatat, lengkap dengan:
@@ -88,7 +104,7 @@
           dihapus dari daftar pilihan.
 
  ------------------------------------------------------------------------------
- D. PETA & FILTER PROGRAM
+ D. PETA & FILTER PROGRAM (SEKARANG BISA SATU LAYAR PENUH)
  ------------------------------------------------------------------------------
    Ikon PETA di kanan atas membuka:
         - Peta OpenStreetMap seluruh toko yang ada titiknya.
@@ -99,6 +115,10 @@
         - Penyaring HARI (SEMUA, SENIN ... MINGGU).
         - Daftar 30 toko teratas: nama, ID, hari kunjungan, jarak dari posisi
           Bapak, dan lencana SUDAH / BELUM.
+        - TOMBOL "PETA PENUH" (baru pada putaran 18J): peta langsung memakai
+          SATU LAYAR penuh supaya titik toko terlihat jelas. Penyaring
+          PROGRAM / KUNJUNGAN / HARI tetap tersedia di bagian atas peta.
+          Tombol silang di kanan atas menutup peta penuh.
 
  ------------------------------------------------------------------------------
  E. MENGIRIM CATATAN KE SERVER
@@ -121,7 +141,21 @@
         status AKUN (PRO/GRATIS), PRODUK (SKU & harga), dan DAFTAR TOKO.
 
  ------------------------------------------------------------------------------
- G. PEMASANGAN (HOSTING & APLIKASI)
+ G. DATA CUSTOMER PER SALES DISTRICT (BARU PUTARAN 18J)
+ ------------------------------------------------------------------------------
+   Supaya aplikasi tidak berat (dulu 3170 toko sekaligus membuat peta
+   tersendat), setiap halaman menu PRO memuat BARIS PENYARING SALES DISTRICT:
+        - RTS dan TF : TERKUNCI pada Sales District akunnya.
+        - WSS, SMST, ADMIN, dan ASS : dapat memilih SEMUA DISTRICT atau satu
+          district saja. Tombol district dapat digeser ke samping dan memuat
+          jumlah toko tiap district.
+   Pilihan disimpan di HP, sehingga seluruh menu PRO (Peta Customer, Radar
+   Customer, Rute Plan, Pilih Toko Kasir, dan Program) memakai pilihan yang
+   sama. Bila Bapak memilih SEMUA DISTRICT, peta berhenti menggambar sesudah
+   1200 titik dan menampilkan pesan kuning yang meminta memilih district.
+
+ ------------------------------------------------------------------------------
+ H. PEMASANGAN (HOSTING & APLIKASI)
  ------------------------------------------------------------------------------
   HOSTING (public_html) - timpa satu berkas:
      api/program.php
@@ -131,7 +165,8 @@
      RTS_PANEL_PROGRAM.sql
         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PROGRAM.sql
 
-  APLIKASI FLUTTER (D:\Project\rts_panel_app) - berkas lengkap siap timpa:
+  APLIKASI FLUTTER (D:\Project\rts_panel_app) - berkas lengkap siap timpa
+  (putaran 18J: peta.dart, program.dart, kasir.dart, kasir_lokal.dart, main.dart):
      lib/program.dart
         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/program.dart
      lib/kasir_lokal.dart
@@ -146,19 +181,19 @@
         https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
 
   PAKET SEMUA BERKAS (paling mudah):
-     RTS_PANEL_PUTARAN_18I.zip
-        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18I.zip
-     RTS_PANEL_PERUBAHAN_18I.zip (hanya berkas yang berubah)
-        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18I.zip
+     RTS_PANEL_PUTARAN_18J.zip
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18J.zip
+     RTS_PANEL_PERUBAHAN_18J.zip (hanya berkas yang berubah)
+        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18J.zip
 
   Sesudah dipasang:
      flutter clean  ->  flutter pub get  ->  flutter analyze  ->  build apk
 
  ------------------------------------------------------------------------------
- H. PENANDA VERSI
+ I. PENANDA VERSI
  ------------------------------------------------------------------------------
-  Kode aplikasi : RTS-2026-10-05-18I   (lihat kode di aplikasi)
-  Versi pubspec : 1.5.3+18
+  Kode aplikasi : RTS-2026-10-06-18J   (lihat kode di aplikasi)
+  Versi pubspec : 1.5.4+19
   Data di HP    : versi database 6 (tabel program_jenis = daftar program)
 
 ==============================================================================

@@ -1,4 +1,4 @@
-// RTS-PANEL-ROUND: 18I - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
+// RTS-PANEL-ROUND: 18J - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -970,7 +970,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-05-18I';
+const String rtsKodeAplikasi = 'RTS-2026-10-06-18J';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///

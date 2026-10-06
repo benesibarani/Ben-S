@@ -1,4 +1,4 @@
-// RTS-PANEL-ROUND: 18I - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
+// RTS-PANEL-ROUND: 18J - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 // ============================================================================
 //  RTS PANEL BY BENE - FITUR PRO : PROGRAM
 //  Berkas : lib/program.dart
@@ -83,9 +83,11 @@ Widget _petaMiniProgram({
   double? sayaLng,
   double tinggi = 200,
   Color warnaLain = rtsKsMaroon,
+  bool penuh = false,
 }) {
+  // Titik dibatasi supaya peta tidak berat (lihat rtsPetaBatasTitik).
   final List<Map<String, dynamic>> bertitik =
-      toko.where(_adaTitik).toList();
+      rtsPetaPotongTitik(toko.where(_adaTitik).toList());
 
   double lat = sayaLat ?? 3.5952;
   double lng = sayaLng ?? 98.6722;
@@ -95,11 +97,7 @@ Widget _petaMiniProgram({
     lng = _lngTitik(bertitik.first) ?? lng;
   }
 
-  return ClipRRect(
-    borderRadius: BorderRadius.circular(10),
-    child: SizedBox(
-      height: tinggi,
-      child: FlutterMap(
+  final Widget peta = FlutterMap(
         options: MapOptions(
           initialCenter: LatLng(lat, lng),
           initialZoom: bertitik.length > 1 ? 12 : 14,
@@ -153,9 +151,241 @@ Widget _petaMiniProgram({
             ],
           ),
         ],
-      ),
-    ),
+      );
+
+  // penuh = true -> peta mengisi SELURUH ruang yang tersedia (layar penuh).
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(penuh ? 0 : 10),
+    child: penuh ? SizedBox.expand(child: peta) : SizedBox(height: tinggi, child: peta),
   );
+}
+
+/* ============================================================================
+ * PETA PROGRAM - SATU LAYAR PENUH
+ * ----------------------------------------------------------------------------
+ *  Dibuka dari tombol PETA PENUH pada kotak "Peta & filter program".
+ *  Penyaringnya sama: PROGRAM, KUNJUNGAN (sudah / belum hari ini), dan HARI.
+ *  Seluruh layar dipakai untuk peta supaya titik toko dapat dilihat jelas.
+ * ========================================================================== */
+
+class _RtsProgramPetaPenuh extends StatefulWidget {
+  const _RtsProgramPetaPenuh({
+    required this.toko,
+    required this.sudah,
+    required this.dikunjungi,
+    required this.namaProgram,
+    required this.programAwal,
+    required this.kunjunganAwal,
+    required this.hariAwal,
+    this.sayaLat,
+    this.sayaLng,
+  });
+
+  /// Seluruh toko yang bertitik koordinat.
+  final List<Map<String, dynamic>> toko;
+
+  /// Toko yang sudah mengikuti tiap program: {nama program: {id_customer}}.
+  final Map<String, Set<String>> sudah;
+
+  /// Toko yang sudah dikunjungi hari ini.
+  final Set<String> dikunjungi;
+
+  final List<String> namaProgram;
+  final String programAwal;
+  final String kunjunganAwal;
+  final String hariAwal;
+  final double? sayaLat;
+  final double? sayaLng;
+
+  @override
+  State<_RtsProgramPetaPenuh> createState() => _RtsProgramPetaPenuhState();
+}
+
+class _RtsProgramPetaPenuhState extends State<_RtsProgramPetaPenuh> {
+  late String _program = widget.programAwal;
+  late String _kunjungan = widget.kunjunganAwal;
+  late String _hari = widget.hariAwal;
+
+  List<Map<String, dynamic>> _saring() {
+    return widget.toko
+        .where((Map<String, dynamic> t) {
+          if (!_adaTitik(t)) return false;
+
+          final String id = '${t['id_customer']}';
+
+          if (_program != 'SEMUA' &&
+              !(widget.sudah[_program] ?? <String>{}).contains(id)) {
+            return false;
+          }
+
+          if (_kunjungan == 'SUDAH' && !widget.dikunjungi.contains(id)) {
+            return false;
+          }
+
+          if (_kunjungan == 'BELUM' && widget.dikunjungi.contains(id)) {
+            return false;
+          }
+
+          if (_hari != 'SEMUA' &&
+              !'${t['hari']}'.toUpperCase().contains(_hari.toUpperCase())) {
+            return false;
+          }
+
+          return true;
+        })
+        .map((Map<String, dynamic> t) => <String, dynamic>{
+              ...t,
+              'program_sudah': _program == 'SEMUA'
+                  ? widget.sudah.values
+                      .any((Set<String> s) => s.contains('${t['id_customer']}'))
+                  : ((widget.sudah[_program] ?? <String>{})
+                      .contains('${t['id_customer']}')),
+            })
+        .toList();
+  }
+
+  Widget _chip(String teks, bool aktif, Color warna, VoidCallback tekan) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 5),
+      child: ChoiceChip(
+        label: Text(
+          teks,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: aktif ? Colors.white : rtsKsTeks,
+          ),
+        ),
+        selected: aktif,
+        onSelected: (_) => tekan(),
+        selectedColor: warna,
+        backgroundColor: Colors.white,
+        side: BorderSide(color: aktif ? warna : rtsKsGaris),
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
+
+  Widget _baris(String judul, List<Widget> chip) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          judul,
+          style: const TextStyle(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w800,
+            color: rtsKsTeks2,
+          ),
+        ),
+        const SizedBox(height: 2),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(children: chip),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Map<String, dynamic>> tampil = _saring();
+    int jmlSudah = 0;
+
+    for (final Map<String, dynamic> t in tampil) {
+      if (t['program_sudah'] == true) jmlSudah++;
+    }
+
+    return Scaffold(
+      backgroundColor: rtsKsLatar,
+      appBar: AppBar(
+        backgroundColor: rtsKsMaroon,
+        foregroundColor: Colors.white,
+        title: const Text('Peta Program (layar penuh)'),
+        actions: <Widget>[
+          IconButton(
+            tooltip: 'Tutup peta penuh',
+            icon: const Icon(Icons.close_fullscreen_rounded),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+      body: Column(
+        children: <Widget>[
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                _baris('PROGRAM', <Widget>[
+                  for (final String p in widget.namaProgram)
+                    _chip(
+                      p,
+                      _program == p,
+                      rtsKsMaroon,
+                      () => setState(() => _program = p),
+                    ),
+                ]),
+                const SizedBox(height: 4),
+                _baris('KUNJUNGAN', <Widget>[
+                  for (final String k in <String>['SEMUA', 'SUDAH', 'BELUM'])
+                    _chip(
+                      k,
+                      _kunjungan == k,
+                      k == 'SUDAH'
+                          ? rtsKsHijau
+                          : (k == 'BELUM' ? rtsKsKuning : rtsKsMaroon),
+                      () => setState(() => _kunjungan = k),
+                    ),
+                ]),
+                const SizedBox(height: 4),
+                _baris('HARI', <Widget>[
+                  for (final String h in <String>[
+                    'SEMUA',
+                    'SENIN',
+                    'SELASA',
+                    'RABU',
+                    'KAMIS',
+                    'JUMAT',
+                    'SABTU',
+                    'MINGGU',
+                  ])
+                    _chip(
+                      h,
+                      _hari == h,
+                      h == 'SEMUA' ? rtsKsMaroon : rtsPetaWarnaHari(h),
+                      () => setState(() => _hari = h),
+                    ),
+                ]),
+                const SizedBox(height: 5),
+                Text(
+                  '${tampil.length} toko tampil, $jmlSudah sudah mengikuti '
+                  'program (hijau) dan ${tampil.length - jmlSudah} belum (merah). '
+                  'Segitiga biru = posisi Bapak.',
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: rtsKsTeks2,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _petaMiniProgram(
+              toko: tampil,
+              sayaLat: widget.sayaLat,
+              sayaLng: widget.sayaLng,
+              penuh: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /* ------------------------------------------------------------------- halaman */
@@ -212,6 +442,22 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
   /// Jumlah catatan program di HP yang belum dikirim ke server.
   int _belumKirim = 0;
 
+  /// Penyaring SALES DISTRICT: daftar customer yang dibaca cukup satu
+  /// district, supaya menu Program tetap ringan.
+  RtsDistrict _district = const RtsDistrict();
+
+  /// Penyaring HARI KUNJUNGAN pada List Customer ('Semua' = semua hari).
+  /// Dengan penyaring ini daftar customer yang mengikuti program dapat dipilah
+  /// per hari kunjungan (Senin ... Minggu).
+  String _hari = 'Semua';
+
+  /// Penyaring KUNJUNGAN pada List Customer: Semua / SUDAH / BELUM dikunjungi
+  /// hari ini.
+  String _kunjungan = 'Semua';
+
+  /// Toko yang sudah dikunjungi HARI INI (id customer).
+  Set<String> _dikunjungi = <String>{};
+
   @override
   void initState() {
     super.initState();
@@ -254,12 +500,39 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
     });
 
     try {
+      // Penyaring Sales District dibaca lebih dulu supaya daftar customer
+      // langsung dipotong sesuai pilihan.
+      if (_district.daftar.isEmpty) {
+        _district = await RtsDistrict.muat();
+
+        if (!mounted) return;
+      }
+
       final Map<String, dynamic> jenis = await _api.kirim('jenis_daftar');
       final Map<String, dynamic> daftar = await _api.kirim(
         'program_customer_daftar',
-        <String, dynamic>{'jenis': _saring, 'batas': 300},
+        <String, dynamic>{
+          'jenis': _saring,
+          'batas': 300,
+          'district': _district.district,
+        },
       );
       final Map<String, dynamic> ringkas = await _api.kirim('offline_ringkas');
+
+      // Toko yang sudah dikunjungi hari ini (dipakai penyaring KUNJUNGAN).
+      final Set<String> dikunjungi = <String>{};
+
+      try {
+        final Map<String, dynamic> kunjungan =
+            await _api.kirim('kunjungan_hari_ini');
+        final List<dynamic> ids = (kunjungan['id_customer'] is List)
+            ? kunjungan['id_customer'] as List<dynamic>
+            : <dynamic>[];
+
+        dikunjungi.addAll(ids.map((dynamic e) => '$e'));
+      } on RtsKasirGalat {
+        // riwayat kunjungan gagal dibaca: daftar tetap ditampilkan
+      }
 
       if (!mounted) return;
 
@@ -268,6 +541,7 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
         _customer = _daftarDari(daftar['items']);
         _catatan = '${daftar['message'] ?? ''}';
         _belumKirim = int.tryParse('${ringkas['program_input_belum'] ?? 0}') ?? 0;
+        _dikunjungi = dikunjungi;
         _memuat = false;
       });
     } on RtsKasirGalat catch (e) {
@@ -278,6 +552,48 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
         _galat = e.pesan;
       });
     }
+  }
+
+  /// List customer yang mengikuti program SESUDAH penyaring HARI KUNJUNGAN
+  /// dan KUNJUNGAN dipakai.
+  List<Map<String, dynamic>> get _tampil {
+    return _customer.where((Map<String, dynamic> c) {
+      final String id = '${c['id_customer']}';
+
+      if (_kunjungan == 'SUDAH' && !_dikunjungi.contains(id)) return false;
+      if (_kunjungan == 'BELUM' && _dikunjungi.contains(id)) return false;
+
+      if (_hari != 'Semua') {
+        final String hariToko = '${c['hari']}'.toUpperCase();
+
+        if (!hariToko.contains(_hari.toUpperCase())) return false;
+      }
+
+      return true;
+    }).toList();
+  }
+
+  /// Mengganti penyaring SALES DISTRICT: pilihan disimpan (dipakai bersama
+  /// seluruh menu PRO), lalu daftar customer dibaca ulang.
+  Future<void> _ubahDistrict(String district) async {
+    if (district == _district.district) return;
+
+    setState(() {
+      _district = RtsDistrict(
+        daftar: _district.daftar,
+        district: district,
+        terkunci: _district.terkunci,
+        jumlah: _district.jumlah,
+        districtSaya: _district.districtSaya,
+        sinkronPada: _district.sinkronPada,
+      );
+    });
+
+    await RtsDistrict.simpan(district);
+
+    if (!mounted) return;
+
+    await _muat();
   }
 
   List<Map<String, dynamic>> _daftarDari(dynamic isi) {
@@ -857,7 +1173,10 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
     List<Map<String, dynamic>> toko;
 
     try {
-      final Map<String, dynamic> hasil = await _api.kirim('toko_peta');
+      final Map<String, dynamic> hasil = await _api.kirim(
+        'toko_peta',
+        <String, dynamic>{'district': _district.district},
+      );
 
       toko = _daftarDari(hasil['items']);
     } on RtsKasirGalat catch (e) {
@@ -874,7 +1193,11 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
       try {
         final Map<String, dynamic> hasil = await _api.kirim(
           'program_customer_daftar',
-          <String, dynamic>{'jenis': nama, 'batas': 500},
+          <String, dynamic>{
+            'jenis': nama,
+            'batas': 500,
+            'district': _district.district,
+          },
         );
 
         sudah[nama] = <String>{
@@ -1079,6 +1402,30 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
               ),
             ),
             actions: <Widget>[
+              // Membuka peta SATU LAYAR PENUH dengan penyaring yang sama.
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => _RtsProgramPetaPenuh(
+                        toko: toko,
+                        sudah: sudah,
+                        dikunjungi: dikunjungi,
+                        namaProgram: namaProgram,
+                        programAwal: fProgram,
+                        kunjunganAwal: fKunjungan,
+                        hariAwal: fHari,
+                        sayaLat: sayaLat,
+                        sayaLng: sayaLng,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.open_in_full_rounded, size: 17),
+                label: const Text('PETA PENUH'),
+              ),
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
                 child: const Text('TUTUP'),
@@ -1160,15 +1507,17 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
   }
 
   Widget _kartuCustomer(Map<String, dynamic> c) {
-    final int belum = int.tryParse('${c['belum_kirim'] ?? 0}') ?? 0;
     final int jumlah = int.tryParse('${c['jumlah'] ?? 0}') ?? 0;
+    final String hari = '${c['hari'] ?? ''}';
+    final String district = '${c['district'] ?? ''}';
+    final bool sudahDikunjungi = _dikunjungi.contains('${c['id_customer']}');
 
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 7),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: belum > 0 ? rtsKsKuning : rtsKsGaris),
+        side: const BorderSide(color: rtsKsGaris),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -1205,7 +1554,13 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
                       ),
                     ),
                     Text(
-                      'ID ${c['id_customer']} - $jumlah catatan program',
+                      rtsKsSambung(
+                        'ID ${c['id_customer']} - $jumlah catatan program',
+                        rtsKsSambung(
+                          hari.isEmpty ? '' : 'Hari $hari',
+                          district.isEmpty ? '' : district,
+                        ),
+                      ),
                       style: const TextStyle(fontSize: 11, color: rtsKsTeks2),
                     ),
                     const SizedBox(height: 4),
@@ -1222,8 +1577,8 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
                                   '${'${p['paket']}'.isEmpty ? '' : ' ${p['paket']}'}',
                               warna: rtsKsMaroon,
                             ),
-                        if (belum > 0)
-                          _lencana(text: '$belum BELUM KIRIM', warna: rtsKsKuning),
+                        if (sudahDikunjungi)
+                          _lencana(text: 'SUDAH DIKUNJUNGI', warna: rtsKsHijau),
                       ],
                     ),
                   ],
@@ -1242,6 +1597,9 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
     final List<String> namaProgram = <String>[
       for (final Map<String, dynamic> p in _program) '${p['nama']}',
     ];
+
+    // List customer sesudah penyaring HARI KUNJUNGAN dan KUNJUNGAN dipakai.
+    final List<Map<String, dynamic>> tampil = _tampil;
 
     return Scaffold(
       backgroundColor: rtsKsLatar,
@@ -1309,6 +1667,10 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
               style: const TextStyle(fontSize: 11, color: rtsKsTeks2, height: 1.4),
             ),
             const SizedBox(height: 8),
+            RtsDistrictBar(
+              info: _district,
+              onUbah: (String d) => unawaited(_ubahDistrict(d)),
+            ),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -1336,11 +1698,107 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
                 ],
               ),
             ),
+            const SizedBox(height: 6),
+            const Text(
+              'Hari kunjungan:',
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                color: rtsKsTeks2,
+              ),
+            ),
+            const SizedBox(height: 3),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: <Widget>[
+                  for (final String h in <String>[
+                    'Semua',
+                    'Senin',
+                    'Selasa',
+                    'Rabu',
+                    'Kamis',
+                    'Jumat',
+                    'Sabtu',
+                    'Minggu',
+                  ])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        label: Text(
+                          h == 'Semua' ? 'SEMUA HARI' : h.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: _hari == h ? Colors.white : rtsKsTeks,
+                          ),
+                        ),
+                        selected: _hari == h,
+                        onSelected: (_) => setState(() => _hari = h),
+                        selectedColor: h == 'Semua'
+                            ? rtsKsMaroon
+                            : rtsPetaWarnaHari(h),
+                        backgroundColor: Colors.white,
+                        side: BorderSide(
+                          color: _hari == h
+                              ? (h == 'Semua' ? rtsKsMaroon : rtsPetaWarnaHari(h))
+                              : rtsKsGaris,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Kunjungan hari ini:',
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                color: rtsKsTeks2,
+              ),
+            ),
+            const SizedBox(height: 3),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: <Widget>[
+                  for (final String k in <String>['Semua', 'SUDAH', 'BELUM'])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ChoiceChip(
+                        label: Text(
+                          k == 'Semua' ? 'SEMUA KUNJUNGAN' : k,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: _kunjungan == k ? Colors.white : rtsKsTeks,
+                          ),
+                        ),
+                        selected: _kunjungan == k,
+                        onSelected: (_) => setState(() => _kunjungan = k),
+                        selectedColor: k == 'SUDAH'
+                            ? rtsKsHijau
+                            : (k == 'BELUM' ? rtsKsKuning : rtsKsMaroon),
+                        backgroundColor: Colors.white,
+                        side: BorderSide(
+                          color: _kunjungan == k
+                              ? (k == 'SUDAH'
+                                  ? rtsKsHijau
+                                  : (k == 'BELUM' ? rtsKsKuning : rtsKsMaroon))
+                              : rtsKsGaris,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
             if (_catatan.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                  _catatan,
+                  '${_tampil.length} dari ${_customer.length} customer tampil. '
+                  '$_catatan',
                   style: const TextStyle(fontSize: 11.5, color: rtsKsTeks2),
                 ),
               ),
@@ -1353,21 +1811,27 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
                 ),
               ),
             const SizedBox(height: 8),
-            if (_memuat && _customer.isEmpty)
+            if (_memuat && tampil.isEmpty)
               const Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: CircularProgressIndicator(),
                 ),
               ),
-            if (!_memuat && _customer.isEmpty)
+            if (!_memuat && tampil.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 18),
                 child: Text(
-                  'Belum ada customer yang mengikuti program'
-                  '${_saring.isEmpty ? '' : ' $_saring'}.\n\n'
-                  'Tekan tombol merah INPUT PROGRAM di kanan bawah, pilih '
-                  'customer dari List Customer, lalu pilih programnya.',
+                  (_customer.isEmpty
+                          ? 'Belum ada customer yang mengikuti program'
+                              '${_saring.isEmpty ? '' : ' $_saring'}.'
+                          : 'Tidak ada customer yang cocok dengan penyaring '
+                              'Hari${_hari == 'Semua' ? '' : ' $_hari'} / '
+                              'Kunjungan${_kunjungan == 'Semua' ? '' : ' $_kunjungan'}. '
+                              'Ubah penyaring di atas.') +
+                      '\n\n'
+                      'Tekan tombol merah INPUT PROGRAM di kanan bawah, pilih '
+                      'customer dari List Customer, lalu pilih programnya.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 12,
@@ -1376,7 +1840,7 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
                   ),
                 ),
               ),
-            for (final Map<String, dynamic> c in _customer) _kartuCustomer(c),
+            for (final Map<String, dynamic> c in tampil) _kartuCustomer(c),
           ],
         ),
       ),
@@ -1558,7 +2022,14 @@ class _RtsInputProgramPageState extends State<_RtsInputProgramPage> {
   /// Melengkapi toko terpilih dengan titik koordinat dan hari kunjungan.
   Future<Map<String, dynamic>> _lengkapiToko(Map<String, dynamic> toko) async {
     try {
-      final Map<String, dynamic> hasil = await _api.kirim('toko_peta');
+      // Dibaca SATU toko saja (bukan seluruh daftar), supaya form input
+      // program tetap cepat walaupun salinan di HP memuat ribuan toko.
+      final Map<String, dynamic> hasil = await _api.kirim(
+        'toko_peta',
+        <String, dynamic>{
+          'id_customer': '${toko['id_customer'] ?? toko['id'] ?? ''}',
+        },
+      );
 
       for (final Map<String, dynamic> t in _daftarDari(hasil['items'])) {
         if ('${t['id_customer']}' == '${toko['id']}') {

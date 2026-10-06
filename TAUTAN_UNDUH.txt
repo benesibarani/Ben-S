@@ -1,5 +1,49 @@
 DAFTAR BERKAS: MANA UNTUK HOSTING, MANA UNTUK APLIKASI?
 ========================================================================
+ >>> PUTARAN 18J (6 Oktober 2026) - PALING BARU <<<
+   DATA CUSTOMER DIPOTONG PER SALES DISTRICT (APLIKASI TIDAK BERAT):
+   penyaring Sales District di Kasir (Pilih Toko), Peta Customer, Radar
+   Customer, Rute Plan, dan Program. RTS & TF terkunci pada district
+   akunnya; WSS/SMST/ADMIN/ASS bebas memilih. Peta berhenti menggambar
+   sesudah 1200 titik. Menu Program: PETA PENUH, label BELUM KIRIM
+   dihapus, list customer dapat dipilah per HARI dan per KUNJUNGAN.
+
+   UNDUH LANGSUNG (klik / tempel di peramban):
+     Paket LENGKAP 18J:
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18J.zip
+     Paket PERUBAHAN 18J (hanya berkas yang berubah):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18J.zip
+     main.dart (kode versi 18J):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+     lib/peta.dart (penyaring Sales District + batas 1200 titik):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
+     lib/program.dart (peta penuh, filter hari & kunjungan):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/program.dart
+     lib/kasir.dart (baris Sales District + Pilih Toko):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir.dart
+     lib/kasir_lokal.dart (perintah toko_district):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
+     pubspec.yaml.updated (versi 1.5.4+19):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+     api/program.php (hosting - tidak berubah sejak 18I):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/program.php
+     RTS_PANEL_PROGRAM.sql:
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PROGRAM.sql
+     BACA_DULU.txt (tutorial tunggal):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
+     CARA_PASANG_CEPAT.txt:
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/CARA_PASANG_CEPAT.txt
+     PROGRAM_INTRODEAL_BD.txt (panduan menu Program):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PROGRAM_INTRODEAL_BD.txt
+     PERIKSA_KODE_APLIKASI.ps1 (putaran 18J):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERIKSA_KODE_APLIKASI.ps1
+     LANGKAH1_PASANG_SEMUA.ps1:
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/LANGKAH1_PASANG_SEMUA.ps1
+
+   Catatan: daftar di bawah ini (bagian 1 - 6) adalah rujukan putaran
+   sebelumnya - masih berlaku, hanya penanda kode aplikasi berubah menjadi
+   RTS-2026-10-06-18J dan versi pubspec 1.5.4+19.
+========================================================================
  >>> PUTARAN 18I (5 Oktober 2026) - PALING BARU <<<
    MENU "PROGRAM" KEMBALI SATU SAJA: LIST CUSTOMER YANG MENGIKUTI PROGRAM
    + TOMBOL MELAYANG INPUT PROGRAM; PROGRAM BISA DIBUAT SENDIRI

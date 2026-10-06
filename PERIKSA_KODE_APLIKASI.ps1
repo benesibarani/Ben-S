@@ -63,7 +63,7 @@
 #  dengan perintah "flutter clean".
 # =============================================================================
 
-$harapanKode = 'RTS-2026-10-05-18I'
+$harapanKode = 'RTS-2026-10-06-18J'
 
 function TulisJudul($teks) {
     Write-Host ""
@@ -756,7 +756,7 @@ else {
 # -----------------------------------------------------------------------------
 TulisJudul "6f. Penanda putaran berkas aplikasi (harus 18I)"
 
-$putaranHarap = '18I'
+$putaranHarap = '18J'
 
 $daftarPutaran = @(
     @{ Nama = 'main.dart (akar)';     Jalur = 'main.dart' },

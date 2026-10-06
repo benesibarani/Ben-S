@@ -1,4 +1,4 @@
-// RTS-PANEL-ROUND: 18I - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
+// RTS-PANEL-ROUND: 18J - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 // ============================================================================
 //  RTS PANEL BY BENE - FITUR PRO : BARANG BAWAAN & KASIR
 //  Berkas : lib/kasir.dart
@@ -2720,6 +2720,251 @@ class _RtsKasirPageState extends State<RtsKasirPage> {
 }
 
 /* ------------------------------------------------------------------------- */
+/* SALES DISTRICT (penyaring data customer pada seluruh menu PRO)            */
+/* ------------------------------------------------------------------------- */
+
+/// Daftar Sales District pada salinan toko di HP + district yang sedang dipilih.
+///
+/// Dipakai menu Kasir, Peta Customer, Radar Customer, Rute Plan, dan Program.
+/// Tujuannya: data customer yang dibaca dan digambar cukup SATU district saja,
+/// supaya aplikasi tetap ringan walaupun master_toko di server memuat ribuan
+/// toko (3186 toko sekaligus pernah membuat peta berat / lambat).
+///
+/// Aturan hak akses (mengikuti aturan DATA CUSTOMER di server):
+///   - RTS & TF  : TERKUNCI pada Sales District akunnya.
+///   - WSS, SMST, ADMIN, ASS : bebas memilih SEMUA DISTRICT atau satu district.
+class RtsDistrict {
+  const RtsDistrict({
+    this.daftar = const <Map<String, dynamic>>[],
+    this.district = '',
+    this.terkunci = false,
+    this.jumlah = 0,
+    this.districtSaya = '',
+    this.sinkronPada = '',
+  });
+
+  /// Daftar district yang ada di salinan HP: [{district, jumlah}].
+  final List<Map<String, dynamic>> daftar;
+
+  /// District yang sedang dipilih ('' = SEMUA DISTRICT).
+  final String district;
+
+  /// True = tidak dapat diganti (akun RTS / TF).
+  final bool terkunci;
+
+  /// Jumlah seluruh toko pada salinan HP (semua district).
+  final int jumlah;
+
+  /// Sales District pada akun yang sedang masuk.
+  final String districtSaya;
+
+  /// Kapan daftar toko terakhir disalin dari server.
+  final String sinkronPada;
+
+  /// Membaca daftar district + pilihan yang tersimpan. Tidak pernah gagal:
+  /// bila data belum ada, hasilnya kosong dan halaman tetap dapat dibuka.
+  static Future<RtsDistrict> muat() async {
+    try {
+      final Map<String, dynamic> hasil =
+          await RtsKasirLokal.aku.kirim('toko_district');
+
+      final List<Map<String, dynamic>> daftar = <Map<String, dynamic>>[];
+
+      if (hasil['items'] is List) {
+        for (final dynamic satu in hasil['items'] as List<dynamic>) {
+          if (satu is! Map) continue;
+
+          final Map<String, dynamic> d = satu.cast<String, dynamic>();
+
+          daftar.add(<String, dynamic>{
+            'district': '${d['district'] ?? ''}',
+            'jumlah': int.tryParse('${d['jumlah'] ?? 0}') ?? 0,
+          });
+        }
+      }
+
+      return RtsDistrict(
+        daftar: daftar,
+        district: '${hasil['pilihan'] ?? ''}'.toUpperCase(),
+        terkunci: hasil['terkunci'] == true,
+        jumlah: int.tryParse('${hasil['jumlah'] ?? 0}') ?? 0,
+        districtSaya: '${hasil['district_saya'] ?? ''}',
+        sinkronPada: '${hasil['sinkron_pada'] ?? ''}',
+      );
+    } on RtsKasirGalat {
+      return const RtsDistrict();
+    }
+  }
+
+  /// Menyimpan pilihan supaya seluruh menu PRO memakai pilihan yang sama.
+  static Future<void> simpan(String district) async {
+    try {
+      await RtsKasirLokal.aku.kirim('district_pilih', <String, dynamic>{
+        'district': district,
+      });
+    } on RtsKasirGalat {
+      // gagal menyimpan pilihan tidak menghalangi pemakaian halaman
+    }
+  }
+
+  /// Jumlah toko pada district yang sedang dipilih (0 = semua district).
+  int get jumlahTampil {
+    if (district.isEmpty) return jumlah;
+
+    for (final Map<String, dynamic> d in daftar) {
+      if ('${d['district']}' == district) {
+        return int.tryParse('${d['jumlah'] ?? 0}') ?? 0;
+      }
+    }
+
+    return 0;
+  }
+}
+
+/// Baris pilihan SALES DISTRICT yang dipakai pada menu PRO.
+///
+/// Bila akun RTS / TF, baris ini hanya menampilkan keterangan (terkunci).
+/// Bila akun WSS / SMST / ADMIN / ASS, baris ini dapat digeser ke samping dan
+/// berisi tombol SEMUA DISTRICT serta nama-nama district beserta jumlah tokonya.
+class RtsDistrictBar extends StatelessWidget {
+  const RtsDistrictBar({
+    super.key,
+    required this.info,
+    required this.onUbah,
+    this.judul = 'Sales District',
+  });
+
+  final RtsDistrict info;
+
+  /// Dipanggil setiap pilihan district diganti ('' = SEMUA DISTRICT).
+  final void Function(String district) onUbah;
+
+  final String judul;
+
+  @override
+  Widget build(BuildContext context) {
+    final String saya = info.districtSaya.isEmpty
+        ? '(belum diisi di Kelola Akun Tim)'
+        : info.districtSaya;
+
+    if (info.terkunci) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: const Color(0xffeef4ff),
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(color: const Color(0xffcfe0ff)),
+        ),
+        child: Row(
+          children: <Widget>[
+            const Icon(Icons.lock_outline_rounded,
+                size: 15, color: Color(0xff1d5bbf)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                '$judul terkunci pada akun: $saya',
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xff1d5bbf),
+                ),
+              ),
+            ),
+            Text(
+              '${info.jumlahTampil} toko',
+              style: const TextStyle(fontSize: 10, color: Color(0xff1d5bbf)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (info.daftar.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            const Icon(Icons.location_city_outlined,
+                size: 15, color: rtsKsMaroon),
+            const SizedBox(width: 5),
+            Expanded(
+              child: Text(
+                info.district.isEmpty
+                    ? '$judul: SEMUA DISTRICT (${info.jumlah} toko)'
+                    : '$judul: ${info.district} (${info.jumlahTampil} toko)',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: rtsKsTeks,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Text(
+              'geser ->',
+              style: TextStyle(fontSize: 9.5, color: rtsKsTeks2),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 34,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: <Widget>[
+              _chip(
+                'SEMUA DISTRICT',
+                info.district.isEmpty,
+                () => onUbah(''),
+              ),
+              for (final Map<String, dynamic> d in info.daftar)
+                _chip(
+                  '${d['district']}'.isEmpty
+                      ? 'TANPA DISTRICT (${d['jumlah']})'
+                      : '${d['district']} (${d['jumlah']})',
+                  info.district == '${d['district']}',
+                  () => onUbah('${d['district']}'),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+      ],
+    );
+  }
+
+  Widget _chip(String teks, bool aktif, VoidCallback tekan) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ChoiceChip(
+        label: Text(
+          teks,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: aktif ? Colors.white : rtsKsTeks,
+          ),
+        ),
+        selected: aktif,
+        onSelected: (_) => tekan(),
+        selectedColor: rtsKsMaroon,
+        backgroundColor: Colors.white,
+        side: BorderSide(color: aktif ? rtsKsMaroon : rtsKsGaris),
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
+}
+
+/* ------------------------------------------------------------------------- */
 /* PILIH TOKO DARI MASTER CUSTOMER (tabel master_toko di server)              */
 /* ------------------------------------------------------------------------- */
 
@@ -2760,6 +3005,10 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
   String _galat = '';
   String _sinkronPada = '';
 
+  /// Penyaring SALES DISTRICT: daftar toko yang dibaca cukup satu district,
+  /// supaya halaman ini tetap ringan (bukan 3000+ toko sekaligus).
+  RtsDistrict _district = const RtsDistrict();
+
   // ---- Toko TERDEKAT (point 3) -------------------------------------------
   // Begitu halaman ini dibuka, posisi HP dibaca sekali. Daftar toko disusun
   // ulang dari yang paling dekat, sehingga DUA baris teratas adalah toko
@@ -2790,8 +3039,17 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
     });
 
     try {
+      // Penyaring district dibaca lebih dulu supaya daftar toko langsung
+      // dipotong sesuai pilihan (aplikasi tidak berat).
+      if (_district.daftar.isEmpty) {
+        _district = await RtsDistrict.muat();
+
+        if (!mounted) return;
+      }
+
       final Map<String, dynamic> hasil = await _api.kirim('toko_daftar', <String, dynamic>{
         'batas': 300,
+        'district': _district.district,
       });
 
       final List<Map<String, dynamic>> daftar = _baca(hasil);
@@ -2821,6 +3079,29 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
         _galat = e.pesan;
       });
     }
+  }
+
+  /// Mengganti penyaring SALES DISTRICT: pilihan disimpan (dipakai bersama
+  /// seluruh menu PRO), lalu daftar toko dibaca ulang.
+  Future<void> _ubahDistrict(String district) async {
+    if (district == _district.district) return;
+
+    setState(() {
+      _district = RtsDistrict(
+        daftar: _district.daftar,
+        district: district,
+        terkunci: _district.terkunci,
+        jumlah: _district.jumlah,
+        districtSaya: _district.districtSaya,
+        sinkronPada: _district.sinkronPada,
+      );
+    });
+
+    await RtsDistrict.simpan(district);
+
+    if (!mounted) return;
+
+    await _muat();
   }
 
   /// Menyalin ulang daftar toko dari tabel master_toko di server.
@@ -3007,6 +3288,10 @@ class _RtsPilihCustomerPageState extends State<RtsPilihCustomerPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                RtsDistrictBar(
+                  info: _district,
+                  onUbah: (String d) => unawaited(_ubahDistrict(d)),
+                ),
                 Row(
                   children: <Widget>[
                     Expanded(

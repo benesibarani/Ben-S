@@ -1,4 +1,4 @@
-// RTS-PANEL-ROUND: 18I - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
+// RTS-PANEL-ROUND: 18J - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 /// ============================================================================
 ///  RTS PANEL BY BENE - MESIN KASIR OFFLINE (SQLite di dalam HP)
 ///  Berkas : lib/kasir_lokal.dart
@@ -1352,7 +1352,11 @@ class RtsKasirLokal {
       case 'toko_daftar':
         await _pastikanBoleh();
 
-        return _tokoDaftar(_teks(data['cari'], 60), _bulat(data['batas'] ?? 60));
+        return _tokoDaftar(
+          _teks(data['cari'], 60),
+          _bulat(data['batas'] ?? 60),
+          _teks(data['district'], 80),
+        );
 
       case 'toko_segarkan':
         await _pastikanBoleh();
@@ -1362,7 +1366,20 @@ class RtsKasirLokal {
       case 'toko_peta':
         await _pastikanBoleh();
 
-        return _tokoPeta();
+        return _tokoPeta(
+          _teks(data['district'], 80),
+          _teks(data['id_customer'], 40),
+        );
+
+      case 'toko_district':
+        await _pastikanBoleh();
+
+        return _tokoDistrict();
+
+      case 'district_pilih':
+        await _pastikanBoleh();
+
+        return _districtPilih(_teks(data['district'], 80));
 
       case 'kunjungan_simpan':
         await _pastikanBoleh();
@@ -1448,6 +1465,7 @@ class RtsKasirLokal {
         return _programCustomerDaftar(
           _teks(data['jenis'], 40),
           _bulat(data['batas'] ?? 300),
+          _teks(data['district'], 80),
         );
 
       case 'paket_daftar':
@@ -3391,6 +3409,11 @@ class RtsKasirLokal {
     int halaman = 1;
     bool lanjut = true;
 
+    // Hak akses data customer dari server (dipakai untuk membersihkan salinan
+    // di HP dari toko district lain).
+    String scopeMode = '';
+    String scopeDistrict = '';
+
     while (lanjut && halaman <= 30) {
       final Uri uri = Uri.parse('$baseUrl/customers.php').replace(
         queryParameters: <String, String>{
@@ -3461,33 +3484,71 @@ class RtsKasirLokal {
 
       final bool adaLagi = meta['has_more'] == true;
 
+      if (urai['scope'] is Map) {
+        final Map<String, dynamic> scope =
+            (urai['scope'] as Map).cast<String, dynamic>();
+
+        scopeMode = '${scope['mode'] ?? ''}';
+        scopeDistrict = '${scope['district_upper'] ?? ''}'.toUpperCase();
+      }
+
       lanjut = adaLagi && data.length >= 100;
       halaman++;
+    }
+
+    // Akun RTS dan TF hanya berhak atas SATU Sales District. Toko district lain
+    // yang mungkin masih tersimpan dari pemakaian sebelumnya dibuang, supaya
+    // daftar, peta, radar, rute, dan program tetap ringan.
+    int dibuang = 0;
+
+    if (scopeMode == 'district' && scopeDistrict.isNotEmpty) {
+      dibuang = await d.delete(
+        'toko',
+        where: 'UPPER(TRIM(district)) <> ?',
+        whereArgs: <Object?>[scopeDistrict],
+      );
     }
 
     await _setelanTulis('toko_sinkron_pada', waktu);
 
     return <String, dynamic>{
       'success': true,
-      'message': 'Daftar toko dari master_toko tersimpan di HP: $jumlah toko.',
+      'message': 'Daftar toko dari master_toko tersimpan di HP: $jumlah toko.'
+          '${dibuang > 0 ? ' $dibuang toko district lain dibuang.' : ''}',
       'jumlah': jumlah,
+      'dibuang': dibuang,
+      'district': scopeDistrict,
       'waktu': waktu,
     };
   }
 
   /// Membaca salinan daftar toko di HP (dapat dipakai tanpa internet).
-  Future<Map<String, dynamic>> _tokoDaftar(String cari, int batas) async {
+  Future<Map<String, dynamic>> _tokoDaftar(
+    String cari,
+    int batas, [
+    String district = '',
+  ]) async {
     final Database d = await db;
     final int jumlah = batas < 1 ? 60 : (batas > 300 ? 300 : batas);
+    final String dis = district.trim().toUpperCase();
 
-    String where = '';
-    List<Object?> args = <Object?>[];
+    final List<String> syarat = <String>[];
+    final List<Object?> args = <Object?>[];
 
     if (cari.isNotEmpty) {
-      where = '(nama LIKE ? OR id_customer LIKE ? OR alamat LIKE ?)';
+      syarat.add('(nama LIKE ? OR id_customer LIKE ? OR alamat LIKE ?)');
       final String suka = '%$cari%';
-      args = <Object?>[suka, suka, suka];
+      args.addAll(<Object?>[suka, suka, suka]);
     }
+
+    // Penyaring SALES DISTRICT: hanya toko pada district yang dipilih yang
+    // dibaca, sehingga daftar tidak terlalu panjang dan aplikasi tetap ringan.
+    if (dis.isNotEmpty) {
+      syarat.add('UPPER(TRIM(district)) = ?');
+      args.add(dis);
+    }
+
+    final String where = syarat.join(' AND ');
 
     final List<Map<String, Object?>> baris = await d.query(
       'toko',
@@ -3521,7 +3582,108 @@ class RtsKasirLokal {
       'message': '${items.length} toko pada salinan di HP.',
       'items': items,
       'jumlah': items.length,
+      'district': dis,
       'sinkron_pada': await _setelanBaca('toko_sinkron_pada', ''),
+    };
+  }
+
+  /* -------------------------------------------------------- sales district */
+
+  /// Daftar SALES DISTRICT yang ada pada salinan toko di HP, beserta jumlah
+  /// tokonya. Dipakai penyaring district pada menu PRO (Kasir, Peta Customer,
+  /// Radar Customer, Rute Plan, dan Program).
+  ///
+  /// Tujuannya supaya data customer yang dibaca dan digambar cukup satu
+  /// district saja - aplikasi tidak berat walaupun master_toko di server
+  /// memuat ribuan toko.
+  ///
+  /// Aturan:
+  ///   - RTS dan TF  : TERKUNCI pada Sales District akunnya (sesuai aturan
+  ///                   hak akses data customer di server).
+  ///   - WSS, SMST, ADMIN, ASS : boleh memilih SEMUA DISTRICT atau satu
+  ///                   district saja (bawaan: pilihan terakhir yang disimpan,
+  ///                   atau district akun bila ada).
+  Future<Map<String, dynamic>> _tokoDistrict() async {
+    final Database d = await db;
+
+    final List<Map<String, Object?>> baris = await d.rawQuery(
+      "SELECT UPPER(TRIM(COALESCE(district, ''))) AS district, "
+      'COUNT(*) AS jumlah FROM toko '
+      "GROUP BY UPPER(TRIM(COALESCE(district, ''))) "
+      'ORDER BY jumlah DESC, district ASC',
+    );
+
+    final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
+    int jumlah = 0;
+
+    for (final Map<String, Object?> b in baris) {
+      final int n = _bulat(b['jumlah']);
+
+      jumlah += n;
+
+      items.add(<String, dynamic>{
+        'district': '${b['district'] ?? ''}',
+        'jumlah': n,
+      });
+    }
+
+    final String disSaya = _teks(pengguna['sales_district'], 80).toUpperCase();
+    final bool terkunci = (role == 'RTS' || role == 'TF') && disSaya.isNotEmpty;
+    final String simpan = (await _setelanBaca('district_pilih', '')).toUpperCase();
+
+    // Pilihan yang dipakai:
+    //   - RTS / TF        : WAJIB district akunnya.
+    //   - 'SEMUA' tersimpan: pengguna sendiri memilih SEMUA DISTRICT.
+    //   - district tersimpan: district itu.
+    //   - belum pernah memilih: district akun (bila ada) supaya aplikasi
+    //     ringan sejak awal; bila akun tidak punya district -> SEMUA DISTRICT.
+    String pilihan;
+
+    if (terkunci) {
+      pilihan = disSaya;
+    } else if (simpan == 'SEMUA') {
+      pilihan = '';
+    } else if (simpan.isNotEmpty) {
+      pilihan = simpan;
+    } else {
+      pilihan = disSaya;
+    }
+
+    // Bila district itu sudah tidak ada lagi di salinan HP (misalnya namanya
+    // diubah di server), pilihan dikembalikan ke SEMUA DISTRICT supaya daftar
+    // tidak tampak kosong.
+    if (pilihan.isNotEmpty &&
+        !items.any((Map<String, dynamic> i) => '${i['district']}' == pilihan)) {
+      pilihan = '';
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'message': '${items.length} sales district pada salinan di HP.',
+      'items': items,
+      'jumlah': jumlah,
+      'district_saya': disSaya,
+      'terkunci': terkunci,
+      'pilihan': pilihan,
+      'sinkron_pada': await _setelanBaca('toko_sinkron_pada', ''),
+    };
+  }
+
+  /// Menyimpan pilihan Sales District supaya seluruh menu PRO memakai pilihan
+  /// yang sama (dan tetap tersimpan walau aplikasi ditutup).
+  Future<Map<String, dynamic>> _districtPilih(String district) async {
+    final String dis = district.trim().toUpperCase();
+
+    // 'SEMUA' disimpan sebagai penanda khusus supaya pilihan SEMUA DISTRICT
+    // tidak tertukar dengan "belum pernah memilih".
+    await _setelanTulis('district_pilih', dis.isEmpty ? 'SEMUA' : dis);
+
+    return <String, dynamic>{
+      'success': true,
+      'message': dis.isEmpty
+          ? 'Penyaring district: SEMUA DISTRICT.'
+          : 'Penyaring district: $dis.',
+      'district': dis,
     };
   }
 
@@ -4158,18 +4320,40 @@ class RtsKasirLokal {
   /// jumlah catatan, tanggal terakhir, dan berapa yang belum dikirim.
   Future<Map<String, dynamic>> _programCustomerDaftar(
     String jenis,
-    int batas,
-  ) async {
+    int batas, [
+    String district = '',
+  ]) async {
     final Database d = await db;
     final int jml = batas < 1 ? 300 : (batas > 500 ? 500 : batas);
     final String jns = _teks(jenis, 40).toUpperCase();
+    final String dis = district.trim().toUpperCase();
 
-    final List<Map<String, Object?>> baris = await d.query(
-      'program_input',
-      where: jns.isEmpty ? 'id_sales = ?' : 'id_sales = ? AND jenis = ?',
-      whereArgs: jns.isEmpty ? <Object?>[idSales] : <Object?>[idSales, jns],
-      orderBy: 'id DESC',
-      limit: jml,
+    // Daftar toko (tabel toko) disambungkan supaya setiap customer program
+    // memuat SALES DISTRICT, HARI kunjungan, dan FREKUENSI kunjungannya.
+    // Dengan begitu daftar dapat dipilah per district dan per hari.
+    final List<String> syarat = <String>['p.id_sales = ?'];
+    final List<Object?> args = <Object?>[idSales];
+
+    if (jns.isNotEmpty) {
+      syarat.add('p.jenis = ?');
+      args.add(jns);
+    }
+
+    if (dis.isNotEmpty) {
+      syarat.add("UPPER(TRIM(COALESCE(t.district, ''))) = ?");
+      args.add(dis);
+    }
+
+    args.add(jml);
+
+    final List<Map<String, Object?>> baris = await d.rawQuery(
+      'SELECT p.*, '
+      "COALESCE(t.district, '') AS district_toko, "
+      "COALESCE(t.hari, '') AS hari_toko, "
+      "COALESCE(t.kunjungan, '') AS kunjungan_toko "
+      'FROM program_input p LEFT JOIN toko t ON t.id_customer = p.id_customer '
+      'WHERE ${syarat.join(' AND ')} ORDER BY p.id DESC LIMIT ?',
+      args,
     );
 
     final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
@@ -4192,6 +4376,9 @@ class RtsKasirLokal {
         items.add(<String, dynamic>{
           'id_customer': id,
           'nama_toko': '${b['nama_toko'] ?? ''}',
+          'district': '${b['district_toko'] ?? ''}',
+          'hari': '${b['hari_toko'] ?? ''}',
+          'kunjungan': '${b['kunjungan_toko'] ?? ''}',
           'jumlah': 1,
           'belum_kirim': _bulat(b['kirim']) == 1 ? 0 : 1,
           'terakhir': '${b['tanggal'] ?? ''}',
@@ -4238,6 +4425,7 @@ class RtsKasirLokal {
       'items': items,
       'jumlah': items.length,
       'jenis': jns,
+      'district': dis,
     };
   }
 
@@ -4699,13 +4887,24 @@ class RtsKasirLokal {
   }
 
   /// Seluruh toko pada salinan di HP - dipakai PETA CUSTOMER, RADAR, RUTE PLAN.
-  Future<Map<String, dynamic>> _tokoPeta() async {
+  Future<Map<String, dynamic>> _tokoPeta(
+    [String district = '', String idCustomer = '']) async {
     final Database d = await db;
+    final String dis = district.trim().toUpperCase();
+    final String idCari = idCustomer.trim();
 
+    // idCustomer dipakai untuk mengambil SATU toko saja (misalnya melengkapi
+    // titik koordinat toko yang baru dipilih pada form input program).
     final List<Map<String, Object?>> baris = await d.query(
       'toko',
+      where: idCari.isNotEmpty
+          ? 'id_customer = ?'
+          : (dis.isEmpty ? null : 'UPPER(TRIM(district)) = ?'),
+      whereArgs: idCari.isNotEmpty
+          ? <Object?>[idCari]
+          : (dis.isEmpty ? null : <Object?>[dis]),
       orderBy: 'nama ASC',
-      limit: 5000,
+      limit: idCari.isNotEmpty ? 1 : 5000,
     );
 
     final List<Map<String, dynamic>> items = <Map<String, dynamic>>[];
@@ -4726,6 +4925,7 @@ class RtsKasirLokal {
       'items': items,
       'jumlah': items.length,
       'bertitik': bertitik,
+      'district': dis,
       'sinkron_pada': await _setelanBaca('toko_sinkron_pada', ''),
     };
   }

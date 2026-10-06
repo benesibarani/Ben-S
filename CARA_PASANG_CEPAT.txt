@@ -1,67 +1,73 @@
 ==============================================================================
- RTS PANEL BY BENE - PUTARAN 18I
- (MENU "PROGRAM" KEMBALI SATU SAJA: LIST CUSTOMER YANG MENGIKUTI PROGRAM +
-  TOMBOL MELAYANG INPUT PROGRAM; PROGRAM BISA DIBUAT SENDIRI; PETA TETAP;
-  TOMBOL SINKRON DI DALAM MENU DIHAPUS)
- CARA PASANG CEPAT  -  5 Oktober 2026
+ RTS PANEL BY BENE - PUTARAN 18J
+ (DATA CUSTOMER PER SALES DISTRICT SUPAYA APLIKASI TIDAK BERAT + PERBAIKAN
+  MENU PROGRAM: PETA LAYAR PENUH, LABEL BELUM KIRIM DIHAPUS, FILTER HARI &
+  KUNJUNGAN PADA LIST CUSTOMER)
+ CARA PASANG CEPAT  -  6 Oktober 2026
 ==============================================================================
 
- Paket ini untuk Bapak yang SUDAH pernah memasang RTS_PANEL_PUTARAN_18H.zip.
- Isinya hanya berkas yang BARU atau BERUBAH untuk perbaikan menu "Program".
+ Paket ini untuk Bapak yang SUDAH pernah memasang RTS_PANEL_PUTARAN_18I.zip.
+ Isinya hanya berkas APLIKASI yang berubah (tidak ada berkas hosting yang
+ berubah pada putaran ini).
 
- ENAM PERUBAHAN PUTARAN 18I
+ LIMA PERUBAHAN PUTARAN 18J
  --------------------------
-   1. TOMBOL PROGRAM DIJADIKAN SATU SAJA:
-      "Program Introdeal", "Program BD", dan "Input Program" DIHAPUS.
-      Sekarang hanya ada satu tombol: PROGRAM
-      (keterangan: List customer & input program).
-   2. ISI MENU PROGRAM: LIST CUSTOMER YANG MENGIKUTI PROGRAM.
-      Tiap baris = satu customer + nama toko + ID + program yang diikuti +
-      jumlah catatan + berapa yang belum dikirim. Ketuk barisnya untuk
-      melihat riwayat program customer itu.
-   3. PROGRAM: INTRODEAL (paket 2+1 dan 1+1), BD, dan LAIN-LAIN.
-      Sales dapat membuat PROGRAM SENDIRI (tombol PROGRAM BARU), dan
-      menentukan apakah program itu memakai paket atau tidak.
-   4. TOMBOL MELAYANG "INPUT PROGRAM" (kanan bawah, warna merah):
-      ditekan -> muncul LIST CUSTOMER (urut dari yang terdekat) ->
-      pilih programnya -> pilih produk dari Barang Bawaan -> SIMPAN DI HP.
-      Bisa dikerjakan TANPA INTERNET.
-   5. PETA TETAP ADA: ikon peta di kanan atas halaman Program, berisi peta
-      OpenStreetMap + penyaring PROGRAM, KUNJUNGAN (sudah/belum), dan HARI.
-   6. TOMBOL SINKRON DI DALAM MENU DIHAPUS (SINKRON PRODUK di Barang Bawaan,
-      SEGARKAN di Peta Customer & Rute Plan, SINKRON ONLINE di Program).
-      Sinkronisasi sekarang terpusat pada menu SINKRONISASI di menu utama
-      (tombol SINKRONKAN SEKARANG). Tombol itu sekarang sekaligus menarik
-      status akun, PRODUK (SKU & harga), dan DAFTAR TOKO.
+   1. PENYARING SALES DISTRICT DI MENU PRO.
+      Pada halaman Pilih Toko (Kasir), Peta Customer, Radar Customer,
+      Rute Plan, dan Program sekarang ada BARIS PENYARING SALES DISTRICT.
+        - RTS & TF   : terkunci pada Sales District akunnya (baris biru).
+        - WSS, SMST, ADMIN, ASS : dapat memilih SEMUA DISTRICT atau satu
+          district; tombolnya dapat digeser ke samping dan memuat jumlah
+          toko tiap district.
+      Pilihan disimpan di HP dan dipakai bersama seluruh menu PRO.
+   2. APLIKASI TIDAK BERAT LAGI.
+      Karena hanya satu district yang dibaca, daftar dan peta biasanya
+      memuat 200-500 toko (bukan 3000+). Bila Bapak memilih SEMUA DISTRICT,
+      peta berhenti menggambar sesudah 1200 titik dan menampilkan pesan
+      kuning yang meminta memilih district.
+   3. SALINAN DI HP DIRAPIKAN (RTS & TF).
+      Setiap SINKRONKAN SEKARANG, toko district lain yang masih tersimpan
+      dari pemakaian sebelumnya otomatis dibuang.
+   4. MENU PROGRAM.
+        - Tombol PETA PENUH pada kotak "Peta & filter program" -> peta
+          memakai SATU LAYAR penuh.
+        - Lencana kuning "x BELUM KIRIM" pada baris customer DIHAPUS.
+          Sebagai gantinya tampil HARI kunjungan, SALES DISTRICT, dan
+          lencana hijau SUDAH DIKUNJUNGI bila toko sudah dikunjungi hari ini.
+        - List customer dapat DIPILAH PER HARI (Semua hari, Senin ... Minggu)
+          dan PER KUNJUNGAN (Semua / SUDAH / BELUM hari ini).
+   5. PENANDA VERSI baru: RTS-2026-10-06-18J, pubspec 1.5.4+19.
 
  ISI PAKET
  --------
-   1_SERVER_unggah_ke_hosting/api/program.php        <-- WAJIB (versi 18I:
-                                                           nama program bebas)
-   1_SERVER_unggah_ke_hosting/RTS_PANEL_PROGRAM.sql  <-- SQL 3 tabel
-   2_APLIKASI_copy_ke_proyek/program.dart            <-- halaman Program 18I
-   2_APLIKASI_copy_ke_proyek/kasir_lokal.dart        <-- data di HP (versi 6)
-   2_APLIKASI_copy_ke_proyek/kasir.dart              <-- tombol sinkron dihapus
-   2_APLIKASI_copy_ke_proyek/peta.dart               <-- tombol SEGARKAN dihapus
-   2_APLIKASI_copy_ke_proyek/main.dart               <-- satu menu Program
-   2_APLIKASI_copy_ke_proyek/pubspec.yaml            <-- versi 1.5.3+18
-   3_SKRIP_POWERSHELL/LANGKAH1_PASANG_SEMUA.ps1       <-- juru salin otomatis
-   3_SKRIP_POWERSHELL/PERIKSA_KODE_APLIKASI.ps1       <-- pemeriksa kode
+   2_APLIKASI_copy_ke_proyek/main.dart           <-- kode versi 18J
+   2_APLIKASI_copy_ke_proyek/peta.dart           <-- penyaring district di
+                                                     3 halaman peta + batas
+                                                     1200 titik
+   2_APLIKASI_copy_ke_proyek/program.dart        <-- peta penuh, filter hari
+                                                     & kunjungan, district
+   2_APLIKASI_copy_ke_proyek/kasir.dart          <-- baris penyaring district
+                                                     + Pilih Toko per district
+   2_APLIKASI_copy_ke_proyek/kasir_lokal.dart    <-- perintah baru:
+                                                     toko_district,
+                                                     district_pilih
+   2_APLIKASI_copy_ke_proyek/pubspec.yaml        <-- versi 1.5.4+19
+   3_SKRIP_POWERSHELL/LANGKAH1_PASANG_SEMUA.ps1  <-- juru salin otomatis
+   3_SKRIP_POWERSHELL/PERIKSA_KODE_APLIKASI.ps1  <-- pemeriksa kode (18J)
+   1_SERVER_unggah_ke_hosting/...                <-- TIDAK berubah (18I)
    BACA_DULU.txt, TAUTAN_UNDUH.txt, PROGRAM_INTRODEAL_BD.txt  <-- panduan
 
  LANGKAH 1 - DI HOSTING (cPanel)
  -------------------------------
-   1. Buka File Manager -> public_html -> folder api
-   2. Unggah  api/program.php  (pilih TIMPA bila ditanya)
-   3. Bila tabel program belum ada: buka phpMyAdmin -> database Bapak ->
-      menu SQL -> tempel SELURUH isi RTS_PANEL_PROGRAM.sql -> tekan GO.
-      Aman dijalankan berkali-kali; tidak ada data lama yang dihapus.
-   4. Tidak ada berkas hosting lain yang berubah pada putaran ini.
+   TIDAK ADA yang perlu diunggah pada putaran ini.
+   Bila tabel program belum pernah dibuat: buka phpMyAdmin -> database ->
+   menu SQL -> tempel isi RTS_PANEL_PROGRAM.sql -> GO.
 
  LANGKAH 2 - DI KOMPUTER (proyek Flutter D:\Project\rts_panel_app)
  ----------------------------------------------------------------
    1. Ekstrak paket ini ke mana saja (misalnya Desktop), pilih TIMPA semua.
    2. Klik kanan  LANGKAH1_PASANG_SEMUA.ps1  ->  Run with PowerShell
+      (skrip ini menimpa main.dart ke DUA tempat: akar folder dan lib\main.dart)
    3. Buka terminal di folder proyek, jalankan berurutan:
           flutter clean
           flutter pub get
@@ -70,49 +76,44 @@
 
  LANGKAH 3 - DI HP
  -----------------
-   1. Pasang APK baru dengan cara MENIMPA. JANGAN hapus aplikasi lama
-      (data Kasir, STRUK POM, dan catatan program di HP tetap aman).
-   2. Buka aplikasi -> MENU PRO -> sekarang hanya ada satu tombol: PROGRAM.
-   3. Di halaman Program, tekan tombol merah INPUT PROGRAM di kanan bawah:
-      pilih customer dari List Customer, lalu pilih programnya
-      (INTRODEAL 2+1 / 1+1, BD, atau PROGRAM BARU).
-
- KALAU BUILD GAGAL DENGAN PESAN "jenisAwal"
- ---------------------------------------
-   lib\main.dart:2847:13: Error: No named parameter with the name 'jenisAwal'.
-
-   Artinya lib\main.dart masih versi LAMA (tiga tombol Program), sedangkan
-   lib\program.dart sudah versi 18I. Perbaikannya:
-      1. Pastikan paket 18I sudah diekstrak (TIMPA semua berkas).
-      2. Jalankan LANGKAH1_PASANG_SEMUA.ps1 (menimpa main.dart di akar folder
-         DAN lib\main.dart sekaligus).
-      3. Jalankan PERIKSA_KODE_APLIKASI.ps1 -> bagian 6f harus [ADA] semua
-         dengan putaran 18I.
-      4. flutter clean -> flutter pub get -> flutter run
-   Sebagai pengaman, lib\program.dart 18I juga menerima permintaan gaya lama,
-   jadi build tetap berhasil - tetapi main.dart tetap harus ditimpa supaya
-   menu Program benar-benar SATU tombol.
+   1. Pasang APK baru dengan cara MENIMPA. JANGAN hapus aplikasi lama.
+   2. Buka aplikasi, lalu Menu Utama -> SINKRONISASI -> SINKRONKAN SEKARANG
+      (butuh internet sekali supaya salinan toko di HP diperbarui).
+   3. Buka MENU PRO -> PETA CUSTOMER. Pada baris Sales District tekan nama
+      district yang ingin dilihat, atau SEMUA DISTRICT.
+   4. Buka MENU PRO -> PROGRAM:
+        - tekan ikon PETA di kanan atas -> tombol PETA PENUH
+        - pada daftar customer, tekan pilihan HARI KUNJUNGAN dan KUNJUNGAN.
 
  PEMERIKSAAN SESUDAH PASANG
  --------------------------
    Di komputer: jalankan .\PERIKSA_KODE_APLIKASI.ps1
-       harus tertulis kode aplikasi  RTS-2026-10-05-18I
-   Di aplikasi: Menu PRO harus memuat HANYA satu tombol Program.
-   Bila daftar program bertambah banyak, gunakan DAFTAR PROGRAM untuk
-       mengubah atau menghapus program buatan sendiri.
+       bagian 6f harus menulis putaran 18J pada keenam berkas.
+   Di aplikasi: Pengaturan harus menulis  RTS-2026-10-06-18J.
 
- BACAAN LENGKAP: PROGRAM_INTRODEAL_BD.txt (panduan menu Program)
-                BACA_DULU.txt  bagian "PUTARAN 18I"
+ KALAU BUILD GAGAL DENGAN PESAN "jenisAwal"
+ -----------------------------------------
+   lib\main.dart:2847:13: Error: No named parameter with the name 'jenisAwal'.
+
+   Artinya lib\main.dart masih versi LAMA (tiga tombol Program), sedangkan
+   lib\program.dart sudah versi baru. Perbaikannya:
+      1. Pastikan paket 18J sudah diekstrak (TIMPA semua berkas).
+      2. Jalankan LANGKAH1_PASANG_SEMUA.ps1 (menimpa main.dart di akar folder
+         DAN lib\main.dart sekaligus).
+      3. Jalankan PERIKSA_KODE_APLIKASI.ps1 -> bagian 6f harus [ADA] semua.
+      4. flutter clean -> flutter pub get -> flutter run
+
+ BACAAN LENGKAP: BACA_DULU.txt bagian "PUTARAN 18J"
 
  TAUTAN UNDUH CEPAT
  ------------------
-   Paket lengkap    : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18I.zip
-   Hanya perubahan  : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18I.zip
-   api/program.php  : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/program.php
-   SQL tabel        : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PROGRAM.sql
-   lib/program.dart : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/program.dart
+   Paket lengkap    : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18J.zip
+   Hanya perubahan  : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18J.zip
    main.dart        : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
-   kasir_lokal.dart : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
-   kasir.dart       : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir.dart
-   peta.dart        : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
+   lib/peta.dart    : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
+   lib/program.dart : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/program.dart
+   lib/kasir.dart   : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir.dart
+   lib/kasir_lokal.dart : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
    pubspec.yaml     : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+   PERIKSA_KODE_APLIKASI.ps1 : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERIKSA_KODE_APLIKASI.ps1
+   LANGKAH1_PASANG_SEMUA.ps1 : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/LANGKAH1_PASANG_SEMUA.ps1

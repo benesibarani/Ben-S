@@ -1,4 +1,4 @@
-// RTS-PANEL-ROUND: 18I - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
+// RTS-PANEL-ROUND: 18J - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 // ============================================================================
 //  RTS PANEL BY BENE - FITUR PRO : PETA CUSTOMER, RADAR, RUTE PLAN
 //  Berkas : lib/peta.dart
@@ -367,6 +367,20 @@ Color rtsPetaWarnaHari(String hari) {
 ///   "Failed assertion: line ... 'east <= maxLongitude'"
 /// sehingga peta Rute Plan kosong / berat. Titik yang tidak masuk batas Bumi
 /// dibuang lebih dahulu, jadi peta tidak pernah menerima angka liar.
+/// Jumlah titik maksimal yang digambar pada satu peta.
+///
+/// Peta dengan 3000+ titik membuat aplikasi berat / tersendat (pernah kejadian
+/// pada Peta Customer: 3170 toko sekaligus). Bila jumlah toko melebihi angka
+/// ini, peta menggambar sebagian dulu, dan pengguna diminta memilih SALES
+/// DISTRICT pada penyaring supaya seluruh toko district itu dapat dilihat.
+const int rtsPetaBatasTitik = 1200;
+
+/// Memotong daftar toko supaya jumlah titik yang digambar tidak berlebihan.
+List<T> rtsPetaPotongTitik<T>(List<T> daftar) =>
+    daftar.length <= rtsPetaBatasTitik
+        ? daftar
+        : daftar.take(rtsPetaBatasTitik).toList();
+
 bool rtsPetaTitikSah(double lat, double lng) {
   if (lat.isNaN || lng.isNaN) return false;
   if (lat.isInfinite || lng.isInfinite) return false;
@@ -1120,6 +1134,10 @@ class _RtsPetaCustomerPageState extends State<RtsPetaCustomerPage> {
   /// True = hanya peta yang tampil (satu layar penuh).
   bool _petaPenuh = false;
 
+  /// Penyaring SALES DISTRICT (data customer dibaca per district supaya
+  /// aplikasi tetap ringan - bukan 3000+ toko sekaligus).
+  RtsDistrict _district = const RtsDistrict();
+
   @override
   void initState() {
     super.initState();
@@ -1156,7 +1174,18 @@ class _RtsPetaCustomerPageState extends State<RtsPetaCustomerPage> {
     });
 
     try {
-      final Map<String, dynamic> hasil = await RtsKasirLokal.aku.kirim('toko_peta');
+      // Penyaring Sales District dibaca lebih dulu supaya daftar toko langsung
+      // dipotong sesuai pilihan.
+      if (_district.daftar.isEmpty) {
+        _district = await RtsDistrict.muat();
+
+        if (!mounted) return;
+      }
+
+      final Map<String, dynamic> hasil = await RtsKasirLokal.aku.kirim(
+        'toko_peta',
+        <String, dynamic>{'district': _district.district},
+      );
       final List<dynamic> items =
           hasil['items'] is List ? hasil['items'] as List<dynamic> : <dynamic>[];
 
@@ -1573,6 +1602,17 @@ class _RtsPetaCustomerPageState extends State<RtsPetaCustomerPage> {
                   ),
                 ],
               ),
+              if (_saringBuka && daftar.length > rtsPetaBatasTitik)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    'Peta menggambar ${rtsPetaBatasTitik} titik pertama dari '
+                    '${daftar.length} toko supaya aplikasi tetap ringan. '
+                    'Pilih SALES DISTRICT pada penyaring di bawah untuk melihat '
+                    'seluruh toko district itu.',
+                    style: const TextStyle(fontSize: 11, color: rtsKsKuning),
+                  ),
+                ),
               if (_saringBuka && _tanpaTitik > 0)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
@@ -1585,6 +1625,10 @@ class _RtsPetaCustomerPageState extends State<RtsPetaCustomerPage> {
                     style: const TextStyle(fontSize: 11, color: rtsKsKuning),
                   ),
                 ),
+              RtsDistrictBar(
+                info: _district,
+                onUbah: (String d) => unawaited(_ubahDistrict(d)),
+              ),
               _penyaring(daftar),
               if (_saringBuka)
                 Row(
@@ -1605,6 +1649,30 @@ class _RtsPetaCustomerPageState extends State<RtsPetaCustomerPage> {
         Expanded(child: peta),
       ],
     );
+  }
+
+
+  /// Mengganti penyaring SALES DISTRICT: pilihan disimpan (dipakai bersama
+  /// seluruh menu PRO), lalu daftar toko dibaca ulang.
+  Future<void> _ubahDistrict(String district) async {
+    if (district == _district.district) return;
+
+    setState(() {
+      _district = RtsDistrict(
+        daftar: _district.daftar,
+        district: district,
+        terkunci: _district.terkunci,
+        jumlah: _district.jumlah,
+        districtSaya: _district.districtSaya,
+        sinkronPada: _district.sinkronPada,
+      );
+    });
+
+    await RtsDistrict.simpan(district);
+
+    if (!mounted) return;
+
+    await _muat();
   }
 
   /// Panel penyaring Hari + Frekuensi. Dapat dilipat ke atas (MINIMIZE).
@@ -1695,7 +1763,7 @@ class _RtsPetaCustomerPageState extends State<RtsPetaCustomerPage> {
               userAgentPackageName: 'com.bene.rts_panel_app',
               maxNativeZoom: _sumberPeta.maksZoom,
             ),
-            MarkerLayer(markers: _penanda(daftar)),
+            MarkerLayer(markers: _penanda(rtsPetaPotongTitik(daftar))),
           ],
         ),
         Positioned(
@@ -2523,6 +2591,9 @@ class _RtsRadarPageState extends State<RtsRadarPage> {
   String _pesanLokasi = '';
   int _sumber = 0;
 
+  /// Penyaring SALES DISTRICT (radar cukup membaca satu district).
+  RtsDistrict _district = const RtsDistrict();
+
   @override
   void initState() {
     super.initState();
@@ -2559,7 +2630,16 @@ class _RtsRadarPageState extends State<RtsRadarPage> {
     });
 
     try {
-      final Map<String, dynamic> hasil = await RtsKasirLokal.aku.kirim('toko_peta');
+      if (_district.daftar.isEmpty) {
+        _district = await RtsDistrict.muat();
+
+        if (!mounted) return;
+      }
+
+      final Map<String, dynamic> hasil = await RtsKasirLokal.aku.kirim(
+        'toko_peta',
+        <String, dynamic>{'district': _district.district},
+      );
       final List<dynamic> items =
           hasil['items'] is List ? hasil['items'] as List<dynamic> : <dynamic>[];
 
@@ -2784,6 +2864,10 @@ class _RtsRadarPageState extends State<RtsRadarPage> {
                     style: const TextStyle(fontSize: 11, color: rtsKsTeks2),
                   ),
                 ),
+              RtsDistrictBar(
+                info: _district,
+                onUbah: (String d) => unawaited(_ubahDistrict(d)),
+              ),
               _penyaring(dekat),
               Text(
                 'Jarak maksimal: ${_teksRadius()} - ${dekat.length} toko ditemukan',
@@ -2834,6 +2918,30 @@ class _RtsRadarPageState extends State<RtsRadarPage> {
           SizedBox(height: 230, child: _daftarToko(p, dekat)),
       ],
     );
+  }
+
+
+  /// Mengganti penyaring SALES DISTRICT: pilihan disimpan (dipakai bersama
+  /// seluruh menu PRO), lalu daftar toko dibaca ulang.
+  Future<void> _ubahDistrict(String district) async {
+    if (district == _district.district) return;
+
+    setState(() {
+      _district = RtsDistrict(
+        daftar: _district.daftar,
+        district: district,
+        terkunci: _district.terkunci,
+        jumlah: _district.jumlah,
+        districtSaya: _district.districtSaya,
+        sinkronPada: _district.sinkronPada,
+      );
+    });
+
+    await RtsDistrict.simpan(district);
+
+    if (!mounted) return;
+
+    await _muat();
   }
 
   /// Panel penyaring Hari + Frekuensi. Dapat dilipat ke atas (MINIMIZE).
@@ -3313,6 +3421,9 @@ class _RtsRutePageState extends State<RtsRutePage> {
   Offset? _layarTerakhir;
   int _sumber = 0;
 
+  /// Penyaring SALES DISTRICT (rute cukup membaca satu district).
+  RtsDistrict _district = const RtsDistrict();
+
   double? _sayaLat;
   double? _sayaLng;
 
@@ -3353,7 +3464,16 @@ class _RtsRutePageState extends State<RtsRutePage> {
     });
 
     try {
-      final Map<String, dynamic> hasil = await RtsKasirLokal.aku.kirim('toko_peta');
+      if (_district.daftar.isEmpty) {
+        _district = await RtsDistrict.muat();
+
+        if (!mounted) return;
+      }
+
+      final Map<String, dynamic> hasil = await RtsKasirLokal.aku.kirim(
+        'toko_peta',
+        <String, dynamic>{'district': _district.district},
+      );
       final List<dynamic> items =
           hasil['items'] is List ? hasil['items'] as List<dynamic> : <dynamic>[];
 
@@ -4576,6 +4696,10 @@ class _RtsRutePageState extends State<RtsRutePage> {
                     _aturTampilan();
                   },
                 ),
+              RtsDistrictBar(
+                info: _district,
+                onUbah: (String d) => unawaited(_ubahDistrict(d)),
+              ),
               _penyaring(rencana),
               _barisStatistik(rencana),
             ],
@@ -4704,6 +4828,30 @@ class _RtsRutePageState extends State<RtsRutePage> {
         Expanded(flex: 6, child: _daftarRencana(rencana)),
       ],
     );
+  }
+
+
+  /// Mengganti penyaring SALES DISTRICT: pilihan disimpan (dipakai bersama
+  /// seluruh menu PRO), lalu daftar toko dibaca ulang.
+  Future<void> _ubahDistrict(String district) async {
+    if (district == _district.district) return;
+
+    setState(() {
+      _district = RtsDistrict(
+        daftar: _district.daftar,
+        district: district,
+        terkunci: _district.terkunci,
+        jumlah: _district.jumlah,
+        districtSaya: _district.districtSaya,
+        sinkronPada: _district.sinkronPada,
+      );
+    });
+
+    await RtsDistrict.simpan(district);
+
+    if (!mounted) return;
+
+    await _muat();
   }
 
   /// Panel penyaring Hari + Frekuensi. Dapat dilipat ke atas (MINIMIZE).

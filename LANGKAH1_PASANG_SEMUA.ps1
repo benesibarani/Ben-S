@@ -753,8 +753,8 @@ foreach ($satuPenanda in $daftarPenanda) {
         $angkaPutaran = $Matches[1]
     }
 
-    if ($angkaPutaran -eq '18I') {
-        Baik ($satuPenanda.Nama + ' : putaran 18I (benar).')
+    if ($angkaPutaran -eq '18J') {
+        Baik ($satuPenanda.Nama + ' : putaran 18J (benar).')
     }
     else {
         Awas ($satuPenanda.Nama + ' : penanda putaran tidak terbaca - berkas mungkin masih versi lama.')
@@ -782,7 +782,7 @@ Write-Host '     3. Tekan tombol PERBARUI DATABASE' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Periksa di aplikasi:' -ForegroundColor White
 Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-10-05-18I' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-06-18J' -ForegroundColor Gray
 Write-Host '     Pembaruan   : kotak Pembaruan -> PERBARUI SEKARANG' -ForegroundColor Gray
 Write-Host '                   (berkas diunduh DI DALAM aplikasi, tanpa Chrome)' -ForegroundColor Gray
 Write-Host '     Profil      : tombol LANGGANAN PRO tampil + gambar QRIS tampil' -ForegroundColor Gray
@@ -810,6 +810,19 @@ Write-Host '                   -> status berubah PRO dan menu PRO langsung terbu
 Write-Host '     Menu PRO    : HANYA SATU tombol Program (List customer & input' -ForegroundColor Gray
 Write-Host '                   program) - Program Introdeal, Program BD, dan' -ForegroundColor Gray
 Write-Host '                   Input Program sudah TIDAK ada lagi' -ForegroundColor Gray
+Write-Host '     SIKRON/18J  : baris penyaring SALES DISTRICT tampil di atas' -ForegroundColor Gray
+Write-Host '                   Peta Customer, Radar Customer, Rute Plan, Pilih' -ForegroundColor Gray
+Write-Host '                   Toko (Kasir), dan Program' -ForegroundColor Gray
+Write-Host '     SIKRON/18J  : RTS & TF -> district terkunci sesuai akun;' -ForegroundColor Gray
+Write-Host '                   WSS/SMST/ADMIN/ASS -> dapat memilih SEMUA DISTRICT' -ForegroundColor Gray
+Write-Host '                   atau satu district (aplikasi jadi ringan)' -ForegroundColor Gray
+Write-Host '     SIKRON/18J  : peta berhenti menggambar sesudah 1200 titik' -ForegroundColor Gray
+Write-Host '                   (pesan kuning meminta memilih district)' -ForegroundColor Gray
+Write-Host '     Program/18J : label "BELUM KIRIM" pada daftar customer sudah' -ForegroundColor Gray
+Write-Host '                   DIHAPUS; ada penyaring HARI KUNJUNGAN dan' -ForegroundColor Gray
+Write-Host '                   KUNJUNGAN (sudah/belum hari ini)' -ForegroundColor Gray
+Write-Host '     Program/18J : kotak Peta & filter program punya tombol' -ForegroundColor Gray
+Write-Host '                   PETA PENUH (peta satu layar penuh)' -ForegroundColor Gray
 Write-Host '     Program     : list customer yang mengikuti program tampil' -ForegroundColor Gray
 Write-Host '     Program     : tombol merah melayang INPUT PROGRAM -> pilih' -ForegroundColor Gray
 Write-Host '                   customer -> pilih program -> SIMPAN DI HP' -ForegroundColor Gray
@@ -818,7 +831,7 @@ Write-Host '                   (misalnya PROGRAM GAWIH)' -ForegroundColor Gray
 Write-Host '     Program     : ikon peta (peta + penyaring program/kunjungan/hari)' -ForegroundColor Gray
 Write-Host '     Menu PRO    : tombol SINKRON di dalam menu TIDAK ada lagi;' -ForegroundColor Gray
 Write-Host '                   sinkron lewat MENU UTAMA -> SINKRONISASI' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-10-05-18I' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-06-18J' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Di hosting (cPanel) - KHUSUS MENU PETA:' -ForegroundColor White
 Write-Host '     1. Unggah  api\kantor.php  ke folder api pada hosting' -ForegroundColor Gray
