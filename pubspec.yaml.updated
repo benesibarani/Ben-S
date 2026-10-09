@@ -127,7 +127,7 @@ publish_to: 'none'
 #       dikelola pada sub-menu sendiri lalu muncul sebagai pilihan pada POM.
 #     - Cetak memakai printer Bluetooth thermal 58/80 mm yang sudah dihubungkan
 #       pada menu "Printer & Struk".
-version: 1.5.4+19
+version: 1.5.5+20
 
 environment:
   sdk: '>=3.5.0 <4.0.0'

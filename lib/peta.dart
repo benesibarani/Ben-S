@@ -1,4 +1,4 @@
-// RTS-PANEL-ROUND: 18J - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
+// RTS-PANEL-ROUND: 18K - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 // ============================================================================
 //  RTS PANEL BY BENE - FITUR PRO : PETA CUSTOMER, RADAR, RUTE PLAN
 //  Berkas : lib/peta.dart
@@ -15,13 +15,15 @@
 //     2. RtsRadarPage        - RADAR CUSTOMER
 //            daftar toko di sekitar titik GPS petugas, urut dari yang
 //            paling dekat, lengkap dengan jarak (nama, alamat, jarak).
-//     3. RtsRutePage         - RUTE PLAN
-//            daftar kunjungan menurut HARI + FREKUENSI, titik toko di peta
-//            diberi NOMOR sesuai urutan, urutan dapat DIGESER (tekan lama
-//            lalu tarik) atau lewat tombol naik/turun, dan daftar urutan
-//            dapat DISALIN sebagai TEKS untuk dilaporkan ke ASS / Admin.
-//            Garis rute TIDAK dibuat otomatis - bila ingin menggambar garis,
-//            Sales menyalakan MODE PENSIL.
+//     3. RtsRutePage         - RUTE PLAN (layar penuh, putaran 18K)
+//            Peta memenuhi seluruh layar. Sidebar "MENU RUTE PLAN" mengambang
+//            dapat digeser dan dilipat. Isinya: Filter & Sales District, List
+//            Customer (urut, bisa diubah dengan tekan-lama-lalu-geser), Copy
+//            Urutan (teks), Garis Tersimpan, Pensil Garis, dan Lokasi Saya.
+//            Titik toko diberi NOMOR urut. Ketuk nomor -> kartu berisi Nama +
+//            ID Customer. Nomor bisa diubah (- / + atau UBAH NOMOR) dan daftar
+//            otomatis mengikuti. PENSIL: ketuk nomor toko berurutan untuk
+//            membuat garis antar customer. Garis tidak dibuat otomatis.
 //     4. RtsKantorPage       - LOKASI KANTOR / MITRA (khusus ADMIN & ASS)
 //            titik kantor dipakai sebagai awal perhitungan RUTE PLAN.
 //
@@ -3403,22 +3405,36 @@ class _RtsRutePageState extends State<RtsRutePage> {
   late String _hari = rtsPetaNamaHari(DateTime.now());
   String _frekuensi = 'Semua';
   String _caraWarna = 'KUNJUNGAN';
-  bool _dariKantor = true;
+  final bool _dariKantor = true;
 
+  /// Urutan yang diatur petugas (ID customer). Hanya berlaku di layar ini.
   List<String> _urutanManual = <String>[];
 
-  /// Panel Penyaring (Hari + Frekuensi): terbuka / terlipat ke atas.
-  bool _saringBuka = true;
+  /// Toko yang sedang dipilih. Nama + ID customer tampil di kartu bawah.
+  RtsToko? _pilihan;
 
-  /// True = hanya peta yang tampil (satu layar penuh).
-  bool _petaPenuh = false;
+  /// Isi sidebar: 'menu', 'saring', 'daftar', atau 'pensil'.
+  String _panel = 'menu';
 
+  /// True = sidebar hanya tampil judulnya (dilipat).
+  bool _sidebarLipat = false;
+
+  /// Posisi sidebar di dalam area peta (null = posisi awal).
+  Offset? _posisiSidebar;
+
+  /// Ukuran area peta terakhir (dipakai saat sidebar digeser).
+  Size _ukuranPeta = Size.zero;
+
+  /// Mode PENSIL: ketuk nomor toko berurutan untuk membuat garis.
   bool _pensil = false;
   int _warnaPensil = 0;
-  List<LatLng> _goresan = <LatLng>[];
-  List<RtsGoresan> _coretan = <RtsGoresan>[];
+
+  /// Titik garis yang sedang dibuat (belum disimpan).
+  List<RtsToko> _garisBaru = <RtsToko>[];
+
+  /// Garis yang sudah tersimpan di HP.
   List<RtsGoresan> _tersimpan = <RtsGoresan>[];
-  Offset? _layarTerakhir;
+
   int _sumber = 0;
 
   /// Penyaring SALES DISTRICT (rute cukup membaca satu district).
@@ -3441,6 +3457,76 @@ class _RtsRutePageState extends State<RtsRutePage> {
     _kontrol.dispose();
     super.dispose();
   }
+
+  /// Kamera diatur setelah peta benar-benar tampil (frame berikutnya).
+  void _aturTampilanSiap() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _aturTampilan();
+    });
+  }
+
+  /// Batas atas area yang boleh ditempati sidebar (di bawah bilah atas).
+  double get _batasAtas => MediaQuery.of(context).padding.top + 8.0;
+
+  /// Batas bawah untuk kartu dan legenda (di atas garis navigasi HP).
+  double get _batasBawah => MediaQuery.of(context).padding.bottom + 10.0;
+
+  /// Posisi sidebar saat ini; posisi awal = pojok kiri atas.
+  Offset get _posisiAktif => _posisiSidebar ?? Offset(8.0, _batasAtas + 60.0);
+
+  /// Lebar sidebar mengikuti lebar peta (200 - 300 px).
+  double _lebarSidebar(double petaLebar) =>
+      math.max(200.0, math.min(300.0, petaLebar - 16.0));
+
+  /// Menjaga sidebar tetap di dalam peta: tidak keluar tepi dan tidak
+  /// menutupi bilah atas.
+  Offset _kliping(Offset p, Size ukuran) {
+    final double batasAtas = _batasAtas + 60.0;
+    final double maksX =
+        math.max(0.0, ukuran.width - _lebarSidebar(ukuran.width));
+    final double maksY = math.max(batasAtas, ukuran.height - 60.0);
+    return Offset(
+      math.min(math.max(p.dx, 0.0), maksX),
+      math.min(math.max(p.dy, batasAtas), maksY),
+    );
+  }
+
+  void _geserSidebar(Offset selisih) {
+    final Offset baru = _kliping(_posisiAktif + selisih, _ukuranPeta);
+    setState(() => _posisiSidebar = baru);
+  }
+
+  void _gantiPanel(String panel) {
+    setState(() {
+      _panel = panel;
+      _sidebarLipat = false;
+    });
+  }
+
+  String _judulPanel() {
+    if (_panel == 'saring') return 'FILTER & SALES DISTRICT';
+    if (_panel == 'daftar') return 'LIST CUSTOMER';
+    if (_panel == 'pensil') return 'PENSIL GARIS';
+    return 'MENU RUTE PLAN';
+  }
+
+  String _subjudulPanel(List<RtsToko> rencana, RtsKantor? kantor) {
+    if (_panel == 'saring') return 'Hari: $_hari  |  Frekuensi: $_frekuensi';
+    if (_panel == 'daftar') {
+      return '${rencana.length} toko. Tekan lama lalu geser untuk ubah urutan';
+    }
+    if (_panel == 'pensil') {
+      return _pensil
+          ? '${_garisBaru.length} titik pada garis baru'
+          : 'Pensil belum aktif';
+    }
+    return '${rencana.length} toko  |  '
+        '${kantor == null ? 'titik kantor belum ada' : kantor.nama}';
+  }
+
+  /// Ada titik asal (kantor atau lokasi saya) untuk menghitung jarak.
+  bool get _adaAsal =>
+      _kantorDipilih != null || (_sayaLat != null && _sayaLng != null);
 
   Future<void> _mulai() async {
     await rtsPetaSiapkanAkun(
@@ -3518,7 +3604,7 @@ class _RtsRutePageState extends State<RtsRutePage> {
       if (daftar.isEmpty) {
         await _segarkanToko(diam: true);
       } else {
-        _aturTampilan();
+        _aturTampilanSiap();
       }
     } on RtsKasirGalat catch (e) {
       if (!mounted) return;
@@ -3748,11 +3834,6 @@ class _RtsRutePageState extends State<RtsRutePage> {
       if (t.adaTitik) titik.add(t.titik);
     }
 
-    // Titik goresan pensil juga ikut ditampilkan bila ada.
-    for (final LatLng l in _goresan) {
-      if (rtsPetaTitikSah(l.latitude, l.longitude)) titik.add(l);
-    }
-
     rtsPetaAturKamera(_kontrol, titik);
   }
 
@@ -3765,7 +3846,140 @@ class _RtsRutePageState extends State<RtsRutePage> {
     return rtsPetaWarnaFrekuensi(t.kunjungan);
   }
 
-  /* ------------------------------------------------------------- kunjungan */
+  /// Toko yang belum SELESAI, urut sesuai daftar rencana.
+  List<RtsToko> _belumSelesai() {
+    return _rencana
+        .where((RtsToko t) => !_selesai.contains(t.idCustomer))
+        .toList();
+  }
+
+  /// Nomor urut toko dalam rencana (mulai 1). 0 = tidak ada di rencana.
+  int _nomorDari(List<RtsToko> rencana, RtsToko t) {
+    final int i =
+        rencana.indexWhere((RtsToko x) => x.idCustomer == t.idCustomer);
+    return i < 0 ? 0 : i + 1;
+  }
+
+  /// Menggeser nomor satu langkah (tombol - dan +).
+  void _geserNomor(RtsToko t, int geser) {
+    final List<RtsToko> belum = _belumSelesai();
+    final int dari =
+        belum.indexWhere((RtsToko x) => x.idCustomer == t.idCustomer);
+    if (dari < 0) {
+      rtsKsPesan(
+        context,
+        'Toko yang sudah SELESAI tetap di urutan bawah.',
+        galat: true,
+      );
+      return;
+    }
+    _pindahKe(dari, dari + geser);
+  }
+
+  /// Mengubah nomor lewat kotak isian. Toko lain bergeser otomatis.
+  Future<void> _ubahNomor(RtsToko t) async {
+    final List<RtsToko> belum = _belumSelesai();
+    final int dari =
+        belum.indexWhere((RtsToko x) => x.idCustomer == t.idCustomer);
+    if (dari < 0) {
+      rtsKsPesan(
+        context,
+        'Toko yang sudah SELESAI tidak dapat diberi nomor baru.',
+        galat: true,
+      );
+      return;
+    }
+
+    final TextEditingController isi =
+        TextEditingController(text: '${dari + 1}');
+    final int? nomor = await showDialog<int>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text(
+          'Ubah Nomor Urut',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text('${t.nama}  |  ID: ${t.idCustomer}', style: rtsPetaJudulKecil),
+            const SizedBox(height: 6),
+            Text(
+              'Ketik nomor baru (1 sampai ${belum.length}). '
+              'Toko lain bergeser otomatis dan daftar ikut berubah.',
+              style: rtsPetaIsiKecil,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: isi,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+              decoration: const InputDecoration(
+                labelText: 'Nomor urut baru',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('BATAL', style: TextStyle(color: rtsKsTeks2)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
+            onPressed: () =>
+                Navigator.of(ctx).pop(int.tryParse(isi.text.trim())),
+            child: const Text('SIMPAN NOMOR'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || nomor == null) return;
+    if (nomor < 1 || nomor > belum.length) {
+      rtsKsPesan(
+        context,
+        'Nomor harus antara 1 sampai ${belum.length}.',
+        galat: true,
+      );
+      return;
+    }
+    _pindahKe(dari, nomor - 1);
+  }
+
+  /// Memilih toko dari daftar: peta pindah ke titik toko tersebut.
+  void _pilihToko(RtsToko t) {
+    setState(() => _pilihan = t);
+    try {
+      final double zoom = _kontrol.camera.zoom;
+      _kontrol.move(t.titik, zoom < 14.0 ? 15.0 : zoom);
+    } catch (_) {
+      // Peta belum siap. Kartu tetap tampil.
+    }
+  }
+
+  /// Ketuk nomor di peta. Mode biasa = pilih toko.
+  /// Mode pensil = tambah titik ke garis baru.
+  void _ketukToko(RtsToko t) {
+    if (_pensil) {
+      _tambahTitikGaris(t);
+      return;
+    }
+    setState(() => _pilihan = t);
+  }
+
+  Future<void> _salinNamaKode(RtsToko t) async {
+    await rtsPetaSalinTeks('${t.nama} | ${t.idCustomer}');
+    if (!mounted) return;
+    rtsKsPesan(context, 'Nama dan ID customer sudah disalin.');
+  }
 
   Future<void> _tandaiKunjungan(RtsToko t) async {
     try {
@@ -3792,13 +4006,10 @@ class _RtsRutePageState extends State<RtsRutePage> {
     }
   }
 
-  /// Menggeser satu langkah (tombol panah atas / bawah pada daftar).
-  void _ubahUrutan(int index, int geser) => _pindahKe(index, index + geser);
-
   /// Menyusun ulang urutan rencana kunjungan.
   ///
-  /// Dipakai oleh tombol NAIK / TURUN maupun geser-jari (tekan lama lalu
-  /// tarik) pada daftar rencana. Toko yang sudah ditandai SELESAI selalu
+  /// Dipakai oleh geser-jari pada LIST CUSTOMER (tekan lama lalu tarik),
+  /// tombol nomor (-/+), dan UBAH NOMOR pada kartu toko. Toko yang sudah ditandai SELESAI selalu
   /// berada di urutan paling bawah, jadi urutan yang dapat diatur adalah toko
   /// yang belum dikunjungi.
   void _pindahKe(int dari, int ke) {
@@ -3838,116 +4049,113 @@ class _RtsRutePageState extends State<RtsRutePage> {
     );
   }
 
-  /* ---------------------------------------------------------------- pensil */
-
-  LatLng? _titikLayar(Offset pos) {
-    try {
-      return _kontrol.camera.screenOffsetToLatLng(pos);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  void _mulaiGores(Offset pos) {
-    final LatLng? titik = _titikLayar(pos);
-
-    if (titik == null) return;
-
-    setState(() {
-      _goresan = <LatLng>[titik];
-      _layarTerakhir = pos;
-    });
-  }
-
-  void _lanjutGores(Offset pos) {
-    final Offset? terakhir = _layarTerakhir;
-
-    if (terakhir != null && (pos - terakhir).distance < 3) return;
-
-    final LatLng? titik = _titikLayar(pos);
-
-    if (titik == null) return;
-
-    setState(() {
-      _goresan = <LatLng>[..._goresan, titik];
-      _layarTerakhir = pos;
-    });
-  }
-
-  void _selesaiGores() {
-    if (_goresan.length < 2) {
-      setState(() {
-        _goresan = <LatLng>[];
-        _layarTerakhir = null;
-      });
+  /// Tombol pensil: menyalakan mode garis, atau mematikannya.
+  Future<void> _togglePensil() async {
+    if (!_pensil) {
+      _bukaPensil();
       return;
     }
 
-    setState(() {
-      _coretan = <RtsGoresan>[
-        ..._coretan,
-        RtsGoresan(
-          id: 0,
-          nama: 'Goresan baru ${_coretan.length + 1}',
-          warna: rtsPetaWarnaPensilNilai[
-              _warnaPensil % rtsPetaWarnaPensilNilai.length],
-          tebal: 4,
-          titik: List<LatLng>.from(_goresan),
+    if (_garisBaru.isNotEmpty) {
+      final bool? buang = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: const Text(
+            'Buang Garis Baru?',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+          content: Text(
+            'Garis baru dengan ${_garisBaru.length} titik belum disimpan. '
+            'Buang garis ini?',
+            style: rtsPetaIsiKecil,
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('TIDAK', style: TextStyle(color: rtsKsTeks2)),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: rtsKsMerah),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('BUANG'),
+            ),
+          ],
         ),
-      ];
-      _goresan = <LatLng>[];
-      _layarTerakhir = null;
+      );
+      if (!mounted || buang != true) return;
+    }
+
+    setState(() {
+      _pensil = false;
+      _garisBaru = <RtsToko>[];
+      if (_panel == 'pensil') _panel = 'menu';
     });
   }
 
-  void _batalkanGoresTerakhir() {
-    if (_goresan.isNotEmpty) {
-      setState(() {
-        _goresan = <LatLng>[];
-        _layarTerakhir = null;
-      });
-      return;
-    }
-
-    if (_coretan.isNotEmpty) {
-      setState(() {
-        _coretan = _coretan.sublist(0, _coretan.length - 1);
-      });
-      return;
-    }
-
-    if (_tersimpan.isNotEmpty) {
-      setState(() {
-        _tersimpan = _tersimpan.sublist(0, _tersimpan.length - 1);
-      });
-
-      rtsKsPesan(context, 'Goresan terakhir disembunyikan dari peta.');
-      return;
-    }
-
-    rtsKsPesan(context, 'Belum ada goresan untuk dibatalkan.');
+  void _bukaPensil() {
+    setState(() {
+      _pensil = true;
+      _panel = 'pensil';
+      _sidebarLipat = false;
+    });
   }
 
-  Future<void> _simpanGoresan() async {
-    if (_coretan.isEmpty) {
+  /// Nilai warna (ARGB) pilihan pensil yang dipakai untuk garis baru.
+  int _nilaiWarnaPensil() {
+    final int n = rtsPetaWarnaPensilNilai.length;
+    final int i = _warnaPensil < 0 || _warnaPensil >= n ? 0 : _warnaPensil;
+    return rtsPetaWarnaPensilNilai[i];
+  }
+
+  /// Menambah satu toko (nomor) ke garis yang sedang dibuat.
+  void _tambahTitikGaris(RtsToko t) {
+    if (_garisBaru.isNotEmpty && _garisBaru.last.idCustomer == t.idCustomer) {
       rtsKsPesan(
         context,
-        'Belum ada goresan baru. Geser jari pada peta untuk menggambar rute.',
+        'Toko ini sudah menjadi titik terakhir. Pilih toko berikutnya.',
+        galat: true,
+      );
+      return;
+    }
+    setState(() {
+      _pilihan = t;
+      _garisBaru = <RtsToko>[..._garisBaru, t];
+    });
+  }
+
+  void _hapusTitikTerakhir() {
+    if (_garisBaru.isEmpty) return;
+    setState(() {
+      _garisBaru = _garisBaru.sublist(0, _garisBaru.length - 1);
+    });
+  }
+
+  void _batalGarisBaru() {
+    setState(() => _garisBaru = <RtsToko>[]);
+  }
+
+  /// Menyimpan garis baru ke HP. Garis dibuat dari koordinat customer.
+  Future<void> _simpanGarisBaru() async {
+    if (_garisBaru.length < 2) {
+      rtsKsPesan(
+        context,
+        'Ketuk minimal 2 nomor toko untuk membuat garis.',
         galat: true,
       );
       return;
     }
 
-    final TextEditingController nama = TextEditingController(
-      text: 'Rute ${rtsPetaTanggalTeks(DateTime.now())}',
-    );
+    final List<RtsToko> titik = List<RtsToko>.from(_garisBaru);
+    final TextEditingController nama =
+        TextEditingController(text: 'Garis ${titik.length} titik');
 
     final bool? jalan = await showDialog<bool>(
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: const Text(
-          'Simpan Goresan Rute',
+          'Simpan Garis',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
         content: Column(
@@ -3955,15 +4163,15 @@ class _RtsRutePageState extends State<RtsRutePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              '${_coretan.length} goresan akan disimpan di HP dan dapat '
-              'dimuat kembali kapan saja.',
+              'Garis ini menghubungkan ${titik.length} toko dan disimpan '
+              'di HP. Garis bisa dibuka lagi dari Garis Tersimpan.',
               style: rtsPetaIsiKecil,
             ),
             const SizedBox(height: 10),
             TextField(
               controller: nama,
               decoration: const InputDecoration(
-                labelText: 'Nama goresan',
+                labelText: 'Nama garis',
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
@@ -3984,56 +4192,43 @@ class _RtsRutePageState extends State<RtsRutePage> {
       ),
     );
 
-    if (jalan != true) return;
+    if (!mounted || jalan != true) return;
 
+    final String namaTeks = nama.text.trim();
     setState(() => _sibuk = true);
-
     try {
-      int jumlah = 0;
-
-      for (int i = 0; i < _coretan.length; i++) {
-        final RtsGoresan g = _coretan[i];
-
-        await RtsKasirLokal.aku.kirim('gores_simpan', <String, dynamic>{
-          'nama': _coretan.length == 1
-              ? nama.text.trim()
-              : '${nama.text.trim()} ${i + 1}',
-          'warna': g.warna,
-          'tebal': g.tebal,
+      final Map<String, dynamic> hasil = await RtsKasirLokal.aku.kirim(
+        'gores_simpan',
+        <String, dynamic>{
+          'nama': namaTeks.isEmpty ? 'Garis rute' : namaTeks,
+          'warna': _nilaiWarnaPensil(),
+          'tebal': 4,
           'titik': <List<double>>[
-            for (final LatLng l in g.titik) <double>[l.latitude, l.longitude],
+            for (final RtsToko t in titik) <double>[t.latitude, t.longitude],
           ],
-        });
-
-        jumlah++;
-      }
-
-      final Map<String, dynamic> hasil =
-          await RtsKasirLokal.aku.kirim('gores_daftar');
+        },
+      );
 
       if (!mounted) return;
-
       setState(() {
         _sibuk = false;
-        _coretan = <RtsGoresan>[];
+        _garisBaru = <RtsToko>[];
         _tersimpan = RtsGoresan.dariDaftar(
           hasil['items'] is List ? hasil['items'] as List<dynamic> : <dynamic>[],
         );
       });
-
-      rtsKsPesan(context, '$jumlah goresan rute tersimpan di HP.');
+      rtsKsPesan(context, '${hasil['message'] ?? 'Garis tersimpan di HP.'}');
     } on RtsKasirGalat catch (e) {
       if (!mounted) return;
-
       setState(() => _sibuk = false);
-
       rtsKsPesan(context, e.pesan, galat: true);
     }
   }
 
+  /// Menghapus garis: sembunyikan dari layar, atau hapus semua dari HP.
   Future<void> _hapusGoresan() async {
-    if (_coretan.isEmpty && _tersimpan.isEmpty) {
-      rtsKsPesan(context, 'Belum ada goresan pada peta.');
+    if (_tersimpan.isEmpty && _garisBaru.isEmpty) {
+      rtsKsPesan(context, 'Belum ada garis pada peta.');
       return;
     }
 
@@ -4042,12 +4237,12 @@ class _RtsRutePageState extends State<RtsRutePage> {
       builder: (BuildContext ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: const Text(
-          'Hapus Goresan Rute',
+          'Hapus Garis Rute',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
         content: const Text(
-          'Pilih HAPUS DARI LAYAR untuk menyembunyikan goresan sementara, '
-          'atau HAPUS DARI HP untuk membuang seluruh goresan yang tersimpan.',
+          'HAPUS DARI LAYAR menyembunyikan garis dan membuang garis baru. '
+          'HAPUS DARI HP membuang seluruh garis yang tersimpan.',
         ),
         actions: <Widget>[
           TextButton(
@@ -4058,58 +4253,54 @@ class _RtsRutePageState extends State<RtsRutePage> {
             onPressed: () => Navigator.of(ctx).pop('LAYAR'),
             child: const Text('HAPUS DARI LAYAR'),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: rtsKsMerah),
+          TextButton(
             onPressed: () => Navigator.of(ctx).pop('HP'),
-            child: const Text('HAPUS DARI HP'),
+            child: const Text(
+              'HAPUS DARI HP',
+              style: TextStyle(color: rtsKsMerah),
+            ),
           ),
         ],
       ),
     );
 
-    if (pilih == null || pilih == 'BATAL') return;
+    if (!mounted || pilih == null || pilih == 'BATAL') return;
 
     if (pilih == 'LAYAR') {
       setState(() {
-        _coretan = <RtsGoresan>[];
-        _goresan = <LatLng>[];
+        _garisBaru = <RtsToko>[];
         for (final RtsGoresan g in _tersimpan) {
           g.tampil = false;
         }
       });
-
-      rtsKsPesan(context, 'Goresan disembunyikan dari peta.');
+      rtsKsPesan(context, 'Garis disembunyikan dari peta.');
       return;
     }
 
     setState(() => _sibuk = true);
-
     try {
       final Map<String, dynamic> hasil =
           await RtsKasirLokal.aku.kirim('gores_hapus_semua');
-
       if (!mounted) return;
-
       setState(() {
         _sibuk = false;
-        _coretan = <RtsGoresan>[];
-        _goresan = <LatLng>[];
+        _garisBaru = <RtsToko>[];
         _tersimpan = <RtsGoresan>[];
       });
-
-      rtsKsPesan(context, '${hasil['message'] ?? 'Goresan dihapus.'}');
+      rtsKsPesan(
+        context,
+        '${hasil['message'] ?? 'Semua garis sudah dihapus dari HP.'}',
+      );
     } on RtsKasirGalat catch (e) {
       if (!mounted) return;
-
       setState(() => _sibuk = false);
-
       rtsKsPesan(context, e.pesan, galat: true);
     }
   }
 
   Future<void> _bukaGoresanTersimpan() async {
     if (_tersimpan.isEmpty) {
-      rtsKsPesan(context, 'Belum ada goresan rute yang tersimpan di HP.');
+      rtsKsPesan(context, 'Belum ada garis rute yang tersimpan di HP.');
       return;
     }
 
@@ -4128,12 +4319,12 @@ class _RtsRutePageState extends State<RtsRutePage> {
               children: <Widget>[
                 const Padding(
                   padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: Text('GORESAN RUTE TERSIMPAN', style: rtsPetaJudulKecil),
+                  child: Text('GARIS RUTE TERSIMPAN', style: rtsPetaJudulKecil),
                 ),
                 const Padding(
                   padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: Text(
-                    'Ketuk nama goresan untuk menampilkan atau '
+                    'Ketuk nama garis untuk menampilkan atau '
                     'menyembunyikannya pada peta.',
                     style: rtsPetaIsiKecil,
                   ),
@@ -4152,7 +4343,7 @@ class _RtsRutePageState extends State<RtsRutePage> {
                           ),
                         ),
                         title: Text(
-                          g.nama.isEmpty ? 'Goresan' : g.nama,
+                          g.nama.isEmpty ? 'Garis' : g.nama,
                           style: const TextStyle(fontSize: 13),
                         ),
                         subtitle: Text(
@@ -4210,8 +4401,6 @@ class _RtsRutePageState extends State<RtsRutePage> {
       ),
     );
   }
-
-  /* ----------------------------------------------------------- daftar plan */
 
   String _teksRencana(List<RtsToko> rencana, {required bool lengkap}) {
     final RtsKantor? kantor = _kantorDipilih;
@@ -4460,15 +4649,12 @@ class _RtsRutePageState extends State<RtsRutePage> {
     );
   }
 
-  /* ------------------------------------------------------------------ peta */
-
+  /// Garis di peta: garis tersimpan yang tampil + garis baru (mode pensil).
   List<Polyline<Object>> _garisRute() {
     final List<Polyline<Object>> garis = <Polyline<Object>>[];
 
-    // Garis goresan pensil (tersimpan + yang baru digambar).
     for (final RtsGoresan g in _tersimpan) {
       if (!g.tampil || g.titik.length < 2) continue;
-
       garis.add(
         Polyline<Object>(
           points: g.titik,
@@ -4480,24 +4666,10 @@ class _RtsRutePageState extends State<RtsRutePage> {
       );
     }
 
-    for (final RtsGoresan g in _coretan) {
-      if (g.titik.length < 2) continue;
-
+    if (_garisBaru.length >= 2) {
       garis.add(
         Polyline<Object>(
-          points: g.titik,
-          color: g.warnaAsli,
-          strokeWidth: g.tebal,
-          borderColor: Colors.white,
-          borderStrokeWidth: 1,
-        ),
-      );
-    }
-
-    if (_goresan.length >= 2) {
-      garis.add(
-        Polyline<Object>(
-          points: List<LatLng>.from(_goresan),
+          points: <LatLng>[for (final RtsToko t in _garisBaru) t.titik],
           color: rtsPetaPensilWarna(_warnaPensil),
           strokeWidth: 4,
           borderColor: Colors.white,
@@ -4506,15 +4678,15 @@ class _RtsRutePageState extends State<RtsRutePage> {
       );
     }
 
-    // TIDAK ada lagi garis rute otomatis (kantor -> toko -> toko).
-    // Sesuai permintaan: peta hanya menampilkan TITIK toko bernomor, dan garis
-    // dibuat sendiri oleh Sales memakai MODE PENSIL.
     return garis;
   }
 
+  /// Marker: kantor (K), lokasi saya (biru), dan toko bernomor urut.
+  /// Nomor selalu mengikuti urutan daftar (nomor 1 = toko pertama).
   List<Marker> _penanda(List<RtsToko> rencana) {
     final List<Marker> penanda = <Marker>[];
     final RtsKantor? kantor = _kantorDipilih;
+    final RtsToko? pilih = _pilihan;
 
     if (kantor != null) {
       penanda.add(
@@ -4522,11 +4694,7 @@ class _RtsRutePageState extends State<RtsRutePage> {
           point: kantor.titik,
           width: 46,
           height: 46,
-          child: rtsPetaPenanda(
-            label: 'K',
-            warna: rtsPetaKantor,
-            kantor: true,
-          ),
+          child: rtsPetaPenanda(label: 'K', warna: rtsPetaKantor, kantor: true),
         ),
       );
     }
@@ -4544,17 +4712,21 @@ class _RtsRutePageState extends State<RtsRutePage> {
 
     for (int i = 0; i < rencana.length; i++) {
       final RtsToko t = rencana[i];
-
+      final bool terpilih = pilih != null && pilih.idCustomer == t.idCustomer;
       penanda.add(
         Marker(
           point: t.titik,
           width: 46,
           height: 46,
-          child: rtsPetaPenanda(
-            label: '${i + 1}',
-            warna: _warnaToko(t),
-            gsp: t.isGsp,
-            sudah: _sudah.contains(t.idCustomer),
+          child: GestureDetector(
+            onTap: () => _ketukToko(t),
+            child: rtsPetaPenanda(
+              label: '${i + 1}',
+              warna: _warnaToko(t),
+              gsp: t.isGsp,
+              sudah: _sudah.contains(t.idCustomer),
+              terpilih: terpilih,
+            ),
           ),
         ),
       );
@@ -4563,33 +4735,1178 @@ class _RtsRutePageState extends State<RtsRutePage> {
     return penanda;
   }
 
-  /* -------------------------------------------------------------------- ui */
-
   @override
   Widget build(BuildContext context) {
+    final bool siapPeta =
+        !_perluPro && !_memuat && !(_galat.isNotEmpty && _toko.isEmpty);
+
+    if (!siapPeta) {
+      return Scaffold(
+        backgroundColor: rtsKsLatar,
+        appBar: AppBar(
+          backgroundColor: rtsKsMaroon,
+          foregroundColor: Colors.white,
+          title: const Text('Rute Plan'),
+        ),
+        body: _bangunIsi(),
+      );
+    }
+
     return Scaffold(
       backgroundColor: rtsKsLatar,
-      appBar: AppBar(
-        backgroundColor: rtsKsMaroon,
-        foregroundColor: Colors.white,
-        title: const Text('Rute Plan'),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Pensil rute',
-            icon: Icon(
-              _pensil ? Icons.edit_rounded : Icons.edit_outlined,
-              color: _pensil ? rtsKsKuning : Colors.white,
+      body: _bangunPeta(_rencana, _kantorDipilih),
+    );
+  }
+
+  /// Keadaan memuat, belum berhak (PRO), atau galat.
+  Widget _bangunIsi() {
+    if (_perluPro) return RtsKunciPro(pesan: _galat);
+    if (_memuat) return const Center(child: CircularProgressIndicator());
+    return RtsPesanUlang(pesan: _galat, onCoba: _muat);
+  }
+
+  /// Layar penuh: peta di seluruh layar, bilah atas, sidebar yang dapat
+  /// digeser, dan kartu toko di bawah.
+  Widget _bangunPeta(List<RtsToko> rencana, RtsKantor? kantor) {
+    final RtsToko? pilih = _pilihan;
+    final bool adaKartu =
+        _pensil || (pilih != null && _nomorDari(rencana, pilih) > 0);
+    final List<RtsToko> titikPeta = rtsPetaPotongTitik(rencana);
+    final String namaSumber = rtsPetaSumber[
+            _sumber < 0 || _sumber >= rtsPetaSumber.length ? 0 : _sumber]
+        .nama;
+
+    return LayoutBuilder(
+      builder: (BuildContext ctx, BoxConstraints kotak) {
+        _ukuranPeta = Size(kotak.maxWidth, kotak.maxHeight);
+
+        final double lebar = _lebarSidebar(kotak.maxWidth);
+        final Offset posisi = _kliping(_posisiAktif, _ukuranPeta);
+        final double tinggiMaks = math.max(
+          120.0,
+          math.min(kotak.maxHeight * 0.6, kotak.maxHeight - posisi.dy - 84.0),
+        );
+
+        return Stack(
+          children: <Widget>[
+            Positioned.fill(
+              child: FlutterMap(
+                mapController: _kontrol,
+                options: MapOptions(
+                  initialCenter: kantor?.titik ?? const LatLng(3.5952, 98.6722),
+                  initialZoom: 12,
+                  minZoom: 4,
+                  maxZoom: 18,
+                  backgroundColor: rtsPetaAir,
+                  interactionOptions: InteractionOptions(
+                    flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                  ),
+                ),
+                children: <Widget>[
+                  TileLayer(
+                    key: ValueKey<String>('ubin-rute-$_sumber'),
+                    urlTemplate: rtsPetaSumber[
+                            _sumber < 0 || _sumber >= rtsPetaSumber.length
+                                ? 0
+                                : _sumber]
+                        .url,
+                    userAgentPackageName: 'com.bene.rts_panel_app',
+                    maxNativeZoom: 19,
+                  ),
+                  PolylineLayer<Object>(polylines: _garisRute()),
+                  MarkerLayer(markers: _penanda(titikPeta)),
+                ],
+              ),
             ),
-            onPressed: () => setState(() => _pensil = !_pensil),
+            Positioned(
+              left: 8,
+              right: 8,
+              top: _batasAtas,
+              child: _barisJudul(rencana, kantor),
+            ),
+            Positioned(
+              right: 8,
+              top: _batasAtas + 60.0,
+              child: _kendaliPeta(),
+            ),
+            Positioned(
+              left: posisi.dx,
+              top: posisi.dy,
+              width: lebar,
+              child: _sidebar(rencana, kantor, lebar, tinggiMaks),
+            ),
+            if (adaKartu)
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: _batasBawah + 26.0,
+                child: _kartuBawah(rencana),
+              ),
+            if (!adaKartu)
+              Positioned(
+                left: 8,
+                bottom: _batasBawah,
+                child: _legenda(),
+              ),
+            Positioned(
+              right: 8,
+              bottom: _batasBawah,
+              child: rtsPetaAtribusi(namaSumber),
+            ),
+            if (_sibuk)
+              const Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                child: LinearProgressIndicator(minHeight: 3),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Bilah atas: kembali, judul + ringkasan rute, dan tombol kantor.
+  Widget _barisJudul(List<RtsToko> rencana, RtsKantor? kantor) {
+    final String ringkas =
+        '$_hari  |  $_frekuensi  |  Jarak ${rtsPetaJarakTeks(_panjangRute(rencana))}';
+
+    return Row(
+      children: <Widget>[
+        _tombolBulat(
+          ikon: Icons.arrow_back_rounded,
+          onTap: () => unawaited(Navigator.of(context).maybePop()),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: rtsPetaKotak(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Rute Plan - ${rencana.length} toko',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: rtsPetaJudulKecil,
+                ),
+                Text(
+                  ringkas,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: rtsKsMaroon,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ),
-          IconButton(
-            tooltip: 'Lokasi kantor',
-            icon: const Icon(Icons.business_rounded),
-            onPressed: () => unawaited(_bukaLokasiKantor()),
+        ),
+        const SizedBox(width: 8),
+        _tombolBulat(
+          ikon: Icons.business_rounded,
+          onTap: () => unawaited(_bukaLokasiKantor()),
+        ),
+      ],
+    );
+  }
+
+  /// Tombol di sisi kanan peta: lokasi, layar, zoom, dan pensil.
+  Widget _kendaliPeta() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        _tombolBulat(
+          ikon: Icons.my_location_rounded,
+          onTap: () => unawaited(_perbaruiLokasiSaya()),
+        ),
+        const SizedBox(height: 7),
+        _tombolBulat(ikon: Icons.fullscreen_rounded, onTap: _aturTampilan),
+        const SizedBox(height: 7),
+        _tombolBulat(ikon: Icons.add, onTap: () => _zoom(1)),
+        const SizedBox(height: 7),
+        _tombolBulat(ikon: Icons.remove, onTap: () => _zoom(-1)),
+        const SizedBox(height: 7),
+        _tombolBulat(
+          ikon: _pensil ? Icons.edit_rounded : Icons.edit_outlined,
+          onTap: () => unawaited(_togglePensil()),
+          aktif: _pensil,
+        ),
+      ],
+    );
+  }
+
+  Widget _tombolBulat({
+    required IconData ikon,
+    required VoidCallback onTap,
+    bool aktif = false,
+  }) {
+    return Material(
+      color: aktif ? rtsKsKuning : Colors.white,
+      elevation: 2,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(ikon, size: 19, color: aktif ? Colors.white : rtsKsMaroon),
+        ),
+      ),
+    );
+  }
+
+  Widget _tombolKecil(IconData ikon, VoidCallback? onTap) {
+    return IconButton(
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 34, height: 34),
+      icon: Icon(ikon, size: 18, color: onTap == null ? rtsKsGaris : rtsKsMaroon),
+      onPressed: onTap,
+    );
+  }
+
+  Widget _legenda() {
+    final bool hari = _caraWarna == 'HARI';
+    return rtsPetaLegenda(
+      judul: hari ? 'Warna: HARI' : 'Warna: FREKUENSI',
+      isi: hari
+          ? <MapEntry<String, Color>>[
+              MapEntry<String, Color>('Senin', rtsPetaSenin),
+              MapEntry<String, Color>('Selasa', rtsPetaSelasa),
+              MapEntry<String, Color>('Rabu', rtsPetaRabu),
+              MapEntry<String, Color>('Kamis', rtsPetaKamis),
+              MapEntry<String, Color>('Jumat', rtsPetaJumat),
+              MapEntry<String, Color>('Sabtu', rtsPetaSabtu),
+            ]
+          : <MapEntry<String, Color>>[
+              MapEntry<String, Color>('Weekly', rtsPetaWeekly),
+              MapEntry<String, Color>('BW Ganjil', rtsPetaGanjil),
+              MapEntry<String, Color>('BW Genap', rtsPetaGenap),
+              MapEntry<String, Color>('Selesai', rtsKsHijau),
+            ],
+    );
+  }
+
+  /// Kartu di bawah peta: kartu toko yang dipilih, atau strip mode pensil.
+  Widget _kartuBawah(List<RtsToko> rencana) {
+    if (_pensil) return _stripPensil();
+    final RtsToko? pilih = _pilihan;
+    if (pilih == null) return const SizedBox.shrink();
+    return _kartuToko(pilih, rencana);
+  }
+
+  Widget _stripPensil() {
+    final RtsToko? akhir = _garisBaru.isEmpty ? null : _garisBaru.last;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 9, 8, 9),
+      decoration: rtsPetaKotak(warna: const Color(0xfffff4e0)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.edit_rounded, size: 16, color: rtsKsKuning),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  'MODE PENSIL: ketuk NOMOR toko berurutan',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    color: rtsKsKuning,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => unawaited(_togglePensil()),
+                child: const Text('SELESAI', style: TextStyle(fontSize: 11)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            akhir == null
+                ? 'Garis baru belum punya titik. Ketuk nomor toko pertama.'
+                : 'Titik ke-${_garisBaru.length}: ${akhir.nama}  |  '
+                    'ID: ${akhir.idCustomer}',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11.5, color: rtsKsTeks),
           ),
         ],
       ),
-      body: _bangunIsi(),
+    );
+  }
+
+  /// Kartu toko: nomor, nama, ID customer, dan tombol-tombol kerja.
+  Widget _kartuToko(RtsToko t, List<RtsToko> rencana) {
+    final int nomor = _nomorDari(rencana, t);
+    final bool selesai = _selesai.contains(t.idCustomer);
+    final bool sudah = _sudah.contains(t.idCustomer);
+    final List<RtsToko> belum = _belumSelesai();
+    final int posisi =
+        belum.indexWhere((RtsToko x) => x.idCustomer == t.idCustomer);
+    final bool bisaGeser = posisi >= 0;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 6, 8),
+      decoration: rtsPetaKotak(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _warnaToko(t),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: Text(
+                  '$nomor',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      t.nama,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: rtsKsTeks,
+                        decoration:
+                            selesai ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'ID Customer: ${t.idCustomer}  |  ${t.tipe.toUpperCase()}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: rtsKsMaroon,
+                      ),
+                    ),
+                    if (t.alamat.isNotEmpty)
+                      Text(
+                        t.alamat,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, color: rtsKsTeks2),
+                      ),
+                    Text(
+                      '${t.hariTeks}  |  ${t.frekuensiTeks}'
+                      '${sudah ? '  |  SUDAH DIKUNJUNGI' : ''}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: sudah ? rtsKsHijau : rtsKsTeks2,
+                        fontWeight: sudah ? FontWeight.w700 : FontWeight.normal,
+                      ),
+                    ),
+                    if (_adaAsal)
+                      Text(
+                        'Jarak ${rtsPetaJarakTeks(_jarakKe(t))} dari titik awal',
+                        style: const TextStyle(fontSize: 10.5, color: rtsKsTeks2),
+                      ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Tutup',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close_rounded, color: rtsKsTeks2),
+                onPressed: () => setState(() => _pilihan = null),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: <Widget>[
+              const Text(
+                'Nomor urut',
+                style: TextStyle(fontSize: 11.5, color: rtsKsTeks2),
+              ),
+              const SizedBox(width: 2),
+              _tombolKecil(
+                Icons.remove_rounded,
+                bisaGeser && posisi > 0 ? () => _geserNomor(t, -1) : null,
+              ),
+              SizedBox(
+                width: 30,
+                child: Text(
+                  '$nomor',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: rtsKsTeks,
+                  ),
+                ),
+              ),
+              _tombolKecil(
+                Icons.add_rounded,
+                bisaGeser && posisi < belum.length - 1
+                    ? () => _geserNomor(t, 1)
+                    : null,
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: bisaGeser ? () => unawaited(_ubahNomor(t)) : null,
+                style: TextButton.styleFrom(
+                  foregroundColor: rtsKsMaroon,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  minimumSize: const Size(0, 32),
+                ),
+                child: const Text(
+                  'UBAH NOMOR',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => unawaited(_salinNamaKode(t)),
+                  icon: const Icon(Icons.copy_all_rounded, size: 15),
+                  label: const Text('SALIN', style: TextStyle(fontSize: 11)),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => unawaited(_tandaiKunjungan(t)),
+                  icon: Icon(
+                    sudah
+                        ? Icons.check_circle_rounded
+                        : Icons.add_location_alt_outlined,
+                    size: 15,
+                  ),
+                  label: Text(
+                    sudah ? 'SUDAH' : 'KUNJUNGI',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: rtsPetaSaya),
+                  onPressed: () => unawaited(
+                    rtsPetaNavigasi(context, t.latitude, t.longitude, t.nama),
+                  ),
+                  icon: const Icon(Icons.navigation_rounded, size: 15),
+                  label: const Text('NAVIGASI', style: TextStyle(fontSize: 11)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Sidebar mengambang: judul bisa diseret ke mana saja di dalam peta.
+  Widget _sidebar(
+    List<RtsToko> rencana,
+    RtsKantor? kantor,
+    double lebar,
+    double tinggiMaks,
+  ) {
+    return Container(
+      width: lebar,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: rtsKsGaris),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color.fromRGBO(74, 44, 34, 0.18),
+            blurRadius: 14,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _kepalaSidebar(rencana, kantor),
+          if (!_sidebarLipat)
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: tinggiMaks),
+              child: _isiSidebar(rencana, kantor, tinggiMaks),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Judul sidebar. Seret area ini untuk memindahkan sidebar.
+  Widget _kepalaSidebar(List<RtsToko> rencana, RtsKantor? kantor) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onPanUpdate: (DragUpdateDetails d) => _geserSidebar(d.delta),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(6, 6, 4, 6),
+        child: Row(
+          children: <Widget>[
+            if (_panel == 'menu')
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 6),
+                child: Icon(Icons.drag_indicator_rounded, color: rtsKsTeks2),
+              )
+            else
+              IconButton(
+                tooltip: 'Kembali ke menu',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.arrow_back_rounded, color: rtsKsMaroon),
+                onPressed: () => _gantiPanel('menu'),
+              ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    _judulPanel(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: rtsPetaJudulKecil,
+                  ),
+                  Text(
+                    _subjudulPanel(rencana, kantor),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10.5, color: rtsKsTeks2),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: _sidebarLipat ? 'Buka panel' : 'Lipat panel',
+              visualDensity: VisualDensity.compact,
+              icon: Icon(
+                _sidebarLipat
+                    ? Icons.unfold_more_rounded
+                    : Icons.unfold_less_rounded,
+                color: rtsKsMaroon,
+              ),
+              onPressed: () => setState(() => _sidebarLipat = !_sidebarLipat),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _isiSidebar(
+    List<RtsToko> rencana,
+    RtsKantor? kantor,
+    double tinggiMaks,
+  ) {
+    if (_panel == 'saring') return _panelSaring(rencana);
+    if (_panel == 'daftar') return _panelDaftar(rencana, tinggiMaks);
+    if (_panel == 'pensil') return _panelPensil();
+    return _panelMenu(rencana, kantor);
+  }
+
+  /// Menu utama sidebar. Setiap baris membuka panel atau menjalankan aksi.
+  Widget _panelMenu(List<RtsToko> rencana, RtsKantor? kantor) {
+    final String warnaTeks = _caraWarna == 'HARI' ? 'Hari' : 'Frekuensi';
+
+    return ListView(
+      shrinkWrap: true,
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
+      children: <Widget>[
+        _judulGrup('SARING & URUTAN'),
+        _barisMenu(
+          ikon: Icons.filter_alt_rounded,
+          warna: rtsKsMaroon,
+          judul: 'Filter & Sales District',
+          sub: 'Hari: $_hari  |  Frekuensi: $_frekuensi',
+          onTap: () => _gantiPanel('saring'),
+        ),
+        _barisMenu(
+          ikon: Icons.format_list_numbered_rounded,
+          warna: rtsPetaSaya,
+          judul: 'List Customer',
+          sub: '${rencana.length} toko. Geser untuk ubah urutan',
+          onTap: () => _gantiPanel('daftar'),
+        ),
+        _barisMenu(
+          ikon: Icons.copy_all_rounded,
+          warna: rtsKsMaroon,
+          judul: 'Copy Urutan (teks)',
+          sub: 'Salin urutan untuk dikirim ke ASS atau Admin',
+          onTap: () => unawaited(_salinUrutanTeks()),
+        ),
+        _barisMenu(
+          ikon: Icons.list_alt_rounded,
+          warna: rtsKsMaroon,
+          judul: 'Daftar Lengkap',
+          sub: 'Lihat dan salin rencana lengkap dengan jarak',
+          onTap: () => unawaited(_bukaDaftarPlan()),
+        ),
+        _barisMenu(
+          ikon: Icons.navigation_rounded,
+          warna: rtsKsHijau,
+          judul: 'Buka Rute di Google Maps',
+          sub: 'Mulai dari kantor, maksimal 10 toko',
+          onTap: () => unawaited(_bukaRuteGoogle(rencana)),
+        ),
+        _judulGrup('GARIS & PETA'),
+        _barisMenu(
+          ikon: Icons.edit_rounded,
+          warna: rtsKsKuning,
+          judul: 'Pensil Garis',
+          sub: _pensil
+              ? 'AKTIF. Ketuk nomor toko berurutan'
+              : 'Buat garis antar customer',
+          onTap: _bukaPensil,
+        ),
+        _barisMenu(
+          ikon: Icons.folder_open_rounded,
+          warna: rtsKsKuning,
+          judul: 'Garis Tersimpan (${_tersimpan.length})',
+          sub: 'Tampilkan, sembunyikan, atau hapus garis',
+          onTap: () => unawaited(_bukaGoresanTersimpan()),
+        ),
+        _barisMenu(
+          ikon: Icons.palette_outlined,
+          warna: rtsPetaGanjil,
+          judul: 'Warna nomor: $warnaTeks',
+          sub: 'Ketuk untuk ganti warna nomor',
+          onTap: () => setState(
+            () => _caraWarna = _caraWarna == 'HARI' ? 'KUNJUNGAN' : 'HARI',
+          ),
+        ),
+        _judulGrup('PETA'),
+        _barisMenu(
+          ikon: Icons.business_rounded,
+          warna: rtsPetaKantor,
+          judul: 'Muat Kantor',
+          sub: kantor == null ? 'Titik kantor belum ada' : kantor.nama,
+          onTap: () => unawaited(_segarkanKantor()),
+        ),
+        _barisMenu(
+          ikon: Icons.my_location_rounded,
+          warna: rtsPetaSaya,
+          judul: 'Lokasi Saya',
+          sub: 'Baca GPS, peta pindah ke posisi saya',
+          onTap: () => unawaited(_perbaruiLokasiSaya()),
+        ),
+        _barisMenu(
+          ikon: Icons.fullscreen_rounded,
+          warna: rtsKsMaroon,
+          judul: 'Lihat Semua Titik',
+          sub: 'Atur peta supaya semua toko terlihat',
+          onTap: _aturTampilan,
+        ),
+      ],
+    );
+  }
+
+  Widget _judulGrup(String teks) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 8, 6, 2),
+      child: Text(
+        teks,
+        style: const TextStyle(
+          fontSize: 9.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.8,
+          color: rtsKsTeks2,
+        ),
+      ),
+    );
+  }
+
+  Widget _barisMenu({
+    required IconData ikon,
+    required Color warna,
+    required String judul,
+    required String sub,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 34,
+              height: 34,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: warna.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(ikon, size: 18, color: warna),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    judul,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: rtsKsTeks,
+                    ),
+                  ),
+                  Text(
+                    sub,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10.5, color: rtsKsTeks2),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, size: 18, color: rtsKsTeks2),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Panel FILTER: sales district, hari, frekuensi, dan warna nomor.
+  Widget _panelSaring(List<RtsToko> rencana) {
+    final List<RtsKantor> kantorAktif =
+        _kantor.where((RtsKantor k) => k.adaTitik).toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          RtsDistrictBar(
+            info: _district,
+            onUbah: (String d) => unawaited(_ubahDistrict(d)),
+          ),
+          if (kantorAktif.length > 1)
+            DropdownButton<int>(
+              isExpanded: true,
+              value: _pilihKantor,
+              style: const TextStyle(fontSize: 12, color: rtsKsTeks),
+              items: kantorAktif.asMap().entries.map((MapEntry<int, RtsKantor> e) {
+                return DropdownMenuItem<int>(
+                  value: e.key,
+                  child: Text('Kantor: ${e.value.nama}'),
+                );
+              }).toList(),
+              onChanged: (int? nilai) {
+                if (nilai == null) return;
+                setState(() {
+                  _pilihKantor = nilai;
+                  _urutanManual = <String>[];
+                });
+                _aturTampilan();
+              },
+            ),
+          const SizedBox(height: 6),
+          RtsPetaSaring(
+            hari: _hari,
+            frekuensi: _frekuensi,
+            ringkasan: '${rencana.length} toko',
+            padat: true,
+            onUbah: (String h, String f) {
+              setState(() {
+                _hari = h;
+                _frekuensi = f;
+                _urutanManual = <String>[];
+              });
+              _aturTampilan();
+            },
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: <Widget>[
+              const Text(
+                'Warna nomor:',
+                style: TextStyle(fontSize: 11, color: rtsKsTeks2),
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('Frekuensi', style: TextStyle(fontSize: 11)),
+                selected: _caraWarna != 'HARI',
+                selectedColor: rtsKsMaroon,
+                labelStyle: TextStyle(
+                  color: _caraWarna != 'HARI' ? Colors.white : rtsKsTeks,
+                ),
+                onSelected: (bool _) => setState(() => _caraWarna = 'KUNJUNGAN'),
+              ),
+              const SizedBox(width: 6),
+              ChoiceChip(
+                label: const Text('Hari', style: TextStyle(fontSize: 11)),
+                selected: _caraWarna == 'HARI',
+                selectedColor: rtsKsMaroon,
+                labelStyle: TextStyle(
+                  color: _caraWarna == 'HARI' ? Colors.white : rtsKsTeks,
+                ),
+                onSelected: (bool _) => setState(() => _caraWarna = 'HARI'),
+              ),
+            ],
+          ),
+          if (rencana.length > rtsPetaBatasTitik)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xfffff4e0),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Text(
+                'Peta menggambar $rtsPetaBatasTitik titik pertama dari '
+                '${rencana.length} toko. Pilih SALES DISTRICT tertentu '
+                'supaya semua toko bisa dilihat.',
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  color: rtsKsTeks,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          if (_titikSalah > 0)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xfffff4e0),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Text(
+                '$_titikSalah toko belum punya titik koordinat yang sah di '
+                'Master Customer, jadi tidak tampil di peta.',
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  color: rtsKsTeks,
+                  height: 1.35,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Panel LIST CUSTOMER: daftar ringkas. Ketuk = pilih + pusatkan peta.
+  /// Tekan lama lalu geser = ubah urutan.
+  Widget _panelDaftar(List<RtsToko> rencana, double tinggiMaks) {
+    if (rencana.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(14),
+        child: Text(
+          'Belum ada toko untuk hari dan frekuensi ini. Buka menu '
+          'Filter & Sales District untuk memilih hari lain.',
+          textAlign: TextAlign.center,
+          style: rtsPetaIsiKecil,
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: math.min(tinggiMaks, 20.0 + rencana.length * 64.0),
+      child: ReorderableListView.builder(
+        buildDefaultDragHandles: false,
+        padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
+        itemCount: rencana.length,
+        onReorder: (int lama, int baru) {
+          _pindahKe(lama, baru > lama ? baru - 1 : baru);
+        },
+        itemBuilder: (BuildContext ctx, int i) {
+          final RtsToko t = rencana[i];
+          return ReorderableDelayedDragStartListener(
+            key: ValueKey<String>('daftar-${t.idCustomer}'),
+            index: i,
+            child: _barisDaftar(i, t),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _barisDaftar(int i, RtsToko t) {
+    final bool selesai = _selesai.contains(t.idCustomer);
+    final RtsToko? pilih = _pilihan;
+    final bool terpilih = pilih != null && pilih.idCustomer == t.idCustomer;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: terpilih
+            ? const Color(0xfffdf1f2)
+            : (selesai ? const Color(0xfff2f8f3) : Colors.white),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: terpilih ? rtsKsMaroon : rtsKsGaris),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _pilihToko(t),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 7, 6, 7),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 26,
+                height: 26,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _warnaToko(t),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '${i + 1}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      t.nama,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: rtsKsTeks,
+                        decoration:
+                            selesai ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                    Text(
+                      'ID: ${t.idCustomer}  |  ${t.hariTeks}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 10.5, color: rtsKsTeks2),
+                    ),
+                  ],
+                ),
+              ),
+              if (_adaAsal) ...<Widget>[
+                const SizedBox(width: 6),
+                Text(
+                  rtsPetaJarakTeks(_jarakKe(t)),
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: rtsKsMaroon,
+                  ),
+                ),
+              ],
+              if (selesai)
+                const Padding(
+                  padding: EdgeInsets.only(left: 4),
+                  child: Icon(Icons.check_circle_rounded, size: 16, color: rtsKsHijau),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Panel PENSIL: buat garis dengan mengetuk nomor toko berurutan.
+  Widget _panelPensil() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Text(
+            'Ketuk NOMOR toko secara berurutan di peta. Setiap toko yang '
+            'diketuk dihubungkan dengan garis. Garis tidak dibuat otomatis.',
+            style: TextStyle(fontSize: 10.5, color: rtsKsTeks2, height: 1.35),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: <Widget>[
+              const Text(
+                'Warna:',
+                style: TextStyle(fontSize: 11, color: rtsKsTeks2),
+              ),
+              const SizedBox(width: 8),
+              for (int i = 0; i < rtsPetaWarnaPensilNilai.length; i++)
+                GestureDetector(
+                  onTap: () {
+                    setState(() => _warnaPensil = i);
+                    unawaited(rtsPetaTulisAngka(rtsPetaKunciPensil, i));
+                  },
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: rtsPetaPensilWarna(i),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _warnaPensil == i ? rtsKsTeks : Colors.white,
+                        width: _warnaPensil == i ? 3.0 : 2.0,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: const Color(0xfffdf7ee),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: rtsKsGaris),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  'Garis baru: ${_garisBaru.length} titik',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: rtsKsTeks,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _garisBaru.isEmpty
+                      ? 'Belum ada titik. Ketuk nomor toko pertama pada peta.'
+                      : _garisBaru
+                          .map((RtsToko t) => '${t.nama} (${t.idCustomer})')
+                          .join('  >  '),
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: rtsKsTeks2,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: <Widget>[
+              OutlinedButton.icon(
+                onPressed: _garisBaru.isEmpty ? null : _hapusTitikTerakhir,
+                icon: const Icon(Icons.undo_rounded, size: 16),
+                label: const Text(
+                  'HAPUS TITIK TERAKHIR',
+                  style: TextStyle(fontSize: 10.5),
+                ),
+              ),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
+                onPressed: _garisBaru.length < 2
+                    ? null
+                    : () => unawaited(_simpanGarisBaru()),
+                icon: const Icon(Icons.save_outlined, size: 16),
+                label: const Text(
+                  'SIMPAN GARIS',
+                  style: TextStyle(fontSize: 10.5),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _garisBaru.isEmpty ? null : _batalGarisBaru,
+                icon: const Icon(Icons.close_rounded, size: 16),
+                label: const Text(
+                  'BATAL GARIS',
+                  style: TextStyle(fontSize: 10.5),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 22),
+          Text(
+            'Garis tersimpan: ${_tersimpan.length}',
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: rtsKsTeks,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: <Widget>[
+              OutlinedButton.icon(
+                onPressed: () => unawaited(_bukaGoresanTersimpan()),
+                icon: const Icon(Icons.folder_open_rounded, size: 16),
+                label: const Text('KELOLA', style: TextStyle(fontSize: 10.5)),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => unawaited(_hapusGoresan()),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  size: 16,
+                  color: rtsKsMerah,
+                ),
+                label: const Text('HAPUS GARIS', style: TextStyle(fontSize: 10.5)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => unawaited(_togglePensil()),
+              icon: const Icon(Icons.check_rounded, size: 16),
+              label: const Text('SELESAI MENGGAMBAR'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -4614,223 +5931,6 @@ class _RtsRutePageState extends State<RtsRutePage> {
     await _segarkanKantor(diam: true);
   }
 
-  Widget _bangunIsi() {
-    if (_perluPro) return RtsKunciPro(pesan: _galat);
-
-    if (_memuat) return const Center(child: CircularProgressIndicator());
-
-    if (_galat.isNotEmpty && _toko.isEmpty) {
-      return RtsPesanUlang(pesan: _galat, onCoba: _muat);
-    }
-
-    final List<RtsToko> rencana = _rencana;
-    final RtsKantor? kantor = _kantorDipilih;
-    final Widget peta = _bangunPeta(rencana, kantor);
-
-    if (_petaPenuh) return _bangunLayarPenuh(peta, rencana);
-
-    return Column(
-      children: <Widget>[
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  const Icon(Icons.business_rounded,
-                      size: 17, color: rtsPetaKantor),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      kantor == null
-                          ? 'Titik kantor belum ada'
-                          : 'Awal rute: ${kantor.nama}',
-                      style: rtsPetaJudulKecil,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _sibuk ? null : () => _segarkanKantor(),
-                    child: const Text('MUAT KANTOR',
-                        style: TextStyle(fontSize: 11.5)),
-                  ),
-                ],
-              ),
-              if (_saringBuka && kantor == null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Text(
-                    RtsKasirLokal.aku.pengelola
-                        ? 'ADMIN perlu menitikkan Lokasi Kantor / Mitra lebih '
-                            'dahulu (tombol gedung di kanan atas). Sesudah itu '
-                            'urutan toko dari kantor dapat dihitung.'
-                        : 'Lokasi kantor / mitra belum dititikkan ADMIN. Minta '
-                            'ADMIN mengisi titik kantor supaya urutan rute dari '
-                            'kantor dapat dihitung.',
-                    style: const TextStyle(fontSize: 11, color: rtsKsKuning),
-                  ),
-                ),
-              if (_saringBuka && _kantor.length > 1)
-                DropdownButton<int>(
-                  isExpanded: true,
-                  value: _pilihKantor,
-                  style: const TextStyle(fontSize: 12, color: rtsKsTeks),
-                  items: _kantor.where((RtsKantor k) => k.adaTitik).toList()
-                      .asMap()
-                      .entries
-                      .map((MapEntry<int, RtsKantor> e) {
-                    return DropdownMenuItem<int>(
-                      value: e.key,
-                      child: Text('Kantor: ${e.value.nama}'),
-                    );
-                  }).toList(),
-                  onChanged: (int? nilai) {
-                    if (nilai == null) return;
-
-                    setState(() {
-                      _pilihKantor = nilai;
-                      _urutanManual = <String>[];
-                    });
-
-                    _aturTampilan();
-                  },
-                ),
-              RtsDistrictBar(
-                info: _district,
-                onUbah: (String d) => unawaited(_ubahDistrict(d)),
-              ),
-              _penyaring(rencana),
-              _barisStatistik(rencana),
-            ],
-          ),
-        ),
-        if (_saringBuka && _titikSalah > 0)
-          Container(
-            width: double.infinity,
-            color: const Color(0xfffff4e0),
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-            child: Text(
-              'Catatan: $_titikSalah toko memiliki titik koordinat yang SALAH '
-              'atau kosong pada Master Customer (misalnya 98683), jadi tidak '
-              'tampil di peta dan tidak ikut dihitung panjang rute. Minta ADMIN '
-              'membetulkan titiknya di menu Master Customer.',
-              style: const TextStyle(fontSize: 11, color: rtsKsKuning),
-            ),
-          ),
-        if (_pensil)
-          Container(
-            width: double.infinity,
-            color: const Color(0xfffff4e0),
-            padding: const EdgeInsets.fromLTRB(12, 7, 12, 7),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Text(
-                  'MODE PENSIL MENYALA - geser jari pada peta untuk menggambar '
-                  'garis rute perjalanan. Peta tidak dapat digeser; pakai '
-                  'tombol + dan - untuk memperbesar.',
-                  style: TextStyle(fontSize: 11, color: rtsKsKuning),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: <Widget>[
-                    for (int i = 0; i < rtsPetaWarnaPensilNilai.length; i++)
-                      GestureDetector(
-                        onTap: () async {
-                          setState(() => _warnaPensil = i);
-
-                          await rtsPetaTulisAngka(rtsPetaKunciPensil, i);
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            color: Color(rtsPetaWarnaPensilNilai[i]),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: _warnaPensil == i
-                                  ? rtsKsTeks
-                                  : Colors.white,
-                              width: _warnaPensil == i ? 3 : 2,
-                            ),
-                          ),
-                        ),
-                      ),
-                    const Spacer(),
-                    Text(
-                      '${_coretan.length} goresan baru',
-                      style: const TextStyle(fontSize: 11, color: rtsKsTeks2),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: <Widget>[
-                      _tombolPensil('BATALKAN', Icons.undo_rounded,
-                          _batalkanGoresTerakhir),
-                      _tombolPensil('SIMPAN GORESAN', Icons.save_outlined,
-                          () => unawaited(_simpanGoresan())),
-                      _tombolPensil('GORESAN TERSIMPAN', Icons.folder_open_rounded,
-                          () => unawaited(_bukaGoresanTersimpan())),
-                      _tombolPensil('HAPUS GORESAN', Icons.delete_outline_rounded,
-                          () => unawaited(_hapusGoresan())),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        Expanded(flex: 5, child: peta),
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-          child: Column(
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
-                      onPressed: () => unawaited(_salinUrutanTeks()),
-                      icon: const Icon(Icons.copy_all_rounded, size: 17),
-                      label: const Text('COPY URUTAN (TEKS)',
-                          style: TextStyle(fontSize: 11.5)),
-                    ),
-                  ),
-                  const SizedBox(width: 7),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => unawaited(_bukaDaftarPlan()),
-                      icon: const Icon(Icons.list_alt_rounded, size: 17),
-                      label: const Text('DAFTAR LENGKAP',
-                          style: TextStyle(fontSize: 11.5)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => unawaited(_bukaRuteGoogle(rencana)),
-                  icon: const Icon(Icons.navigation_rounded, size: 17),
-                  label:
-                      const Text('BUKA RUTE', style: TextStyle(fontSize: 11.5)),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(flex: 6, child: _daftarRencana(rencana)),
-      ],
-    );
-  }
-
-
   /// Mengganti penyaring SALES DISTRICT: pilihan disimpan (dipakai bersama
   /// seluruh menu PRO), lalu daftar toko dibaca ulang.
   Future<void> _ubahDistrict(String district) async {
@@ -4852,387 +5952,6 @@ class _RtsRutePageState extends State<RtsRutePage> {
     if (!mounted) return;
 
     await _muat();
-  }
-
-  /// Panel penyaring Hari + Frekuensi. Dapat dilipat ke atas (MINIMIZE).
-  Widget _penyaring(List<RtsToko> rencana, {bool padat = false}) {
-    return RtsPetaSaring(
-      hari: _hari,
-      frekuensi: _frekuensi,
-      ringkasan: '${rencana.length} toko',
-      terbukaAwal: _saringBuka,
-      padat: padat,
-      aksi: _tombolPetaPenuh(),
-      onTerbuka: (bool buka) => setState(() => _saringBuka = buka),
-      onUbah: (String h, String f) {
-        setState(() {
-          _hari = h;
-          _frekuensi = f;
-          _urutanManual = <String>[];
-        });
-
-        _aturTampilan();
-      },
-    );
-  }
-
-  /// Baris keterangan jumlah toko, panjang rute, dan tombol warna penanda.
-  Widget _barisStatistik(List<RtsToko> rencana) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const Text(
-          'Geser (tekan lama) pada baris daftar untuk mengubah urutan '
-          'kunjungan. Garis tidak dibuat otomatis - pakai ikon PENSIL di kanan '
-          'atas bila ingin menggambar garis sendiri.',
-          style: TextStyle(fontSize: 10.5, color: rtsKsTeks2, height: 1.35),
-        ),
-        Row(
-      children: <Widget>[
-        Expanded(
-          child: Text(
-            '${rencana.length} toko - panjang rute '
-            '+-${rtsPetaJarakTeks(_panjangRute(rencana))}',
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-              color: rtsKsMaroon,
-            ),
-          ),
-        ),
-        TextButton.icon(
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            minimumSize: const Size(0, 32),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          onPressed: () => setState(() {
-            _caraWarna = _caraWarna == 'HARI' ? 'KUNJUNGAN' : 'HARI';
-          }),
-          icon: const Icon(Icons.palette_outlined, size: 16),
-              label: Text(
-                _caraWarna == 'HARI' ? 'WARNA: HARI' : 'WARNA: FREKUENSI',
-                style: const TextStyle(fontSize: 10.5),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// Tombol pembuka / penutup tampilan peta satu layar penuh.
-  Widget _tombolPetaPenuh() {
-    return TextButton.icon(
-      style: TextButton.styleFrom(
-        foregroundColor: rtsKsMaroon,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        minimumSize: const Size(0, 32),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      onPressed: () => setState(() => _petaPenuh = !_petaPenuh),
-      icon: Icon(
-        _petaPenuh ? Icons.close_fullscreen_rounded : Icons.open_in_full_rounded,
-        size: 17,
-      ),
-      label: Text(
-        _petaPenuh ? 'TUTUP PETA' : 'PETA PENUH',
-        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800),
-      ),
-    );
-  }
-
-  /// Hanya peta yang tampil satu layar; penyaring mengapung di atasnya.
-  Widget _bangunLayarPenuh(Widget peta, List<RtsToko> rencana) {
-    return Stack(
-      children: <Widget>[
-        Positioned.fill(child: peta),
-        Positioned(
-          left: 8,
-          right: 8,
-          top: 6,
-          child: Material(
-            color: Colors.white.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(14),
-            elevation: 3,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 3, 6, 1),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  _penyaring(rencana, padat: true),
-                  _barisStatistik(rencana),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 8,
-          right: 8,
-          bottom: 10,
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: rtsKsMaroon),
-                  onPressed: () => unawaited(_salinUrutanTeks()),
-                  icon: const Icon(Icons.copy_all_rounded, size: 17),
-                  label: const Text('COPY URUTAN (TEKS)',
-                      style: TextStyle(fontSize: 11.5)),
-                ),
-              ),
-              const SizedBox(width: 7),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: rtsKsMaroon,
-                  ),
-                  onPressed: () => unawaited(_bukaDaftarPlan()),
-                  icon: const Icon(Icons.list_alt_rounded, size: 17),
-                  label:
-                      const Text('DAFTAR LENGKAP', style: TextStyle(fontSize: 11.5)),
-                ),
-              ),
-              const SizedBox(width: 7),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: rtsKsMaroon,
-                  ),
-                  onPressed: () => unawaited(_bukaRuteGoogle(rencana)),
-                  icon: const Icon(Icons.navigation_rounded, size: 17),
-                  label:
-                      const Text('BUKA RUTE', style: TextStyle(fontSize: 11.5)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Daftar rencana kunjungan (nama + id customer, jarak, dan urutan).
-  Widget _daftarRencana(List<RtsToko> rencana) {
-    if (rencana.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(22),
-          child: Text(
-            'Belum ada toko untuk hari $_hari dengan frekuensi $_frekuensi. '
-            'Pilih hari atau frekuensi lain di atas.',
-            textAlign: TextAlign.center,
-            style: rtsPetaIsiKecil,
-          ),
-        ),
-      );
-    }
-
-    // Daftar ini dapat DIGESER (tekan lama lalu tarik) untuk mengubah urutan
-    // kunjungan. Tombol panah atas/bawah tetap tersedia sebagai pilihan lain.
-    return ReorderableListView.builder(
-      buildDefaultDragHandles: false,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 18),
-      itemCount: rencana.length,
-      onReorder: (int lama, int baru) {
-        int tujuan = baru;
-
-        // ReorderableListView memberi posisi sebelum baris diangkat.
-        if (tujuan > lama) tujuan -= 1;
-
-        _pindahKe(lama, tujuan);
-      },
-      itemBuilder: (BuildContext ctx, int i) {
-        final RtsToko t = rencana[i];
-
-        double? sebelumnya;
-
-        if (i == 0) {
-          sebelumnya = null;
-        } else {
-          sebelumnya = rtsPetaJarakMeter(
-            rencana[i - 1].latitude,
-            rencana[i - 1].longitude,
-            t.latitude,
-            t.longitude,
-          );
-        }
-
-        return ReorderableDelayedDragStartListener(
-          key: ValueKey<String>('rencana-${t.idCustomer}'),
-          index: i,
-          child: RtsBarisToko(
-            nomor: '${i + 1}',
-            toko: t,
-            warna: _warnaToko(t),
-            jarak: _jarakKe(t),
-            jarakSebelum: sebelumnya,
-            sudah: _sudah.contains(t.idCustomer),
-            selesai: _selesai.contains(t.idCustomer),
-            onNaik: () => _ubahUrutan(i, -1),
-            onTurun: () => _ubahUrutan(i, 1),
-            onSalin: () async {
-              await rtsPetaSalinTeks('${t.nama} | ${t.idCustomer}');
-
-              if (mounted) rtsKsPesan(context, 'Nama & kode disalin.');
-            },
-            onKunjungi: () => _tandaiKunjungan(t),
-            onNavigasi: () => unawaited(
-              rtsPetaNavigasi(context, t.latitude, t.longitude, t.nama),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// Peta Rute Plan: titik toko bernomor + pensil + tombol-tombolnya.
-  Widget _bangunPeta(List<RtsToko> rencana, RtsKantor? kantor) {
-    return Stack(
-      children: <Widget>[
-        FlutterMap(
-          mapController: _kontrol,
-          options: MapOptions(
-            initialCenter: kantor?.titik ?? const LatLng(3.5952, 98.6722),
-            initialZoom: 12,
-            minZoom: 4,
-            maxZoom: 18,
-            backgroundColor: rtsPetaAir,
-            interactionOptions: InteractionOptions(
-              flags: _pensil
-                  ? InteractiveFlag.none
-                  : InteractiveFlag.all & ~InteractiveFlag.rotate,
-            ),
-          ),
-          children: <Widget>[
-            TileLayer(
-              key: ValueKey<String>('ubin-rute-$_sumber'),
-              urlTemplate: rtsPetaSumber[
-                      _sumber < 0 || _sumber >= rtsPetaSumber.length
-                          ? 0
-                          : _sumber]
-                  .url,
-              userAgentPackageName: 'com.bene.rts_panel_app',
-              maxNativeZoom: 19,
-            ),
-            PolylineLayer<Object>(polylines: _garisRute()),
-            MarkerLayer(markers: _penanda(rencana)),
-          ],
-        ),
-        if (_pensil)
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onPanStart: (DragStartDetails d) => _mulaiGores(d.localPosition),
-              onPanUpdate: (DragUpdateDetails d) => _lanjutGores(d.localPosition),
-              onPanEnd: (DragEndDetails d) => _selesaiGores(),
-              onTapUp: (TapUpDetails d) {
-                _mulaiGores(d.localPosition);
-                _selesaiGores();
-              },
-            ),
-          ),
-        Positioned(
-          right: 8,
-          bottom: 8,
-          child: rtsPetaAtribusi(
-            rtsPetaSumber[_sumber < 0 || _sumber >= rtsPetaSumber.length
-                    ? 0
-                    : _sumber]
-                .nama,
-          ),
-        ),
-        Positioned(
-          right: 8,
-          top: 8,
-          child: Column(
-            children: <Widget>[
-              _tombolBulat(
-                ikon: Icons.my_location_rounded,
-                onTap: _perbaruiLokasiSaya,
-              ),
-              const SizedBox(height: 7),
-              _tombolBulat(ikon: Icons.fullscreen_rounded, onTap: _aturTampilan),
-              const SizedBox(height: 7),
-              _tombolBulat(ikon: Icons.add, onTap: () => _zoom(1)),
-              const SizedBox(height: 7),
-              _tombolBulat(ikon: Icons.remove, onTap: () => _zoom(-1)),
-              const SizedBox(height: 7),
-              _tombolBulat(
-                ikon: _petaPenuh
-                    ? Icons.close_fullscreen_rounded
-                    : Icons.open_in_full_rounded,
-                onTap: () => setState(() => _petaPenuh = !_petaPenuh),
-              ),
-            ],
-          ),
-        ),
-        Positioned(
-          left: 8,
-          top: 8,
-          child: rtsPetaLegenda(
-            judul: _caraWarna == 'HARI' ? 'Warna: HARI' : 'Warna: FREKUENSI',
-            isi: _caraWarna == 'HARI'
-                ? <MapEntry<String, Color>>[
-                    MapEntry<String, Color>('Senin', rtsPetaSenin),
-                    MapEntry<String, Color>('Selasa', rtsPetaSelasa),
-                    MapEntry<String, Color>('Rabu', rtsPetaRabu),
-                    MapEntry<String, Color>('Kamis', rtsPetaKamis),
-                    MapEntry<String, Color>('Jumat', rtsPetaJumat),
-                    MapEntry<String, Color>('Sabtu', rtsPetaSabtu),
-                  ]
-                : <MapEntry<String, Color>>[
-                    MapEntry<String, Color>('Weekly', rtsPetaWeekly),
-                    MapEntry<String, Color>('BW Ganjil', rtsPetaGanjil),
-                    MapEntry<String, Color>('BW Genap', rtsPetaGenap),
-                    MapEntry<String, Color>('Selesai', rtsKsHijau),
-                  ],
-          ),
-        ),
-        if (_sibuk)
-          const Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            child: LinearProgressIndicator(minHeight: 3),
-          ),
-      ],
-    );
-  }
-
-  Widget _tombolPensil(String teks, IconData ikon, VoidCallback onTap) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 6),
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(ikon, size: 15),
-        label: Text(teks, style: const TextStyle(fontSize: 10.5)),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-          minimumSize: const Size(0, 32),
-        ),
-      ),
-    );
-  }
-
-  Widget _tombolBulat({required IconData ikon, required VoidCallback onTap}) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      elevation: 2,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(ikon, size: 19, color: rtsKsMaroon),
-        ),
-      ),
-    );
   }
 
   void _zoom(double tambah) {

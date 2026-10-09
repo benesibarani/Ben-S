@@ -1,4 +1,4 @@
-// RTS-PANEL-ROUND: 18J - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
+// RTS-PANEL-ROUND: 18K - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 /// ============================================================================
 ///  RTS PANEL BY BENE - MESIN KASIR OFFLINE (SQLite di dalam HP)
 ///  Berkas : lib/kasir_lokal.dart
@@ -5342,7 +5342,7 @@ class RtsKasirLokal {
 
     return <String, dynamic>{
       'success': true,
-      'message': '${items.length} goresan rute tersimpan di HP.',
+      'message': '${items.length} garis rute tersimpan di HP.',
       'items': items,
       'jumlah': items.length,
     };
@@ -5364,12 +5364,12 @@ class RtsKasirLokal {
     }
 
     if (rapi.length < 2) {
-      throw RtsKasirGalat('Goresan terlalu pendek untuk disimpan.');
+      throw RtsKasirGalat('Garis terlalu pendek untuk disimpan (minimal 2 titik).');
     }
 
     String nama = _teks(data['nama'], 80);
 
-    if (nama.isEmpty) nama = 'Goresan ${_waktu()}';
+    if (nama.isEmpty) nama = 'Garis ${_waktu()}';
 
     final int id = await d.insert('peta_gores', <String, Object?>{
       'nama': nama,
@@ -5385,7 +5385,7 @@ class RtsKasirLokal {
 
     return <String, dynamic>{
       'success': true,
-      'message': 'Goresan "$nama" tersimpan (${rapi.length} titik).',
+      'message': 'Garis "$nama" tersimpan (${rapi.length} titik).',
       'id': id,
       ...daftarGores,
     };
@@ -5400,7 +5400,7 @@ class RtsKasirLokal {
 
     return <String, dynamic>{
       'success': true,
-      'message': 'Goresan rute dihapus.',
+      'message': 'Garis rute dihapus.',
       ...daftarGores,
     };
   }
@@ -5412,7 +5412,7 @@ class RtsKasirLokal {
 
     return <String, dynamic>{
       'success': true,
-      'message': 'Seluruh goresan rute di HP dihapus.',
+      'message': 'Seluruh garis rute di HP dihapus.',
       'items': <Map<String, dynamic>>[],
       'jumlah': 0,
     };

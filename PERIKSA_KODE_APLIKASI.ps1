@@ -63,7 +63,7 @@
 #  dengan perintah "flutter clean".
 # =============================================================================
 
-$harapanKode = 'RTS-2026-10-06-18J'
+$harapanKode = 'RTS-2026-10-09-18K'
 
 function TulisJudul($teks) {
     Write-Host ""
@@ -748,15 +748,15 @@ else {
 # 6f. Penanda putaran pada setiap berkas aplikasi
 #
 # Setiap berkas Dart memuat SATU baris penanda di bagian paling atas, contoh:
-#     // RTS-PANEL-ROUND: 18I - penanda putaran RTS Panel ...
+#     // RTS-PANEL-ROUND: 18K - penanda putaran RTS Panel ...
 # Tujuannya: memastikan seluruh berkas berasal dari putaran yang SAMA.
 # Inilah pemeriksaan yang menangkap kejadian pada Putaran 18I: lib\program.dart
 # sudah versi baru, tetapi lib\main.dart masih versi lama sehingga build gagal:
 #     lib\main.dart:2847:13: Error: No named parameter with the name 'jenisAwal'.
 # -----------------------------------------------------------------------------
-TulisJudul "6f. Penanda putaran berkas aplikasi (harus 18I)"
+TulisJudul "6f. Penanda putaran berkas aplikasi (harus 18K)"
 
-$putaranHarap = '18J'
+$putaranHarap = '18K'
 
 $daftarPutaran = @(
     @{ Nama = 'main.dart (akar)';     Jalur = 'main.dart' },
@@ -807,7 +807,7 @@ if (Test-Path 'lib\main.dart') { $isiMainLib = Get-Content 'lib\main.dart' -Raw 
 if ($isiMainLib -match "'INTRODEAL' : 'BD'") {
     $bermasalah++
     Write-Host "   [BELUM] lib\main.dart masih memakai MENU PROGRAM LAMA (tiga tombol)." -ForegroundColor Yellow
-    Write-Host "           Timpa lib\main.dart dengan main.dart dari paket 18I" -ForegroundColor Gray
+    Write-Host "           Timpa lib\main.dart dengan main.dart dari paket 18K" -ForegroundColor Gray
     Write-Host "           (jalankan LANGKAH1_PASANG_SEMUA.ps1), lalu jalankan skrip ini lagi." -ForegroundColor Gray
     Write-Host "           Pesan galat yang muncul bila dibiarkan:" -ForegroundColor Gray
     Write-Host "               No named parameter with the name 'jenisAwal' / 'bukaAwal'" -ForegroundColor DarkGray

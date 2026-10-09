@@ -1,6 +1,41 @@
 DAFTAR BERKAS: MANA UNTUK HOSTING, MANA UNTUK APLIKASI?
 ========================================================================
- >>> PUTARAN 18J (6 Oktober 2026) - PALING BARU <<<
+ >>> PUTARAN 18K (9 Oktober 2026) - PALING BARU <<<
+   RUTE PLAN LAYAR PENUH: sidebar MENU RUTE PLAN yang bisa digeser dan dilipat
+   (Filter & Sales District, List Customer, Copy Urutan, Garis Tersimpan,
+   Pensil Garis, Lokasi Saya). Titik customer bernomor; ketuk = kartu NAMA +
+   ID CUSTOMER; nomor bisa diubah dan daftar ikut berubah. PENSIL membuat
+   garis antar customer (tidak otomatis).
+
+   UNDUH LANGSUNG (klik / tempel di peramban):
+     Paket LENGKAP 18K:
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18K.zip
+     Paket PERUBAHAN 18K (hanya berkas yang berubah):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18K.zip
+     main.dart (kode versi 18K):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+     lib/peta.dart (Rute Plan layar penuh, sidebar, nomor, pensil):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
+     lib/kasir_lokal.dart (teks garis + penanda 18K):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir_lokal.dart
+     lib/kasir.dart (penanda 18K):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir.dart
+     lib/program.dart (penanda 18K):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/program.dart
+     pubspec.yaml.updated (versi 1.5.5+20):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/pubspec.yaml.updated
+     PERIKSA_KODE_APLIKASI.ps1 (pemeriksa, penanda 18K):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PERIKSA_KODE_APLIKASI.ps1
+     LANGKAH1_PASANG_SEMUA.ps1 (juru salin, penanda 18K):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/LANGKAH1_PASANG_SEMUA.ps1
+     BACA_DULU.txt (tutorial tunggal, bagian PUTARAN 18K):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
+     CARA_PASANG_CEPAT.txt (langkah pasang singkat 18K):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/CARA_PASANG_CEPAT.txt
+
+   Hosting (cPanel): TIDAK ADA berkas yang perlu diunggah pada putaran ini.
+
+>>> PUTARAN 18J (6 Oktober 2026) <<<
    DATA CUSTOMER DIPOTONG PER SALES DISTRICT (APLIKASI TIDAK BERAT):
    penyaring Sales District di Kasir (Pilih Toko), Peta Customer, Radar
    Customer, Rute Plan, dan Program. RTS & TF terkunci pada district

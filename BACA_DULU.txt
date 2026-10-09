@@ -1,5 +1,8 @@
 ==============================================================================
  RTS PANEL BY BENE
+ (Putaran 18K: RUTE PLAN LAYAR PENUH - SIDEBAR MENU YANG BISA DIGESER,
+  TITIK CUSTOMER BERNOMOR (NOMOR BISA DIUBAH), KETUK = NAMA + ID CUSTOMER,
+  DAN PENSIL UNTUK MEMBUAT GARIS ANTAR CUSTOMER)
  (Putaran 18J: DATA CUSTOMER DIPOTONG PER SALES DISTRICT SUPAYA APLIKASI
   TIDAK BERAT - PENYARING SALES DISTRICT TAMPIL DI MENU KASIR (PILIH TOKO),
   PETA CUSTOMER, RADAR CUSTOMER, RUTE PLAN, DAN PROGRAM; RTS & TF TERKUNCI
@@ -181,6 +184,123 @@
      Bila kode di HP Bapak masih 18G/lebih lama, berarti aplikasi belum
      dipasang ulang - silakan pasang RTS_PANEL_PUTARAN_18H.zip.
 
+
+ ============================================================================
+  PUTARAN 18K - RUTE PLAN LAYAR PENUH + SIDEBAR MENU YANG BISA DIGESER
+  (9 Oktober 2026) - PENTING, BACA BAGIAN INI DULU
+ ============================================================================
+
+  Permintaan Bapak (dari tangkapan layar Rute Plan):
+    1. Peta memenuhi SELURUH layar, tidak ada lagi tumpukan panel.
+    2. Ada SIDEBAR berisi daftar menu (Filter, List Customer, dan lainnya)
+       yang bisa DIPINDAH-PINDAH.
+    3. Setiap titik customer diberi NOMOR URUT. Bila titik diketuk, muncul
+       NAMA dan ID CUSTOMER.
+    4. Nomor titik bisa DIUBAH, dan daftar otomatis mengikuti.
+    5. Tombol PENSIL untuk membuat GARIS antar customer.
+
+  Semua permintaan di atas sudah dibuat pada putaran ini.
+
+  ----------------------------------------------------------------------------
+  1. TAMPILAN RUTE PLAN YANG BARU
+  ----------------------------------------------------------------------------
+     - Peta penuh satu layar. Di atas peta ada bilah berisi:
+         panah kembali | judul "Rute Plan - N toko" + hari, frekuensi, jarak
+         | ikon gedung (KANTOR).
+     - Di sisi kanan peta ada tombol:
+         lokasi saya | lihat semua titik | zoom + | zoom - | PENSIL.
+     - SIDEBAR "MENU RUTE PLAN" melayang di atas peta:
+         * Pegang bagian judul sidebar, lalu geser untuk memindah sidebar ke
+           mana saja di dalam peta (judul sidebar ada di bagian paling atas).
+         * Tombol panah atas/bawah di kanan judul untuk MELIPAT dan MEMBUKA
+           isinya.
+         * Tombol panah kiri di judul kembali ke MENU dari panel lain.
+     - Isi MENU sidebar:
+         SARING & URUTAN : Filter & Sales District
+                           List Customer
+                           Copy Urutan (teks)
+                           Daftar Lengkap
+                           Buka Rute di Google Maps
+         GARIS & PETA    : Pensil Garis
+                           Garis Tersimpan (jumlah garis)
+                           Warna nomor: Frekuensi / Hari
+                           Muat Kantor
+                           Lokasi Saya
+                           Lihat Semua Titik
+
+  ----------------------------------------------------------------------------
+  2. NOMOR URUT, KETUK TITIK, DAN KARTU TOKO
+  ----------------------------------------------------------------------------
+     - Setiap titik customer memakai NOMOR URUT sesuai daftar. Nomor 1 adalah
+       toko pertama yang harus dikunjungi.
+     - Ketuk satu nomor di peta (atau satu baris di LIST CUSTOMER). Di bawah
+       peta muncul KARTU berisi:
+         nomor urut | NAMA customer | ID CUSTOMER dan tipe (REGULER / GSP)
+         | alamat | hari dan frekuensi | jarak dari titik awal
+     - Tombol di dalam kartu:
+         [ - ] [ + ]   : mengubah nomor satu langkah
+         UBAH NOMOR    : mengetik nomor baru. Toko lain bergeser otomatis.
+         SALIN         : menyalin "NAMA | ID CUSTOMER" ke papan klip
+         KUNJUNGI      : menandai sudah dikunjungi. Toko turun ke bawah daftar
+                         dan diberi tanda centang hijau.
+         NAVIGASI      : membuka navigasi ke lokasi toko
+         X             : menutup kartu
+     - Angka di peta, daftar, dan kartu SELALU sama. Bila nomor diubah, ketiganya
+       ikut berubah.
+
+  ----------------------------------------------------------------------------
+  3. LIST CUSTOMER (MENU DI SIDEBAR)
+  ----------------------------------------------------------------------------
+     - Daftar ringkas: nomor, nama, ID customer, hari, dan jarak.
+     - KETUK satu baris = toko itu dipilih dan peta pindah ke titiknya.
+     - TEKAN LAMA lalu GESER = mengubah urutan. Nomor di peta ikut berubah.
+     - Toko yang sudah KUNJUNGI turun ke bagian bawah.
+
+  ----------------------------------------------------------------------------
+  4. PENSIL: MEMBUAT GARIS ANTAR CUSTOMER
+  ----------------------------------------------------------------------------
+     Cara membuat garis:
+       a. Ketuk tombol PENSIL di kanan peta, atau menu "Pensil Garis".
+       b. Ketuk NOMOR toko secara berurutan. Setiap toko yang diketuk menjadi
+          titik garis. Strip di bawah peta menampilkan titik terakhir
+          (nama dan ID customer).
+       c. Pilih warna garis dari lingkaran warna di panel PENSIL bila perlu.
+       d. Tekan SIMPAN GARIS, isi nama garis, lalu tekan SIMPAN.
+       e. Tekan SELESAI MENGGAMBAR untuk keluar dari mode pensil.
+     Hal penting:
+       - Garis TIDAK dibuat otomatis. Garis hanya dibuat lewat PENSIL.
+       - Garis disimpan di HP dan tetap ada walau aplikasi ditutup.
+       - HAPUS TITIK TERAKHIR membatalkan satu titik. BATAL GARIS membuang
+         garis yang belum disimpan.
+       - Menu "Garis Tersimpan" dipakai untuk menampilkan, menyembunyikan,
+         atau menghapus garis. Garis gambar bebas dari putaran sebelumnya
+         juga tampil di sini dan dapat dihapus.
+       - HAPUS GARIS di panel PENSIL: pilih HAPUS DARI LAYAR (hanya
+         menyembunyikan) atau HAPUS DARI HP (membuang semua garis tersimpan).
+
+  ----------------------------------------------------------------------------
+  5. FILTER & SALES DISTRICT
+  ----------------------------------------------------------------------------
+     Menu "Filter & Sales District" memakai aturan putaran 18J:
+       - RTS dan TF terkunci pada Sales District akunnya.
+       - WSS, SMST, ADMIN, dan ASS dapat memilih SEMUA DISTRICT atau satu
+         district.
+     Di panel yang sama ada pilihan HARI, FREKUENSI, dan WARNA NOMOR
+     (menurut Frekuensi atau menurut Hari).
+     Bila jumlah toko lebih dari 1200, peta menggambar 1200 titik pertama
+     dan memberi pesan kuning. Pilih satu SALES DISTRICT supaya semua toko
+     bisa dilihat.
+
+  ----------------------------------------------------------------------------
+  6. HAL-HAL YANG PERLU DIKETAHUI
+  ----------------------------------------------------------------------------
+     - Gambar peta (OpenStreetMap) membutuhkan internet. Daftar, nomor, kartu,
+       garis pensil, dan jarak tetap bekerja walau tanpa internet.
+     - Titik customer yang koordinatnya kosong atau salah tidak tampil di
+       peta. Jumlahnya ditulis dengan catatan kuning di panel FILTER.
+     - Tidak ada perubahan pada hosting (cPanel) di putaran ini.
+     - Setelah pasang, jalankan PERIKSA_KODE_APLIKASI.ps1. Bagian 6f harus
+       menulis putaran 18K untuk keenam berkas.
 
  ============================================================================
   PUTARAN 18J - DATA CUSTOMER PER SALES DISTRICT (APLIKASI TIDAK BERAT LAGI)
