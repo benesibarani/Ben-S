@@ -1,8 +1,8 @@
 ==============================================================================
  RTS PANEL BY BENE - PUTARAN 18L
- (MENAMPILKAN HARI DAN TANGGAL LENGKAP DENGAN WAKTU DI INDONESIA +
-  MENAMPILKAN WEEK SEKARANG SESUAI KALENDER INDONESIA PADA KARTU BERANDA,
-  PETA CUSTOMER, RADAR CUSTOMER, DAN RUTE PLAN)
+ (MENAMPILKAN HARI & TANGGAL LENGKAP, WAKTU INDONESIA (WIB/WITA/WIT),
+  WEEK KALENDER INDONESIA, SERTA KALENDER KERJA PT. WISMILAK INTI MAKMUR:
+  KUARTAL, CYCLE, WEEK, DAN MINGGU GANJIL/GENAP)
  CARA PASANG CEPAT  -  12 Oktober 2026
 ==============================================================================
 
@@ -12,31 +12,32 @@
 
  PERUBAHAN PUTARAN 18L
  ---------------------
-   1. HARI & TANGGAL LENGKAP INDONESIA PADA KARTU BERANDA (AKUN RTS PANEL).
-      Menampilkan nama hari dan tanggal lengkap Bahasa Indonesia, contoh:
-          Senin, 12 Oktober 2026
-   2. WAKTU INDONESIA BERJALAN OTOMATIS TIAP DETIK (WIB / WITA / WIT).
-      Menampilkan jam lengkap sampai detik beserta zona waktu Indonesia,
-      contoh:
-          13:39:37 WIB • Waktu Indonesia
-   3. WEEK SEKARANG SESUAI KALENDER INDONESIA.
-      Di sisi kanan kotak kalender pada kartu AKUN RTS PANEL tampil lencana:
-          WEEK 42
-          Pekan Genap • Mg 3
-      (nomor week tahun berjalan, sifat pekan Ganjil/Genap untuk panduan
-      kunjungan Bi-Weekly, serta minggu ke-berapa di bulan berjalan).
-      Bila kotak diketuk, muncul keterangan lengkap kalender Indonesia.
-   4. WEEK & TANGGAL LENGKAP DI PETA CUSTOMER, RADAR CUSTOMER, & RUTE PLAN.
-      Pada panel penyaring Hari & Frekuensi serta bilah judul Rute Plan juga
-      ditampilkan tanggal lengkap dan Week sekarang (Ganjil/Genap).
-   5. PENANDA VERSI baru: RTS-2026-10-12-18L, pubspec 1.5.6+21.
+   1. HARI & TANGGAL LENGKAP + WAKTU INDONESIA DI KARTU BERANDA (AKUN RTS PANEL).
+      Menampilkan nama hari dan tanggal lengkap Bahasa Indonesia beserta jam
+      Indonesia yang berjalan setiap detik (WIB / WITA / WIT) dan Week
+      kalender Indonesia, contoh pada Senin, 12 Oktober 2026:
+          Senin, 12 Oktober 2026   |   KALENDER W42 (Minggu ke-3 bln ini)
+          Pukul 13:39:37 WIB
+   2. KALENDER KERJA PT. WISMILAK INTI MAKMUR DI ATAS MENU UTAMA.
+      Langsung di dalam kartu AKUN RTS PANEL (sebelum masuk ke menu) tampil
+      baris "KALENDER KERJA PT. WISMILAK" lengkap dengan 4 kotak:
+          - KUARTAL 4  (Q4 • Triwulan 4, yaitu Week 40 s/d 52)
+          - CYCLE 11   (Minggu 1 dari 4, Hari ke-1 Cycle 11)
+          - WEEK 41    (Kalender -1 Mg)
+          - GANJIL     (Minggu Ganjil)
+      Bila kotak diketuk, muncul keterangan lengkap kalender Wismilak & RI.
+   3. TAMPIL JUGA DI PETA CUSTOMER, RADAR CUSTOMER, DAN RUTE PLAN.
+      Penyaring Hari & Frekuensi serta bilah judul Rute Plan menampilkan
+      Kuartal, Cycle, Week, dan Minggu Ganjil/Genap sesuai Kalender Kerja
+      PT. Wismilak Inti Makmur.
+   4. PENANDA VERSI baru: RTS-2026-10-12-18L, pubspec 1.5.6+21.
 
  ISI PAKET PERUBAHAN (RTS_PANEL_PERUBAHAN_18L.zip)
  -------------------------------------------------
-   2_APLIKASI_copy_ke_proyek/main.dart           <-- kotak Kalender & Waktu
-                                                     Indonesia + Week di Beranda
-   2_APLIKASI_copy_ke_proyek/peta.dart           <-- tanggal & Week kalender
-                                                     Indonesia di Peta/Rute Plan
+   2_APLIKASI_copy_ke_proyek/main.dart           <-- Kalender Indonesia +
+                                                     Kalender Kerja Wismilak
+   2_APLIKASI_copy_ke_proyek/peta.dart           <-- Kuartal/Cycle/Week
+                                                     Wismilak di Peta/Rute Plan
    2_APLIKASI_copy_ke_proyek/kasir.dart          <-- penanda 18L
    2_APLIKASI_copy_ke_proyek/kasir_lokal.dart    <-- penanda 18L
    2_APLIKASI_copy_ke_proyek/program.dart        <-- penanda 18L
@@ -71,11 +72,9 @@
  -----------------
    1. Pasang APK baru dengan cara MENIMPA. JANGAN hapus aplikasi lama.
    2. Buka aplikasi -> lihat kartu merah AKUN RTS PANEL di bagian atas Beranda.
-   3. Di bawah baris nama & cuaca tampil kotak Kalender Indonesia:
-      - Kiri : Hari & Tanggal lengkap (mis. Senin, 12 Oktober 2026) serta
-               jam Indonesia berjalan tiap detik (WIB / WITA / WIT).
-      - Kanan: WEEK sekarang sesuai kalender Indonesia (mis. WEEK 42,
-               Pekan Genap • Mg 3).
+   3. Di bawah baris nama & cuaca tampil:
+      - Hari & Tanggal lengkap + jam Indonesia berjalan tiap detik + Kalender W42
+      - KALENDER KERJA PT. WISMILAK: KUARTAL 4 | CYCLE 11 | WEEK 41 | GANJIL
    4. Ketuk kotak kalender tersebut untuk melihat keterangan lengkapnya.
 
  PEMERIKSAAN SESUDAH PASANG
@@ -88,6 +87,7 @@
 
  TAUTAN UNDUH CEPAT
  ------------------
+   Gambar pratinjau : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/PRATINJAU_BERANDA_18L.png
    Paket lengkap    : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18L.zip
    Hanya perubahan  : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18L.zip
    main.dart        : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart

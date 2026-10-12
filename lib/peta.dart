@@ -340,28 +340,54 @@ String rtsPetaHariTanggalIndonesia([DateTime? sumber]) {
   return '${rtsPetaNamaHari(w)}, ${w.day} ${rtsPetaNamaBulan(w)} ${w.year}';
 }
 
-/// Nomor pekan dalam tahun sesuai kalender Indonesia (untuk membedakan pekan
-/// GANJIL dan GENAP). Minggu ke-1 dimulai pada 1 Januari, pergantian minggu
-/// pada hari Minggu.
-int rtsPetaPekan(DateTime t) {
-  final DateTime w = rtsPetaWaktuIndonesia(t);
-  final DateTime awal = DateTime(w.year, 1, 1);
-  final int geser = awal.weekday % 7;
-  final int hariKe =
-      DateTime(w.year, w.month, w.day).difference(awal).inDays + 1;
+/// Mencari hari Senin pembuka Week 1 Kalender Kerja PT. Wismilak Inti Makmur
+/// pada suatu tahun (kurang 1 minggu dari kalender biasa dan dimulai setiap
+/// hari Senin; contoh tahun 2026 jatuh pada Senin, 5 Januari 2026 sehingga
+/// Senin, 12 Oktober 2026 jatuh pada Cycle 11, Week 41, Hari ke-1, Kuartal 4).
+DateTime _rtsPetaSeninAwalWismilak(int tahun) {
+  final DateTime jan1 = DateTime(tahun, 1, 1);
+  final int tambah = (8 - jan1.weekday) % 7;
+  final int geser = tambah == 0 ? 7 : tambah;
 
-  return ((hariKe + geser - 1) ~/ 7) + 1;
+  return DateTime(tahun, 1, 1 + geser);
+}
+
+int _rtsPetaHariKerjaWismilak(DateTime t) {
+  final DateTime w = rtsPetaWaktuIndonesia(t);
+  final DateTime tgl = DateTime(w.year, w.month, w.day);
+  DateTime awal = _rtsPetaSeninAwalWismilak(tgl.year);
+
+  if (tgl.isBefore(awal)) {
+    awal = _rtsPetaSeninAwalWismilak(tgl.year - 1);
+  }
+
+  return tgl.difference(awal).inDays;
+}
+
+/// Nomor Week dalam tahun menurut Kalender Kerja PT. Wismilak Inti Makmur
+/// (untuk membedakan Minggu GANJIL dan GENAP).
+int rtsPetaPekan(DateTime t) => (_rtsPetaHariKerjaWismilak(t) ~/ 7) + 1;
+
+/// Nomor Cycle (1..13) menurut Kalender Kerja PT. Wismilak (1 Cycle = 4 Week).
+int rtsPetaCycle(DateTime t) => ((rtsPetaPekan(t) - 1) ~/ 4) + 1;
+
+/// Nomor Kuartal (1..4) menurut Kalender Kerja PT. Wismilak (1 Kuartal = 13 Week).
+int rtsPetaKuartal(DateTime t) {
+  final int q = ((rtsPetaPekan(t) - 1) ~/ 13) + 1;
+  return q > 4 ? 4 : q;
 }
 
 bool rtsPetaPekanGanjil(DateTime t) => rtsPetaPekan(t).isOdd;
 
-/// Label week kalender Indonesia, contoh: Week 42 (Pekan Genap).
+/// Label Kalender Kerja Wismilak, contoh: Q4 • Cycle 11 • Week 41 (Minggu Ganjil).
 String rtsPetaWeekIndonesia([DateTime? sumber]) {
   final DateTime w = rtsPetaWaktuIndonesia(sumber);
+  final int kuartal = rtsPetaKuartal(w);
+  final int cycle = rtsPetaCycle(w);
   final int pekan = rtsPetaPekan(w);
   final String sifat = pekan.isOdd ? 'Ganjil' : 'Genap';
 
-  return 'Week $pekan (Pekan $sifat)';
+  return 'Q$kuartal \u2022 Cycle $cycle \u2022 Week $pekan (Minggu $sifat)';
 }
 
 /// Menyeragamkan tulisan frekuensi kunjungan yang tersimpan pada master_toko.
@@ -4934,10 +4960,13 @@ class _RtsRutePageState extends State<RtsRutePage> {
 
   /// Bilah atas: kembali, judul + ringkasan rute, dan tombol kantor.
   Widget _barisJudul(List<RtsToko> rencana, RtsKantor? kantor) {
-    final int pekanKini = rtsPetaPekan(DateTime.now());
+    final DateTime kini = DateTime.now();
+    final int kuartalKini = rtsPetaKuartal(kini);
+    final int cycleKini = rtsPetaCycle(kini);
+    final int pekanKini = rtsPetaPekan(kini);
     final String sifatPekan = pekanKini.isOdd ? 'Ganjil' : 'Genap';
     final String ringkas =
-        'Week $pekanKini ($sifatPekan)  |  $_hari  |  $_frekuensi  |  Jarak ${rtsPetaJarakTeks(_panjangRute(rencana))}';
+        'Q$kuartalKini\u2022C$cycleKini\u2022W$pekanKini ($sifatPekan)  |  $_hari  |  $_frekuensi  |  Jarak ${rtsPetaJarakTeks(_panjangRute(rencana))}';
 
     return Row(
       children: <Widget>[

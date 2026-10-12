@@ -6270,6 +6270,61 @@ class RtsWaktu {
   static String sifatWeek([DateTime? sumber]) =>
       weekKalenderIndonesia(sumber).isOdd ? 'Ganjil' : 'Genap';
 
+  /// Mencari hari Senin pembuka Week 1 Kalender Kerja PT. Wismilak Inti Makmur
+  /// pada suatu tahun. Karena Kalender Wismilak kurang 1 minggu dari kalender
+  /// biasa dan setiap minggu/cycle dimulai pada hari Senin, maka Week 1
+  /// dimulai pada hari Senin di pekan ke-2 kalender biasa (contoh tahun 2026:
+  /// Senin, 5 Januari 2026 -> sehingga Senin, 12 Oktober 2026 jatuh tepat pada
+  /// Cycle 11, Week 41, Hari ke-1, Kuartal 4).
+  static DateTime _seninAwalWismilak(int tahun) {
+    final DateTime jan1 = DateTime(tahun, 1, 1);
+    final int tambah = (8 - jan1.weekday) % 7;
+    final int geser = tambah == 0 ? 7 : tambah;
+
+    return DateTime(tahun, 1, 1 + geser);
+  }
+
+  static int _hariKerjaWismilak([DateTime? sumber]) {
+    final DateTime w = indonesia(sumber);
+    final DateTime tgl = DateTime(w.year, w.month, w.day);
+    DateTime awal = _seninAwalWismilak(tgl.year);
+
+    if (tgl.isBefore(awal)) {
+      awal = _seninAwalWismilak(tgl.year - 1);
+    }
+
+    return tgl.difference(awal).inDays;
+  }
+
+  /// Nomor Week menurut Kalender Kerja PT. Wismilak Inti Makmur (1..52/53).
+  static int weekWismilak([DateTime? sumber]) =>
+      (_hariKerjaWismilak(sumber) ~/ 7) + 1;
+
+  /// Nomor Cycle menurut Kalender Kerja PT. Wismilak Inti Makmur (1..13).
+  /// Dalam 1 Cycle terdapat 4 Week.
+  static int cycleWismilak([DateTime? sumber]) =>
+      ((weekWismilak(sumber) - 1) ~/ 4) + 1;
+
+  /// Minggu ke-berapa (1..4) di dalam Cycle berjalan.
+  static int mingguDalamCycleWismilak([DateTime? sumber]) =>
+      ((weekWismilak(sumber) - 1) % 4) + 1;
+
+  /// Hari ke-berapa (1..28) di dalam Cycle berjalan (1 Cycle = 4 Week = 28 hari).
+  static int hariDalamCycleWismilak([DateTime? sumber]) =>
+      (_hariKerjaWismilak(sumber) % 28) + 1;
+
+  /// Nomor Kuartal (1..4) menurut Kalender Kerja PT. Wismilak Inti Makmur.
+  /// Kuartal 1 = Week 1..13, Kuartal 2 = Week 14..26,
+  /// Kuartal 3 = Week 27..39, Kuartal 4 = Week 40..52/53.
+  static int kuartalWismilak([DateTime? sumber]) {
+    final int q = ((weekWismilak(sumber) - 1) ~/ 13) + 1;
+    return q > 4 ? 4 : q;
+  }
+
+  /// Sifat Minggu Ganjil / Genap menurut Week Wismilak.
+  static String sifatMingguWismilak([DateTime? sumber]) =>
+      weekWismilak(sumber).isOdd ? 'Ganjil' : 'Genap';
+
   /// Contoh keluaran: 27 Sep 2026, 21.14
   static String ringkas(DateTime waktu) {
     final String jam = waktu.hour.toString().padLeft(2, '0');
@@ -14226,15 +14281,63 @@ class _RtsKotakKalenderIndonesiaState extends State<RtsKotakKalenderIndonesia> {
     final DateTime w = RtsWaktu.indonesia(_sekarang);
     final String hariTanggal = RtsWaktu.hariTanggalLengkap(_sekarang);
     final String jam = RtsWaktu.jamLengkapIndonesia(_sekarang);
-    final int week = RtsWaktu.weekKalenderIndonesia(_sekarang);
+    final int weekRi = RtsWaktu.weekKalenderIndonesia(_sekarang);
     final int mgBulan = RtsWaktu.mingguBulanIndonesia(_sekarang);
-    final String sifat = RtsWaktu.sifatWeek(_sekarang);
+    final int kuartalWm = RtsWaktu.kuartalWismilak(_sekarang);
+    final int cycleWm = RtsWaktu.cycleWismilak(_sekarang);
+    final int weekWm = RtsWaktu.weekWismilak(_sekarang);
+    final int mgCycle = RtsWaktu.mingguDalamCycleWismilak(_sekarang);
+    final int hariCycle = RtsWaktu.hariDalamCycleWismilak(_sekarang);
+    final String sifatWm = RtsWaktu.sifatMingguWismilak(_sekarang);
 
     rtsShowMessage(
       context,
-      '$hariTanggal \u2022 Pukul $jam \u2022 Week $week '
-      '(Pekan $sifat, Minggu ke-$mgBulan ${RtsWaktu.namaBulan(w)} ${w.year})',
+      '$hariTanggal \u2022 Pukul $jam\n'
+      'Kalender Wismilak: Kuartal $kuartalWm (Q$kuartalWm) \u2022 '
+      'Cycle $cycleWm (Mg $mgCycle/4, Hari ke-$hariCycle) \u2022 '
+      'Week $weekWm (Minggu $sifatWm) \u2022 '
+      'Kalender RI: Week $weekRi (Mg ke-$mgBulan ${RtsWaktu.namaBulan(w)})',
       success: true,
+    );
+  }
+
+  Widget _kotakButirWismilak(String judul, String sub) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.20),
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              judul,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 1),
+            Text(
+              sub,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xe6ffffff),
+                fontSize: 8.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -14242,106 +14345,179 @@ class _RtsKotakKalenderIndonesiaState extends State<RtsKotakKalenderIndonesia> {
   Widget build(BuildContext context) {
     final String hariTanggal = RtsWaktu.hariTanggalLengkap(_sekarang);
     final String jam = RtsWaktu.jamLengkapIndonesia(_sekarang);
-    final int week = RtsWaktu.weekKalenderIndonesia(_sekarang);
+    final int weekRi = RtsWaktu.weekKalenderIndonesia(_sekarang);
     final int mgBulan = RtsWaktu.mingguBulanIndonesia(_sekarang);
-    final String sifat = RtsWaktu.sifatWeek(_sekarang);
+    final int kuartalWm = RtsWaktu.kuartalWismilak(_sekarang);
+    final int wAwalQ = ((kuartalWm - 1) * 13) + 1;
+    final int wAkhirQ = kuartalWm * 13;
+    final int cycleWm = RtsWaktu.cycleWismilak(_sekarang);
+    final int weekWm = RtsWaktu.weekWismilak(_sekarang);
+    final int mgCycle = RtsWaktu.mingguDalamCycleWismilak(_sekarang);
+    final int hariCycle = RtsWaktu.hariDalamCycleWismilak(_sekarang);
+    final String sifatWm = RtsWaktu.sifatMingguWismilak(_sekarang);
 
     return GestureDetector(
       onTap: _tampilInfo,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+        padding: const EdgeInsets.fromLTRB(11, 8, 11, 9),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.14),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.calendar_today_rounded,
-                        color: Colors.white,
-                        size: 13.5,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          hariTanggal,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today_rounded,
                             color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                            size: 13.5,
                           ),
-                        ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              hariTanggal,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time_filled_rounded,
+                            color: Color(0xd9ffffff),
+                            size: 13.5,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Pukul $jam',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xe6ffffff),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time_filled_rounded,
-                        color: Color(0xd9ffffff),
-                        size: 13.5,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          'Pukul $jam',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xe6ffffff),
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.20),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'WEEK $week',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.6,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.25),
                     ),
                   ),
-                  const SizedBox(height: 1),
-                  Text(
-                    'Pekan $sifat \u2022 Mg $mgBulan',
-                    style: const TextStyle(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'KALENDER W$weekRi',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        'Minggu ke-$mgBulan bln ini',
+                        style: const TextStyle(
+                          color: Color(0xe6ffffff),
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 7),
+            Container(
+              height: 1,
+              color: Colors.white.withValues(alpha: 0.18),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(
+                  Icons.event_note_rounded,
+                  color: Color(0xe6ffffff),
+                  size: 12.5,
+                ),
+                const SizedBox(width: 5),
+                const Expanded(
+                  child: Text(
+                    'KALENDER KERJA PT. WISMILAK',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
                       color: Color(0xe6ffffff),
                       fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.7,
                     ),
                   ),
-                ],
-              ),
+                ),
+                Text(
+                  'Hari ke-$hariCycle Cycle $cycleWm',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Row(
+              children: [
+                _kotakButirWismilak(
+                  'KUARTAL $kuartalWm',
+                  'Q$kuartalWm (W$wAwalQ-$wAkhirQ)',
+                ),
+                const SizedBox(width: 5),
+                _kotakButirWismilak('CYCLE $cycleWm', 'Mg $mgCycle dari 4'),
+                const SizedBox(width: 5),
+                _kotakButirWismilak('WEEK $weekWm', 'Kerja -1 Mg'),
+                const SizedBox(width: 5),
+                _kotakButirWismilak(
+                  sifatWm.toUpperCase(),
+                  'Mg $sifatWm',
+                ),
+              ],
             ),
           ],
         ),

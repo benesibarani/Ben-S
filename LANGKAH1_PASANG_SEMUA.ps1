@@ -784,8 +784,9 @@ Write-Host ' Periksa di aplikasi:' -ForegroundColor White
 Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
 Write-Host '     BERANDA/18L : kartu AKUN RTS PANEL menampilkan HARI & TANGGAL LENGKAP' -ForegroundColor Gray
 Write-Host '                   (contoh: Senin, 12 Oktober 2026), WAKTU INDONESIA (WIB/' -ForegroundColor Gray
-Write-Host '                   WITA/WIT berjalan setiap detik), serta WEEK SEKARANG' -ForegroundColor Gray
-Write-Host '                   sesuai kalender Indonesia (contoh: WEEK 42, Pekan Genap)' -ForegroundColor Gray
+Write-Host '                   WITA/WIT berjalan setiap detik), WEEK kalender RI, serta' -ForegroundColor Gray
+Write-Host '                   KALENDER KERJA PT. WISMILAK INTI MAKMUR: KUARTAL 4 (Q4),' -ForegroundColor Gray
+Write-Host '                   CYCLE 11 (Mg 1/4, Hari ke-1), WEEK 41, MINGGU GANJIL' -ForegroundColor Gray
 Write-Host '     RUTE/18K    : peta Rute Plan memenuhi SELURUH layar' -ForegroundColor Gray
 Write-Host '                   (tanpa tumpukan panel) + bilah judul di atas' -ForegroundColor Gray
 Write-Host '     RUTE/18K    : SIDEBAR "MENU RUTE PLAN" melayang - judulnya' -ForegroundColor Gray
