@@ -6313,6 +6313,28 @@ class RtsWaktu {
   static int hariDalamCycleWismilak([DateTime? sumber]) =>
       (_hariKerjaWismilak(sumber) % 28) + 1;
 
+  /// Jumlah total Hari Kerja (HK) dalam 1 Cycle (4 Week x 6 hari kerja Senin-Sabtu = 24 HK).
+  static const int totalHkCycleWismilak = 24;
+
+  /// Hari Kerja (HK) ke-berapa (1..24) di dalam Cycle berjalan.
+  static int hkKeDalamCycleWismilak([DateTime? sumber]) {
+    final DateTime w = indonesia(sumber);
+    final int mgCycle = mingguDalamCycleWismilak(w);
+    final int hkMingguIni = w.weekday <= 6 ? w.weekday : 6;
+
+    return ((mgCycle - 1) * 6) + hkMingguIni;
+  }
+
+  /// Sisa Hari Kerja (Sisa HK) di dalam Cycle berjalan (termasuk hari kerja hari ini).
+  /// Contoh pada hari Senin minggu ke-1 Cycle 11 -> Sisa 24 HK (HK ke-1/24).
+  static int sisaHkCycleWismilak([DateTime? sumber]) {
+    final DateTime w = indonesia(sumber);
+    final int mgCycle = mingguDalamCycleWismilak(w);
+    final int sisaMingguIni = w.weekday <= 6 ? (7 - w.weekday) : 0;
+
+    return sisaMingguIni + ((4 - mgCycle) * 6);
+  }
+
   /// Nomor Kuartal (1..4) menurut Kalender Kerja PT. Wismilak Inti Makmur.
   /// Kuartal 1 = Week 1..13, Kuartal 2 = Week 14..26,
   /// Kuartal 3 = Week 27..39, Kuartal 4 = Week 40..52/53.
@@ -14287,14 +14309,15 @@ class _RtsKotakKalenderIndonesiaState extends State<RtsKotakKalenderIndonesia> {
     final int cycleWm = RtsWaktu.cycleWismilak(_sekarang);
     final int weekWm = RtsWaktu.weekWismilak(_sekarang);
     final int mgCycle = RtsWaktu.mingguDalamCycleWismilak(_sekarang);
-    final int hariCycle = RtsWaktu.hariDalamCycleWismilak(_sekarang);
+    final int hkKe = RtsWaktu.hkKeDalamCycleWismilak(_sekarang);
+    final int sisaHk = RtsWaktu.sisaHkCycleWismilak(_sekarang);
     final String sifatWm = RtsWaktu.sifatMingguWismilak(_sekarang);
 
     rtsShowMessage(
       context,
       '$hariTanggal \u2022 Pukul $jam\n'
-      'Kalender Wismilak: Kuartal $kuartalWm (Q$kuartalWm) \u2022 '
-      'Cycle $cycleWm (Mg $mgCycle/4, Hari ke-$hariCycle) \u2022 '
+      'Kuartal $kuartalWm (Q$kuartalWm) \u2022 '
+      'Cycle $cycleWm (Mg $mgCycle/4, Sisa $sisaHk HK - HK ke-$hkKe/24) \u2022 '
       'Week $weekWm (Minggu $sifatWm) \u2022 '
       'Kalender RI: Week $weekRi (Mg ke-$mgBulan ${RtsWaktu.namaBulan(w)})',
       success: true,
@@ -14353,7 +14376,8 @@ class _RtsKotakKalenderIndonesiaState extends State<RtsKotakKalenderIndonesia> {
     final int cycleWm = RtsWaktu.cycleWismilak(_sekarang);
     final int weekWm = RtsWaktu.weekWismilak(_sekarang);
     final int mgCycle = RtsWaktu.mingguDalamCycleWismilak(_sekarang);
-    final int hariCycle = RtsWaktu.hariDalamCycleWismilak(_sekarang);
+    final int hkKe = RtsWaktu.hkKeDalamCycleWismilak(_sekarang);
+    final int sisaHk = RtsWaktu.sisaHkCycleWismilak(_sekarang);
     final String sifatWm = RtsWaktu.sifatMingguWismilak(_sekarang);
 
     return GestureDetector(
@@ -14471,32 +14495,20 @@ class _RtsKotakKalenderIndonesiaState extends State<RtsKotakKalenderIndonesia> {
             ),
             const SizedBox(height: 6),
             Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 const Icon(
-                  Icons.event_note_rounded,
+                  Icons.work_history_rounded,
                   color: Color(0xe6ffffff),
                   size: 12.5,
                 ),
                 const SizedBox(width: 5),
-                const Expanded(
-                  child: Text(
-                    'KALENDER KERJA PT. WISMILAK',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Color(0xe6ffffff),
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.7,
-                    ),
-                  ),
-                ),
                 Text(
-                  'Hari ke-$hariCycle Cycle $cycleWm',
+                  'Sisa $sisaHk HK (HK ke-$hkKe/24 Cycle $cycleWm)',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],

@@ -18,14 +18,16 @@
       kalender Indonesia, contoh pada Senin, 12 Oktober 2026:
           Senin, 12 Oktober 2026   |   KALENDER W42 (Minggu ke-3 bln ini)
           Pukul 13:39:37 WIB
-   2. KALENDER KERJA PT. WISMILAK INTI MAKMUR DI ATAS MENU UTAMA.
+   2. KUARTAL, CYCLE, WEEK, MINGGU GANJIL/GENAP, DAN SISA HK DI ATAS MENU UTAMA.
       Langsung di dalam kartu AKUN RTS PANEL (sebelum masuk ke menu) tampil
-      baris "KALENDER KERJA PT. WISMILAK" lengkap dengan 4 kotak:
-          - KUARTAL 4  (Q4 • Triwulan 4, yaitu Week 40 s/d 52)
-          - CYCLE 11   (Minggu 1 dari 4, Hari ke-1 Cycle 11)
-          - WEEK 41    (Kalender -1 Mg)
-          - GANJIL     (Minggu Ganjil)
-      Bila kotak diketuk, muncul keterangan lengkap kalender Wismilak & RI.
+      keterangan Sisa HK (Hari Kerja dalam Cycle sekarang: 1 Cycle = 4 Week x
+      6 HK Senin-Sabtu = 24 HK), contoh "Sisa 24 HK (HK ke-1/24 Cycle 11)",
+      beserta 4 kotak:
+          - KUARTAL 4  (Q4 (W40-52))
+          - CYCLE 11   (Mg 1 dari 4)
+          - WEEK 41    (Kerja -1 Mg)
+          - GANJIL     (Mg Ganjil)
+      Bila kotak diketuk, muncul keterangan lengkap di layar.
    3. TAMPIL JUGA DI PETA CUSTOMER, RADAR CUSTOMER, DAN RUTE PLAN.
       Penyaring Hari & Frekuensi serta bilah judul Rute Plan menampilkan
       Kuartal, Cycle, Week, dan Minggu Ganjil/Genap sesuai Kalender Kerja

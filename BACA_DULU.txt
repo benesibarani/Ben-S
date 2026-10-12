@@ -220,12 +220,14 @@
                          jam Indonesia berjalan setiap detik ("Pukul 13:39:37
                          WIB"), serta lencana "KALENDER W42 (Minggu ke-3 bln
                          ini)".
-        * Bagian bawah : "KALENDER KERJA PT. WISMILAK" dengan keterangan
-                         "Hari ke-1 Cycle 11" dan 4 kotak berdampingan:
-                           1. KUARTAL 4 (Q4 • Triwulan 4)
-                           2. CYCLE 11  (Minggu 1 dari 4)
-                           3. WEEK 41   (Kalender -1 Mg)
-                           4. GANJIL    (Minggu Ganjil)
+        * Bagian bawah : Baris "Sisa 24 HK (HK ke-1/24 Cycle 11)" (1 Cycle =
+                         4 Week x 6 Hari Kerja Senin-Sabtu = 24 HK; tanpa
+                         tulisan "KALENDER KERJA PT. WISMILAK") dan 4 kotak
+                         berdampingan:
+                           1. KUARTAL 4 (Q4 (W40-52))
+                           2. CYCLE 11  (Mg 1 dari 4)
+                           3. WEEK 41   (Kerja -1 Mg)
+                           4. GANJIL    (Mg Ganjil)
     - Pada Peta Customer, Radar Customer, dan Rute Plan:
         * Penyaring Hari & Frekuensi serta bilah judul Rute Plan menampilkan
           Q4 • Cycle 11 • Week 41 (Minggu Ganjil).
