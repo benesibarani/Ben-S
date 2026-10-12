@@ -14295,13 +14295,13 @@ class _RtsKotakKalenderIndonesiaState extends State<RtsKotakKalenderIndonesia> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          '$jam \u2022 Waktu Indonesia',
+                          'Pukul $jam',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Color(0xe6ffffff),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
