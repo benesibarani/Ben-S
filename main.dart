@@ -13475,7 +13475,7 @@ class RtsPembaruan {
     // Dipakai lebih dahulu karena lebih andal - bila berkas JSON terhapus
     // atau tidak dapat ditulis, keterangan versi tetap terbaca dari database.
     // ---------------------------------------------------------------------
-    String? sebabApi;
+    String sebabApi = '';
 
     try {
       final Uri alamatApi = Uri.parse('${RtsConfig.baseUrl}/app_versi.php');
@@ -13585,7 +13585,7 @@ class RtsPembaruan {
       // sebabApi sudah pasti terisi pada jalur ini (semua jalur di atas
       // mengembalikan nilai atau mengisinya), tetapi pemeriksaan kosong tetap
       // dipakai supaya keterangannya selalu berguna bagi pengguna.
-      final String sebab = (sebabApi ?? '').trim();
+      final String sebab = sebabApi.trim();
 
       pesanGalat = sebab.isEmpty ? 'Tidak dapat menghubungi server.' : sebab;
 
@@ -17397,7 +17397,7 @@ class RtsAlarmKalender {
     try {
       final RtsUser? u = user ?? RtsSesi.user;
       if (u != null) {
-        RtsKasirLokal.aku.aturPengguna(u.toJson());
+        RtsKasirLokal.aku.pengguna = u.toJson();
       }
       final DateTime skr = RtsWaktu.sekarangWib();
       final Map<String, dynamic> hasil = await RtsKasirLokal.aku.kirim(
@@ -17595,7 +17595,7 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
     final DateTime skr = RtsWaktu.sekarangWib();
     _tanggalPilih = DateTime(skr.year, skr.month, skr.day);
     _bulanTampil = DateTime(skr.year, skr.month, 1);
-    RtsKasirLokal.aku.aturPengguna(widget.user.toJson());
+    RtsKasirLokal.aku.pengguna = widget.user.toJson();
     RtsAlarmKalender.mulai(user: widget.user, token: widget.token);
     unawaited(_muatSemua());
   }
@@ -17610,7 +17610,7 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
   Future<void> _muatDataBulan() async {
     if (mounted) setState(() => _memuatBulan = true);
     try {
-      RtsKasirLokal.aku.aturPengguna(widget.user.toJson());
+      RtsKasirLokal.aku.pengguna = widget.user.toJson();
       final Map<String, dynamic> res = await RtsKasirLokal.aku.kirim(
         'kalender_bulan',
         <String, dynamic>{
@@ -17641,7 +17641,7 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
   Future<void> _muatDataTanggal() async {
     if (mounted) setState(() => _memuatTanggal = true);
     try {
-      RtsKasirLokal.aku.aturPengguna(widget.user.toJson());
+      RtsKasirLokal.aku.pengguna = widget.user.toJson();
       final String iso = RtsAlarmKalender.formatTanggalIso(_tanggalPilih);
       final Map<String, dynamic> res = await RtsKasirLokal.aku.kirim(
         'kalender_tanggal',

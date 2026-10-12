@@ -147,6 +147,13 @@ class RtsKasirLokal {
   /// Label tingkat akun menurut data yang tersimpan di HP.
   String get labelSesi => proSesi ? 'PRO' : 'GRATIS';
 
+  /// Mengisi keterangan akun secara sinkron (dipakai juga oleh modul Kalender & Alarm).
+  void aturPengguna(Map<String, dynamic> data) {
+    if (data.isNotEmpty) {
+      pengguna = data;
+    }
+  }
+
   /// Mengisi keterangan akun. Dipanggil setiap halaman kasir dibuka.
   Future<void> atur({
     String? baseUrl,
