@@ -17970,19 +17970,32 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
                                 const Icon(
                                   Icons.notifications_active_rounded,
                                   color: rtsGold,
-                                  size: 20,
+                                  size: 19,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Jam Alarm: $jamPilih WIB',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w900,
-                                    color: rtsGold,
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Jam Alarm: $jamPilih WIB',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      color: rtsGold,
+                                    ),
                                   ),
                                 ),
-                                const Spacer(),
+                                const SizedBox(width: 6),
                                 OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
                                   onPressed: () async {
                                     final List<String> p = jamPilih.split(':');
                                     final TimeOfDay awalJam = TimeOfDay(
@@ -18004,8 +18017,14 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
                                       });
                                     }
                                   },
-                                  icon: const Icon(Icons.access_time, size: 16),
-                                  label: const Text('Pilih Jam'),
+                                  icon: const Icon(Icons.access_time, size: 15),
+                                  label: const Text(
+                                    'Pilih Jam',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -18085,6 +18104,12 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
                       children: <Widget>[
                         Expanded(
                           child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 11,
+                              ),
+                            ),
                             onPressed: () async {
                               await RtsLayananNotif.mintaIzin();
                               final String jdl = cJudul.text.trim().isEmpty
@@ -18109,9 +18134,17 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
                             },
                             icon: const Icon(
                               Icons.volume_up_rounded,
-                              size: 18,
+                              size: 17,
                             ),
-                            label: const Text('UJI ALARM HP'),
+                            label: const Text(
+                              'UJI ALARM HP',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -18119,6 +18152,10 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
                           child: FilledButton.icon(
                             style: FilledButton.styleFrom(
                               backgroundColor: rtsRed,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 11,
+                              ),
                             ),
                             onPressed: () async {
                               if (cJudul.text.trim().isEmpty) {
@@ -18149,8 +18186,16 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
                               );
                               if (ctx.mounted) Navigator.pop(ctx, true);
                             },
-                            icon: const Icon(Icons.save_rounded, size: 18),
-                            label: const Text('SIMPAN'),
+                            icon: const Icon(Icons.save_rounded, size: 17),
+                            label: const Text(
+                              'SIMPAN',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -18879,12 +18924,14 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
             children: <Widget>[
               Icon(Icons.event_busy_rounded, color: rtsRedLight, size: 18),
               SizedBox(width: 6),
-              Text(
-                'Tanggal Merah & Libur Nasional Bulan Ini',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                  color: rtsRedLight,
+              Expanded(
+                child: Text(
+                  'Tanggal Merah & Libur Nasional Bulan Ini',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: rtsRedLight,
+                  ),
                 ),
               ),
             ],
@@ -19036,58 +19083,67 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: wKat.withValues(alpha: 0.18),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            kat,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              color: wKat,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        if (pakaiAlarm)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: rtsGold.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                const Icon(
-                                  Icons.alarm_on_rounded,
-                                  size: 12,
-                                  color: rtsGold,
+                        Expanded(
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: <Widget>[
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
                                 ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  '${item['jam'] ?? '08:00'} • ${item['ulang'] ?? 'SEKALI'}',
-                                  style: const TextStyle(
+                                decoration: BoxDecoration(
+                                  color: wKat.withValues(alpha: 0.18),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  kat,
+                                  style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w900,
-                                    color: rtsGold,
+                                    color: wKat,
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                              if (pakaiAlarm)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: rtsGold.withValues(alpha: 0.18),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      const Icon(
+                                        Icons.alarm_on_rounded,
+                                        size: 12,
+                                        color: rtsGold,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        '${item['jam'] ?? '08:00'} • ${item['ulang'] ?? 'SEKALI'}',
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          color: rtsGold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
                           ),
-                        const Spacer(),
+                        ),
                         IconButton(
                           visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.all(6),
+                          constraints: const BoxConstraints(),
                           tooltip: 'Bunyikan di Notifikasi HP sekarang',
                           onPressed: () => _bunyikanCatatanSekarang(item),
                           icon: const Icon(
@@ -19098,6 +19154,8 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
                         ),
                         IconButton(
                           visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.all(6),
+                          constraints: const BoxConstraints(),
                           tooltip: 'Ubah Catatan',
                           onPressed: () => _bukaDialogCatatan(awal: item),
                           icon: const Icon(
@@ -19108,6 +19166,8 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
                         ),
                         IconButton(
                           visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.all(6),
+                          constraints: const BoxConstraints(),
                           tooltip: 'Hapus Catatan',
                           onPressed: () => _hapusCatatan(item),
                           icon: const Icon(
@@ -19419,12 +19479,14 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
             children: <Widget>[
               Icon(Icons.upcoming_rounded, color: rtsGold, size: 19),
               SizedBox(width: 8),
-              Text(
-                'Daftar Pengingat & Alarm Aktif Mendatang',
-                style: TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w900,
-                  color: rtsTextPrimary,
+              Expanded(
+                child: Text(
+                  'Daftar Pengingat & Alarm Aktif Mendatang',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w900,
+                    color: rtsTextPrimary,
+                  ),
                 ),
               ),
             ],
