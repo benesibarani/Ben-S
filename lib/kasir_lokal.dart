@@ -692,6 +692,25 @@ class RtsKasirLokal {
     await coba("ALTER TABLE penjualan ADD COLUMN kirim INTEGER NOT NULL DEFAULT 0");
     await coba("ALTER TABLE penjualan ADD COLUMN dikirim_pada TEXT NOT NULL DEFAULT ''");
 
+    // 1h. Tabel KALENDER CATATAN & PENGINGAT/ALARM (putaran 18L - menu PRO "Kalender").
+    await coba('''CREATE TABLE IF NOT EXISTS kalender_catatan (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tanggal TEXT NOT NULL DEFAULT '',
+      jam TEXT NOT NULL DEFAULT '08:00',
+      judul TEXT NOT NULL DEFAULT '',
+      isi TEXT NOT NULL DEFAULT '',
+      kategori TEXT NOT NULL DEFAULT 'PENGINGAT',
+      pakai_alarm INTEGER NOT NULL DEFAULT 1,
+      ulang TEXT NOT NULL DEFAULT 'SEKALI',
+      selesai INTEGER NOT NULL DEFAULT 0,
+      sudah_bunyi TEXT NOT NULL DEFAULT '',
+      id_sales TEXT NOT NULL DEFAULT '',
+      nama_sales TEXT NOT NULL DEFAULT '',
+      dibuat_pada TEXT NOT NULL DEFAULT ''
+    )''');
+    await coba('CREATE INDEX IF NOT EXISTS idx_kalender_tanggal'
+        ' ON kalender_catatan(tanggal)');
+
     // 2. Kolom barcode_batang DIHAPUS (barcode hanya ada pada bungkus).
     //    SQLite lama belum mendukung DROP COLUMN, jadi tabel dibangun ulang
     //    dengan cara yang aman: salin dulu, baru ganti nama.
@@ -1538,6 +1557,37 @@ class RtsKasirLokal {
         await _pastikanBoleh();
 
         return _goresHapusSemua();
+
+      case 'kalender_bulan':
+        await _pastikanBoleh();
+
+        return _kalenderBulan(data);
+
+      case 'kalender_tanggal':
+        await _pastikanBoleh();
+
+        return _kalenderTanggal(data);
+
+      case 'kalender_catatan_simpan':
+        await _pastikanBoleh();
+
+        return _kalenderCatatanSimpan(data);
+
+      case 'kalender_catatan_selesai':
+        await _pastikanBoleh();
+
+        return _kalenderCatatanSelesai(
+          _bulat(data['id']),
+          _bulat(data['selesai']) != 0,
+        );
+
+      case 'kalender_catatan_hapus':
+        await _pastikanBoleh();
+
+        return _kalenderCatatanHapus(_bulat(data['id']));
+
+      case 'kalender_alarm_cek':
+        return _kalenderAlarmCek(data);
 
       case 'cadangan_info':
         return _cadanganInfo();
@@ -5598,6 +5648,423 @@ class RtsKasirLokal {
       'success': true,
       'message': 'Data berhasil dipulihkan dari $nama. Data sebelum pemulihan '
           'disimpan sebagai berkas .sebelum.',
+    };
+  }
+
+  /* --------------------------------------------------------------- kalender */
+
+  Map<String, dynamic> _kalenderCatatanBentuk(Map<String, Object?> baris) {
+    return <String, dynamic>{
+      'id': _bulat(baris['id']),
+      'tanggal': '${baris['tanggal'] ?? ''}',
+      'jam': '${baris['jam'] ?? '08:00'}',
+      'judul': '${baris['judul'] ?? ''}',
+      'isi': '${baris['isi'] ?? ''}',
+      'kategori': '${baris['kategori'] ?? 'PENGINGAT'}',
+      'pakai_alarm': _bulat(baris['pakai_alarm']) != 0,
+      'ulang': '${baris['ulang'] ?? 'SEKALI'}',
+      'selesai': _bulat(baris['selesai']) != 0,
+      'sudah_bunyi': '${baris['sudah_bunyi'] ?? ''}',
+      'id_sales': '${baris['id_sales'] ?? ''}',
+      'nama_sales': '${baris['nama_sales'] ?? ''}',
+      'dibuat_pada': '${baris['dibuat_pada'] ?? ''}',
+    };
+  }
+
+  /// Mengambil ringkasan sebulan penuh untuk Menu Kalender:
+  /// daftar catatan/pengingat + penanda tanggal yang memiliki transaksi Kasir,
+  /// Piutang (termasuk jatuh tempo), Kunjungan toko, dan Input Program.
+  Future<Map<String, dynamic>> _kalenderBulan(
+    Map<String, dynamic> data,
+  ) async {
+    final Database d = await db;
+    final DateTime kini = DateTime.now();
+    final int tahun = _bulat(data['tahun'] ?? kini.year);
+    final int bulan = _bulat(data['bulan'] ?? kini.month).clamp(1, 12);
+    final String awalan = '$tahun-${_dua(bulan)}';
+
+    final List<Map<String, Object?>> barisCatatan = await d.rawQuery(
+      '''SELECT * FROM kalender_catatan
+         WHERE substr(tanggal, 1, 7) = ? OR ulang IN ('HARIAN', 'MINGGUAN')
+         ORDER BY tanggal ASC, jam ASC, id ASC''',
+      <Object?>[awalan],
+    );
+
+    final List<Map<String, dynamic>> catatan =
+        barisCatatan.map(_kalenderCatatanBentuk).toList();
+
+    final Map<String, Map<String, dynamic>> penjualanHari =
+        <String, Map<String, dynamic>>{};
+    final List<Map<String, Object?>> barisJual = await d.rawQuery(
+      '''SELECT substr(tanggal, 1, 10) AS tgl,
+                COUNT(*) AS jumlah,
+                COALESCE(SUM(total), 0) AS nilai
+         FROM penjualan
+         WHERE substr(tanggal, 1, 7) = ? AND dibatalkan = 0
+         GROUP BY substr(tanggal, 1, 10)''',
+      <Object?>[awalan],
+    );
+    for (final Map<String, Object?> r in barisJual) {
+      final String tgl = '${r['tgl'] ?? ''}';
+      if (tgl.isEmpty) continue;
+      penjualanHari[tgl] = <String, dynamic>{
+        'jumlah': _bulat(r['jumlah']),
+        'total': _angka(r['nilai']),
+      };
+    }
+
+    final Map<String, Map<String, dynamic>> piutangHari =
+        <String, Map<String, dynamic>>{};
+    final List<Map<String, Object?>> barisPiut = await d.rawQuery(
+      '''SELECT substr(tanggal, 1, 10) AS tgl,
+                substr(jatuh_tempo, 1, 10) AS tempo,
+                sisa,
+                status
+         FROM piutang
+         WHERE substr(tanggal, 1, 7) = ? OR substr(jatuh_tempo, 1, 7) = ?''',
+      <Object?>[awalan, awalan],
+    );
+    for (final Map<String, Object?> r in barisPiut) {
+      final String tgl = '${r['tgl'] ?? ''}';
+      final String tempo = '${r['tempo'] ?? ''}';
+      final double sisa = _angka(r['sisa']);
+      for (final String k in <String>{tgl, tempo}) {
+        if (!k.startsWith(awalan)) continue;
+        final Map<String, dynamic> lama = piutangHari[k] ??
+            <String, dynamic>{'jumlah': 0, 'sisa': 0.0};
+        piutangHari[k] = <String, dynamic>{
+          'jumlah': _bulat(lama['jumlah']) + 1,
+          'sisa': _angka(lama['sisa']) + sisa,
+        };
+      }
+    }
+
+    final Map<String, int> kunjunganHari = <String, int>{};
+    final List<Map<String, Object?>> barisKunj = await d.rawQuery(
+      '''SELECT substr(tanggal, 1, 10) AS tgl, COUNT(*) AS jumlah
+         FROM kunjungan
+         WHERE substr(tanggal, 1, 7) = ?
+         GROUP BY substr(tanggal, 1, 10)''',
+      <Object?>[awalan],
+    );
+    for (final Map<String, Object?> r in barisKunj) {
+      final String tgl = '${r['tgl'] ?? ''}';
+      if (tgl.isNotEmpty) kunjunganHari[tgl] = _bulat(r['jumlah']);
+    }
+
+    final Map<String, int> programHari = <String, int>{};
+    final List<Map<String, Object?>> barisProg = await d.rawQuery(
+      '''SELECT substr(tanggal, 1, 10) AS tgl, COUNT(*) AS jumlah
+         FROM program_input
+         WHERE substr(tanggal, 1, 7) = ?
+         GROUP BY substr(tanggal, 1, 10)''',
+      <Object?>[awalan],
+    );
+    for (final Map<String, Object?> r in barisProg) {
+      final String tgl = '${r['tgl'] ?? ''}';
+      if (tgl.isNotEmpty) programHari[tgl] = _bulat(r['jumlah']);
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'tahun': tahun,
+      'bulan': bulan,
+      'catatan': catatan,
+      'penjualan_hari': penjualanHari,
+      'piutang_hari': piutangHari,
+      'kunjungan_hari': kunjunganHari,
+      'program_hari': programHari,
+    };
+  }
+
+  /// Mengambil rincian lengkap untuk 1 tanggal pada Menu Kalender:
+  /// Catatan & Pengingat, Nota Kasir, Piutang/Jatuh Tempo, Kunjungan Toko,
+  /// Input Program, serta jumlah toko yang terjadwal pada hari tersebut.
+  Future<Map<String, dynamic>> _kalenderTanggal(
+    Map<String, dynamic> data,
+  ) async {
+    final Database d = await db;
+    final String tanggal = _teks(data['tanggal'], 16);
+    final String hariNama = _teks(data['hari_nama'], 20);
+    final DateTime? tglObj = DateTime.tryParse(tanggal);
+
+    final List<Map<String, Object?>> semuaCatatan = await d.rawQuery(
+      '''SELECT * FROM kalender_catatan
+         WHERE tanggal = ? OR ulang IN ('HARIAN', 'MINGGUAN')
+         ORDER BY selesai ASC, jam ASC, id ASC''',
+      <Object?>[tanggal],
+    );
+
+    final List<Map<String, dynamic>> catatan = <Map<String, dynamic>>[];
+    for (final Map<String, Object?> r in semuaCatatan) {
+      final String tglAsal = '${r['tanggal'] ?? ''}';
+      final String ulang = '${r['ulang'] ?? 'SEKALI'}';
+      if (tglAsal == tanggal || ulang == 'HARIAN') {
+        catatan.add(_kalenderCatatanBentuk(r));
+      } else if (ulang == 'MINGGUAN' && tglObj != null) {
+        final DateTime? asalObj = DateTime.tryParse(tglAsal);
+        if (asalObj != null && asalObj.weekday == tglObj.weekday) {
+          catatan.add(_kalenderCatatanBentuk(r));
+        }
+      }
+    }
+
+    final List<Map<String, Object?>> barisJual = await d.rawQuery(
+      '''SELECT id, nomor, tanggal, nama_customer, customer_id,
+                metode, total, status
+         FROM penjualan
+         WHERE substr(tanggal, 1, 10) = ? AND dibatalkan = 0
+         ORDER BY id DESC LIMIT 50''',
+      <Object?>[tanggal],
+    );
+
+    final List<Map<String, Object?>> barisPiut = await d.rawQuery(
+      '''SELECT id, nomor, jenis, tanggal, jatuh_tempo, nama_customer,
+                customer_id, total, dibayar, sisa, status
+         FROM piutang
+         WHERE substr(tanggal, 1, 10) = ? OR substr(jatuh_tempo, 1, 10) = ?
+         ORDER BY id DESC LIMIT 50''',
+      <Object?>[tanggal, tanggal],
+    );
+
+    final List<Map<String, Object?>> barisKunj = await d.rawQuery(
+      '''SELECT id, id_customer, nama, tanggal, jam, catatan
+         FROM kunjungan
+         WHERE substr(tanggal, 1, 10) = ?
+         ORDER BY id DESC LIMIT 100''',
+      <Object?>[tanggal],
+    );
+
+    final List<Map<String, Object?>> barisProg = await d.rawQuery(
+      '''SELECT id, jenis, paket, id_customer, nama_toko,
+                nama_produk, jumlah, satuan, tanggal, catatan
+         FROM program_input
+         WHERE substr(tanggal, 1, 10) = ?
+         ORDER BY id DESC LIMIT 100''',
+      <Object?>[tanggal],
+    );
+
+    int jadwalToko = 0;
+    if (hariNama.isNotEmpty) {
+      final List<Map<String, Object?>> hitungJadwal = await d.rawQuery(
+        'SELECT COUNT(*) AS jumlah FROM toko WHERE UPPER(hari) LIKE ?',
+        <Object?>['%${hariNama.toUpperCase()}%'],
+      );
+      jadwalToko = _bulat(
+        hitungJadwal.isEmpty ? 0 : hitungJadwal.first['jumlah'],
+      );
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'tanggal': tanggal,
+      'catatan': catatan,
+      'penjualan': barisJual.map((Map<String, Object?> r) => <String, dynamic>{
+            'id': _bulat(r['id']),
+            'nomor': '${r['nomor'] ?? ''}',
+            'tanggal': '${r['tanggal'] ?? ''}',
+            'nama_customer': '${r['nama_customer'] ?? ''}',
+            'customer_id': '${r['customer_id'] ?? ''}',
+            'metode': '${r['metode'] ?? 'CASH'}',
+            'total': _angka(r['total']),
+            'total_rp': 'Rp ${_uang(r['total'])}',
+            'status': '${r['status'] ?? 'LUNAS'}',
+          }).toList(),
+      'piutang': barisPiut.map((Map<String, Object?> r) => <String, dynamic>{
+            'id': _bulat(r['id']),
+            'nomor': '${r['nomor'] ?? ''}',
+            'jenis': '${r['jenis'] ?? 'UTANG'}',
+            'tanggal': '${r['tanggal'] ?? ''}',
+            'jatuh_tempo': '${r['jatuh_tempo'] ?? ''}',
+            'nama_customer': '${r['nama_customer'] ?? ''}',
+            'sisa': _angka(r['sisa']),
+            'sisa_rp': 'Rp ${_uang(r['sisa'])}',
+            'status': '${r['status'] ?? 'BELUM'}',
+          }).toList(),
+      'kunjungan': barisKunj.map((Map<String, Object?> r) => <String, dynamic>{
+            'id': _bulat(r['id']),
+            'id_customer': '${r['id_customer'] ?? ''}',
+            'nama': '${r['nama'] ?? ''}',
+            'jam': '${r['jam'] ?? ''}',
+            'catatan': '${r['catatan'] ?? ''}',
+          }).toList(),
+      'program': barisProg.map((Map<String, Object?> r) => <String, dynamic>{
+            'id': _bulat(r['id']),
+            'jenis': '${r['jenis'] ?? ''}',
+            'paket': '${r['paket'] ?? ''}',
+            'id_customer': '${r['id_customer'] ?? ''}',
+            'nama_toko': '${r['nama_toko'] ?? ''}',
+            'nama_produk': '${r['nama_produk'] ?? ''}',
+            'jumlah': _angka(r['jumlah']),
+            'satuan': '${r['satuan'] ?? 'PACK'}',
+            'catatan': '${r['catatan'] ?? ''}',
+          }).toList(),
+      'jadwal_toko_jumlah': jadwalToko,
+    };
+  }
+
+  /// Menyimpan atau mengubah catatan/pengingat/alarm pada Kalender.
+  Future<Map<String, dynamic>> _kalenderCatatanSimpan(
+    Map<String, dynamic> data,
+  ) async {
+    final Database d = await db;
+    final int id = _bulat(data['id']);
+    final String tanggal = _teks(data['tanggal'], 16);
+    final String jam = _teks(data['jam'], 8).isEmpty
+        ? '08:00'
+        : _teks(data['jam'], 8);
+    final String judul = _teks(data['judul'], 120);
+    final String isi = _teks(data['isi'], 600);
+    final String kategori = _teks(data['kategori'], 24).isEmpty
+        ? 'PENGINGAT'
+        : _teks(data['kategori'], 24).toUpperCase();
+    final int pakaiAlarm =
+        (data['pakai_alarm'] == true || _bulat(data['pakai_alarm']) == 1)
+            ? 1
+            : 0;
+    final String ulang = _teks(data['ulang'], 16).isEmpty
+        ? 'SEKALI'
+        : _teks(data['ulang'], 16).toUpperCase();
+
+    if (tanggal.isEmpty) {
+      throw RtsKasirGalat('Tanggal catatan belum dipilih.');
+    }
+    if (judul.isEmpty) {
+      throw RtsKasirGalat('Judul catatan / pengingat wajib diisi.');
+    }
+
+    final Map<String, Object?> nilai = <String, Object?>{
+      'tanggal': tanggal,
+      'jam': jam,
+      'judul': judul,
+      'isi': isi,
+      'kategori': kategori,
+      'pakai_alarm': pakaiAlarm,
+      'ulang': ulang,
+      'sudah_bunyi': '',
+      'id_sales': idSales,
+      'nama_sales': namaSales,
+      'dibuat_pada': _waktu(),
+    };
+
+    int idHasil = id;
+    if (id > 0) {
+      await d.update(
+        'kalender_catatan',
+        nilai,
+        where: 'id = ?',
+        whereArgs: <Object?>[id],
+      );
+    } else {
+      nilai['selesai'] = 0;
+      idHasil = await d.insert('kalender_catatan', nilai);
+    }
+
+    final List<Map<String, Object?>> baru = await d.query(
+      'kalender_catatan',
+      where: 'id = ?',
+      whereArgs: <Object?>[idHasil],
+      limit: 1,
+    );
+
+    return <String, dynamic>{
+      'success': true,
+      'message': pakaiAlarm == 1
+          ? 'Catatan & alarm pengingat ($tanggal pukul $jam) tersimpan.'
+          : 'Catatan kalender ($tanggal) tersimpan.',
+      'catatan': baru.isEmpty
+          ? <String, dynamic>{'id': idHasil, ...nilai}
+          : _kalenderCatatanBentuk(baru.first),
+    };
+  }
+
+  Future<Map<String, dynamic>> _kalenderCatatanSelesai(
+    int id,
+    bool selesai,
+  ) async {
+    final Database d = await db;
+    await d.update(
+      'kalender_catatan',
+      <String, Object?>{'selesai': selesai ? 1 : 0},
+      where: 'id = ?',
+      whereArgs: <Object?>[id],
+    );
+
+    return <String, dynamic>{
+      'success': true,
+      'message': selesai
+          ? 'Catatan ditandai selesai.'
+          : 'Catatan dibuka kembali.',
+    };
+  }
+
+  Future<Map<String, dynamic>> _kalenderCatatanHapus(int id) async {
+    final Database d = await db;
+    await d.delete(
+      'kalender_catatan',
+      where: 'id = ?',
+      whereArgs: <Object?>[id],
+    );
+
+    return <String, dynamic>{
+      'success': true,
+      'message': 'Catatan kalender dihapus.',
+    };
+  }
+
+  /// Memeriksa apakah ada pengingat/alarm kalender yang waktunya sudah tiba
+  /// hari ini dan belum dibunyikan di notifikasi HP.
+  Future<Map<String, dynamic>> _kalenderAlarmCek(
+    Map<String, dynamic> data,
+  ) async {
+    final Database d = await db;
+    final DateTime kini = DateTime.now();
+    final String tanggal = _teks(data['tanggal'], 16).isEmpty
+        ? '${kini.year}-${_dua(kini.month)}-${_dua(kini.day)}'
+        : _teks(data['tanggal'], 16);
+    final String jam = _teks(data['jam'], 8).isEmpty
+        ? '${_dua(kini.hour)}:${_dua(kini.minute)}'
+        : _teks(data['jam'], 8);
+    final DateTime? tglObj = DateTime.tryParse(tanggal);
+
+    final List<Map<String, Object?>> kandidat = await d.rawQuery(
+      '''SELECT * FROM kalender_catatan
+         WHERE pakai_alarm = 1
+           AND selesai = 0
+           AND jam <= ?
+           AND sudah_bunyi <> ?
+           AND (tanggal = ? OR ulang IN ('HARIAN', 'MINGGUAN'))
+         ORDER BY jam ASC, id ASC''',
+      <Object?>[jam, tanggal, tanggal],
+    );
+
+    final List<Map<String, dynamic>> jatuh = <Map<String, dynamic>>[];
+    for (final Map<String, Object?> r in kandidat) {
+      final int id = _bulat(r['id']);
+      final String tglAsal = '${r['tanggal'] ?? ''}';
+      final String ulang = '${r['ulang'] ?? 'SEKALI'}';
+      bool cocok = tglAsal == tanggal || ulang == 'HARIAN';
+      if (!cocok && ulang == 'MINGGUAN' && tglObj != null) {
+        final DateTime? asalObj = DateTime.tryParse(tglAsal);
+        if (asalObj != null && asalObj.weekday == tglObj.weekday) {
+          cocok = true;
+        }
+      }
+      if (!cocok) continue;
+
+      await d.update(
+        'kalender_catatan',
+        <String, Object?>{'sudah_bunyi': tanggal},
+        where: 'id = ?',
+        whereArgs: <Object?>[id],
+      );
+      jatuh.add(_kalenderCatatanBentuk(r));
+    }
+
+    return <String, dynamic>{
+      'success': true,
+      'items': jatuh,
+      'jumlah': jatuh.length,
     };
   }
 }

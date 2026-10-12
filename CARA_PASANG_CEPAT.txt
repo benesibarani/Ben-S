@@ -32,16 +32,30 @@
       Penyaring Hari & Frekuensi serta bilah judul Rute Plan menampilkan
       Kuartal, Cycle, Week, dan Minggu Ganjil/Genap sesuai Kalender Kerja
       PT. Wismilak Inti Makmur.
-   4. PENANDA VERSI baru: RTS-2026-10-12-18L, pubspec 1.5.6+21.
+   4. MENU PRO BARU: "KALENDER" (KALENDER INDONESIA + TANGGAL MERAH +
+      TERHUBUNG MENU LAIN + CATATAN, PENGINGAT & ALARM DI NOTIFIKASI HP).
+      - Memakai Kalender Nasional Indonesia lengkap dengan Tanggal Merahnya
+        (Hari Minggu, Hari Libur Nasional, Cuti Bersama, serta catatan libur
+        pengguna) plus kolom Week & Cycle Kalender Kerja di sisi kiri.
+      - Terhubung langsung dengan menu-menu lain yang memakai tanggal:
+        Rute Plan & Kunjungan Peta Customer, Kasir (Penjualan), Piutang &
+        Jatuh Tempo, serta Program (Introdeal/BD) lengkap dengan titik warna
+        penanda pada tanggal dan tombol buka langsung ke masing-masing menu.
+      - Dapat membuat Catatan & Pengingat ber-Alarm (pilih tanggal, jam,
+        kategori, dan pengulangan SEKALI / HARIAN / MINGGUAN) yang otomatis
+        berbunyi dan muncul di Notifikasi Handphone (lengkap dengan tombol
+        "UJI ALARM HP").
+   5. PENANDA VERSI baru: RTS-2026-10-12-18L, pubspec 1.5.6+21.
 
  ISI PAKET PERUBAHAN (RTS_PANEL_PERUBAHAN_18L.zip)
  -------------------------------------------------
    2_APLIKASI_copy_ke_proyek/main.dart           <-- Kalender Indonesia +
-                                                     Kalender Kerja Wismilak
+                                                     Menu PRO "Kalender" & Alarm
    2_APLIKASI_copy_ke_proyek/peta.dart           <-- Kuartal/Cycle/Week
                                                      Wismilak di Peta/Rute Plan
    2_APLIKASI_copy_ke_proyek/kasir.dart          <-- penanda 18L
-   2_APLIKASI_copy_ke_proyek/kasir_lokal.dart    <-- penanda 18L
+   2_APLIKASI_copy_ke_proyek/kasir_lokal.dart    <-- Tabel kalender_catatan +
+                                                     hubung Kasir/Piutang/Rute/Program
    2_APLIKASI_copy_ke_proyek/program.dart        <-- penanda 18L
    2_APLIKASI_copy_ke_proyek/pubspec.yaml        <-- versi 1.5.6+21
    3_SKRIP_POWERSHELL/LANGKAH1_PASANG_SEMUA.ps1  <-- juru salin (18L)

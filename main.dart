@@ -1835,6 +1835,9 @@ class _DashboardPageState extends State<DashboardPage>
 
       // Sekali saat beranda dibuka: periksa apakah akun sudah berhak PRO.
       unawaited(_periksaHakPro());
+
+      // Aktifkan mesin pengingat & alarm Kalender agar muncul di Notifikasi HP.
+      RtsAlarmKalender.mulai(user: user, token: token);
     });
   }
 
@@ -1852,6 +1855,7 @@ class _DashboardPageState extends State<DashboardPage>
     if (keadaan != AppLifecycleState.resumed) return;
 
     unawaited(_periksaHakPro());
+    unawaited(RtsAlarmKalender.periksaSekarang(user: user, token: token));
   }
 
   /// Membaca pilihan lipatan menu yang tersimpan di HP.
@@ -2024,7 +2028,7 @@ class _DashboardPageState extends State<DashboardPage>
                       if (_menuProTerbuka) ...[
                         const Text(
                           'Fitur Barang Bawaan, Kasir, Piutang, Program '
-                          '(Introdeal & BD), Peta Customer, Radar Customer, '
+                          '(Introdeal & BD), Kalender, Peta Customer, Radar Customer, '
                           'Rute Plan, Printer, dan CCTV Online - tersedia untuk '
                           'akun PRO.',
                           style: TextStyle(
@@ -2372,6 +2376,12 @@ class _DashboardPageState extends State<DashboardPage>
       title: 'Program',
       subtitle: 'List customer & input program',
       icon: Icons.campaign_outlined,
+      pro: true,
+    ),
+    _MenuData(
+      title: 'Kalender',
+      subtitle: 'Tanggal merah, catatan & alarm',
+      icon: Icons.calendar_month_rounded,
       pro: true,
     ),
     _MenuData(
@@ -2824,6 +2834,15 @@ class _DashboardPageState extends State<DashboardPage>
             token: token,
             pengguna: (RtsSesi.user ?? user).toJson(),
           ),
+        ),
+      );
+      return;
+    }
+
+    if (menu == 'Kalender') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RtsKalenderPage(user: user, token: token),
         ),
       );
       return;
@@ -4519,12 +4538,23 @@ class RtsLayananNotif {
   static bool _dinyatakanGagal = false;
 
   static const String saluranId = 'rts_panel_pemberitahuan';
+  static const String saluranAlarmId = 'rts_panel_alarm_kalender';
 
   static const AndroidNotificationChannel _saluran = AndroidNotificationChannel(
     saluranId,
     'Pemberitahuan RTS Panel',
     description: 'Pengajuan baru dan hasil pemeriksaan pengajuan.',
     importance: Importance.high,
+  );
+
+  static const AndroidNotificationChannel _saluranAlarm =
+      AndroidNotificationChannel(
+    saluranAlarmId,
+    'Alarm & Pengingat Kalender RTS Panel',
+    description: 'Pengingat catatan, jadwal kunjungan, dan alarm Kalender.',
+    importance: Importance.max,
+    playSound: true,
+    enableVibration: true,
   );
 
   /// Menyiapkan saluran pemberitahuan. Aman dipanggil berkali-kali.
@@ -4544,10 +4574,11 @@ class RtsLayananNotif {
         onDidReceiveNotificationResponse: _ketuk,
       );
 
-      await _plugin
+      final AndroidFlutterLocalNotificationsPlugin? implAndroid = _plugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(_saluran);
+              AndroidFlutterLocalNotificationsPlugin>();
+      await implAndroid?.createNotificationChannel(_saluran);
+      await implAndroid?.createNotificationChannel(_saluranAlarm);
 
       _siap = true;
       return true;
@@ -4714,9 +4745,80 @@ class RtsLayananNotif {
     );
   }
 
+  /// Menampilkan pengingat / alarm Kalender dengan prioritas tertinggi
+  /// (suara + getaran + tampil di atas layar HP).
+  static Future<void> tampilkanAlarmKalender({
+    required int id,
+    required String judul,
+    required String pesan,
+  }) async {
+    if (!await siapkan()) return;
+
+    try {
+      const List<AndroidNotificationAction> aksi = <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          'buka_kalender',
+          'BUKA KALENDER',
+          showsUserInterface: true,
+          cancelNotification: true,
+        ),
+      ];
+
+      await _plugin.show(
+        80000 + (id % 10000),
+        judul,
+        pesan,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _saluranAlarm.id,
+            _saluranAlarm.name,
+            channelDescription: _saluranAlarm.description,
+            importance: Importance.max,
+            priority: Priority.max,
+            playSound: true,
+            enableVibration: true,
+            fullScreenIntent: true,
+            category: AndroidNotificationCategory.alarm,
+            icon: '@mipmap/ic_launcher',
+            styleInformation: BigTextStyleInformation(pesan),
+            actions: aksi,
+            autoCancel: true,
+          ),
+        ),
+        payload: 'kalender',
+      );
+    } catch (_) {
+      // Bila fullScreenIntent ditolak sebagian perangkat, fallback ke tampilkan biasa.
+      await tampilkan(
+        id: 80000 + (id % 10000),
+        judul: judul,
+        pesan: pesan,
+        tombol: 'BUKA KALENDER',
+        payload: 'kalender',
+      );
+    }
+  }
+
   static void _ketuk(NotificationResponse respon) {
     final String payload =
         (respon.payload ?? '').trim().toLowerCase();
+
+    if (payload == 'kalender') {
+      Future<void>.delayed(const Duration(milliseconds: 700), () {
+        final RtsUser? user = RtsSesi.user;
+        final String token = RtsSesi.token;
+
+        if (user == null || token.isEmpty) return;
+
+        rtsNavigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (_) => RtsKalenderPage(user: user, token: token),
+          ),
+        );
+      });
+
+      return;
+    }
 
     // Tombol UPDATE pada pemberitahuan pembaruan: aplikasi sudah dibuka oleh
     // Android; di sini pemeriksaan pembaruan dijalankan supaya kotak
@@ -6346,6 +6448,17 @@ class RtsWaktu {
   /// Sifat Minggu Ganjil / Genap menurut Week Wismilak.
   static String sifatMingguWismilak([DateTime? sumber]) =>
       weekWismilak(sumber).isOdd ? 'Ganjil' : 'Genap';
+
+  /// Alias waktu sekarang WIB/WITA/WIT untuk modul Kalender & Alarm.
+  static DateTime sekarangWib([DateTime? sumber]) => indonesia(sumber);
+
+  /// Tanggal lengkap Bahasa Indonesia tanpa nama hari, contoh: 12 Oktober 2026.
+  static String tanggalLengkap(DateTime waktu) =>
+      '${waktu.day} ${namaBulan(waktu)} ${waktu.year}';
+
+  /// Label Minggu Ganjil / Minggu Genap untuk Kalender Kerja Wismilak.
+  static String labelGanjilGenapWismilak([DateTime? sumber]) =>
+      'Minggu ${sifatMingguWismilak(sumber)}';
 
   /// Contoh keluaran: 27 Sep 2026, 21.14
   static String ringkas(DateTime waktu) {
@@ -17238,3 +17351,2138 @@ class _KelolaProPageState extends State<KelolaProPage> {
     );
   }
 }
+
+/* ============================================================================
+ * MENU PRO: KALENDER INDONESIA + TANGGAL MERAH + TERHUBUNG MENU LAIN +
+ * CATATAN, PENGINGAT & ALARM NOTIFIKASI HANDPHONE
+ * ========================================================================== */
+
+const Color rtsRed = Color(0xff8e1420);
+const Color rtsRedLight = Color(0xffd32f2f);
+const Color rtsGold = Color(0xffb3761b);
+const Color rtsBg = Color(0xffffffff);
+const Color rtsBorder = Color(0xffece5de);
+const Color rtsSurfaceElevated = Color(0xfff0ebe4);
+
+/// Mesin pemeriksa berkala untuk membunyikan pengingat/alarm catatan Kalender
+/// tepat waktu ke Notifikasi Handphone.
+class RtsAlarmKalender {
+  RtsAlarmKalender._();
+
+  static Timer? _timer;
+  static bool _sedangCek = false;
+
+  static void mulai({required RtsUser user, required String token}) {
+    _timer?.cancel();
+    unawaited(periksaSekarang(user: user, token: token));
+    _timer = Timer.periodic(const Duration(seconds: 20), (_) {
+      unawaited(periksaSekarang(user: user, token: token));
+    });
+  }
+
+  static String _dua(int n) => n.toString().padLeft(2, '0');
+
+  static String formatTanggalIso(DateTime dt) =>
+      '${dt.year}-${_dua(dt.month)}-${_dua(dt.day)}';
+
+  static String formatJamMenit(DateTime dt) =>
+      '${_dua(dt.hour)}:${_dua(dt.minute)}';
+
+  static Future<void> periksaSekarang({
+    RtsUser? user,
+    String? token,
+  }) async {
+    if (_sedangCek) return;
+    _sedangCek = true;
+    try {
+      final RtsUser? u = user ?? RtsSesi.user;
+      if (u != null) {
+        RtsKasirLokal.aku.aturPengguna(u.toJson());
+      }
+      final DateTime skr = RtsWaktu.sekarangWib();
+      final Map<String, dynamic> hasil = await RtsKasirLokal.aku.kirim(
+        'kalender_alarm_cek',
+        <String, dynamic>{
+          'tanggal': formatTanggalIso(skr),
+          'jam': formatJamMenit(skr),
+        },
+      );
+      final List<dynamic> daftar =
+          (hasil['alarm'] as List<dynamic>?) ?? const <dynamic>[];
+      for (final dynamic item in daftar) {
+        if (item is! Map) continue;
+        final int id = int.tryParse('${item['id'] ?? 0}') ?? 0;
+        final String judul = '${item['judul'] ?? 'Pengingat Kalender'}'.trim();
+        final String isi = '${item['isi'] ?? ''}'.trim();
+        final String jam = '${item['jam'] ?? ''}'.trim();
+        final String kat = '${item['kategori'] ?? 'PENGINGAT'}'.trim();
+        final String pesan = isi.isNotEmpty
+            ? '[$kat • $jam WIB] $isi'
+            : 'Pengingat Kalender pukul $jam WIB ($kat).';
+        await RtsLayananNotif.tampilkanAlarmKalender(
+          id: id > 0 ? id : skr.millisecondsSinceEpoch ~/ 1000,
+          judul: '⏰ Alarm Kalender: $judul',
+          pesan: pesan,
+        );
+      }
+    } catch (_) {
+      // Abaikan bila basis data belum siap.
+    } finally {
+      _sedangCek = false;
+    }
+  }
+}
+
+/// Basis data Tanggal Merah (Hari Libur Nasional & Cuti Bersama Indonesia).
+class RtsLiburIndonesia {
+  RtsLiburIndonesia._();
+
+  static const Map<String, String> _tetapTahunan = <String, String>{
+    '01-01': 'Tahun Baru Masehi',
+    '05-01': 'Hari Buruh Internasional',
+    '06-01': 'Hari Lahir Pancasila',
+    '08-17': 'Hari Kemerdekaan Republik Indonesia',
+    '12-25': 'Hari Raya Natal',
+  };
+
+  static const Map<String, String> _daftarTanggalMerah = <String, String>{
+    // 2025
+    '2025-01-01': 'Tahun Baru 2025 Masehi',
+    '2025-01-27': 'Isra Mikraj Nabi Muhammad SAW',
+    '2025-01-28': 'Cuti Bersama Tahun Baru Imlek',
+    '2025-01-29': 'Tahun Baru Imlek 2576 Kongzili',
+    '2025-03-28': 'Cuti Bersama Hari Suci Nyepi',
+    '2025-03-29': 'Hari Suci Nyepi Tahun Baru Saka 1947',
+    '2025-03-31': 'Hari Raya Idul Fitri 1446 H',
+    '2025-04-01': 'Hari Raya Idul Fitri 1446 H (Hari ke-2)',
+    '2025-04-02': 'Cuti Bersama Idul Fitri 1446 H',
+    '2025-04-03': 'Cuti Bersama Idul Fitri 1446 H',
+    '2025-04-04': 'Cuti Bersama Idul Fitri 1446 H',
+    '2025-04-07': 'Cuti Bersama Idul Fitri 1446 H',
+    '2025-04-18': 'Wafat Yesus Kristus (Jumat Agung)',
+    '2025-04-20': 'Hari Paskah (Kebangkitan Yesus Kristus)',
+    '2025-05-01': 'Hari Buruh Internasional',
+    '2025-05-12': 'Hari Raya Waisak 2569 BE',
+    '2025-05-13': 'Cuti Bersama Hari Raya Waisak',
+    '2025-05-29': 'Kenaikan Yesus Kristus',
+    '2025-05-30': 'Cuti Bersama Kenaikan Yesus Kristus',
+    '2025-06-01': 'Hari Lahir Pancasila',
+    '2025-06-06': 'Hari Raya Idul Adha 1446 H',
+    '2025-06-09': 'Cuti Bersama Idul Adha 1446 H',
+    '2025-06-27': 'Tahun Baru Islam 1447 H',
+    '2025-08-17': 'Hari Kemerdekaan Republik Indonesia ke-80',
+    '2025-08-18': 'Cuti Bersama Kemerdekaan RI',
+    '2025-09-05': 'Maulid Nabi Muhammad SAW',
+    '2025-12-25': 'Hari Raya Natal',
+    '2025-12-26': 'Cuti Bersama Hari Raya Natal',
+    // 2026
+    '2026-01-01': 'Tahun Baru 2026 Masehi',
+    '2026-01-16': 'Isra Mikraj Nabi Muhammad SAW',
+    '2026-02-16': 'Cuti Bersama Tahun Baru Imlek',
+    '2026-02-17': 'Tahun Baru Imlek 2577 Kongzili',
+    '2026-03-18': 'Cuti Bersama Hari Suci Nyepi',
+    '2026-03-19': 'Hari Suci Nyepi Tahun Baru Saka 1948',
+    '2026-03-20': 'Hari Raya Idul Fitri 1447 H',
+    '2026-03-21': 'Hari Raya Idul Fitri 1447 H (Hari ke-2)',
+    '2026-03-23': 'Cuti Bersama Idul Fitri 1447 H',
+    '2026-03-24': 'Cuti Bersama Idul Fitri 1447 H',
+    '2026-03-25': 'Cuti Bersama Idul Fitri 1447 H',
+    '2026-04-03': 'Wafat Yesus Kristus (Jumat Agung)',
+    '2026-04-05': 'Hari Paskah (Kebangkitan Yesus Kristus)',
+    '2026-05-01': 'Hari Buruh Internasional',
+    '2026-05-14': 'Kenaikan Yesus Kristus',
+    '2026-05-15': 'Cuti Bersama Kenaikan Yesus Kristus',
+    '2026-05-27': 'Hari Raya Idul Adha 1447 H',
+    '2026-05-28': 'Cuti Bersama Idul Adha 1447 H',
+    '2026-05-31': 'Hari Raya Waisak 2570 BE',
+    '2026-06-01': 'Hari Lahir Pancasila',
+    '2026-06-16': 'Tahun Baru Islam 1448 H',
+    '2026-08-17': 'Hari Kemerdekaan Republik Indonesia ke-81',
+    '2026-08-25': 'Maulid Nabi Muhammad SAW',
+    '2026-12-24': 'Cuti Bersama Hari Raya Natal',
+    '2026-12-25': 'Hari Raya Natal',
+    // 2027
+    '2027-01-01': 'Tahun Baru 2027 Masehi',
+    '2027-01-05': 'Isra Mikraj Nabi Muhammad SAW',
+    '2027-02-06': 'Tahun Baru Imlek 2578 Kongzili',
+    '2027-03-09': 'Hari Raya Idul Fitri 1448 H',
+    '2027-03-10': 'Hari Raya Idul Fitri 1448 H (Hari ke-2)',
+    '2027-03-26': 'Wafat Yesus Kristus (Jumat Agung)',
+    '2027-03-28': 'Hari Suci Nyepi & Paskah',
+    '2027-05-01': 'Hari Buruh Internasional',
+    '2027-05-06': 'Kenaikan Yesus Kristus',
+    '2027-05-17': 'Hari Raya Idul Adha 1448 H',
+    '2027-05-20': 'Hari Raya Waisak 2571 BE',
+    '2027-06-01': 'Hari Lahir Pancasila',
+    '2027-06-06': 'Tahun Baru Islam 1449 H',
+    '2027-08-15': 'Maulid Nabi Muhammad SAW',
+    '2027-08-17': 'Hari Kemerdekaan Republik Indonesia ke-82',
+    '2027-12-25': 'Hari Raya Natal',
+  };
+
+  /// Mengembalikan keterangan Tanggal Merah bila tanggal tersebut merupakan
+  /// Hari Libur Nasional / Cuti Bersama, atau `null` bila bukan.
+  static String? keteranganLibur(DateTime tgl) {
+    final String iso = RtsAlarmKalender.formatTanggalIso(tgl);
+    if (_daftarTanggalMerah.containsKey(iso)) {
+      return _daftarTanggalMerah[iso];
+    }
+    final String blnHari = iso.substring(5);
+    return _tetapTahunan[blnHari];
+  }
+
+  /// Apakah tanggal ini berwarna merah di kalender (Hari Minggu atau Libur Nasional).
+  static bool adalahTanggalMerah(DateTime tgl) {
+    if (tgl.weekday == DateTime.sunday) return true;
+    return keteranganLibur(tgl) != null;
+  }
+
+  /// Daftar seluruh Hari Libur Nasional pada bulan & tahun tertentu.
+  static List<MapEntry<DateTime, String>> daftarLiburBulan(
+    int tahun,
+    int bulan,
+  ) {
+    final int jmlHari = DateTime(tahun, bulan + 1, 0).day;
+    final List<MapEntry<DateTime, String>> hasil =
+        <MapEntry<DateTime, String>>[];
+    for (int h = 1; h <= jmlHari; h++) {
+      final DateTime d = DateTime(tahun, bulan, h);
+      final String? ket = keteranganLibur(d);
+      if (ket != null) {
+        hasil.add(MapEntry<DateTime, String>(d, ket));
+      }
+    }
+    return hasil;
+  }
+}
+
+/// Halaman Menu PRO: Kalender Indonesia + Tanggal Merah + Terhubung Menu Lain
+/// + Catatan, Pengingat & Alarm Notifikasi Handphone.
+class RtsKalenderPage extends StatefulWidget {
+  final RtsUser user;
+  final String token;
+
+  const RtsKalenderPage({
+    super.key,
+    required this.user,
+    required this.token,
+  });
+
+  @override
+  State<RtsKalenderPage> createState() => _RtsKalenderPageState();
+}
+
+class _RtsKalenderPageState extends State<RtsKalenderPage> {
+  late DateTime _bulanTampil;
+  late DateTime _tanggalPilih;
+
+  bool _memuatBulan = true;
+  bool _memuatTanggal = true;
+
+  Map<String, dynamic> _ringkasanTanggal = <String, dynamic>{};
+  List<Map<String, dynamic>> _catatanTanggal = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _catatanMendatang = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _penjualanTanggal = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _piutangTanggal = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _kunjunganTanggal = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _programTanggal = <Map<String, dynamic>>[];
+  int _jadwalTokoJumlah = 0;
+  String _hariNamaPilih = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final DateTime skr = RtsWaktu.sekarangWib();
+    _tanggalPilih = DateTime(skr.year, skr.month, skr.day);
+    _bulanTampil = DateTime(skr.year, skr.month, 1);
+    RtsKasirLokal.aku.aturPengguna(widget.user.toJson());
+    RtsAlarmKalender.mulai(user: widget.user, token: widget.token);
+    unawaited(_muatSemua());
+  }
+
+  Future<void> _muatSemua() async {
+    await Future.wait(<Future<void>>[
+      _muatDataBulan(),
+      _muatDataTanggal(),
+    ]);
+  }
+
+  Future<void> _muatDataBulan() async {
+    if (mounted) setState(() => _memuatBulan = true);
+    try {
+      RtsKasirLokal.aku.aturPengguna(widget.user.toJson());
+      final Map<String, dynamic> res = await RtsKasirLokal.aku.kirim(
+        'kalender_bulan',
+        <String, dynamic>{
+          'tahun': _bulanTampil.year,
+          'bulan': _bulanTampil.month,
+        },
+      );
+      if (!mounted) return;
+      final Map<String, dynamic> r =
+          (res['ringkasan'] is Map)
+              ? Map<String, dynamic>.from(res['ringkasan'] as Map)
+              : <String, dynamic>{};
+      final List<Map<String, dynamic>> mendatang =
+          ((res['mendatang'] as List<dynamic>?) ?? const <dynamic>[])
+              .whereType<Map>()
+              .map((Map e) => Map<String, dynamic>.from(e))
+              .toList();
+      setState(() {
+        _ringkasanTanggal = r;
+        _catatanMendatang = mendatang;
+        _memuatBulan = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _memuatBulan = false);
+    }
+  }
+
+  Future<void> _muatDataTanggal() async {
+    if (mounted) setState(() => _memuatTanggal = true);
+    try {
+      RtsKasirLokal.aku.aturPengguna(widget.user.toJson());
+      final String iso = RtsAlarmKalender.formatTanggalIso(_tanggalPilih);
+      final Map<String, dynamic> res = await RtsKasirLokal.aku.kirim(
+        'kalender_tanggal',
+        <String, dynamic>{'tanggal': iso},
+      );
+      if (!mounted) return;
+      List<Map<String, dynamic>> ubahList(dynamic v) {
+        if (v is! List) return <Map<String, dynamic>>[];
+        return v
+            .whereType<Map>()
+            .map((Map e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+
+      setState(() {
+        _catatanTanggal = ubahList(res['catatan']);
+        _penjualanTanggal = ubahList(res['penjualan']);
+        _piutangTanggal = ubahList(res['piutang']);
+        _kunjunganTanggal = ubahList(res['kunjungan']);
+        _programTanggal = ubahList(res['program']);
+        _jadwalTokoJumlah =
+            int.tryParse('${res['jadwal_toko_jumlah'] ?? 0}') ?? 0;
+        _hariNamaPilih = '${res['hari_nama'] ?? ''}'.trim();
+        _memuatTanggal = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _memuatTanggal = false);
+    }
+  }
+
+  void _geserBulan(int selisih) {
+    final DateTime baru =
+        DateTime(_bulanTampil.year, _bulanTampil.month + selisih, 1);
+    setState(() {
+      _bulanTampil = baru;
+      if (_tanggalPilih.year != baru.year ||
+          _tanggalPilih.month != baru.month) {
+        _tanggalPilih = DateTime(baru.year, baru.month, 1);
+      }
+    });
+    unawaited(_muatSemua());
+  }
+
+  void _keHariIni() {
+    final DateTime skr = RtsWaktu.sekarangWib();
+    setState(() {
+      _tanggalPilih = DateTime(skr.year, skr.month, skr.day);
+      _bulanTampil = DateTime(skr.year, skr.month, 1);
+    });
+    unawaited(_muatSemua());
+  }
+
+  void _pilihTanggal(DateTime tgl) {
+    final bool bedaBulan =
+        tgl.year != _bulanTampil.year || tgl.month != _bulanTampil.month;
+    setState(() {
+      _tanggalPilih = DateTime(tgl.year, tgl.month, tgl.day);
+      if (bedaBulan) {
+        _bulanTampil = DateTime(tgl.year, tgl.month, 1);
+      }
+    });
+    if (bedaBulan) {
+      unawaited(_muatSemua());
+    } else {
+      unawaited(_muatDataTanggal());
+    }
+  }
+
+  String _formatRupiah(num nilai) {
+    final int bulat = nilai.round();
+    final String s = bulat.abs().toString();
+    final StringBuffer sb = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) sb.write('.');
+      sb.write(s[i]);
+    }
+    return '${bulat < 0 ? '-Rp' : 'Rp'}${sb.toString()}';
+  }
+
+  Color _warnaKategori(String kategori) {
+    switch (kategori.toUpperCase()) {
+      case 'KUNJUNGAN':
+        return rtsGreen;
+      case 'TAGIHAN':
+        return rtsAmber;
+      case 'PROGRAM':
+        return const Color(0xff1b4d8f);
+      case 'LIBUR':
+        return rtsRedLight;
+      case 'PRIBADI':
+        return const Color(0xff6b21a8);
+      default:
+        return rtsMaroon;
+    }
+  }
+
+  Future<void> _bukaDialogCatatan({Map<String, dynamic>? awal}) async {
+    final TextEditingController cJudul = TextEditingController(
+      text: '${awal?['judul'] ?? ''}',
+    );
+    final TextEditingController cIsi = TextEditingController(
+      text: '${awal?['isi'] ?? ''}',
+    );
+    DateTime tglCatatan = _tanggalPilih;
+    if (awal != null && '${awal['tanggal'] ?? ''}'.length >= 10) {
+      final DateTime? parsed = DateTime.tryParse('${awal['tanggal']}');
+      if (parsed != null) tglCatatan = parsed;
+    }
+    String jamPilih = '${awal?['jam'] ?? '08:00'}'.trim();
+    if (!RegExp(r'^\d{2}:\d{2}$').hasMatch(jamPilih)) {
+      jamPilih = '08:00';
+    }
+    String kategori = '${awal?['kategori'] ?? 'PENGINGAT'}'.trim().toUpperCase();
+    if (kategori.isEmpty) kategori = 'PENGINGAT';
+    bool pakaiAlarm = awal == null
+        ? true
+        : ('${awal['pakai_alarm'] ?? 1}' == '1' ||
+            awal['pakai_alarm'] == true);
+    String ulang = '${awal?['ulang'] ?? 'SEKALI'}'.trim().toUpperCase();
+    if (ulang.isEmpty) ulang = 'SEKALI';
+
+    const List<String> daftarKategori = <String>[
+      'PENGINGAT',
+      'KUNJUNGAN',
+      'TAGIHAN',
+      'PROGRAM',
+      'PRIBADI',
+      'LIBUR',
+    ];
+    const List<String> daftarUlang = <String>[
+      'SEKALI',
+      'HARIAN',
+      'MINGGUAN',
+    ];
+    const List<String> jamCepat = <String>[
+      '07:00',
+      '08:00',
+      '09:00',
+      '12:00',
+      '15:00',
+      '19:00',
+    ];
+
+    final bool? simpan = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: rtsSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext ctx, StateSetter setModal) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 18,
+                right: 18,
+                top: 16,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        const Icon(
+                          Icons.alarm_add_rounded,
+                          color: rtsGold,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            awal == null
+                                ? 'Buat Catatan & Alarm Kalender'
+                                : 'Ubah Catatan & Alarm Kalender',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: rtsTextPrimary,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          icon: const Icon(Icons.close, color: rtsTextSecondary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: rtsBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: rtsBorder),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          const Icon(
+                            Icons.event_rounded,
+                            color: rtsRedLight,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${RtsWaktu.namaHari(tglCatatan)}, '
+                              '${RtsWaktu.tanggalLengkap(tglCatatan)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                color: rtsTextPrimary,
+                              ),
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () async {
+                              final DateTime? pilih = await showDatePicker(
+                                context: ctx,
+                                initialDate: tglCatatan,
+                                firstDate: DateTime(2024, 1, 1),
+                                lastDate: DateTime(2030, 12, 31),
+                              );
+                              if (pilih != null) {
+                                setModal(() => tglCatatan = pilih);
+                              }
+                            },
+                            icon: const Icon(Icons.edit_calendar, size: 16),
+                            label: const Text('Ganti Tgl'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: cJudul,
+                      style: const TextStyle(color: rtsTextPrimary),
+                      decoration: const InputDecoration(
+                        labelText: 'Judul Catatan / Pengingat *',
+                        hintText:
+                            'Contoh: Tagih Piutang Toko Berkah / Kunjungan Wajib',
+                        prefixIcon: Icon(Icons.title_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: cIsi,
+                      maxLines: 3,
+                      style: const TextStyle(color: rtsTextPrimary),
+                      decoration: const InputDecoration(
+                        labelText: 'Rincian Catatan (Opsional)',
+                        hintText:
+                            'Tulis detail barang, nominal tagihan, atau pesan pengingat...',
+                        prefixIcon: Icon(Icons.notes_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Kategori Catatan:',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: rtsTextSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: daftarKategori.map((String k) {
+                        final bool aktif = kategori == k;
+                        final Color w = _warnaKategori(k);
+                        return ChoiceChip(
+                          label: Text(
+                            k == 'LIBUR' ? 'LIBUR (TGL MERAH)' : k,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: aktif ? Colors.white : rtsTextPrimary,
+                            ),
+                          ),
+                          selected: aktif,
+                          selectedColor: w,
+                          backgroundColor: rtsBg,
+                          onSelected: (_) => setModal(() => kategori = k),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      activeThumbColor: rtsGold,
+                      title: const Text(
+                        'Bunyikan Alarm di Notifikasi Handphone',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                          color: rtsTextPrimary,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Muncul di layar atas HP lengkap dengan suara & getar pada jam yang ditentukan.',
+                        style: TextStyle(fontSize: 11.5, color: rtsTextSecondary),
+                      ),
+                      value: pakaiAlarm,
+                      onChanged: (bool v) => setModal(() => pakaiAlarm = v),
+                    ),
+                    if (pakaiAlarm) ...<Widget>[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: rtsBg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: rtsGold.withValues(alpha: 0.45),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Row(
+                              children: <Widget>[
+                                const Icon(
+                                  Icons.notifications_active_rounded,
+                                  color: rtsGold,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Jam Alarm: $jamPilih WIB',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w900,
+                                    color: rtsGold,
+                                  ),
+                                ),
+                                const Spacer(),
+                                OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final List<String> p = jamPilih.split(':');
+                                    final TimeOfDay awalJam = TimeOfDay(
+                                      hour: int.tryParse(p.first) ?? 8,
+                                      minute: p.length > 1
+                                          ? (int.tryParse(p[1]) ?? 0)
+                                          : 0,
+                                    );
+                                    final TimeOfDay? pilih =
+                                        await showTimePicker(
+                                      context: ctx,
+                                      initialTime: awalJam,
+                                    );
+                                    if (pilih != null) {
+                                      setModal(() {
+                                        jamPilih =
+                                            '${pilih.hour.toString().padLeft(2, '0')}:'
+                                            '${pilih.minute.toString().padLeft(2, '0')}';
+                                      });
+                                    }
+                                  },
+                                  icon: const Icon(Icons.access_time, size: 16),
+                                  label: const Text('Pilih Jam'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: jamCepat.map((String j) {
+                                final bool sama = jamPilih == j;
+                                return InkWell(
+                                  onTap: () => setModal(() => jamPilih = j),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: sama
+                                          ? rtsGold
+                                          : rtsSurfaceElevated,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      j,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: sama
+                                            ? Colors.black
+                                            : rtsTextPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Pengulangan Alarm:',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: rtsTextSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              children: daftarUlang.map((String u) {
+                                final bool aktif = ulang == u;
+                                return ChoiceChip(
+                                  label: Text(
+                                    u,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: aktif
+                                          ? Colors.black
+                                          : rtsTextPrimary,
+                                    ),
+                                  ),
+                                  selected: aktif,
+                                  selectedColor: rtsGold,
+                                  backgroundColor: rtsSurfaceElevated,
+                                  onSelected: (_) =>
+                                      setModal(() => ulang = u),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              await RtsLayananNotif.mintaIzin();
+                              final String jdl = cJudul.text.trim().isEmpty
+                                  ? 'Pengingat Kalender RTS Panel'
+                                  : cJudul.text.trim();
+                              final String psn = cIsi.text.trim().isEmpty
+                                  ? 'Alarm Kalender [$kategori] pukul $jamPilih WIB.'
+                                  : cIsi.text.trim();
+                              await RtsLayananNotif.tampilkanAlarmKalender(
+                                id: DateTime.now().millisecondsSinceEpoch ~/
+                                    1000,
+                                judul: '⏰ Alarm Kalender: $jdl',
+                                pesan: psn,
+                              );
+                              if (ctx.mounted) {
+                                rtsShowMessage(
+                                  ctx,
+                                  'Alarm diuji! Periksa Notifikasi di bagian atas layar HP Anda.',
+                                  success: true,
+                                );
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.volume_up_rounded,
+                              size: 18,
+                            ),
+                            label: const Text('UJI ALARM HP'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: rtsRed,
+                            ),
+                            onPressed: () async {
+                              if (cJudul.text.trim().isEmpty) {
+                                rtsShowMessage(
+                                  ctx,
+                                  'Judul catatan / pengingat wajib diisi.',
+                                );
+                                return;
+                              }
+                              if (pakaiAlarm) {
+                                await RtsLayananNotif.mintaIzin();
+                              }
+                              await RtsKasirLokal.aku.kirim(
+                                'kalender_catatan_simpan',
+                                <String, dynamic>{
+                                  if (awal != null && awal['id'] != null)
+                                    'id': awal['id'],
+                                  'tanggal': RtsAlarmKalender.formatTanggalIso(
+                                    tglCatatan,
+                                  ),
+                                  'jam': jamPilih,
+                                  'judul': cJudul.text.trim(),
+                                  'isi': cIsi.text.trim(),
+                                  'kategori': kategori,
+                                  'pakai_alarm': pakaiAlarm ? 1 : 0,
+                                  'ulang': ulang,
+                                },
+                              );
+                              if (ctx.mounted) Navigator.pop(ctx, true);
+                            },
+                            icon: const Icon(Icons.save_rounded, size: 18),
+                            label: const Text('SIMPAN'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (simpan == true && mounted) {
+      _pilihTanggal(tglCatatan);
+      await _muatSemua();
+      await RtsAlarmKalender.periksaSekarang(
+        user: widget.user,
+        token: widget.token,
+      );
+      if (mounted) {
+        rtsShowMessage(
+          context,
+          'Catatan & pengingat Kalender berhasil disimpan.',
+          success: true,
+        );
+      }
+    }
+  }
+
+  Future<void> _ubahSelesaiCatatan(Map<String, dynamic> item) async {
+    final int id = int.tryParse('${item['id'] ?? 0}') ?? 0;
+    if (id <= 0) return;
+    final bool selesaiLama = '${item['selesai'] ?? 0}' == '1';
+    await RtsKasirLokal.aku.kirim(
+      'kalender_catatan_selesai',
+      <String, dynamic>{
+        'id': id,
+        'selesai': !selesaiLama,
+      },
+    );
+    await _muatSemua();
+  }
+
+  Future<void> _hapusCatatan(Map<String, dynamic> item) async {
+    final int id = int.tryParse('${item['id'] ?? 0}') ?? 0;
+    if (id <= 0) return;
+    await RtsKasirLokal.aku.kirim(
+      'kalender_catatan_hapus',
+      <String, dynamic>{'id': id},
+    );
+    await _muatSemua();
+    if (mounted) {
+      rtsShowMessage(context, 'Catatan dihapus dari Kalender.', success: true);
+    }
+  }
+
+  Future<void> _bunyikanCatatanSekarang(Map<String, dynamic> item) async {
+    await RtsLayananNotif.mintaIzin();
+    final int id = int.tryParse('${item['id'] ?? 1}') ?? 1;
+    final String judul = '${item['judul'] ?? 'Pengingat Kalender'}'.trim();
+    final String isi = '${item['isi'] ?? ''}'.trim();
+    final String jam = '${item['jam'] ?? '08:00'}'.trim();
+    final String kat = '${item['kategori'] ?? 'PENGINGAT'}'.trim();
+    await RtsLayananNotif.tampilkanAlarmKalender(
+      id: id,
+      judul: '⏰ Alarm Kalender: $judul',
+      pesan: isi.isNotEmpty
+          ? '[$kat • $jam WIB] $isi'
+          : 'Pengingat Kalender [$kat] pukul $jam WIB.',
+    );
+    if (mounted) {
+      rtsShowMessage(
+        context,
+        'Alarm "$judul" dikirim ke Notifikasi Handphone!',
+        success: true,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final DateTime skr = RtsWaktu.sekarangWib();
+    final String isoPilih = RtsAlarmKalender.formatTanggalIso(_tanggalPilih);
+    final String? infoLiburPilih =
+        RtsLiburIndonesia.keteranganLibur(_tanggalPilih);
+    final bool tanggalMerahPilih =
+        RtsLiburIndonesia.adalahTanggalMerah(_tanggalPilih) ||
+            _catatanTanggal.any(
+              (Map<String, dynamic> c) =>
+                  '${c['kategori'] ?? ''}'.toUpperCase() == 'LIBUR',
+            );
+
+    final int weekWismilak = RtsWaktu.weekWismilak(_tanggalPilih);
+    final int cycleWismilak = RtsWaktu.cycleWismilak(_tanggalPilih);
+    final int kuartalWismilak = RtsWaktu.kuartalWismilak(_tanggalPilih);
+    final String ganjilGenap = RtsWaktu.labelGanjilGenapWismilak(_tanggalPilih);
+    final int sisaHk = RtsWaktu.sisaHkCycleWismilak(_tanggalPilih);
+    final int hkKe = RtsWaktu.hkKeDalamCycleWismilak(_tanggalPilih);
+
+    final List<MapEntry<DateTime, String>> liburBulanIni =
+        RtsLiburIndonesia.daftarLiburBulan(
+      _bulanTampil.year,
+      _bulanTampil.month,
+    );
+
+    return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: rtsRed,
+        foregroundColor: Colors.white,
+        onPressed: () => _bukaDialogCatatan(),
+        icon: const Icon(Icons.add_alarm_rounded),
+        label: const Text(
+          'CATATAN / ALARM',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+      body: Stack(
+        children: <Widget>[
+          const RtsBackground(overlayOpacity: 0.92),
+          SafeArea(
+            child: Column(
+              children: <Widget>[
+                _bangunHeader(skr),
+                Expanded(
+                  child: RefreshIndicator(
+                    color: rtsRed,
+                    onRefresh: _muatSemua,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(14, 6, 14, 96),
+                      children: <Widget>[
+                        _bangunKartuInfoTanggalPilih(
+                          isoPilih: isoPilih,
+                          infoLibur: infoLiburPilih,
+                          tanggalMerah: tanggalMerahPilih,
+                          kuartal: kuartalWismilak,
+                          cycle: cycleWismilak,
+                          week: weekWismilak,
+                          ganjilGenap: ganjilGenap,
+                          sisaHk: sisaHk,
+                          hkKe: hkKe,
+                        ),
+                        const SizedBox(height: 12),
+                        _bangunGridKalenderBulan(skr),
+                        const SizedBox(height: 10),
+                        _bangunLegendaKalender(),
+                        if (liburBulanIni.isNotEmpty) ...<Widget>[
+                          const SizedBox(height: 12),
+                          _bangunDaftarLiburBulanIni(liburBulanIni),
+                        ],
+                        const SizedBox(height: 14),
+                        _bangunBagianCatatanTanggal(),
+                        const SizedBox(height: 14),
+                        _bangunBagianTerhubungMenuLain(),
+                        if (_catatanMendatang.isNotEmpty) ...<Widget>[
+                          const SizedBox(height: 14),
+                          _bangunBagianAlarmMendatang(),
+                        ],
+                        const SizedBox(height: 16),
+                        const RtsIklanAsli(),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bangunHeader(DateTime skr) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 12, 4),
+      child: Row(
+        children: <Widget>[
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back_rounded, color: rtsTextPrimary),
+          ),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Kalender Indonesia & Alarm',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    color: rtsTextPrimary,
+                  ),
+                ),
+                Text(
+                  'Tanggal merah, terhubung Kasir/Piutang/Rute/Program & Alarm HP',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: rtsTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: Size.zero,
+            ),
+            onPressed: _keHariIni,
+            icon: const Icon(Icons.today_rounded, size: 15, color: rtsMaroon),
+            label: const Text(
+              'HARI INI',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                color: rtsMaroon,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bangunKartuInfoTanggalPilih({
+    required String isoPilih,
+    required String? infoLibur,
+    required bool tanggalMerah,
+    required int kuartal,
+    required int cycle,
+    required int week,
+    required String ganjilGenap,
+    required int sisaHk,
+    required int hkKe,
+  }) {
+    final bool adalahMinggu = _tanggalPilih.weekday == DateTime.sunday;
+    final String labelMerah = infoLibur ??
+        (adalahMinggu
+            ? 'Hari Minggu (Libur Akhir Pekan)'
+            : 'Catatan Libur Pengguna');
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: tanggalMerah
+              ? const <Color>[Color(0xff5b1118), Color(0xff26090d)]
+              : const <Color>[Color(0xff1e293b), Color(0xff0f172a)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: tanggalMerah
+              ? rtsRedLight.withValues(alpha: 0.7)
+              : rtsGold.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: tanggalMerah ? rtsRed : rtsGold,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  tanggalMerah ? 'TANGGAL MERAH' : 'HARI KERJA',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w900,
+                    color: tanggalMerah ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${RtsWaktu.namaHari(_tanggalPilih)}, '
+                  '${RtsWaktu.tanggalLengkap(_tanggalPilih)}',
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
+                    color: tanggalMerah ? const Color(0xffffb4ab) : Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (tanggalMerah) ...<Widget>[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.28),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: rtsRedLight.withValues(alpha: 0.45)),
+              ),
+              child: Row(
+                children: <Widget>[
+                  const Icon(
+                    Icons.flag_rounded,
+                    color: Color(0xffff8a80),
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      labelMerah,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xffffcdd2),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: <Widget>[
+              _lencanaKecil('Kuartal $kuartal', const Color(0xff93c5fd)),
+              _lencanaKecil('Cycle $cycle', rtsGold),
+              _lencanaKecil('Week $week', const Color(0xff86efac)),
+              _lencanaKecil(ganjilGenap, const Color(0xfffdba74)),
+              _lencanaKecil(
+                'Sisa $sisaHk HK (HK ke-$hkKe/24 Cycle $cycle)',
+                const Color(0xfffde047),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _lencanaKecil(String teks, Color warna) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: warna.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: warna.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        teks,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: warna,
+        ),
+      ),
+    );
+  }
+
+  Widget _bangunGridKalenderBulan(DateTime skr) {
+    const List<String> namaBulan = <String>[
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+    const List<String> labelHari = <String>[
+      'MIN',
+      'SEN',
+      'SEL',
+      'RAB',
+      'KAM',
+      'JUM',
+      'SAB',
+    ];
+
+    final int tahun = _bulanTampil.year;
+    final int bulan = _bulanTampil.month;
+    final DateTime awalBulan = DateTime(tahun, bulan, 1);
+    final int jmlHari = DateTime(tahun, bulan + 1, 0).day;
+    // Kolom ke-0 = Minggu (weekday == 7 -> offset 0, Senin == 1 -> offset 1, dst.)
+    final int offsetAwal = awalBulan.weekday % 7;
+    final int totalSel = ((offsetAwal + jmlHari + 6) ~/ 7) * 7;
+    final int jmlBaris = totalSel ~/ 7;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: rtsSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: rtsBorder),
+      ),
+      child: Column(
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              IconButton(
+                onPressed: () => _geserBulan(-1),
+                icon: const Icon(Icons.chevron_left_rounded),
+                tooltip: 'Bulan Sebelumnya',
+              ),
+              Expanded(
+                child: Column(
+                  children: <Widget>[
+                    Text(
+                      '${namaBulan[bulan - 1]} $tahun',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: rtsTextPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Kalender Nasional Indonesia & Kalender Kerja',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: rtsTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => _geserBulan(1),
+                icon: const Icon(Icons.chevron_right_rounded),
+                tooltip: 'Bulan Berikutnya',
+              ),
+            ],
+          ),
+          const Divider(height: 14, color: rtsBorder),
+          Row(
+            children: <Widget>[
+              const SizedBox(
+                width: 38,
+                child: Text(
+                  'WK',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: rtsGold,
+                  ),
+                ),
+              ),
+              ...List<Widget>.generate(7, (int idx) {
+                final bool minggu = idx == 0;
+                return Expanded(
+                  child: Text(
+                    labelHari[idx],
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: minggu ? rtsRedLight : rtsTextSecondary,
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...List<Widget>.generate(jmlBaris, (int baris) {
+            // Tentukan tanggal sampel pada baris ini untuk menghitung Week/Cycle Wismilak
+            DateTime sampelMinggu = DateTime(tahun, bulan, 1);
+            for (int k = 0; k < 7; k++) {
+              final int nomor = baris * 7 + k - offsetAwal + 1;
+              if (nomor >= 1 && nomor <= jmlHari) {
+                sampelMinggu = DateTime(tahun, bulan, nomor);
+                if (sampelMinggu.weekday == DateTime.monday) break;
+              }
+            }
+            final int wk = RtsWaktu.weekWismilak(sampelMinggu);
+            final int cy = RtsWaktu.cycleWismilak(sampelMinggu);
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 38,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    margin: const EdgeInsets.only(right: 2),
+                    decoration: BoxDecoration(
+                      color: rtsBg,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: rtsBorder),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          'W$wk',
+                          style: const TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w900,
+                            color: rtsGold,
+                          ),
+                        ),
+                        Text(
+                          'C$cy',
+                          style: const TextStyle(
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w700,
+                            color: rtsTextSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...List<Widget>.generate(7, (int kol) {
+                    final int nomor = baris * 7 + kol - offsetAwal + 1;
+                    if (nomor < 1 || nomor > jmlHari) {
+                      return const Expanded(child: SizedBox(height: 44));
+                    }
+                    final DateTime d = DateTime(tahun, bulan, nomor);
+                    final String iso = RtsAlarmKalender.formatTanggalIso(d);
+                    final Map<String, dynamic>? info =
+                        _ringkasanTanggal[iso] is Map
+                            ? Map<String, dynamic>.from(
+                                _ringkasanTanggal[iso] as Map,
+                              )
+                            : null;
+                    final bool adalahHariIni = d.year == skr.year &&
+                        d.month == skr.month &&
+                        d.day == skr.day;
+                    final bool dipilih = d.year == _tanggalPilih.year &&
+                        d.month == _tanggalPilih.month &&
+                        d.day == _tanggalPilih.day;
+                    final String? liburNasional =
+                        RtsLiburIndonesia.keteranganLibur(d);
+                    final bool liburCatatan =
+                        (int.tryParse('${info?['libur_catatan'] ?? 0}') ?? 0) >
+                            0;
+                    final bool tglMerah = d.weekday == DateTime.sunday ||
+                        liburNasional != null ||
+                        liburCatatan;
+
+                    final int jmlCatatan =
+                        int.tryParse('${info?['catatan'] ?? 0}') ?? 0;
+                    final int jmlKasir =
+                        int.tryParse('${info?['penjualan'] ?? 0}') ?? 0;
+                    final int jmlPiutang =
+                        int.tryParse('${info?['piutang'] ?? 0}') ?? 0;
+                    final int jmlKunjungan =
+                        int.tryParse('${info?['kunjungan'] ?? 0}') ?? 0;
+                    final int jmlProgram =
+                        int.tryParse('${info?['program'] ?? 0}') ?? 0;
+
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => _pilihTanggal(d),
+                        child: Container(
+                          height: 46,
+                          margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                          decoration: BoxDecoration(
+                            color: dipilih
+                                ? (tglMerah ? rtsRedLight : rtsMaroon)
+                                : adalahHariIni
+                                    ? rtsSurfaceElevated
+                                    : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: dipilih
+                                  ? rtsMaroonDark
+                                  : adalahHariIni
+                                      ? rtsGold
+                                      : (liburNasional != null
+                                          ? rtsRedLight.withValues(alpha: 0.45)
+                                          : Colors.transparent),
+                              width: dipilih || adalahHariIni ? 1.4 : 1,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              Text(
+                                '$nomor',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: dipilih ||
+                                          adalahHariIni ||
+                                          tglMerah
+                                      ? FontWeight.w900
+                                      : FontWeight.w700,
+                                  color: dipilih
+                                      ? Colors.white
+                                      : tglMerah
+                                          ? rtsRedLight
+                                          : rtsTextPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Wrap(
+                                spacing: 2,
+                                children: <Widget>[
+                                  if (liburNasional != null || liburCatatan)
+                                    _titikWarna(
+                                      dipilih ? Colors.white : rtsRedLight,
+                                    ),
+                                  if (jmlCatatan > 0)
+                                    _titikWarna(
+                                      dipilih
+                                          ? const Color(0xfffde047)
+                                          : rtsGold,
+                                    ),
+                                  if (jmlKasir > 0 || jmlKunjungan > 0)
+                                    _titikWarna(
+                                      dipilih
+                                          ? const Color(0xff86efac)
+                                          : rtsGreen,
+                                    ),
+                                  if (jmlPiutang > 0)
+                                    _titikWarna(
+                                      dipilih
+                                          ? const Color(0xfffdba74)
+                                          : rtsAmber,
+                                    ),
+                                  if (jmlProgram > 0)
+                                    _titikWarna(
+                                      dipilih
+                                          ? const Color(0xff93c5fd)
+                                          : const Color(0xff1b4d8f),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            );
+          }),
+          if (_memuatBulan)
+            const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _titikWarna(Color warna) {
+    return Container(
+      width: 5,
+      height: 5,
+      decoration: BoxDecoration(
+        color: warna,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+
+  Widget _bangunLegendaKalender() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: rtsSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: rtsBorder),
+      ),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 6,
+        children: <Widget>[
+          _itemLegenda(const Color(0xffff5252), 'Tanggal Merah / Libur'),
+          _itemLegenda(rtsGold, 'Catatan & Alarm HP'),
+          _itemLegenda(rtsGreen, 'Kasir / Kunjungan'),
+          _itemLegenda(rtsAmber, 'Piutang / Jatuh Tempo'),
+          _itemLegenda(const Color(0xff60a5fa), 'Program'),
+        ],
+      ),
+    );
+  }
+
+  Widget _itemLegenda(Color w, String teks) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        _titikWarna(w),
+        const SizedBox(width: 5),
+        Text(
+          teks,
+          style: const TextStyle(
+            fontSize: 11,
+            color: rtsTextSecondary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _bangunDaftarLiburBulanIni(
+    List<MapEntry<DateTime, String>> daftarLibur,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: rtsSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: rtsRedLight.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Row(
+            children: <Widget>[
+              Icon(Icons.event_busy_rounded, color: rtsRedLight, size: 18),
+              SizedBox(width: 6),
+              Text(
+                'Tanggal Merah & Libur Nasional Bulan Ini',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: rtsRedLight,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...daftarLibur.map((MapEntry<DateTime, String> e) {
+            return InkWell(
+              onTap: () => _pilihTanggal(e.key),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      width: 30,
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      decoration: BoxDecoration(
+                        color: rtsRedLight.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: rtsRedLight),
+                      ),
+                      child: Text(
+                        '${e.key.day}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w900,
+                          color: rtsRedLight,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${RtsWaktu.namaHari(e.key)} — ${e.value}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: rtsTextPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _bangunBagianCatatanTanggal() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: rtsSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: rtsGold.withValues(alpha: 0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(
+                Icons.notifications_active_rounded,
+                color: rtsGold,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Catatan & Pengingat Alarm (${_catatanTanggal.length})',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: rtsTextPrimary,
+                  ),
+                ),
+              ),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: rtsRed,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: Size.zero,
+                ),
+                onPressed: () => _bukaDialogCatatan(),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text(
+                  'TAMBAH',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_catatanTanggal.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: rtsBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: rtsBorder),
+              ),
+              child: const Text(
+                'Belum ada catatan atau pengingat alarm pada tanggal ini. '
+                'Tekan tombol + TAMBAH untuk membuat catatan atau alarm yang muncul di Notifikasi HP.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: rtsTextSecondary,
+                  height: 1.4,
+                ),
+              ),
+            )
+          else
+            ..._catatanTanggal.map((Map<String, dynamic> item) {
+              final bool selesai = '${item['selesai'] ?? 0}' == '1';
+              final bool pakaiAlarm = '${item['pakai_alarm'] ?? 1}' == '1';
+              final String kat = '${item['kategori'] ?? 'PENGINGAT'}';
+              final Color wKat = _warnaKategori(kat);
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: rtsBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selesai
+                        ? rtsBorder
+                        : wKat.withValues(alpha: 0.55),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        InkWell(
+                          onTap: () => _ubahSelesaiCatatan(item),
+                          child: Icon(
+                            selesai
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                            color: selesai ? rtsGreen : rtsGold,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: wKat.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            kat,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: wKat,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        if (pakaiAlarm)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: rtsGold.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                const Icon(
+                                  Icons.alarm_on_rounded,
+                                  size: 12,
+                                  color: rtsGold,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${item['jam'] ?? '08:00'} • ${item['ulang'] ?? 'SEKALI'}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    color: rtsGold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const Spacer(),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'Bunyikan di Notifikasi HP sekarang',
+                          onPressed: () => _bunyikanCatatanSekarang(item),
+                          icon: const Icon(
+                            Icons.notifications_active_outlined,
+                            color: rtsGold,
+                            size: 18,
+                          ),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'Ubah Catatan',
+                          onPressed: () => _bukaDialogCatatan(awal: item),
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            color: rtsTextSecondary,
+                            size: 18,
+                          ),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          tooltip: 'Hapus Catatan',
+                          onPressed: () => _hapusCatatan(item),
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: rtsRedLight,
+                            size: 18,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 30),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            '${item['judul'] ?? ''}',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w900,
+                              color: selesai
+                                  ? rtsTextSecondary
+                                  : rtsTextPrimary,
+                              decoration: selesai
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                            ),
+                          ),
+                          if ('${item['isi'] ?? ''}'.trim().isNotEmpty) ...<Widget>[
+                            const SizedBox(height: 3),
+                            Text(
+                              '${item['isi']}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: rtsTextSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  Widget _bangunBagianTerhubungMenuLain() {
+    num totalKasir = 0;
+    for (final Map<String, dynamic> p in _penjualanTanggal) {
+      totalKasir += num.tryParse('${p['total'] ?? 0}') ?? 0;
+    }
+    num totalSisaPiutang = 0;
+    for (final Map<String, dynamic> p in _piutangTanggal) {
+      totalSisaPiutang += num.tryParse('${p['sisa'] ?? 0}') ?? 0;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: rtsSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: rtsBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.hub_rounded, color: rtsGreen, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Terhubung Menu Lain (${RtsWaktu.tanggalLengkap(_tanggalPilih)})',
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w900,
+                    color: rtsTextPrimary,
+                  ),
+                ),
+              ),
+              if (_memuatTanggal)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // 1. Rute Plan & Peta Customer
+          _kartuHubungMenu(
+            ikon: Icons.route_rounded,
+            warna: rtsGreen,
+            judul: 'Rute Plan & Kunjungan Peta Customer',
+            ringkasan:
+                'Jadwal Hari $_hariNamaPilih: $_jadwalTokoJumlah toko • '
+                'Dikunjungi pada tanggal ini: ${_kunjunganTanggal.length} toko',
+            rincian: _kunjunganTanggal
+                .take(5)
+                .map(
+                  (Map<String, dynamic> k) =>
+                      '• ${k['nama_toko'] ?? k['id_toko']} (${('${k['waktu'] ?? ''}').length >= 16 ? ('${k['waktu']}').substring(11, 16) : 'Dikunjungi'})',
+                )
+                .toList(),
+            labelTombol: 'BUKA RUTE PLAN',
+            onTapTombol: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => RtsRutePage(
+                    baseUrl: RtsConfig.baseUrl,
+                    token: widget.token,
+                    pengguna: widget.user.toJson(),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          // 2. Kasir (Penjualan)
+          _kartuHubungMenu(
+            ikon: Icons.point_of_sale_rounded,
+            warna: rtsGold,
+            judul: 'Kasir (Penjualan Tanggal Ini)',
+            ringkasan:
+                '${_penjualanTanggal.length} nota transaksi • Total ${_formatRupiah(totalKasir)}',
+            rincian: _penjualanTanggal
+                .take(5)
+                .map(
+                  (Map<String, dynamic> p) =>
+                      '• ${p['no_nota'] ?? '-'} — ${p['nama_pembeli'] ?? 'Umum'}: '
+                      '${_formatRupiah(num.tryParse('${p['total'] ?? 0}') ?? 0)}',
+                )
+                .toList(),
+            labelTombol: 'BUKA KASIR',
+            onTapTombol: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => RtsKasirPage(
+                    baseUrl: RtsConfig.baseUrl,
+                    token: widget.token,
+                    pengguna: widget.user.toJson(),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          // 3. Piutang & Jatuh Tempo
+          _kartuHubungMenu(
+            ikon: Icons.request_quote_rounded,
+            warna: rtsAmber,
+            judul: 'Piutang & Jatuh Tempo',
+            ringkasan:
+                '${_piutangTanggal.length} catatan piutang / jatuh tempo • '
+                'Sisa ${_formatRupiah(totalSisaPiutang)}',
+            rincian: _piutangTanggal
+                .take(5)
+                .map(
+                  (Map<String, dynamic> p) =>
+                      '• ${p['nama_pelanggan'] ?? '-'} (${p['status'] ?? 'BELUM'}): '
+                      'Sisa ${_formatRupiah(num.tryParse('${p['sisa'] ?? 0}') ?? 0)} '
+                      '${('${p['jatuh_tempo'] ?? ''}').isNotEmpty ? '[JT: ${p['jatuh_tempo']}]' : ''}',
+                )
+                .toList(),
+            labelTombol: 'BUKA PIUTANG',
+            onTapTombol: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => RtsPiutangPage(
+                    baseUrl: RtsConfig.baseUrl,
+                    token: widget.token,
+                    pengguna: widget.user.toJson(),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          // 4. Program
+          _kartuHubungMenu(
+            ikon: Icons.campaign_rounded,
+            warna: const Color(0xff60a5fa),
+            judul: 'Program (Introdeal, BD & Program Lain)',
+            ringkasan:
+                '${_programTanggal.length} input program customer pada tanggal ini',
+            rincian: _programTanggal
+                .take(5)
+                .map(
+                  (Map<String, dynamic> p) =>
+                      '• ${p['nama_toko'] ?? '-'} — ${p['nama_program'] ?? p['jenis'] ?? 'Program'} '
+                      '(${p['jumlah'] ?? 1} pkt)',
+                )
+                .toList(),
+            labelTombol: 'BUKA PROGRAM',
+            onTapTombol: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => RtsProgramPage(
+                    baseUrl: RtsConfig.baseUrl,
+                    token: widget.token,
+                    pengguna: widget.user.toJson(),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _kartuHubungMenu({
+    required IconData ikon,
+    required Color warna,
+    required String judul,
+    required String ringkasan,
+    required List<String> rincian,
+    required String labelTombol,
+    required VoidCallback onTapTombol,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: rtsBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: warna.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(ikon, color: warna, size: 18),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  judul,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w900,
+                    color: warna,
+                  ),
+                ),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: onTapTombol,
+                child: Text(
+                  labelTombol,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: warna,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            ringkasan,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: rtsTextPrimary,
+            ),
+          ),
+          if (rincian.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 4),
+            ...rincian.map(
+              (String s) => Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  s,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: rtsTextSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _bangunBagianAlarmMendatang() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: rtsSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: rtsBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Row(
+            children: <Widget>[
+              Icon(Icons.upcoming_rounded, color: rtsGold, size: 19),
+              SizedBox(width: 8),
+              Text(
+                'Daftar Pengingat & Alarm Aktif Mendatang',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w900,
+                  color: rtsTextPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ..._catatanMendatang.take(8).map((Map<String, dynamic> c) {
+            final String tgl = '${c['tanggal'] ?? ''}';
+            final String jam = '${c['jam'] ?? '08:00'}';
+            final String jdl = '${c['judul'] ?? ''}';
+            final String kat = '${c['kategori'] ?? 'PENGINGAT'}';
+            return InkWell(
+              onTap: () {
+                final DateTime? d = DateTime.tryParse(tgl);
+                if (d != null) _pilihTanggal(d);
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: rtsGold.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '$tgl • $jam',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: rtsGold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '[$kat] $jdl',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: rtsTextPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
