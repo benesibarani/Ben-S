@@ -1,5 +1,9 @@
 ==============================================================================
  RTS PANEL BY BENE
+ (Putaran 18L: MENAMPILKAN HARI DAN TANGGAL LENGKAP DENGAN WAKTU DI INDONESIA
+  (WIB / WITA / WIT BERJALAN TIAP DETIK) + WEEK SEKARANG SESUAI KALENDER
+  INDONESIA PADA KARTU BERANDA "AKUN RTS PANEL", PETA CUSTOMER, RADAR
+  CUSTOMER, DAN RUTE PLAN)
  (Putaran 18K: RUTE PLAN LAYAR PENUH - SIDEBAR MENU YANG BISA DIGESER,
   TITIK CUSTOMER BERNOMOR (NOMOR BISA DIUBAH), KETUK = NAMA + ID CUSTOMER,
   DAN PENSIL UNTUK MEMBUAT GARIS ANTAR CUSTOMER)
@@ -183,6 +187,38 @@
      Versi pubspec  : 1.5.2+17
      Bila kode di HP Bapak masih 18G/lebih lama, berarti aplikasi belum
      dipasang ulang - silakan pasang RTS_PANEL_PUTARAN_18H.zip.
+
+
+ ============================================================================
+  PUTARAN 18L - HARI & TANGGAL LENGKAP + WAKTU INDONESIA + WEEK KALENDER RI
+  (12 Oktober 2026) - PENTING, BACA BAGIAN INI DULU
+ ============================================================================
+
+  Permintaan Bapak (dari tangkapan layar Beranda - Kartu AKUN RTS PANEL):
+    1. Menampilkan HARI dan TANGGAL LENGKAP dengan WAKTU di Indonesia.
+    2. Menampilkan WEEK sekarang sesuai dengan kalender Indonesia.
+
+  Semua permintaan di atas sudah dibuat pada putaran ini:
+    - Pada kartu utama "AKUN RTS PANEL" di Beranda (tepat di bawah baris nama
+      dan cuaca), tampil kotak Kalender & Waktu Indonesia:
+        * Sisi kiri atas  : Hari dan tanggal lengkap Bahasa Indonesia,
+                            contoh: "Senin, 12 Oktober 2026".
+        * Sisi kiri bawah : Jam lengkap dengan detik dan zona waktu Indonesia
+                            yang berjalan otomatis setiap detik, contoh:
+                            "13:39:37 WIB • Waktu Indonesia" (mendukung WIB,
+                            WITA, dan WIT).
+        * Sisi kanan      : Lencana "WEEK 42" beserta keterangan
+                            "Pekan Genap • Mg 3" (nomor week tahun berjalan,
+                            sifat pekan Ganjil/Genap untuk acuan jadwal
+                            kunjungan Bi-Weekly, serta minggu ke-berapa di
+                            dalam bulan berjalan menurut kalender Indonesia).
+        * Bila kotak diketuk, muncul pesan keterangan lengkap kalender.
+    - Pada Peta Customer, Radar Customer, dan Rute Plan:
+        * Panel penyaring Hari & Frekuensi menampilkan baris tanggal lengkap
+          dan Week sekarang (Ganjil/Genap).
+        * Bilah judul Rute Plan dan teks salinan urutan kunjungan juga memuat
+          nomor Week kalender Indonesia.
+    - Penanda kode aplikasi baru: RTS-2026-10-12-18L (versi pubspec 1.5.6+21).
 
 
  ============================================================================

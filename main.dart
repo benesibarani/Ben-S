@@ -1,4 +1,4 @@
-// RTS-PANEL-ROUND: 18K - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
+// RTS-PANEL-ROUND: 18L - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -970,7 +970,7 @@ void rtsShowMessage(BuildContext context, String message,
 /// terbaru. Nilainya ditampilkan pada halaman Pengaturan, pada kartu
 /// "Cuaca Beranda" - jadi cukup dilihat di HP, tidak perlu menebak.
 /// Setiap kali kode aplikasi diperbarui, angka ini dinaikkan.
-const String rtsKodeAplikasi = 'RTS-2026-10-09-18K';
+const String rtsKodeAplikasi = 'RTS-2026-10-12-18L';
 
 /// Tingkat akun: GRATIS (dengan iklan) atau PRO (bebas iklan).
 ///
@@ -2212,7 +2212,9 @@ class _DashboardPageState extends State<DashboardPage>
               const RtsKotakCuaca(),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 11),
+          const RtsKotakKalenderIndonesia(),
+          const SizedBox(height: 11),
           Container(
             height: 1,
             color: Colors.white.withValues(alpha: 0.18),
@@ -6170,6 +6172,103 @@ class RtsWaktu {
     'Nov',
     'Des',
   ];
+
+  static const List<String> _bulanLengkap = <String>[
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
+
+  static const List<String> _hariLengkap = <String>[
+    'Minggu',
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+  ];
+
+  /// Mengambil DateTime dalam zona waktu Indonesia (WIB / WITA / WIT).
+  /// Bila HP sudah memakai zona waktu Indonesia (+7 / +8 / +9), jam HP langsung
+  /// dipakai; bila di luar itu, dikonversi ke WIB (UTC+7).
+  static DateTime indonesia([DateTime? sumber]) {
+    final DateTime asal = sumber ?? DateTime.now();
+    final int menit = asal.timeZoneOffset.inMinutes;
+
+    if (menit == 420 || menit == 480 || menit == 540) {
+      return asal;
+    }
+
+    return asal.toUtc().add(const Duration(hours: 7));
+  }
+
+  /// Singkatan zona waktu Indonesia: WIB (UTC+7), WITA (UTC+8), atau WIT (UTC+9).
+  static String zonaIndonesia([DateTime? sumber]) {
+    final DateTime asal = sumber ?? DateTime.now();
+    final int menit = asal.timeZoneOffset.inMinutes;
+
+    if (menit == 480) return 'WITA';
+    if (menit == 540) return 'WIT';
+    return 'WIB';
+  }
+
+  /// Nama hari lengkap Bahasa Indonesia (Minggu .. Sabtu).
+  static String namaHari(DateTime waktu) => _hariLengkap[waktu.weekday % 7];
+
+  /// Nama bulan lengkap Bahasa Indonesia (Januari .. Desember).
+  static String namaBulan(DateTime waktu) => _bulanLengkap[waktu.month - 1];
+
+  /// Hari dan tanggal lengkap Indonesia, contoh: Senin, 12 Oktober 2026.
+  static String hariTanggalLengkap([DateTime? sumber]) {
+    final DateTime w = indonesia(sumber);
+    return '${namaHari(w)}, ${w.day} ${namaBulan(w)} ${w.year}';
+  }
+
+  /// Waktu lengkap Indonesia dengan detik, contoh: 13:39:37 WIB.
+  static String jamLengkapIndonesia([DateTime? sumber]) {
+    final DateTime asal = sumber ?? DateTime.now();
+    final DateTime w = indonesia(asal);
+    final String jam = w.hour.toString().padLeft(2, '0');
+    final String menit = w.minute.toString().padLeft(2, '0');
+    final String detik = w.second.toString().padLeft(2, '0');
+
+    return '$jam:$menit:$detik ${zonaIndonesia(asal)}';
+  }
+
+  /// Nomor week (minggu ke-berapa dalam tahun) sesuai kalender Indonesia.
+  /// Minggu ke-1 dimulai pada 1 Januari, pergantian minggu pada hari Minggu.
+  static int weekKalenderIndonesia([DateTime? sumber]) {
+    final DateTime w = indonesia(sumber);
+    final DateTime awal = DateTime(w.year, 1, 1);
+    final int geser = awal.weekday % 7;
+    final int hariKe =
+        DateTime(w.year, w.month, w.day).difference(awal).inDays + 1;
+
+    return ((hariKe + geser - 1) ~/ 7) + 1;
+  }
+
+  /// Nomor minggu ke-berapa di dalam bulan berjalan sesuai kalender Indonesia.
+  static int mingguBulanIndonesia([DateTime? sumber]) {
+    final DateTime w = indonesia(sumber);
+    final DateTime awalBulan = DateTime(w.year, w.month, 1);
+    final int geser = awalBulan.weekday % 7;
+
+    return ((w.day + geser - 1) ~/ 7) + 1;
+  }
+
+  /// Keterangan Ganjil / Genap dari week sekarang (selaras Bi-Weekly).
+  static String sifatWeek([DateTime? sumber]) =>
+      weekKalenderIndonesia(sumber).isOdd ? 'Ganjil' : 'Genap';
 
   /// Contoh keluaran: 27 Sep 2026, 21.14
   static String ringkas(DateTime waktu) {
@@ -14085,6 +14184,163 @@ class _RtsKotakCuacaState extends State<RtsKotakCuaca> {
               style: const TextStyle(
                 color: Color(0xccffffff),
                 fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Kotak Hari, Tanggal lengkap, Waktu Indonesia (berjalan tiap detik),
+/// dan Week sekarang sesuai kalender Indonesia pada kartu AKUN RTS PANEL.
+class RtsKotakKalenderIndonesia extends StatefulWidget {
+  const RtsKotakKalenderIndonesia({super.key});
+
+  @override
+  State<RtsKotakKalenderIndonesia> createState() =>
+      _RtsKotakKalenderIndonesiaState();
+}
+
+class _RtsKotakKalenderIndonesiaState extends State<RtsKotakKalenderIndonesia> {
+  Timer? _penghitung;
+  DateTime _sekarang = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _penghitung = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _sekarang = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _penghitung?.cancel();
+    super.dispose();
+  }
+
+  void _tampilInfo() {
+    final DateTime w = RtsWaktu.indonesia(_sekarang);
+    final String hariTanggal = RtsWaktu.hariTanggalLengkap(_sekarang);
+    final String jam = RtsWaktu.jamLengkapIndonesia(_sekarang);
+    final int week = RtsWaktu.weekKalenderIndonesia(_sekarang);
+    final int mgBulan = RtsWaktu.mingguBulanIndonesia(_sekarang);
+    final String sifat = RtsWaktu.sifatWeek(_sekarang);
+
+    rtsShowMessage(
+      context,
+      '$hariTanggal \u2022 Pukul $jam \u2022 Week $week '
+      '(Pekan $sifat, Minggu ke-$mgBulan ${RtsWaktu.namaBulan(w)} ${w.year})',
+      success: true,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String hariTanggal = RtsWaktu.hariTanggalLengkap(_sekarang);
+    final String jam = RtsWaktu.jamLengkapIndonesia(_sekarang);
+    final int week = RtsWaktu.weekKalenderIndonesia(_sekarang);
+    final int mgBulan = RtsWaktu.mingguBulanIndonesia(_sekarang);
+    final String sifat = RtsWaktu.sifatWeek(_sekarang);
+
+    return GestureDetector(
+      onTap: _tampilInfo,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_rounded,
+                        color: Colors.white,
+                        size: 13.5,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          hariTanggal,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.access_time_filled_rounded,
+                        color: Color(0xd9ffffff),
+                        size: 13.5,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '$jam \u2022 Waktu Indonesia',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xe6ffffff),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.20),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'WEEK $week',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    'Pekan $sifat \u2022 Mg $mgBulan',
+                    style: const TextStyle(
+                      color: Color(0xe6ffffff),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

@@ -1,4 +1,4 @@
-// RTS-PANEL-ROUND: 18K - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
+// RTS-PANEL-ROUND: 18L - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 // ============================================================================
 //  RTS PANEL BY BENE - FITUR PRO : PETA CUSTOMER, RADAR, RUTE PLAN
 //  Berkas : lib/peta.dart
@@ -280,8 +280,22 @@ double rtsPetaBearing(
 
 String rtsPetaDua(int angka) => angka < 10 ? '0$angka' : '$angka';
 
-String rtsPetaTanggalTeks(DateTime t) =>
-    '${rtsPetaDua(t.day)}-${rtsPetaDua(t.month)}-${t.year}';
+/// Mengambil waktu dalam zona waktu Indonesia (WIB / WITA / WIT).
+DateTime rtsPetaWaktuIndonesia([DateTime? sumber]) {
+  final DateTime asal = sumber ?? DateTime.now();
+  final int menit = asal.timeZoneOffset.inMinutes;
+
+  if (menit == 420 || menit == 480 || menit == 540) {
+    return asal;
+  }
+
+  return asal.toUtc().add(const Duration(hours: 7));
+}
+
+String rtsPetaTanggalTeks(DateTime t) {
+  final DateTime w = rtsPetaWaktuIndonesia(t);
+  return '${rtsPetaDua(w.day)}-${rtsPetaDua(w.month)}-${w.year}';
+}
 
 /// Nama hari Indonesia dari DateTime (Minggu .. Sabtu).
 String rtsPetaNamaHari(DateTime t) {
@@ -295,19 +309,60 @@ String rtsPetaNamaHari(DateTime t) {
     'Sabtu',
   ];
 
-  return nama[t.weekday % 7];
+  final DateTime w = rtsPetaWaktuIndonesia(t);
+  return nama[w.weekday % 7];
 }
 
-/// Nomor pekan dalam tahun (untuk membedakan pekan GANJIL dan GENAP).
+/// Nama bulan lengkap Bahasa Indonesia (Januari .. Desember).
+String rtsPetaNamaBulan(DateTime t) {
+  const List<String> bulan = <String>[
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
+
+  final DateTime w = rtsPetaWaktuIndonesia(t);
+  return bulan[w.month - 1];
+}
+
+/// Hari dan tanggal lengkap Indonesia, contoh: Senin, 12 Oktober 2026.
+String rtsPetaHariTanggalIndonesia([DateTime? sumber]) {
+  final DateTime w = rtsPetaWaktuIndonesia(sumber);
+  return '${rtsPetaNamaHari(w)}, ${w.day} ${rtsPetaNamaBulan(w)} ${w.year}';
+}
+
+/// Nomor pekan dalam tahun sesuai kalender Indonesia (untuk membedakan pekan
+/// GANJIL dan GENAP). Minggu ke-1 dimulai pada 1 Januari, pergantian minggu
+/// pada hari Minggu.
 int rtsPetaPekan(DateTime t) {
-  final DateTime awal = DateTime(t.year, 1, 1);
+  final DateTime w = rtsPetaWaktuIndonesia(t);
+  final DateTime awal = DateTime(w.year, 1, 1);
   final int geser = awal.weekday % 7;
-  final int hariKe = t.difference(awal).inDays + 1;
+  final int hariKe =
+      DateTime(w.year, w.month, w.day).difference(awal).inDays + 1;
 
   return ((hariKe + geser - 1) ~/ 7) + 1;
 }
 
 bool rtsPetaPekanGanjil(DateTime t) => rtsPetaPekan(t).isOdd;
+
+/// Label week kalender Indonesia, contoh: Week 42 (Pekan Genap).
+String rtsPetaWeekIndonesia([DateTime? sumber]) {
+  final DateTime w = rtsPetaWaktuIndonesia(sumber);
+  final int pekan = rtsPetaPekan(w);
+  final String sifat = pekan.isOdd ? 'Ganjil' : 'Genap';
+
+  return 'Week $pekan (Pekan $sifat)';
+}
 
 /// Menyeragamkan tulisan frekuensi kunjungan yang tersimpan pada master_toko.
 /// Contoh yang dikenali: "Weekly", "Mingguan", "Bi-Weekly Ganjil",
@@ -988,6 +1043,17 @@ class _RtsPetaSaringState extends State<RtsPetaSaring> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(
+            '${rtsPetaHariTanggalIndonesia()}  \u2022  ${rtsPetaWeekIndonesia()}',
+            style: const TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: rtsKsMaroon,
+            ),
+          ),
+        ),
         _barisChip(<Widget>[
           for (final String h in rtsPetaHariPilih)
             _chip(
@@ -4408,8 +4474,8 @@ class _RtsRutePageState extends State<RtsRutePage> {
 
     if (lengkap) {
       tulis.writeln('RENCANA RUTE KUNJUNGAN');
-      tulis.writeln('Tanggal    : ${rtsPetaTanggalTeks(DateTime.now())} '
-          '(${rtsPetaNamaHari(DateTime.now())})');
+      tulis.writeln('Tanggal    : ${rtsPetaHariTanggalIndonesia()} '
+          '(${rtsPetaWeekIndonesia()})');
       tulis.writeln('Sales      : ${RtsKasirLokal.aku.namaSales} '
           '(${RtsKasirLokal.aku.idSales})');
       tulis.writeln('Kantor     : ${kantor == null ? 'belum dititikkan' : kantor.nama}');
@@ -4458,8 +4524,8 @@ class _RtsRutePageState extends State<RtsRutePage> {
     }
 
     tulis.writeln('URUTAN KUNJUNGAN (RTS PANEL)');
-    tulis.writeln('Tanggal    : ${rtsPetaTanggalTeks(DateTime.now())} '
-        '(${rtsPetaNamaHari(DateTime.now())})');
+    tulis.writeln('Tanggal    : ${rtsPetaHariTanggalIndonesia()} '
+        '(${rtsPetaWeekIndonesia()})');
     tulis.writeln('Sales      : ${RtsKasirLokal.aku.namaSales} '
         '(${RtsKasirLokal.aku.idSales})');
     tulis.writeln('Hari       : $_hari');
@@ -4868,8 +4934,10 @@ class _RtsRutePageState extends State<RtsRutePage> {
 
   /// Bilah atas: kembali, judul + ringkasan rute, dan tombol kantor.
   Widget _barisJudul(List<RtsToko> rencana, RtsKantor? kantor) {
+    final int pekanKini = rtsPetaPekan(DateTime.now());
+    final String sifatPekan = pekanKini.isOdd ? 'Ganjil' : 'Genap';
     final String ringkas =
-        '$_hari  |  $_frekuensi  |  Jarak ${rtsPetaJarakTeks(_panjangRute(rencana))}';
+        'Week $pekanKini ($sifatPekan)  |  $_hari  |  $_frekuensi  |  Jarak ${rtsPetaJarakTeks(_panjangRute(rencana))}';
 
     return Row(
       children: <Widget>[

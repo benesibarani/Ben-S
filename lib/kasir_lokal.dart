@@ -1,4 +1,4 @@
-// RTS-PANEL-ROUND: 18K - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
+// RTS-PANEL-ROUND: 18L - penanda putaran RTS Panel (diperiksa PERIKSA_KODE_APLIKASI.ps1)
 /// ============================================================================
 ///  RTS PANEL BY BENE - MESIN KASIR OFFLINE (SQLite di dalam HP)
 ///  Berkas : lib/kasir_lokal.dart

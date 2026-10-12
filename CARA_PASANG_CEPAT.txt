@@ -1,48 +1,48 @@
 ==============================================================================
- RTS PANEL BY BENE - PUTARAN 18K
- (RUTE PLAN LAYAR PENUH + SIDEBAR MENU YANG BISA DIGESER, NOMOR URUT
-  TITIK CUSTOMER BISA DIUBAH, KETUK = NAMA + ID CUSTOMER, DAN PENSIL
-  UNTUK MEMBUAT GARIS ANTAR CUSTOMER)
- CARA PASANG CEPAT  -  9 Oktober 2026
+ RTS PANEL BY BENE - PUTARAN 18L
+ (MENAMPILKAN HARI DAN TANGGAL LENGKAP DENGAN WAKTU DI INDONESIA +
+  MENAMPILKAN WEEK SEKARANG SESUAI KALENDER INDONESIA PADA KARTU BERANDA,
+  PETA CUSTOMER, RADAR CUSTOMER, DAN RUTE PLAN)
+ CARA PASANG CEPAT  -  12 Oktober 2026
 ==============================================================================
 
- Paket ini untuk Bapak yang SUDAH pernah memasang RTS_PANEL_PUTARAN_18J.zip.
+ Paket ini untuk Bapak yang SUDAH pernah memasang RTS_PANEL_PUTARAN_18K.zip.
  Isinya hanya berkas APLIKASI yang berubah. TIDAK ADA berkas hosting yang
  berubah pada putaran ini.
 
- PERUBAHAN PUTARAN 18K
+ PERUBAHAN PUTARAN 18L
  ---------------------
-   1. RUTE PLAN LAYAR PENUH.
-      Peta memenuhi seluruh layar. Di bagian atas ada bilah berisi tombol
-      kembali, judul "Rute Plan - N toko", dan tombol kantor. Di sisi kanan
-      ada tombol lokasi saya, lihat semua titik, zoom +, zoom -, dan PENSIL.
-   2. SIDEBAR "MENU RUTE PLAN" YANG BISA DIGESER.
-      Sidebar melayang di atas peta. Bagian judulnya dapat diseret ke mana
-      saja, dapat dilipat, dan berisi menu: Filter & Sales District, List
-      Customer, Copy Urutan (teks), Daftar Lengkap, Buka Rute di Google Maps,
-      Pensil Garis, Garis Tersimpan, Warna nomor, Muat Kantor, Lokasi Saya,
-      dan Lihat Semua Titik.
-   3. NOMOR URUT + KARTU NAMA DAN ID CUSTOMER.
-      Setiap titik customer bernomor. Ketuk nomor -> kartu muncul dengan
-      NAMA dan ID CUSTOMER. Nomor bisa diubah (tombol - / +, atau UBAH
-      NOMOR). Daftar, nomor di peta, dan kartu ikut berubah.
-   4. PENSIL MEMBUAT GARIS ANTAR CUSTOMER.
-      Ketuk nomor toko secara berurutan, lalu SIMPAN GARIS. Garis disimpan
-      di HP. Garis TIDAK dibuat otomatis.
-   5. PENANDA VERSI baru: RTS-2026-10-09-18K, pubspec 1.5.5+20.
+   1. HARI & TANGGAL LENGKAP INDONESIA PADA KARTU BERANDA (AKUN RTS PANEL).
+      Menampilkan nama hari dan tanggal lengkap Bahasa Indonesia, contoh:
+          Senin, 12 Oktober 2026
+   2. WAKTU INDONESIA BERJALAN OTOMATIS TIAP DETIK (WIB / WITA / WIT).
+      Menampilkan jam lengkap sampai detik beserta zona waktu Indonesia,
+      contoh:
+          13:39:37 WIB • Waktu Indonesia
+   3. WEEK SEKARANG SESUAI KALENDER INDONESIA.
+      Di sisi kanan kotak kalender pada kartu AKUN RTS PANEL tampil lencana:
+          WEEK 42
+          Pekan Genap • Mg 3
+      (nomor week tahun berjalan, sifat pekan Ganjil/Genap untuk panduan
+      kunjungan Bi-Weekly, serta minggu ke-berapa di bulan berjalan).
+      Bila kotak diketuk, muncul keterangan lengkap kalender Indonesia.
+   4. WEEK & TANGGAL LENGKAP DI PETA CUSTOMER, RADAR CUSTOMER, & RUTE PLAN.
+      Pada panel penyaring Hari & Frekuensi serta bilah judul Rute Plan juga
+      ditampilkan tanggal lengkap dan Week sekarang (Ganjil/Genap).
+   5. PENANDA VERSI baru: RTS-2026-10-12-18L, pubspec 1.5.6+21.
 
- ISI PAKET PERUBAHAN (RTS_PANEL_PERUBAHAN_18K.zip)
+ ISI PAKET PERUBAHAN (RTS_PANEL_PERUBAHAN_18L.zip)
  -------------------------------------------------
-   2_APLIKASI_copy_ke_proyek/main.dart           <-- kode versi 18K
-   2_APLIKASI_copy_ke_proyek/peta.dart           <-- Rute Plan layar penuh,
-                                                     sidebar, nomor, pensil
-   2_APLIKASI_copy_ke_proyek/kasir.dart          <-- penanda 18K
-   2_APLIKASI_copy_ke_proyek/kasir_lokal.dart    <-- penanda 18K + teks
-                                                     "garis" (bukan goresan)
-   2_APLIKASI_copy_ke_proyek/program.dart        <-- penanda 18K
-   2_APLIKASI_copy_ke_proyek/pubspec.yaml        <-- versi 1.5.5+20
-   3_SKRIP_POWERSHELL/LANGKAH1_PASANG_SEMUA.ps1  <-- juru salin (18K)
-   3_SKRIP_POWERSHELL/PERIKSA_KODE_APLIKASI.ps1  <-- pemeriksa kode (18K)
+   2_APLIKASI_copy_ke_proyek/main.dart           <-- kotak Kalender & Waktu
+                                                     Indonesia + Week di Beranda
+   2_APLIKASI_copy_ke_proyek/peta.dart           <-- tanggal & Week kalender
+                                                     Indonesia di Peta/Rute Plan
+   2_APLIKASI_copy_ke_proyek/kasir.dart          <-- penanda 18L
+   2_APLIKASI_copy_ke_proyek/kasir_lokal.dart    <-- penanda 18L
+   2_APLIKASI_copy_ke_proyek/program.dart        <-- penanda 18L
+   2_APLIKASI_copy_ke_proyek/pubspec.yaml        <-- versi 1.5.6+21
+   3_SKRIP_POWERSHELL/LANGKAH1_PASANG_SEMUA.ps1  <-- juru salin (18L)
+   3_SKRIP_POWERSHELL/PERIKSA_KODE_APLIKASI.ps1  <-- pemeriksa kode (18L)
    BACA_DULU.txt, CARA_PASANG_CEPAT.txt, TAUTAN_UNDUH.txt  <-- panduan
    1_SERVER_unggah_ke_hosting/...                <-- TIDAK berubah
 
@@ -70,26 +70,26 @@
  LANGKAH 3 - DI HP
  -----------------
    1. Pasang APK baru dengan cara MENIMPA. JANGAN hapus aplikasi lama.
-   2. Buka MENU PRO -> RUTE PLAN. Peta tampil penuh, sidebar MENU RUTE PLAN
-      ada di atas peta.
-   3. Di sidebar, ketuk Filter & Sales District untuk memilih hari,
-      frekuensi, dan district. Pilihan ini disimpan di HP.
-   4. Ketuk nomor toko di peta untuk melihat NAMA dan ID CUSTOMER.
-   5. Tekan tombol PENSIL di kanan peta. Ketuk dua nomor toko berurutan,
-      lalu tekan SIMPAN GARIS. Tekan SELESAI MENGGAMBAR untuk keluar.
+   2. Buka aplikasi -> lihat kartu merah AKUN RTS PANEL di bagian atas Beranda.
+   3. Di bawah baris nama & cuaca tampil kotak Kalender Indonesia:
+      - Kiri : Hari & Tanggal lengkap (mis. Senin, 12 Oktober 2026) serta
+               jam Indonesia berjalan tiap detik (WIB / WITA / WIT).
+      - Kanan: WEEK sekarang sesuai kalender Indonesia (mis. WEEK 42,
+               Pekan Genap • Mg 3).
+   4. Ketuk kotak kalender tersebut untuk melihat keterangan lengkapnya.
 
  PEMERIKSAAN SESUDAH PASANG
  --------------------------
    Di komputer: jalankan  .\PERIKSA_KODE_APLIKASI.ps1
-       bagian 6f harus menulis putaran 18K pada keenam berkas.
-   Di aplikasi: Pengaturan harus menulis  RTS-2026-10-09-18K.
+       bagian 6f harus menulis putaran 18L pada keenam berkas.
+   Di aplikasi: Pengaturan harus menulis  RTS-2026-10-12-18L.
 
- BACAAN LENGKAP: BACA_DULU.txt bagian "PUTARAN 18K"
+ BACAAN LENGKAP: BACA_DULU.txt bagian "PUTARAN 18L"
 
  TAUTAN UNDUH CEPAT
  ------------------
-   Paket lengkap    : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18K.zip
-   Hanya perubahan  : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18K.zip
+   Paket lengkap    : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18L.zip
+   Hanya perubahan  : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18L.zip
    main.dart        : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
    lib/peta.dart    : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/peta.dart
    lib/program.dart : https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/program.dart

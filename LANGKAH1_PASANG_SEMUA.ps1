@@ -724,7 +724,7 @@ if (-not $flutter) {
 # =============================================================================
 # 8b. Memeriksa penanda putaran berkas yang baru dipasang
 #
-# Setiap berkas Dart memuat baris pertama:  // RTS-PANEL-ROUND: 18K ...
+# Setiap berkas Dart memuat baris pertama:  // RTS-PANEL-ROUND: 18L ...
 # Pemeriksaan ini memastikan SEMUA berkas berasal dari putaran yang sama,
 # sehingga build tidak gagal karena berkas lama tertinggal.
 # =============================================================================
@@ -753,8 +753,8 @@ foreach ($satuPenanda in $daftarPenanda) {
         $angkaPutaran = $Matches[1]
     }
 
-    if ($angkaPutaran -eq '18K') {
-        Baik ($satuPenanda.Nama + ' : putaran 18K (benar).')
+    if ($angkaPutaran -eq '18L') {
+        Baik ($satuPenanda.Nama + ' : putaran 18L (benar).')
     }
     else {
         Awas ($satuPenanda.Nama + ' : penanda putaran tidak terbaca - berkas mungkin masih versi lama.')
@@ -782,6 +782,10 @@ Write-Host '     3. Tekan tombol PERBARUI DATABASE' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Periksa di aplikasi:' -ForegroundColor White
 Write-Host '     Layar HP    : nama aplikasi harus "RTS Panel"' -ForegroundColor Gray
+Write-Host '     BERANDA/18L : kartu AKUN RTS PANEL menampilkan HARI & TANGGAL LENGKAP' -ForegroundColor Gray
+Write-Host '                   (contoh: Senin, 12 Oktober 2026), WAKTU INDONESIA (WIB/' -ForegroundColor Gray
+Write-Host '                   WITA/WIT berjalan setiap detik), serta WEEK SEKARANG' -ForegroundColor Gray
+Write-Host '                   sesuai kalender Indonesia (contoh: WEEK 42, Pekan Genap)' -ForegroundColor Gray
 Write-Host '     RUTE/18K    : peta Rute Plan memenuhi SELURUH layar' -ForegroundColor Gray
 Write-Host '                   (tanpa tumpukan panel) + bilah judul di atas' -ForegroundColor Gray
 Write-Host '     RUTE/18K    : SIDEBAR "MENU RUTE PLAN" melayang - judulnya' -ForegroundColor Gray
@@ -791,7 +795,7 @@ Write-Host '                   Copy Urutan, Pensil Garis, Garis Tersimpan, Lokas
 Write-Host '     RUTE/18K    : titik customer bernomor; ketuk nomor -> kartu NAMA +' -ForegroundColor Gray
 Write-Host '                   ID CUSTOMER; nomor bisa diubah dan daftar ikut berubah' -ForegroundColor Gray
 Write-Host '     RUTE/18K    : tombol PENSIL -> ketuk nomor berurutan -> SIMPAN GARIS' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-10-09-18K' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-12-18L' -ForegroundColor Gray
 Write-Host '     Pembaruan   : kotak Pembaruan -> PERBARUI SEKARANG' -ForegroundColor Gray
 Write-Host '                   (berkas diunduh DI DALAM aplikasi, tanpa Chrome)' -ForegroundColor Gray
 Write-Host '     Profil      : tombol LANGGANAN PRO tampil + gambar QRIS tampil' -ForegroundColor Gray
@@ -840,7 +844,7 @@ Write-Host '                   (misalnya PROGRAM GAWIH)' -ForegroundColor Gray
 Write-Host '     Program     : ikon peta (peta + penyaring program/kunjungan/hari)' -ForegroundColor Gray
 Write-Host '     Menu PRO    : tombol SINKRON di dalam menu TIDAK ada lagi;' -ForegroundColor Gray
 Write-Host '                   sinkron lewat MENU UTAMA -> SINKRONISASI' -ForegroundColor Gray
-Write-Host '     Pengaturan  : penanda harus RTS-2026-10-09-18K' -ForegroundColor Gray
+Write-Host '     Pengaturan  : penanda harus RTS-2026-10-12-18L' -ForegroundColor Gray
 Write-Host ''
 Write-Host ' Di hosting (cPanel) - KHUSUS MENU PETA:' -ForegroundColor White
 Write-Host '     1. Unggah  api\kantor.php  ke folder api pada hosting' -ForegroundColor Gray
