@@ -466,11 +466,11 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
     final String awal = '${widget.jenisAwal ?? ''}'.trim().toUpperCase();
     if (awal.isNotEmpty) _saring = awal;
 
-    unawaited(_muat());
-
     // Halaman yang diminta langsung dibuka (input program / peta & filter).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+
+      unawaited(_muat());
 
       final String minta = widget.bukaAwal.trim().toLowerCase();
       if (minta.isEmpty) return;
@@ -508,16 +508,23 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
         if (!mounted) return;
       }
 
-      final Map<String, dynamic> jenis = await _api.kirim('jenis_daftar');
-      final Map<String, dynamic> daftar = await _api.kirim(
-        'program_customer_daftar',
-        <String, dynamic>{
-          'jenis': _saring,
-          'batas': 300,
-          'district': _district.district,
-        },
+      final List<Map<String, dynamic>> paket = await Future.wait(
+        <Future<Map<String, dynamic>>>[
+          _api.kirim('jenis_daftar'),
+          _api.kirim(
+            'program_customer_daftar',
+            <String, dynamic>{
+              'jenis': _saring,
+              'batas': 300,
+              'district': _district.district,
+            },
+          ),
+          _api.kirim('offline_ringkas'),
+        ],
       );
-      final Map<String, dynamic> ringkas = await _api.kirim('offline_ringkas');
+      final Map<String, dynamic> jenis = paket[0];
+      final Map<String, dynamic> daftar = paket[1];
+      final Map<String, dynamic> ringkas = paket[2];
 
       // Toko yang sudah dikunjungi hari ini (dipakai penyaring KUNJUNGAN).
       final Set<String> dikunjungi = <String>{};

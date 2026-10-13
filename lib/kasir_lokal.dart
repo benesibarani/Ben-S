@@ -99,6 +99,8 @@ class RtsKasirLokal {
 
   Database? _db;
   bool _perbaikanSudah = false;
+  Future<void>? _sedangSiapkan;
+  String _penggunaJsonSimpan = '';
   String baseUrl = '';
   String token = '';
   Map<String, dynamic> pengguna = <String, dynamic>{};
@@ -163,16 +165,23 @@ class RtsKasirLokal {
     if (baseUrl != null && baseUrl.isNotEmpty) this.baseUrl = baseUrl;
     if (token != null && token.isNotEmpty) this.token = token;
 
+    await siapkanTabel();
+
     if (pengguna != null && pengguna.isNotEmpty) {
       this.pengguna = pengguna;
 
-      // Disimpan supaya halaman lain (misalnya Printer & Struk) yang dibuka
-      // langsung dari Beranda tetap mengenal siapa pemilik datanya.
-      await _setelanTulis('pengguna', jsonEncode(pengguna));
+      // Hanya tulis ke SQLite bila isi pengguna benar-benar berubah, supaya
+      // membuka Menu PRO tidak terhambat operasi tulis disk berulang-ulang.
+      final String jsonBaru = jsonEncode(pengguna);
+      if (jsonBaru != _penggunaJsonSimpan) {
+        _penggunaJsonSimpan = jsonBaru;
+        await _setelanTulis('pengguna', jsonBaru);
+      }
     } else if (this.pengguna.isEmpty) {
       final String simpan = await _setelanBaca('pengguna', '');
 
       if (simpan.isNotEmpty) {
+        _penggunaJsonSimpan = simpan;
         try {
           final dynamic urai = jsonDecode(simpan);
 
@@ -184,8 +193,6 @@ class RtsKasirLokal {
         }
       }
     }
-
-    await siapkanTabel();
   }
 
   /* ------------------------------------------------------------- database */
@@ -514,17 +521,35 @@ class RtsKasirLokal {
   }
 
   /// Membuat tabel yang belum ada (aman dipanggil berkali-kali).
+  /// Begitu tabel selesai disiapkan sekali pada sesi ini, panggilan berikutnya
+  /// langsung kembali seketika (0 ms) sehingga semua Menu PRO terbuka lancar.
   Future<void> siapkanTabel() async {
+    if (_perbaikanSudah && _db != null && _db!.isOpen) return;
+
+    if (_sedangSiapkan != null) {
+      await _sedangSiapkan;
+      return;
+    }
+
+    final Future<void> proses = _jalankanSiapkanTabel();
+    _sedangSiapkan = proses;
+    try {
+      await proses;
+    } finally {
+      _sedangSiapkan = null;
+    }
+  }
+
+  Future<void> _jalankanSiapkanTabel() async {
     final Database d = await db;
 
     for (final String sql in _perintahTabel()) {
       await d.execute(sql);
     }
 
-    // Penyesuaian database lama cukup sekali setiap aplikasi dijalankan.
     if (!_perbaikanSudah) {
-      _perbaikanSudah = true;
       await _perbaikiTabel(d);
+      _perbaikanSudah = true;
     }
   }
 
@@ -942,6 +967,15 @@ class RtsKasirLokal {
     //    nilainya 1, akun ini PRO - jadi jawaban lama "belum boleh" yang
     //    tersimpan di HP TIDAK boleh lagi mengunci menu PRO.
     if (proSesi) {
+      // Bila sudah tercatat di memori dalam 30 menit terakhir, langsung
+      // kembalikan tanpa menulis ulang ke SQLite pada setiap perintah.
+      if (!paksa &&
+          _aksesDiperiksa != null &&
+          _aksesSimpan['boleh'] == true &&
+          sekarang.difference(_aksesDiperiksa!).inMinutes < 30) {
+        return _aksesSimpan;
+      }
+
       _aksesSimpan = <String, dynamic>{
         'boleh': true,
         'label': 'PRO',

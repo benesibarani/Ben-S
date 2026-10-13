@@ -2682,10 +2682,11 @@ class _DashboardPageState extends State<DashboardPage>
 
   Future<void> _openMenu(BuildContext context, String menu) async {
     // Pengaman Menu PRO: akun GRATIS diarahkan ke halaman Langganan PRO.
+    // Bila _akunPro sudah aktif di memori, langsung buka halaman tanpa jeda!
     final bool menuPro =
         _menuPro.any((_MenuData satu) => satu.title == menu);
 
-    if (menuPro) {
+    if (menuPro && !_akunPro) {
       final bool boleh = await _bolehPro();
 
       if (!context.mounted) return;
@@ -17371,11 +17372,14 @@ class RtsAlarmKalender {
 
   static Timer? _timer;
   static bool _sedangCek = false;
+  static String _menitTerakhirCek = '';
 
   static void mulai({required RtsUser user, required String token}) {
-    _timer?.cancel();
-    unawaited(periksaSekarang(user: user, token: token));
-    _timer = Timer.periodic(const Duration(seconds: 20), (_) {
+    if (_timer != null && _timer!.isActive) return;
+    Future<void>.delayed(const Duration(seconds: 2), () {
+      unawaited(periksaSekarang(user: user, token: token));
+    });
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
       unawaited(periksaSekarang(user: user, token: token));
     });
   }
@@ -17391,20 +17395,30 @@ class RtsAlarmKalender {
   static Future<void> periksaSekarang({
     RtsUser? user,
     String? token,
+    bool paksa = false,
   }) async {
     if (_sedangCek) return;
+    final DateTime skr = RtsWaktu.sekarangWib();
+    final String tglIso = formatTanggalIso(skr);
+    final String jamMenit = formatJamMenit(skr);
+    final String kunciMenit = '$tglIso $jamMenit';
+
+    // Bila bukan pemeriksaan paksa (misal sesudah simpan catatan), cukup cek
+    // 1 kali setiap pergantian menit supaya tidak membebani SQLite/CPU HP.
+    if (!paksa && kunciMenit == _menitTerakhirCek) return;
+
     _sedangCek = true;
+    _menitTerakhirCek = kunciMenit;
     try {
       final RtsUser? u = user ?? RtsSesi.user;
       if (u != null) {
         RtsKasirLokal.aku.pengguna = u.toJson();
       }
-      final DateTime skr = RtsWaktu.sekarangWib();
       final Map<String, dynamic> hasil = await RtsKasirLokal.aku.kirim(
         'kalender_alarm_cek',
         <String, dynamic>{
-          'tanggal': formatTanggalIso(skr),
-          'jam': formatJamMenit(skr),
+          'tanggal': tglIso,
+          'jam': jamMenit,
         },
       );
       final List<dynamic> daftar =
@@ -17597,7 +17611,9 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
     _bulanTampil = DateTime(skr.year, skr.month, 1);
     RtsKasirLokal.aku.pengguna = widget.user.toJson();
     RtsAlarmKalender.mulai(user: widget.user, token: widget.token);
-    unawaited(_muatSemua());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_muatSemua());
+    });
   }
 
   Future<void> _muatSemua() async {
@@ -18215,6 +18231,7 @@ class _RtsKalenderPageState extends State<RtsKalenderPage> {
       await RtsAlarmKalender.periksaSekarang(
         user: widget.user,
         token: widget.token,
+        paksa: true,
       );
       if (mounted) {
         rtsShowMessage(

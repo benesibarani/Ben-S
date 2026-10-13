@@ -193,8 +193,11 @@ class RtsKasirApi {
     required this.token,
     Map<String, dynamic>? pengguna,
   }) {
-    // Keterangan akun langsung disimpan (tidak ditunggu) supaya setiap
-    // perintah berikutnya sudah mengenal pemilik datanya.
+    if (baseUrl.isNotEmpty) RtsKasirLokal.aku.baseUrl = baseUrl;
+    if (token.isNotEmpty) RtsKasirLokal.aku.token = token;
+    if (pengguna != null && pengguna.isNotEmpty) {
+      RtsKasirLokal.aku.pengguna = pengguna;
+    }
     unawaited(
       RtsKasirLokal.aku.atur(
         baseUrl: baseUrl,
@@ -718,7 +721,9 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
   @override
   void initState() {
     super.initState();
-    _muat();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _muat();
+    });
   }
 
   @override
@@ -738,7 +743,14 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
     });
 
     try {
-      final Map<String, dynamic> hasil = await _api.kirim('stok_daftar');
+      final List<Map<String, dynamic>> paket = await Future.wait(
+        <Future<Map<String, dynamic>>>[
+          _api.kirim('stok_daftar'),
+          _api.kirim('stok_riwayat'),
+        ],
+      );
+      final Map<String, dynamic> hasil = paket[0];
+      final Map<String, dynamic> riwayat = paket[1];
 
       final List<dynamic> isi =
           (hasil['items'] is List) ? hasil['items'] as List<dynamic> : <dynamic>[];
@@ -749,7 +761,6 @@ class _RtsBarangBawaanPageState extends State<RtsBarangBawaanPage>
               RtsProduk.fromJson(e.cast<String, dynamic>()))
           .toList();
 
-      final Map<String, dynamic> riwayat = await _api.kirim('stok_riwayat');
       final List<dynamic> isiRiwayat = (riwayat['items'] is List)
           ? riwayat['items'] as List<dynamic>
           : <dynamic>[];
@@ -1983,7 +1994,9 @@ class _RtsKasirPageState extends State<RtsKasirPage> {
   @override
   void initState() {
     super.initState();
-    _muat();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _muat();
+    });
   }
 
   @override
@@ -2014,9 +2027,16 @@ class _RtsKasirPageState extends State<RtsKasirPage> {
     });
 
     try {
-      final Map<String, dynamic> stok = await _api.kirim('stok_daftar');
-      final Map<String, dynamic> ringkas = await _api.kirim('ringkas');
-      final Map<String, dynamic> struk = await _api.kirim('struk_baca');
+      final List<Map<String, dynamic>> paket = await Future.wait(
+        <Future<Map<String, dynamic>>>[
+          _api.kirim('stok_daftar'),
+          _api.kirim('ringkas'),
+          _api.kirim('struk_baca'),
+        ],
+      );
+      final Map<String, dynamic> stok = paket[0];
+      final Map<String, dynamic> ringkas = paket[1];
+      final Map<String, dynamic> struk = paket[2];
 
       final List<dynamic> isi =
           (stok['items'] is List) ? stok['items'] as List<dynamic> : <dynamic>[];
