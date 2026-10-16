@@ -1,0 +1,24 @@
+PANDUAN UPLOAD WEBSITE CV BENEDIC-S.COM
+
+Paket: benedic-s-website-siap-upload.zip
+Isi ZIP sudah berupa website produksi. Tidak perlu menjalankan npm atau Node.js di hosting.
+
+1. Login ke panel hosting IDwebhost, lalu buka cPanel > Domains.
+2. Cari benedic-s.com dan catat Document Root-nya. Untuk domain utama biasanya public_html, tetapi gunakan lokasi yang tertera di panel Anda.
+3. Buka File Manager dan masuk ke Document Root tersebut.
+4. BACKUP terlebih dahulu seluruh website lama. Jangan menghapus atau menimpa file aplikasi lama tanpa backup. Jika sudah ada aplikasi aktif pada domain yang sama, gunakan folder/domain terpisah atau konsultasikan pengaturannya dengan dukungan hosting.
+5. Upload benedic-s-website-siap-upload.zip ke Document Root, lalu klik Extract di lokasi tersebut.
+6. Pastikan struktur akhirnya seperti ini:
+   [Document Root]/index.html
+   [Document Root]/favicon.svg
+   [Document Root]/assets/
+   Bukan [Document Root]/dist/index.html atau folder ZIP tambahan.
+7. Jika ada index.php atau halaman default lama, itu dapat tampil lebih dahulu daripada index.html. Setelah backup, pindahkan file halaman awal lama tersebut ke lokasi backup di luar folder publik atau minta dukungan hosting membantu pengaturannya. Jangan menghapus aplikasi lama sembarangan.
+8. Pastikan domain mengarah ke hosting ini dan SSL/HTTPS aktif. Buka https://benedic-s.com.
+9. Jika halaman lama masih muncul, coba Ctrl+F5 atau jendela incognito. Jika masih bermasalah, periksa aturan redirect .htaccess lama bersama dukungan hosting.
+10. Uji unduh CV, foto, navigasi, WhatsApp, email, dan LinkedIn pada HP serta komputer.
+11. Setelah berhasil, hapus file ZIP dari folder publik hosting. Simpan salinan ZIP di komputer Anda.
+
+Website ini tidak memerlukan database atau konfigurasi PHP. Email dan WhatsApp menggunakan aplikasi/layanan masing-masing, bukan formulir backend.
+
+Privasi: paket memuat foto, email, nomor telepon, serta CV PDF asli Anda. Data tersebut akan dapat diakses publik setelah website dipublikasikan.
