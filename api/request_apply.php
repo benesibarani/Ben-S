@@ -245,6 +245,21 @@ function rts_api_apply_customer_request(mysqli $conn, int $id, string $actor): a
     ];
     $tipeParam = 'ssss';
 
+    // Kelurahan hanya diperbarui bila pengajuan membawa nilainya dan kolom
+    // kelurahan sudah tersedia pada master_toko. Pengajuan lama tanpa
+    // kelurahan tidak menghapus kelurahan yang sudah tersimpan.
+    $kelurahanBaru = trim((string) ($request['kelurahan'] ?? ''));
+
+    if (
+        $jenis === 'ganti alamat'
+        && $kelurahanBaru !== ''
+        && rts_api_has_column('master_toko', 'kelurahan')
+    ) {
+        $set[] = 'kelurahan=?';
+        $nilai[] = $kelurahanBaru;
+        $tipeParam .= 's';
+    }
+
     if ($hasTipe) {
         $set[] = 'tipe_customer=?';
         $nilai[] = $tipe;

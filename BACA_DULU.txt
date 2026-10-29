@@ -1,5 +1,43 @@
 ==============================================================================
+ PUTARAN 18M (29 OKTOBER 2026) - KELURAHAN PADA PENGAJUAN GANTI ALAMAT
+==============================================================================
+ 1. APLIKASI (HP)
+    - Menu Pengajuan Baru > Jenis "Ganti Alamat" > kolom KELURAHAN muncul di
+      bawah Alamat Baru. Kolom ini WAJIB diisi sebelum pengajuan dikirim.
+    - Centang "Sesuai koordinat sekarang": alamat DAN kelurahan terisi otomatis
+      dari titik GPS. Bila kelurahan tidak terbaca, isi secara manual.
+    - Ketepatan kelurahan bergantung pada data peta di HP. Uji di lapangan
+      sebelum dipakai secara luas.
+
+ 2. HOSTING (cPanel) - URUTAN WAJIB
+    a. BACKUP database benedics_benes_sales lebih dahulu (phpMyAdmin > Ekspor).
+    b. Uji file JALANKAN_DI_PHPMYADMIN_TAMBAH_KELURAHAN.sql pada database
+       TESTING. Jangan langsung ke produksi.
+    c. Setelah lolos di testing, jalankan file yang SAMA pada database produksi
+       (phpMyAdmin > SQL > tempel isi file > Kirim). File ini aman diulang.
+    d. Unggah dan TIMPA di folder hosting:
+         api/request_create.php
+         api/request_apply.php
+    e. Server tetap berjalan walau migrasi (c) belum dijalankan: kelurahan
+       hanya disimpan setelah kolomnya sudah ada di database.
+
+ 3. APLIKASI FLUTTER (PC)
+    - Timpa lib\main.dart dengan 2_APLIKASI_copy_ke_proyek\main.dart.
+    - Jangan hapus aplikasi lama dari HP: timpa + flutter clean, lalu build dan
+      pasang seperti biasa.
+
+ Kolom baru:
+    pengajuan_sales.kelurahan  VARCHAR(100) NULL, setelah alamat_baru
+    master_toko.kelurahan      VARCHAR(100) NULL, setelah alamat
+    master_toko_deleted.kelurahan (arsip; lewati bila tabelnya belum ada)
+==============================================================================
+
+==============================================================================
  RTS PANEL BY BENE
+ (Putaran 18M: FORM PENGAJUAN "GANTI ALAMAT" MEMILIKI KOLOM KELURAHAN -
+  TERISI OTOMATIS DARI TITIK KOORDINAT BILA "SESUAI KOORDINAT SEKARANG"
+  DICENTANG; KELURAHAN DISIMPAN KE pengajuan_sales DAN, SETELAH DISETUJUI,
+  KE master_toko)
  (Putaran 18L: MENAMPILKAN HARI DAN TANGGAL LENGKAP DENGAN WAKTU DI INDONESIA
   (WIB / WITA / WIT BERJALAN TIAP DETIK) + WEEK SEKARANG SESUAI KALENDER
   INDONESIA + SISA HK DALAM CYCLE PADA KARTU BERANDA "AKUN RTS PANEL", PETA

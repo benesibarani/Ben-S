@@ -1,6 +1,31 @@
 DAFTAR BERKAS: MANA UNTUK HOSTING, MANA UNTUK APLIKASI?
 ========================================================================
- >>> PUTARAN 18L (12 Oktober 2026) - PALING BARU <<<
+>>> PUTARAN 18M (29 Oktober 2026) - PALING BARU <<<
+   KOLOM KELURAHAN PADA PENGAJUAN "GANTI ALAMAT" (MENU PENGAJUAN BARU).
+   TERISI OTOMATIS DARI TITIK KOORDINAT BILA "SESUAI KOORDINAT SEKARANG"
+   DICENTANG. KELURAHAN DISIMPAN KE pengajuan_sales DAN, SETELAH DISETUJUI,
+   KE master_toko. WAJIB: BACKUP DAN UJI DI TESTING SEBELUM PRODUKSI.
+
+   UNDUH LANGSUNG (klik / tempel di peramban):
+     Paket LENGKAP 18M:
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PUTARAN_18M.zip
+     Paket PERUBAHAN 18M (hanya berkas yang berubah):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PERUBAHAN_18M.zip
+     BACA_DULU.txt (tutorial tunggal, bagian PUTARAN 18M di atas):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/BACA_DULU.txt
+     main.dart (kode versi 18M - kolom Kelurahan di Ganti Alamat):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/main.dart
+     api/request_create.php (HOSTING - simpan kelurahan pengajuan):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/request_create.php
+     api/request_apply.php (HOSTING - terapkan kelurahan ke master_toko):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/request_apply.php
+     SQL migrasi kolom kelurahan (HOSTING - jalankan di phpMyAdmin setelah backup & uji testing):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/database/migrations/RTS_PANEL_TAMBAH_KELURAHAN.sql
+
+   Hosting (cPanel): unggah api/request_create.php dan api/request_apply.php,
+   lalu jalankan SQL migrasi (urutan lengkap ada di BACA_DULU.txt).
+
+ >>> PUTARAN 18L (12 Oktober 2026) <<<
    KARTU BERANDA (AKUN RTS PANEL) MENAMPILKAN HARI DAN TANGGAL LENGKAP
    DENGAN WAKTU DI INDONESIA (WIB / WITA / WIT BERJALAN SETIAP DETIK),
    WEEK KALENDER INDONESIA, SERTA KALENDER KERJA PT. WISMILAK INTI MAKMUR:

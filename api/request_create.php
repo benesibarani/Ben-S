@@ -13,6 +13,8 @@
  *   nama_toko_baru   : nama toko yang diajukan
  *   alamat_lama      : alamat saat ini
  *   alamat_baru      : alamat yang diajukan
+ *   kelurahan        : kelurahan/desa dari alamat baru (khusus Ganti Alamat).
+ *                      Disimpan bila kolom pengajuan_sales.kelurahan sudah ada.
  *   tipe_baru        : REGULER | GSP (khusus Tambah Baru)
  *   visit_day_baru   : hari kunjungan (khusus Tambah Baru)
  *   pic              : nama PIC di toko
@@ -112,6 +114,7 @@ $namaLama = rts_api_param('nama_toko_lama');
 $namaBaru = rts_api_param('nama_toko_baru');
 $alamatLama = rts_api_param('alamat_lama');
 $alamatBaru = rts_api_param('alamat_baru');
+$kelurahan = $jenis === 'Ganti Alamat' ? rts_api_param('kelurahan') : '';
 $tipeBaru = strtoupper(rts_api_param('tipe_baru', 'REGULER'));
 $visitDay = rts_api_param('visit_day_baru');
 $pic = rts_api_param('pic');
@@ -221,12 +224,41 @@ if ($salesman === '' && $salesDistrict === '') {
 
 /* ------------------------------------------------------------------ simpan */
 
+$idCustomerSimpan = $jenis === 'Tambah Baru' ? '' : $idCustomer;
+
+/* Kolom kelurahan hanya ditulis bila sudah tersedia pada database, supaya
+   pengajuan tetap tersimpan sebelum migrasi database dijalankan. */
+$adaKelurahan = rts_api_has_column('pengajuan_sales', 'kelurahan');
+
+/* Pasangan kolom => nilai, dibaca langsung sehingga urutannya tidak mudah keliru. */
+$kolomNilai = [
+    'sales_email'     => $salesEmail,
+    'sales_distric'   => $salesDistrict,
+    'salesman'        => $salesman,
+    'jenis_request'   => $jenis,
+    'id_customer'     => $idCustomerSimpan,
+    'pic'             => $pic,
+    'rute_kunjungan'  => $rute,
+    'week'            => $week,
+    'nama_toko_lama'  => $namaLama,
+    'nama_toko_baru'  => $namaBaru,
+    'alamat_lama'     => $alamatLama,
+    'alamat_baru'     => $alamatBaru,
+];
+
+if ($adaKelurahan) {
+    $kolomNilai['kelurahan'] = $kelurahan;
+}
+
+$kolomNilai += [
+    'tipe_baru'       => $tipeBaru,
+    'visit_day_baru'  => $visitDay,
+    'alasan'          => $alasan,
+];
+
 $insert = $conn->prepare(
-    'INSERT INTO pengajuan_sales
-     (sales_email, sales_distric, salesman, jenis_request, id_customer, pic,
-      rute_kunjungan, week, nama_toko_lama, nama_toko_baru, alamat_lama,
-      alamat_baru, tipe_baru, visit_day_baru, alasan)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO pengajuan_sales (' . implode(', ', array_keys($kolomNilai)) . ')
+     VALUES (' . implode(', ', array_fill(0, count($kolomNilai), '?')) . ')'
 );
 
 if (!$insert) {
@@ -234,26 +266,7 @@ if (!$insert) {
     rts_api_fail('Server sedang mengalami gangguan.', 500);
 }
 
-$idCustomerSimpan = $jenis === 'Tambah Baru' ? '' : $idCustomer;
-
-$insert->bind_param(
-    'ssssissssssssss',
-    $salesEmail,
-    $salesDistrict,
-    $salesman,
-    $jenis,
-    $idCustomerSimpan,
-    $pic,
-    $rute,
-    $week,
-    $namaLama,
-    $namaBaru,
-    $alamatLama,
-    $alamatBaru,
-    $tipeBaru,
-    $visitDay,
-    $alasan
-);
+$insert->bind_param(str_repeat('s', count($kolomNilai)), ...array_values($kolomNilai));
 
 if (!$insert->execute()) {
     error_log('RTS API request_create insert error: ' . $insert->error);

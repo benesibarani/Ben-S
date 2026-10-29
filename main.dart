@@ -10237,6 +10237,7 @@ class _RequestFormPageState extends State<RequestFormPage> {
 
   final TextEditingController namaBaruController = TextEditingController();
   final TextEditingController alamatBaruController = TextEditingController();
+  final TextEditingController kelurahanController = TextEditingController();
   final TextEditingController picController = TextEditingController();
   final TextEditingController alasanController = TextEditingController();
 
@@ -10262,6 +10263,9 @@ class _RequestFormPageState extends State<RequestFormPage> {
 
   /// Alamat yang diketik manual, disimpan supaya dapat dikembalikan.
   String alamatManual = '';
+
+  /// Kelurahan yang diketik manual, disimpan supaya dapat dikembalikan.
+  String kelurahanManual = '';
 
   bool menyimpan = false;
 
@@ -10295,6 +10299,7 @@ class _RequestFormPageState extends State<RequestFormPage> {
   void dispose() {
     namaBaruController.dispose();
     alamatBaruController.dispose();
+    kelurahanController.dispose();
     picController.dispose();
     alasanController.dispose();
     nomorHpController.dispose();
@@ -10336,6 +10341,8 @@ class _RequestFormPageState extends State<RequestFormPage> {
     // Alamat baru dimulai dari alamat sekarang supaya mudah disunting.
     alamatManual = data.alamat;
     alamatBaruController.text = data.alamat;
+    kelurahanManual = '';
+    kelurahanController.text = '';
     namaBaruController.text = data.namaToko;
 
     pakaiKoordinat = false;
@@ -10353,6 +10360,8 @@ class _RequestFormPageState extends State<RequestFormPage> {
       namaBaruController.clear();
       alamatBaruController.clear();
       alamatManual = '';
+      kelurahanController.clear();
+      kelurahanManual = '';
       hariKunjungan = 'Senin';
       frekuensi = 'Weekly';
       bukaHari = false;
@@ -10409,16 +10418,24 @@ class _RequestFormPageState extends State<RequestFormPage> {
 
   /* -------------------------------------------------------------- titik GPS */
 
-  /// Mengubah titik koordinat menjadi alamat lengkap.
-  /// Mengembalikan teks kosong bila alamat tidak dapat dibaca.
-  Future<String> _alamatDariTitik(double lat, double lng) async {
+  /// Mengubah titik koordinat menjadi alamat lengkap beserta kelurahannya.
+  /// Teks kosong dikembalikan bila alamat atau kelurahan tidak dapat dibaca.
+  Future<({String alamat, String kelurahan})> _alamatDariTitik(
+    double lat,
+    double lng,
+  ) async {
+    const kosong = (alamat: '', kelurahan: '');
+
     try {
       final List<Placemark> daftar = await placemarkFromCoordinates(lat, lng);
 
-      if (daftar.isEmpty) return '';
+      if (daftar.isEmpty) return kosong;
 
       final Placemark tempat = daftar.first;
       final List<String> bagian = <String>[];
+
+      // Pada alamat Indonesia, kelurahan/desa umumnya berada di subLocality.
+      final String kelurahanBaca = (tempat.subLocality ?? '').trim();
 
       void tambah(String? nilai) {
         final String bersih = (nilai ?? '').trim();
@@ -10438,17 +10455,19 @@ class _RequestFormPageState extends State<RequestFormPage> {
       tambah(tempat.administrativeArea);
       tambah(tempat.postalCode);
 
-      return bagian.join(', ');
+      return (alamat: bagian.join(', '), kelurahan: kelurahanBaca);
     } catch (_) {
-      return '';
+      return kosong;
     }
   }
 
   /// Mengubah pilihan "Sesuai koordinat sekarang".
-  /// Teks alamat yang sedang diketik disimpan lebih dahulu supaya tidak hilang.
+  /// Teks alamat dan kelurahan yang sedang diketik disimpan lebih dahulu
+  /// supaya tidak hilang.
   void _ubahPakaiKoordinat(bool dipilih) {
     if (dipilih) {
       alamatManual = alamatBaruController.text.trim();
+      kelurahanManual = kelurahanController.text.trim();
       setState(() => pakaiKoordinat = true);
       _ambilLokasi();
       return;
@@ -10461,6 +10480,7 @@ class _RequestFormPageState extends State<RequestFormPage> {
       akurasiMeter = null;
       pesanLokasi = '';
       alamatBaruController.text = alamatManual;
+      kelurahanController.text = kelurahanManual;
     });
   }
 
@@ -10470,6 +10490,7 @@ class _RequestFormPageState extends State<RequestFormPage> {
       pakaiKoordinat = false;
       pesanLokasi = pesan;
       alamatBaruController.text = alamatManual;
+      kelurahanController.text = kelurahanManual;
     });
   }
 
@@ -10529,10 +10550,12 @@ class _RequestFormPageState extends State<RequestFormPage> {
         pesanLokasi = 'Menerjemahkan titik menjadi alamat...';
       });
 
-      final String alamat = await _alamatDariTitik(
+      final hasilTitik = await _alamatDariTitik(
         posisi.latitude,
         posisi.longitude,
       );
+      final String alamat = hasilTitik.alamat;
+      final String kelurahan = hasilTitik.kelurahan;
 
       if (!mounted) return;
 
@@ -10546,8 +10569,11 @@ class _RequestFormPageState extends State<RequestFormPage> {
         pesanLokasi = alamat.isEmpty
             ? 'Alamat otomatis tidak dapat dibaca (perlu koneksi internet). '
                 'Koordinat dipakai sebagai pengganti.'
-            : '';
+            : (kelurahan.isEmpty
+                ? 'Kelurahan tidak terbaca otomatis. Isi kelurahan secara manual.'
+                : '');
         alamatBaruController.text = isi;
+        kelurahanController.text = kelurahan;
       });
     } catch (_) {
       if (!mounted) return;
@@ -10639,6 +10665,11 @@ class _RequestFormPageState extends State<RequestFormPage> {
         return;
       }
 
+      if (kelurahanController.text.trim().isEmpty) {
+        rtsShowMessage(context, 'Kelurahan wajib diisi.');
+        return;
+      }
+
       if (pakaiKoordinat && (lintang == null || bujur == null)) {
         rtsShowMessage(
           context,
@@ -10665,6 +10696,9 @@ class _RequestFormPageState extends State<RequestFormPage> {
         'alamat_lama': data?.alamat ?? '',
         'alamat_baru':
             (jenis == 'Ganti Alamat' || jenis == 'Tambah Baru') ? alamatBaru : '',
+        'kelurahan': jenis == 'Ganti Alamat'
+            ? kelurahanController.text.trim()
+            : '',
         'tipe_baru': tipeBaru,
         'visit_day_baru': hariKunjungan,
         'pic': picController.text.trim(),
@@ -11506,6 +11540,16 @@ class _RequestFormPageState extends State<RequestFormPage> {
                         size: 21,
                       ),
                     ),
+            ),
+            const SizedBox(height: 12),
+            _buildField(
+              controller: kelurahanController,
+              label: 'Kelurahan',
+              hint: 'Nama kelurahan / desa',
+              icon: Icons.apartment_outlined,
+              catatan: pakaiKoordinat
+                  ? 'Terisi otomatis dari titik koordinat. Boleh diperbaiki bila kurang tepat.'
+                  : 'Wajib diisi. Centang koordinat untuk mengisi otomatis.',
             ),
             const SizedBox(height: 12),
             _buildCentangKoordinat(),
