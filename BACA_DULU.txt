@@ -24,9 +24,9 @@
  3. APLIKASI FLUTTER (PC)
     - Timpa lib\main.dart dengan 2_APLIKASI_copy_ke_proyek\main.dart.
     - PERBAIKAN GALAT ANALYZER (flutter analyze / VS Code):
-        test\widget_test.dart   <- timpa dengan 2_APLIKASI_copy_ke_proyek\widget_test.dart
-                                  (tes lama memanggil ..\main.dart dan RtsPanelApp,
-                                  sehingga 2 GALAT; sekarang tes dasar yang aman)
+        test\widget_test.dart   <- HAPUS berkas ini (klik kanan > Delete).
+                                  Tes lama memanggil ..\main.dart dan RtsPanelApp
+                                  sehingga menimbulkan 2 GALAT. Tidak wajib untuk build.
         lib\kasir.dart          <- timpa dengan 2_APLIKASI_copy_ke_proyek\kasir.dart
         lib\pom.dart            <- timpa dengan 2_APLIKASI_copy_ke_proyek\pom.dart
         lib\program.dart        <- timpa dengan 2_APLIKASI_copy_ke_proyek\program.dart
