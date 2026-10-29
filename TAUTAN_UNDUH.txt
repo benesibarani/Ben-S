@@ -21,6 +21,11 @@ DAFTAR BERKAS: MANA UNTUK HOSTING, MANA UNTUK APLIKASI?
        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/api/request_apply.php
      SQL migrasi kolom kelurahan (HOSTING - jalankan di phpMyAdmin setelah backup & uji testing):
        https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/database/migrations/RTS_PANEL_TAMBAH_KELURAHAN.sql
+     PERBAIKAN GALAT ANALYZER (tes dasar baru + pembersihan peringatan):
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/test/widget_test.dart
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/kasir.dart
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/pom.dart
+       https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/lib/program.dart
 
    Hosting (cPanel): unggah api/request_create.php dan api/request_apply.php,
    lalu jalankan SQL migrasi (urutan lengkap ada di BACA_DULU.txt).

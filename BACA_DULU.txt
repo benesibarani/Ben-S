@@ -23,6 +23,16 @@
 
  3. APLIKASI FLUTTER (PC)
     - Timpa lib\main.dart dengan 2_APLIKASI_copy_ke_proyek\main.dart.
+    - PERBAIKAN GALAT ANALYZER (flutter analyze / VS Code):
+        test\widget_test.dart   <- timpa dengan 2_APLIKASI_copy_ke_proyek\widget_test.dart
+                                  (tes lama memanggil ..\main.dart dan RtsPanelApp,
+                                  sehingga 2 GALAT; sekarang tes dasar yang aman)
+        lib\kasir.dart          <- timpa dengan 2_APLIKASI_copy_ke_proyek\kasir.dart
+        lib\pom.dart            <- timpa dengan 2_APLIKASI_copy_ke_proyek\pom.dart
+        lib\program.dart        <- timpa dengan 2_APLIKASI_copy_ke_proyek\program.dart
+    - Galat & peringatan yang dibersihkan: import tidak terpakai (kasir.dart),
+      parameter tidak terpakai (pom.dart), dan '!' yang tidak berpengaruh
+      (program.dart). Info biru (gaya penulisan) tidak menghentikan build.
     - Jangan hapus aplikasi lama dari HP: timpa + flutter clean, lalu build dan
       pasang seperti biasa.
 

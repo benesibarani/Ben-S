@@ -1043,21 +1043,17 @@ class _PomIsian extends StatelessWidget {
     required this.controller,
     required this.label,
     this.hint = '',
-    this.ikon,
     this.angka = false,
     this.baris = 1,
     this.onUbah,
-    this.sufiks,
   });
 
   final TextEditingController controller;
   final String label;
   final String hint;
-  final IconData? ikon;
   final bool angka;
   final int baris;
   final void Function(String)? onUbah;
-  final Widget? sufiks;
 
   @override
   Widget build(BuildContext context) {
@@ -1072,9 +1068,6 @@ class _PomIsian extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint.isEmpty ? null : hint,
-        prefixIcon:
-            ikon == null ? null : Icon(ikon, color: const Color(0xff6d514a), size: 20),
-        suffixIcon: sufiks,
         alignLabelWithHint: baris > 1,
         filled: true,
         fillColor: const Color(0xfff8f4ef),
@@ -2645,13 +2638,11 @@ class _PomStrukKartu extends StatelessWidget {
     required this.struk,
     required this.onTap,
     required this.onMenu,
-    this.nomor,
   });
 
   final Map<String, dynamic> struk;
   final VoidCallback onTap;
   final VoidCallback onMenu;
-  final String? nomor;
 
   @override
   Widget build(BuildContext context) {
@@ -2686,7 +2677,7 @@ class _PomStrukKartu extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      nomor ?? '${struk['no_trans'] ?? '#'}',
+                      '${struk['no_trans'] ?? '#'}',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,

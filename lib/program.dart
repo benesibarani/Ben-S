@@ -708,13 +708,13 @@ class _RtsProgramPageState extends State<RtsProgramPage> {
   Future<void> _formProgram({Map<String, dynamic>? awal}) async {
     final bool baru = awal == null;
     final TextEditingController nama = TextEditingController(
-      text: baru ? '' : '${awal!['nama']}',
+      text: baru ? '' : '${awal['nama']}',
     );
     final TextEditingController keterangan = TextEditingController(
-      text: baru ? '' : '${awal!['keterangan']}',
+      text: baru ? '' : '${awal['keterangan']}',
     );
 
-    bool pakaiPaket = !baru && awal!['pakai_paket'] == true;
+    bool pakaiPaket = !baru && awal['pakai_paket'] == true;
 
     final bool? simpan = await showDialog<bool>(
       context: context,

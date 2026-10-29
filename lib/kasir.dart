@@ -28,14 +28,12 @@
 // ============================================================================
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
 // mobile_scanner diberi nama pendek "ms" karena paket ini juga memuat
 // kelas bernama Barcode - sama dengan nama kelas pada paket printer
 // (esc_pos_utils_plus). Bila keduanya diimpor tanpa nama pendek, Flutter
