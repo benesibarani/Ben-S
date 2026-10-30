@@ -12864,6 +12864,7 @@ class _RtsBannerIklanState extends State<RtsBannerIklan> {
       final double lebar = MediaQuery.sizeOf(context).width - 36;
 
       final AdSize? ukuran =
+          // ignore: deprecated_member_use
           await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
         lebar.round(),
       );
