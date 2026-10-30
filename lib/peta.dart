@@ -4472,6 +4472,7 @@ class _RtsRutePageState extends State<RtsRutePage> {
 
                                   ubah(() {});
                                 } on RtsKasirGalat catch (e) {
+                                  if (!ctx2.mounted) return;
                                   rtsKsPesan(ctx2, e.pesan, galat: true);
                                 }
                               },
@@ -5744,8 +5745,8 @@ class _RtsRutePageState extends State<RtsRutePage> {
         buildDefaultDragHandles: false,
         padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
         itemCount: rencana.length,
-        onReorder: (int lama, int baru) {
-          _pindahKe(lama, baru > lama ? baru - 1 : baru);
+        onReorderItem: (int lama, int baru) {
+          _pindahKe(lama, baru);
         },
         itemBuilder: (BuildContext ctx, int i) {
           final RtsToko t = rencana[i];

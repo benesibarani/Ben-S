@@ -30,6 +30,12 @@
         lib\kasir.dart          <- timpa dengan 2_APLIKASI_copy_ke_proyek\kasir.dart
         lib\pom.dart            <- timpa dengan 2_APLIKASI_copy_ke_proyek\pom.dart
         lib\program.dart        <- timpa dengan 2_APLIKASI_copy_ke_proyek\program.dart
+    - SARAN GAYA (INFO BIRU) DIMATIKAN lewat analysis_options.yaml. Timpa
+      D:\Project\rts_panel_app\analysis_options.yaml dengan berkas dari paket
+      (kode aplikasi tidak berubah). Tambahan:
+        lib\main.dart          <- sama dengan main.dart pada paket (SwitchListTile, cek koneksi)
+        lib\peta.dart          <- timpa dengan 2_APLIKASI_copy_ke_proyek\peta.dart
+        Hapus juga lib\widget_test.dart bila ada (salinan tes yang tidak diperlukan).
     - Galat & peringatan yang dibersihkan: import tidak terpakai (kasir.dart),
       parameter tidak terpakai (pom.dart), dan '!' yang tidak berpengaruh
       (program.dart). Info biru (gaya penulisan) tidak menghentikan build.

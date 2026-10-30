@@ -13970,6 +13970,8 @@ class RtsPasangApk {
     final String awal = (keadaanAwal['status'] ?? '').toString();
 
     if (awal == 'IZIN_DIPERLUKAN') {
+      if (!context.mounted) return false;
+
       return selesaikanIzin(context);
     }
 
@@ -13997,6 +13999,8 @@ class RtsPasangApk {
     // HP belum mengizinkan pemasangan dari aplikasi ini (Android 8+).
     // ------------------------------------------------------------------
     if (keadaan == 'IZIN_DIPERLUKAN') {
+      if (!context.mounted) return false;
+
       return selesaikanIzin(context);
     }
 
@@ -15161,7 +15165,7 @@ class _RtsKartuRencanaAkunState extends State<RtsKartuRencanaAkun> {
             const RtsDivider(),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              activeColor: rtsMaroon,
+              activeThumbColor: rtsMaroon,
               value: RtsTingkatAkun.ujiMenyala,
               onChanged: (bool nilai) async {
                 await RtsTingkatAkun.setUji(nilai);
@@ -15901,6 +15905,8 @@ class RtsFotoProfilPilih {
 
     if (pilihan == null) return;
 
+    if (!context.mounted) return;
+
     if (pilihan == 'hapus') {
       await _kirim(context, token: token, aksi: 'hapus');
 
@@ -15918,6 +15924,8 @@ class RtsFotoProfilPilih {
       );
 
       if (berkas == null) return;
+
+      if (!context.mounted) return;
 
       await _kirim(context, token: token, berkas: berkas);
     } catch (_) {

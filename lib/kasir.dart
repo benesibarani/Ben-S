@@ -5070,6 +5070,7 @@ class _RtsPrinterPageState extends State<RtsPrinterPage> {
                           if (!mounted) return;
 
                           setState(() => _terhubung = '');
+                          if (!context.mounted) return;
                           rtsKsPesan(context, 'Sambungan printer diputuskan.');
                         },
                         icon: const Icon(Icons.link_off, size: 18),

@@ -59,3 +59,23 @@ analyzer:
     dead_null_aware_expression: warning
     unused_import: warning
     unused_local_variable: warning
+
+# ----------------------------------------------------------------------------
+#  SARAN GAYA (INFO BIRU) DIMATIKAN
+#  Aturan di bawah hanya saran penulisan (tambah const, final, atau mengganti
+#  penyambungan teks). Tidak menyangkut kesalahan maupun perilaku aplikasi,
+#  sehingga tidak perlu diubah satu per satu. Hasilnya, "flutter analyze" tidak
+#  lagi menampilkan puluhan info tersebut.
+#  Yang TETAP tampil karena menyangkut keamanan/kompatibilitas:
+#    - use_build_context_synchronously (BuildContext setelah await)
+#    - deprecated_member_use (API yang sudah tidak dipakai lagi Flutter)
+# ----------------------------------------------------------------------------
+linter:
+  rules:
+    prefer_const_constructors: false
+    prefer_const_literals_to_create_immutables: false
+    prefer_final_fields: false
+    unnecessary_brace_in_string_interps: false
+    unnecessary_string_interpolations: false
+    prefer_interpolation_to_compose_strings: false
+    dangling_library_doc_comments: false
