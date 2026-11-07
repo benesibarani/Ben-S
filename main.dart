@@ -679,7 +679,12 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
-/// Reset password bagi pengguna yang lupa password, memakai PIN pemulihan.
+/// Nomor WhatsApp Admin RTS Panel. Format internasional tanpa tanda '+'.
+const String rtsAdminWaNomor = '6281260973139';
+const String rtsAdminWaTampil = '081260973139';
+
+/// Lupa password: langkah 1 isi username dan PIN, langkah 2 isi password baru.
+/// PIN salah atau tidak cocok diarahkan ke WhatsApp Admin.
 class ResetPasswordPinPage extends StatefulWidget {
   const ResetPasswordPinPage({super.key});
 
@@ -694,6 +699,9 @@ class _ResetPasswordPinPageState extends State<ResetPasswordPinPage> {
   final TextEditingController ulangiController = TextEditingController();
 
   bool menyimpan = false;
+  bool pinBenar = false;
+  String usernameTerverifikasi = '';
+  String pinTerverifikasi = '';
 
   @override
   void dispose() {
@@ -704,21 +712,102 @@ class _ResetPasswordPinPageState extends State<ResetPasswordPinPage> {
     super.dispose();
   }
 
-  Future<void> _reset() async {
+  Future<void> _bukaWhatsAppAdmin(String username) async {
+    final String pesan = 'Halo Admin RTS Panel, saya lupa password dan PIN '
+        'pemulihan saya tidak cocok. Mohon bantuan reset password.'
+        '${username.isEmpty ? '' : ' Username: $username'}';
+
+    final Uri uri = Uri.parse(
+      'https://wa.me/$rtsAdminWaNomor?text=${Uri.encodeComponent(pesan)}',
+    );
+
+    bool dibuka = false;
+
+    try {
+      dibuka = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      dibuka = false;
+    }
+
+    if (!dibuka && mounted) {
+      rtsShowMessage(
+        context,
+        'WhatsApp tidak dapat dibuka. Hubungi Admin di $rtsAdminWaTampil.',
+      );
+    }
+  }
+
+  /// Galat 401/403/422/429 dari server berarti PIN tidak cocok atau reset
+  /// tidak bisa dilakukan sendiri, sehingga diarahkan ke Admin. Galat jaringan
+  /// (statusCode 0) dan galat server (500) hanya menampilkan pesan.
+  Future<void> _tanganiGalat(ApiException error, String username) async {
+    if (!mounted) return;
+
+    setState(() => menyimpan = false);
+    rtsShowMessage(context, error.message);
+
+    const Set<int> kodeKeAdmin = {401, 403, 422, 429};
+
+    if (kodeKeAdmin.contains(error.statusCode)) {
+      await _bukaWhatsAppAdmin(username);
+    }
+  }
+
+  Future<void> _cekPin() async {
     FocusScope.of(context).unfocus();
 
     final String username = usernameController.text.trim();
     final String pin = pinController.text.trim();
-    final String baru = passwordController.text;
-    final String ulangi = ulangiController.text;
 
-    if (username.isEmpty || pin.isEmpty || baru.isEmpty || ulangi.isEmpty) {
-      rtsShowMessage(context, 'Semua kolom wajib diisi.');
+    if (username.isEmpty || pin.isEmpty) {
+      rtsShowMessage(context, 'Username dan PIN wajib diisi.');
       return;
     }
 
     if (pin.length != 6 || int.tryParse(pin) == null) {
       rtsShowMessage(context, 'PIN harus tepat 6 angka.');
+      return;
+    }
+
+    setState(() => menyimpan = true);
+
+    try {
+      final Map<String, dynamic> hasil = await ApiClient().post(
+        'verifikasi_pin_reset.php',
+        {'username': username, 'pin': pin},
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        menyimpan = false;
+        pinBenar = true;
+        usernameTerverifikasi = username;
+        pinTerverifikasi = pin;
+      });
+
+      rtsShowMessage(
+        context,
+        (hasil['message'] ?? 'PIN benar. Silakan buat password baru.').toString(),
+        success: true,
+      );
+    } on ApiException catch (error) {
+      await _tanganiGalat(error, username);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => menyimpan = false);
+      rtsShowMessage(context, 'Terjadi gangguan saat memeriksa PIN.');
+    }
+  }
+
+  Future<void> _reset() async {
+    FocusScope.of(context).unfocus();
+
+    final String baru = passwordController.text;
+    final String ulangi = ulangiController.text;
+
+    if (baru.isEmpty || ulangi.isEmpty) {
+      rtsShowMessage(context, 'Kedua kolom password wajib diisi.');
       return;
     }
 
@@ -735,12 +824,14 @@ class _ResetPasswordPinPageState extends State<ResetPasswordPinPage> {
     setState(() => menyimpan = true);
 
     try {
-      final Map<String, dynamic> hasil =
-          await ApiClient().post('reset_password_pin.php', {
-        'username': username,
-        'pin': pin,
-        'password_baru': baru,
-      });
+      final Map<String, dynamic> hasil = await ApiClient().post(
+        'reset_password_pin.php',
+        {
+          'username': usernameTerverifikasi,
+          'pin': pinTerverifikasi,
+          'password_baru': baru,
+        },
+      );
 
       if (!mounted) return;
 
@@ -754,14 +845,120 @@ class _ResetPasswordPinPageState extends State<ResetPasswordPinPage> {
 
       Navigator.of(context).pop();
     } on ApiException catch (error) {
-      if (!mounted) return;
-      setState(() => menyimpan = false);
-      rtsShowMessage(context, error.message);
+      await _tanganiGalat(error, usernameTerverifikasi);
     } catch (_) {
       if (!mounted) return;
       setState(() => menyimpan = false);
       rtsShowMessage(context, 'Terjadi gangguan saat mereset password.');
     }
+  }
+
+  Widget _buildLangkahPin() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Masukkan username dan PIN 6 angka Anda. PIN hanya dipakai untuk '
+          'reset password.',
+          style: TextStyle(
+            color: rtsTextSecondary,
+            fontSize: 13.5,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 22),
+        TextField(
+          controller: usernameController,
+          style: const TextStyle(fontSize: 14.5),
+          decoration: _dekorasiKolom('Username', Icons.person_outline),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: pinController,
+          obscureText: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(6),
+          ],
+          style: const TextStyle(fontSize: 14.5),
+          decoration: _dekorasiKolom('PIN (6 angka)', Icons.pin_outlined),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 54,
+          child: FilledButton(
+            onPressed: menyimpan ? null : _cekPin,
+            style: FilledButton.styleFrom(
+              backgroundColor: rtsMaroon,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+            child: Text(
+              menyimpan ? 'MEMERIKSA...' : 'LANJUT',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.9,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLangkahPasswordBaru() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'PIN benar untuk akun "$usernameTerverifikasi". Silakan buat '
+          'password baru.',
+          style: const TextStyle(
+            color: rtsTextSecondary,
+            fontSize: 13.5,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 22),
+        TextField(
+          controller: passwordController,
+          obscureText: true,
+          style: const TextStyle(fontSize: 14.5),
+          decoration: _dekorasiKolom('Password Baru', Icons.lock_outline),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: ulangiController,
+          obscureText: true,
+          style: const TextStyle(fontSize: 14.5),
+          decoration: _dekorasiKolom('Ulangi Password Baru', Icons.lock_outline),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 54,
+          child: FilledButton(
+            onPressed: menyimpan ? null : _reset,
+            style: FilledButton.styleFrom(
+              backgroundColor: rtsMaroon,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+            ),
+            child: Text(
+              menyimpan ? 'MENYIMPAN...' : 'RESET PASSWORD',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.9,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -808,78 +1005,43 @@ class _ResetPasswordPinPageState extends State<ResetPasswordPinPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                const Text(
-                                  'Masukkan username dan PIN 6 angka yang sudah '
-                                  'Anda atur sebelumnya, lalu buat password baru.',
+                                pinBenar
+                                    ? _buildLangkahPasswordBaru()
+                                    : _buildLangkahPin(),
+                                const SizedBox(height: 22),
+                                const Divider(),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Lupa PIN atau PIN salah? Hubungi Admin:',
+                                  textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: rtsTextSecondary,
-                                    fontSize: 13.5,
-                                    height: 1.45,
+                                    fontSize: 12.5,
                                   ),
                                 ),
-                                const SizedBox(height: 22),
-                                TextField(
-                                  controller: usernameController,
-                                  style: const TextStyle(fontSize: 14.5),
-                                  decoration: _dekorasiKolom(
-                                    'Username',
-                                    Icons.person_outline,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: pinController,
-                                  obscureText: true,
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                    LengthLimitingTextInputFormatter(6),
-                                  ],
-                                  style: const TextStyle(fontSize: 14.5),
-                                  decoration: _dekorasiKolom(
-                                    'PIN (6 angka)',
-                                    Icons.pin_outlined,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: passwordController,
-                                  obscureText: true,
-                                  style: const TextStyle(fontSize: 14.5),
-                                  decoration: _dekorasiKolom(
-                                    'Password Baru',
-                                    Icons.lock_outline,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                TextField(
-                                  controller: ulangiController,
-                                  obscureText: true,
-                                  style: const TextStyle(fontSize: 14.5),
-                                  decoration: _dekorasiKolom(
-                                    'Ulangi Password Baru',
-                                    Icons.lock_outline,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 10),
                                 SizedBox(
-                                  height: 54,
-                                  child: FilledButton(
-                                    onPressed: menyimpan ? null : _reset,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: rtsMaroon,
+                                  height: 48,
+                                  child: OutlinedButton.icon(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: rtsMaroon,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(15),
                                       ),
                                     ),
-                                    child: Text(
-                                      menyimpan
-                                          ? 'MENYIMPAN...'
-                                          : 'RESET PASSWORD',
+                                    onPressed: () => _bukaWhatsAppAdmin(
+                                      pinBenar
+                                          ? usernameTerverifikasi
+                                          : usernameController.text.trim(),
+                                    ),
+                                    icon: const Icon(
+                                      Icons.chat_rounded,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      'WhatsApp Admin $rtsAdminWaTampil',
                                       style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.9,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ),
@@ -5716,7 +5878,7 @@ class _ProfilePageState extends State<ProfilePage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'PIN 6 angka ini dipakai untuk mereset password jika Anda lupa '
+            'PIN 6 angka ini hanya dipakai di halaman login saat Anda lupa '
             'password. Jangan beri tahu PIN kepada siapa pun. Untuk membuat '
             'atau mengganti PIN, masukkan password Anda saat ini.',
             style: TextStyle(
