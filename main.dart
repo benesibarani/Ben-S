@@ -679,6 +679,252 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// Reset password bagi pengguna yang lupa password, memakai PIN pemulihan.
+class ResetPasswordPinPage extends StatefulWidget {
+  const ResetPasswordPinPage({super.key});
+
+  @override
+  State<ResetPasswordPinPage> createState() => _ResetPasswordPinPageState();
+}
+
+class _ResetPasswordPinPageState extends State<ResetPasswordPinPage> {
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController pinController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController ulangiController = TextEditingController();
+
+  bool menyimpan = false;
+
+  @override
+  void dispose() {
+    usernameController.dispose();
+    pinController.dispose();
+    passwordController.dispose();
+    ulangiController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _reset() async {
+    FocusScope.of(context).unfocus();
+
+    final String username = usernameController.text.trim();
+    final String pin = pinController.text.trim();
+    final String baru = passwordController.text;
+    final String ulangi = ulangiController.text;
+
+    if (username.isEmpty || pin.isEmpty || baru.isEmpty || ulangi.isEmpty) {
+      rtsShowMessage(context, 'Semua kolom wajib diisi.');
+      return;
+    }
+
+    if (pin.length != 6 || int.tryParse(pin) == null) {
+      rtsShowMessage(context, 'PIN harus tepat 6 angka.');
+      return;
+    }
+
+    if (baru.length < 6) {
+      rtsShowMessage(context, 'Password baru paling sedikit 6 karakter.');
+      return;
+    }
+
+    if (baru != ulangi) {
+      rtsShowMessage(context, 'Ulangi password baru belum sama.');
+      return;
+    }
+
+    setState(() => menyimpan = true);
+
+    try {
+      final Map<String, dynamic> hasil =
+          await ApiClient().post('reset_password_pin.php', {
+        'username': username,
+        'pin': pin,
+        'password_baru': baru,
+      });
+
+      if (!mounted) return;
+
+      setState(() => menyimpan = false);
+
+      rtsShowMessage(
+        context,
+        (hasil['message'] ?? 'Password berhasil direset.').toString(),
+        success: true,
+      );
+
+      Navigator.of(context).pop();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => menyimpan = false);
+      rtsShowMessage(context, error.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => menyimpan = false);
+      rtsShowMessage(context, 'Terjadi gangguan saat mereset password.');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          const RtsBackground(overlayOpacity: 0.92),
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 16, 6),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.arrow_back_rounded,
+                          color: rtsTextPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(22, 4, 22, 28),
+                    children: [
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 440),
+                          child: RtsCard(
+                            padding: const EdgeInsets.fromLTRB(24, 26, 24, 22),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const Text(
+                                  'Lupa Password',
+                                  style: TextStyle(
+                                    color: rtsTextPrimary,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Masukkan username dan PIN 6 angka yang sudah '
+                                  'Anda atur sebelumnya, lalu buat password baru.',
+                                  style: TextStyle(
+                                    color: rtsTextSecondary,
+                                    fontSize: 13.5,
+                                    height: 1.45,
+                                  ),
+                                ),
+                                const SizedBox(height: 22),
+                                TextField(
+                                  controller: usernameController,
+                                  style: const TextStyle(fontSize: 14.5),
+                                  decoration: _dekorasiKolom(
+                                    'Username',
+                                    Icons.person_outline,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: pinController,
+                                  obscureText: true,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(6),
+                                  ],
+                                  style: const TextStyle(fontSize: 14.5),
+                                  decoration: _dekorasiKolom(
+                                    'PIN (6 angka)',
+                                    Icons.pin_outlined,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: passwordController,
+                                  obscureText: true,
+                                  style: const TextStyle(fontSize: 14.5),
+                                  decoration: _dekorasiKolom(
+                                    'Password Baru',
+                                    Icons.lock_outline,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: ulangiController,
+                                  obscureText: true,
+                                  style: const TextStyle(fontSize: 14.5),
+                                  decoration: _dekorasiKolom(
+                                    'Ulangi Password Baru',
+                                    Icons.lock_outline,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                SizedBox(
+                                  height: 54,
+                                  child: FilledButton(
+                                    onPressed: menyimpan ? null : _reset,
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: rtsMaroon,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      menyimpan
+                                          ? 'MENYIMPAN...'
+                                          : 'RESET PASSWORD',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.9,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Dekorasi kolom isian bergaya sama dengan kolom password lainnya.
+InputDecoration _dekorasiKolom(String label, IconData ikon) {
+  return InputDecoration(
+    labelText: label,
+    prefixIcon: Icon(ikon, color: const Color(0xff6d514a), size: 20),
+    filled: true,
+    fillColor: const Color(0xfff8f4ef),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+    labelStyle: const TextStyle(fontSize: 13.5),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide.none,
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide.none,
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide.none,
+    ),
+  );
+}
+
 class ApiClient {
   ApiClient({this.token = ''});
 
@@ -1663,6 +1909,26 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: isLoading
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ResetPasswordPinPage(),
+                        ),
+                      ),
+              child: Text(
+                'Lupa password?',
+                style: TextStyle(
+                  color: rtsMaroon,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
           Row(
             children: [
               SizedBox(
@@ -5107,6 +5373,10 @@ class _ProfilePageState extends State<ProfilePage> {
   bool lihatUlangi = false;
   bool menyimpan = false;
 
+  final TextEditingController pinPasswordController = TextEditingController();
+  final TextEditingController pinBaruController = TextEditingController();
+  bool menyimpanPin = false;
+
   RtsUser get user => widget.user;
 
   @override
@@ -5114,6 +5384,8 @@ class _ProfilePageState extends State<ProfilePage> {
     lamaController.dispose();
     baruController.dispose();
     ulangiController.dispose();
+    pinPasswordController.dispose();
+    pinBaruController.dispose();
     super.dispose();
   }
 
@@ -5243,6 +5515,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       const RtsSectionTitle('Ganti Password'),
                       const SizedBox(height: 11),
                       _buildGantiPassword(),
+                      const SizedBox(height: 18),
+                      const RtsSectionTitle('PIN Pemulihan'),
+                      const SizedBox(height: 11),
+                      _buildAturPin(),
                     ],
                   ),
                 ),
@@ -5380,6 +5656,124 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _aturPin() async {
+    FocusScope.of(context).unfocus();
+
+    final String password = pinPasswordController.text;
+    final String pin = pinBaruController.text.trim();
+
+    if (password.isEmpty || pin.isEmpty) {
+      rtsShowMessage(context, 'Password dan PIN baru wajib diisi.');
+      return;
+    }
+
+    if (pin.length != 6 || int.tryParse(pin) == null) {
+      rtsShowMessage(context, 'PIN harus tepat 6 angka.');
+      return;
+    }
+
+    setState(() => menyimpanPin = true);
+
+    try {
+      final Map<String, dynamic> hasil = await api.post('pin_atur.php', {
+        'password_lama': password,
+        'pin_baru': pin,
+      });
+
+      if (!mounted) return;
+
+      setState(() {
+        menyimpanPin = false;
+        pinPasswordController.clear();
+        pinBaruController.clear();
+      });
+
+      rtsShowMessage(
+        context,
+        (hasil['message'] ?? 'PIN berhasil disimpan.').toString(),
+        success: true,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => menyimpanPin = false);
+      rtsShowMessage(context, error.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => menyimpanPin = false);
+      rtsShowMessage(context, 'Terjadi gangguan saat menyimpan PIN.');
+    }
+  }
+
+  Widget _buildAturPin() {
+    return RtsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'PIN 6 angka ini dipakai untuk mereset password jika Anda lupa '
+            'password. Jangan beri tahu PIN kepada siapa pun. Untuk membuat '
+            'atau mengganti PIN, masukkan password Anda saat ini.',
+            style: TextStyle(
+              color: rtsTextSecondary,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: pinPasswordController,
+            obscureText: true,
+            style: const TextStyle(fontSize: 14.5),
+            decoration: _dekorasiKolom('Password Saat Ini', Icons.lock_outline),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: pinBaruController,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(6),
+            ],
+            style: const TextStyle(fontSize: 14.5),
+            decoration: _dekorasiKolom('PIN Baru (6 angka)', Icons.pin_outlined),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: rtsMaroon,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+              onPressed: menyimpanPin ? null : _aturPin,
+              icon: menyimpanPin
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.pin_outlined, size: 19),
+              label: Text(
+                menyimpanPin ? 'MENYIMPAN...' : 'SIMPAN PIN',
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.9,
+                ),
+              ),
+            ),
           ),
         ],
       ),

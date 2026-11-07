@@ -133,6 +133,7 @@ $punyaStatus = rts_login_has_column($conn, 'sales_users', 'status_aktif');
 $punyaAkunPro = rts_api_ada_kolom($conn, 'sales_users', 'akun_pro');
 $punyaSalesman = rts_login_has_column($conn, 'sales_users', 'salesman');
 $punyaDistrict = rts_login_has_column($conn, 'sales_users', 'sales_district');
+$punyaPin = rts_login_has_column($conn, 'sales_users', 'pin_hash');
 
 $kolom = [
     'id',
@@ -145,6 +146,7 @@ $kolom = [
     $punyaDistrict ? 'sales_district' : "'' AS sales_district",
     $punyaStatus ? 'status_aktif' : "'Aktif' AS status_aktif",
     $punyaAkunPro ? 'akun_pro' : '0 AS akun_pro',
+    $punyaPin ? "(pin_hash IS NOT NULL AND pin_hash <> '') AS pin_aktif" : '0 AS pin_aktif',
 ];
 
 $kolomLogin = $punyaUsername ? 'username' : 'email';
@@ -264,6 +266,7 @@ api_response(true, 'Login berhasil.', [
         'sales_district' => $user['sales_district'] ?? '',
         'status_aktif' => $user['status_aktif'] ?? 'Aktif',
         'akun_pro' => (int) ($langganan['akun_pro'] ?? 0),
+        'pin_aktif' => (bool) ($user['pin_aktif'] ?? false),
         'foto_profil' => $fotoProfil,
         'pro_selesai' => (string) ($langganan['pro_selesai'] ?? ''),
         'trial_selesai' => (string) ($langganan['trial_selesai'] ?? ''),
