@@ -1,5 +1,15 @@
 DAFTAR BERKAS: MANA UNTUK HOSTING, MANA UNTUK APLIKASI?
 ========================================================================
+
+>>> PIN PEMULIHAN LUPA PASSWORD (PALING BARU) <<<
+   PIN 6 angka dipakai hanya di halaman Login saat lupa password.
+   PIN salah diarahkan ke WhatsApp Admin 081260973139.
+   Isi paket: api (5 berkas), SQL migrasi, dan main.dart.
+   Cara pasang ada di BACA_PIN.txt di dalam paket.
+
+   UNDUH PAKET LENGKAP:
+     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PIN_PEMULIHAN.zip
+
 >>> PUTARAN 18M (29 Oktober 2026) - PALING BARU <<<
    KOLOM KELURAHAN PADA PENGAJUAN "GANTI ALAMAT" (MENU PENGAJUAN BARU).
    TERISI OTOMATIS DARI TITIK KOORDINAT BILA "SESUAI KOORDINAT SEKARANG"
