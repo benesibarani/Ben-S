@@ -64,7 +64,7 @@ if (isset($_POST['submit_request'])) {
 
     $stmt = $conn->prepare("INSERT INTO pengajuan_sales (sales_email, sales_distric, salesman, jenis_request, id_customer, pic, rute_kunjungan, week, nama_toko_lama, nama_toko_baru, alamat_lama, alamat_baru, tipe_baru, visit_day_baru, alasan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     
-    $stmt->bind_param("ssssissssssssss", 
+    $stmt->bind_param("sssssssssssssss", 
         $s_email, $dist, $s_man, $jenis, $id_c, 
         $_POST['pic'], $_POST['rute_kunjungan'], $_POST['week'], 
         $nm_l, $nm_b, $al_l, $al_b, $tp, $vd, $_POST['alasan']

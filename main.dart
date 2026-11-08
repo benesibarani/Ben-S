@@ -2231,6 +2231,120 @@ class _DashboardPageState extends State<DashboardPage>
   RtsUser get user => widget.user;
   String get token => widget.token;
 
+  /// Popup konfirmasi: data toko di master berubah, tetapi pengajuan Sales
+  /// belum diperbarui. Sales memilih Setujui atau Tolak. Hanya statusnya
+  /// yang berubah di inbox; data master tidak diubah dari sini.
+  Future<void> _periksaPerubahanToko() async {
+    List<Map<String, dynamic>> daftar = const [];
+
+    try {
+      final Map<String, dynamic> hasil =
+          await ApiClient(token: token).get('notif_perubahan_toko.php');
+      final dynamic data = hasil['data'];
+
+      if (data is List) {
+        daftar = data
+            .whereType<Map>()
+            .map((e) => e.cast<String, dynamic>())
+            .toList();
+      }
+    } catch (_) {
+      // Pemeriksaan ini hanya tambahan. Galat tidak perlu ditampilkan.
+      return;
+    }
+
+    for (final Map<String, dynamic> item in daftar) {
+      if (!mounted) return;
+
+      final bool? setujui = await _tampilkanPopupPerubahanToko(item);
+
+      // null: popup ditutup tanpa dijawab, akan muncul lagi saat beranda dibuka.
+      if (setujui == null || !mounted) continue;
+
+      await _kirimJawabanPerubahanToko(item['id'], setujui ? 'setujui' : 'tolak');
+    }
+  }
+
+  Future<bool?> _tampilkanPopupPerubahanToko(Map<String, dynamic> item) {
+    String teks(dynamic nilai) => (nilai ?? '').toString();
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          'Data Toko Berubah',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'ID Customer : ${teks(item['id_customer'])}',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 10),
+              Text('Nama Toko : ${teks(item['nama_lama'])}'),
+              Text('Alamat : ${teks(item['alamat_lama'])}'),
+              const SizedBox(height: 12),
+              const Text('Telah terjadi perubahan database menjadi :'),
+              const SizedBox(height: 6),
+              Text(
+                'Nama Toko : ${teks(item['nama_master'])}',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              Text(
+                'Alamat : ${teks(item['alamat_master'])}',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              const Text('Apakah perubahan tersebut sudah benar?'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              'Tolak',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700),
+            ),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: rtsMaroon),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Setujui'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _kirimJawabanPerubahanToko(dynamic id, String aksi) async {
+    try {
+      final Map<String, dynamic> hasil = await ApiClient(token: token).post(
+        'notif_perubahan_respon.php',
+        {'id': id, 'aksi': aksi},
+      );
+
+      if (!mounted) return;
+
+      rtsShowMessage(
+        context,
+        (hasil['message'] ?? 'Jawaban tersimpan.').toString(),
+        success: true,
+      );
+    } on ApiException catch (error) {
+      if (mounted) rtsShowMessage(context, error.message);
+    } catch (_) {
+      if (mounted) {
+        rtsShowMessage(context, 'Jawaban belum tersimpan. Coba lagi nanti.');
+      }
+    }
+  }
+
   /// True bila pemeriksaan di HP menyatakan akun ini berhak memakai fitur PRO.
   ///
   /// Dipakai supaya kartu menu PRO langsung terbuka sesudah pembayaran
@@ -2263,6 +2377,9 @@ class _DashboardPageState extends State<DashboardPage>
 
       // Sekali saat beranda dibuka: periksa apakah akun sudah berhak PRO.
       unawaited(_periksaHakPro());
+
+      // Popup: data toko berubah di master, pengajuan Sales belum diperbarui.
+      unawaited(_periksaPerubahanToko());
 
       // Aktifkan mesin pengingat & alarm Kalender agar muncul di Notifikasi HP.
       RtsAlarmKalender.mulai(user: user, token: token);

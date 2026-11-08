@@ -838,7 +838,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($check->num_rows == 0) { echo "<script>alert('Akses Ditolak'); window.location='inbox.php';</script>"; exit(); }
         }
         $stmt = $conn->prepare("UPDATE pengajuan_sales SET sales_distric=?, salesman=?, jenis_request=?, id_customer=?, pic=?, rute_kunjungan=?, week=?, nama_toko_lama=?, nama_toko_baru=?, alamat_lama=?, alamat_baru=?, tipe_baru=?, visit_day_baru=?, alasan=?, tanggal_request=CURRENT_TIMESTAMP WHERE id=?");
-        $stmt->bind_param("sssissssssssssi", $_POST['sales_distric'], $_POST['salesman'], $_POST['jenis_request'], $_POST['id_customer'], $_POST['pic'], $_POST['rute_kunjungan'], $_POST['week'], $_POST['nama_toko_lama'], $_POST['nama_toko_baru'], $_POST['alamat_lama'], $_POST['alamat_baru'], $_POST['tipe'], $_POST['visit_day'], $_POST['alasan'], $id);
+        $stmt->bind_param("ssssssssssssssi", $_POST['sales_distric'], $_POST['salesman'], $_POST['jenis_request'], $_POST['id_customer'], $_POST['pic'], $_POST['rute_kunjungan'], $_POST['week'], $_POST['nama_toko_lama'], $_POST['nama_toko_baru'], $_POST['alamat_lama'], $_POST['alamat_baru'], $_POST['tipe'], $_POST['visit_day'], $_POST['alasan'], $id);
         if($stmt->execute()) echo "<script>alert('Data Toko Berhasil Diupdate!');</script>";
     }
     if (isset($_POST['update_gsp'])) {

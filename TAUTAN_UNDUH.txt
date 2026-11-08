@@ -1,6 +1,18 @@
 DAFTAR BERKAS: MANA UNTUK HOSTING, MANA UNTUK APLIKASI?
 ========================================================================
 
+>>> PENGAJUAN OTOMATIS, KONFIRMASI SALES, PERBAIKAN ID CUSTOMER (PALING BARU) <<<
+   - Pending > 60 hari -> Disetujui (status saja).
+   - Disetujui/Ditolak > 30 hari -> diarsipkan ke pengajuan_sales_arsip.
+   - Popup Sales: perubahan data master dikonfirmasi Setujui / Tolak.
+   - PERBAIKAN: ID customer besar (mis. 3000032344) tersimpan rusak di
+     pengajuan Tambah/Hapus/Ganti. Wajib diunggah dan cek data lama.
+   Cara pasang dan cron ada di BACA_PENGAJUAN_OTOMATIS.txt di dalam paket.
+
+   UNDUH PAKET LENGKAP:
+     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_PENGAJUAN_OTOMATIS.zip
+
+
 >>> PIN PEMULIHAN LUPA PASSWORD (PALING BARU) <<<
    PIN 6 angka dipakai hanya di halaman Login saat lupa password.
    PIN salah diarahkan ke WhatsApp Admin 081260973139.
