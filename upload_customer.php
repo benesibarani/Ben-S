@@ -27,6 +27,7 @@
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/api/master_toko_baru_inti.php';
 rts_require_login();
 
 if (!rts_is_approver()) {
@@ -582,7 +583,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             . ($pemisah === "\t" ? 'TAB' : $pemisah) . '.';
                     } else {
                         try {
+                            /* Tabel penanda dipastikan dulu (CREATE TABLE memicu commit otomatis). */
+                            $tabelBaruSiap = rts_mtb_pastikan_tabel($conn);
+
                             $conn->begin_transaction();
+
+                            /* ID customer yang SUDAH ada sebelum upload ini. */
+                            $id_sebelum = [];
+                            $hasil_sebelum = $conn->query('SELECT id_customer FROM master_toko');
+                            if ($hasil_sebelum) {
+                                while ($r_sebelum = $hasil_sebelum->fetch_assoc()) {
+                                    $id_sebelum[(string) $r_sebelum['id_customer']] = true;
+                                }
+                                $hasil_sebelum->free();
+                            }
 
                             /* 1. Bila dicentang: salin dulu ke arsip, baru hapus. */
                             $jumlah_lama = 0;
@@ -636,6 +650,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             if (!$insert || !$update) {
                                 throw new RuntimeException('Statement database gagal dibuat: ' . $conn->error);
                             }
+
+                            $tandaiBaru = $tabelBaruSiap
+                                ? $conn->prepare('INSERT INTO master_toko_baru (id_customer, sejak) VALUES (?, NOW()) ON DUPLICATE KEY UPDATE sejak = NOW()')
+                                : false;
 
                             $baru = 0;
                             $ditimpa = 0;
@@ -735,6 +753,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         $sudah_ada[$id] = true;
                                         $baru++;
 
+                                        if ($tandaiBaru && !isset($id_sebelum[$id])) {
+                                            $tandaiBaru->bind_param('s', $id);
+                                            $tandaiBaru->execute();
+                                        }
+
                                         if (count($contoh_baru) < 5) {
                                             $contoh_baru[] = $id;
                                         }
@@ -754,6 +777,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     'Tidak ada satu pun data yang sah di dalam berkas, jadi '
                                     . 'tidak ada yang disimpan' . ($replace ? ' dan data lama TIDAK dihapus.' : '.')
                                 );
+                            }
+
+                            /* Penanda toko yang sudah lewat masa berlaku dibersihkan. */
+                            if ($tabelBaruSiap) {
+                                $conn->query('DELETE FROM master_toko_baru WHERE sejak < NOW() - INTERVAL ' . RTS_MTB_HARI . ' DAY');
                             }
 
                             $conn->commit();

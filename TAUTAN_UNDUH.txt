@@ -1,6 +1,15 @@
 DAFTAR BERKAS: MANA UNTUK HOSTING, MANA UNTUK APLIKASI?
 ========================================================================
 
+>>> TOKO BARU DI MASTER CUSTOMER (PALING BARU) <<<
+   Toko yang diupload lewat CSV tampil paling atas selama 14 hari, dengan label BARU.
+   Isi paket: upload_customer.php, api/customers.php, api/master_toko_baru_inti.php, main.dart.
+   Cara pasang ada di BACA_TOKO_BARU.txt di dalam paket.
+
+   UNDUH PAKET LENGKAP:
+     https://github.com/benesibarani/Ben-S/raw/refs/heads/arena/01a0beb2-ben-s/RTS_PANEL_TOKO_BARU.zip
+
+
 >>> PENGAJUAN OTOMATIS, KONFIRMASI SALES, PERBAIKAN ID CUSTOMER (PALING BARU) <<<
    - Pending > 60 hari -> Disetujui (status saja).
    - Disetujui/Ditolak > 30 hari -> diarsipkan ke pengajuan_sales_arsip.

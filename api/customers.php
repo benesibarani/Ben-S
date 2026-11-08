@@ -21,6 +21,7 @@
  */
 
 require_once __DIR__ . '/api_bootstrap.php';
+require_once __DIR__ . '/master_toko_baru_inti.php';
 
 rts_api_headers();
 rts_api_handle_preflight();
@@ -173,10 +174,18 @@ $countStmt->close();
 
 /* -------------------------------------------------------------------- data */
 
+/* Toko baru (diupload dalam 14 hari terakhir) ditampilkan paling atas. */
+$punyaBaru = rts_mtb_pastikan_tabel($conn);
+$selectBaru = $punyaBaru
+    ? '(SELECT COUNT(*) FROM master_toko_baru mtb WHERE mtb.id_customer = master_toko.id_customer'
+      . ' AND mtb.sejak >= NOW() - INTERVAL ' . RTS_MTB_HARI . ' DAY) AS baru_flag'
+    : '0 AS baru_flag';
+$urutBaru = $punyaBaru ? 'baru_flag DESC, ' : '';
+
 $sql = 'SELECT id, id_customer, nama_toko, ' . $tipeExpr . ', salesman, sales_district,
-               alamat, kunjungan, hari, latitude, longitude, status_aktif
+               alamat, kunjungan, hari, latitude, longitude, status_aktif, ' . $selectBaru . '
         FROM master_toko' . $whereSql . '
-        ORDER BY nama_toko ASC
+        ORDER BY ' . $urutBaru . 'nama_toko ASC
         LIMIT ? OFFSET ?';
 
 $stmt = $conn->prepare($sql);
@@ -208,6 +217,7 @@ while ($result && ($row = $result->fetch_assoc())) {
         'latitude' => (string) ($row['latitude'] ?? ''),
         'longitude' => (string) ($row['longitude'] ?? ''),
         'status_aktif' => (string) ($row['status_aktif'] ?? 'Aktif'),
+        'baru' => ((int) ($row['baru_flag'] ?? 0)) > 0,
     ];
 }
 $stmt->close();

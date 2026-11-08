@@ -570,6 +570,7 @@ class Customer {
     required this.longitude,
     required this.statusAktif,
     this.mapUrl = '',
+    this.baru = false,
   });
 
   final int id;
@@ -585,6 +586,7 @@ class Customer {
   final String longitude;
   final String statusAktif;
   final String mapUrl;
+  final bool baru;
 
   bool get isGsp => tipeCustomer.toUpperCase() == 'GSP';
   bool get isAktif => statusAktif.toLowerCase() == 'aktif';
@@ -606,6 +608,7 @@ class Customer {
       longitude: (json['longitude'] ?? '').toString(),
       statusAktif: (json['status_aktif'] ?? 'Aktif').toString(),
       mapUrl: (json['map_url'] ?? '').toString(),
+      baru: json['baru'] == true || json['baru'] == 1 || json['baru'] == '1',
     );
   }
 }
@@ -4183,15 +4186,43 @@ class _CustomerListPageState extends State<CustomerListPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          customer.namaToko.isEmpty ? '-' : customer.namaToko,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: rtsTextPrimary,
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w800,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                customer.namaToko.isEmpty ? '-' : customer.namaToko,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: rtsTextPrimary,
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            if (customer.baru) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: rtsGreen,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'BARU',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 3),
                         Text(
